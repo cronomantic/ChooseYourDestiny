@@ -58,13 +58,19 @@ class CydcParser(object):
         """
         if len(p) == 2 and p[1]:
             p[0] = []
-            p[0].append(p[1])
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
         elif len(p) == 3:
             p[0] = p[1]
             if not p[0]:
                 p[0] = []
             if p[2]:
-                p[0].append(p[2])
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
 
 
     def p_statements_nl(self, p):
@@ -73,17 +79,16 @@ class CydcParser(object):
                         | NEWLINE
         """
         if len(p) == 2:
-            p[0] = []
+            p[0] = None
         elif len(p) == 3 and p[1]:
             p[0] = p[1]
 
     def p_statements(self, p):
         """
         statements  : statements COLON statement
-                    | statement COLON
                     | statement
         """
-        if (len(p) == 2 or len(p) == 3) and p[1]:
+        if (len(p) == 2) and p[1]:
             p[0] = []
             p[0].append(p[1])
         elif len(p) == 4:
