@@ -10,6 +10,7 @@ except:
 
 NUM_TOKENS = 128
 
+
 class CydcTextCompressor(object):
     def __init__(self, gettext, superset_limit, verbose=False):
         self._ = gettext.gettext
@@ -175,7 +176,11 @@ class CydcTextCompressor(object):
         for string in strings:
             for char in string:
                 if ord(char) > 255:
-                    sys.exit(self._(f"ERROR: Invalid character.{ord(char)} - {char} in {string}"))
+                    sys.exit(
+                        self._(
+                            f"ERROR: Invalid character.{ord(char)} - {char} in {string}"
+                        )
+                    )
 
         if self.verbose:
             print(self._("Length of texts without compression:"), lenBefore)
