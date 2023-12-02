@@ -49,8 +49,8 @@ LINEA0:
 
 LOAD_TABLE:
     LUA ALLPASS
-      --generateFiledata("DEEPTIME.SCR", _c("SCR_ADDR"), 0)
-      generateFiledata("CYD.bin", _c("INIT_ADDR"), 0)
+      --generateFiledata("CYD.bin", _c("INIT_ADDR"), 0)
+      generateFiledata(sj.get_define("_INTERPRETER_FILENAME_BARE_"), _c("INIT_ADDR"), 0)
       endList()
     ENDLUA
 
@@ -198,5 +198,5 @@ LINEA10:
 SIZE_LINE10 = $ - LINEA10
 SIZEOFBASIC = $ - START_ADDRESS
 
-    SAVE3DOS "disk", START_ADDRESS, SIZEOFBASIC, 0, 10
+    SAVE3DOS _LOADER_FILENAME_, START_ADDRESS, SIZEOFBASIC, 0, 10
 
