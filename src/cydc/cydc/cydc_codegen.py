@@ -98,7 +98,7 @@ class CydcCodegen(object):
                 # transform to byte representation
                 q = self.opcodes.get(opcode)
                 if q is None:
-                    sys.exit(self._("ERROR: Invalid opcode!"))
+                    sys.exit(self._(f"ERROR: Invalid opcode {opcode}!"))
                 if opcode == "TEXT":
                     p = t[1]  # Get text
                     while len(p) > 1:  # A string of less than 1 character is not valid
