@@ -2,12 +2,14 @@
 CC = gcc
 CFLAGS  = -O3 -Wall -DNDEBUG -s
 RM = rm -f 
+FILENAME = csc
 EXTENSION = .exe
+TARGET = ../../dist/$(FILENAME)$(EXTENSION)
 
-all: csc
+all: $(TARGET)
 
-csc: csc.c optimize.c compress.c memory.c zx0.h symmetry.c cargs.c symmetry.h cargs.h
-	$(CC) $(CFLAGS) -o csc$(EXTENSION) csc.c symmetry.c optimize.c compress.c memory.c cargs.c
+$(TARGET): csc.c optimize.c compress.c memory.c zx0.h symmetry.c cargs.c symmetry.h cargs.h
+	$(CC) $(CFLAGS) -o $(TARGET) csc.c symmetry.c optimize.c compress.c memory.c cargs.c
 
 clean:
-	$(RM) *.obj csc$(EXTENSION)
+	$(RM) *.obj $(TARGET)
