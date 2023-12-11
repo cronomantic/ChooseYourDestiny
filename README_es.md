@@ -4,7 +4,7 @@ El programa es un interprete para ejecutar historias de tipo "Escoje tu propia a
 
 Consiste una máquina virtual que va intepretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje mas "humano" con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
 
-El intérprete lee en cada momento un trozo de la aventura llamado "chunk" o "trozo" que ocupa 16 Kbytes, el mismo tamaño que el banco del Spectrum. El compilador divide el guión en estos fragmentos y ajusta de forma correspondiente las referencias a las direcciones. Cuando el intérprete debe cambiar en "trozo" en ejecución, lo carga de disco.
+El intérprete lee en cada momento un trozo de la aventura llamado "chunk" o "trozo" que ocupa 16 Kbytes, el mismo tamaño que el banco del Spectrum. El compilador divide el guión en estos fragmentos y ajusta de forma correspondiente las referencias en los saltos. Cuando el intérprete debe cambiar en "trozo" en ejecución, descarta el que haya cargado y carga el nuevo desde disco.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru.
 
@@ -12,7 +12,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 ## CYDC (Compilador)
 
-Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la lógica de la aventura, realiza una búsqueda heurística de las mejores abreviaturas para reducir el tamaño del texto.
+Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la lógica de la aventura, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
 ```
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
@@ -28,7 +28,7 @@ cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-T EXPORT-TOKENS_FILE**: Exportar al fichero JSON indicado por el parámetro las abreviaturas encontradas.
 - **\-t IMPORT-TOKENS-FILE**: Importar abreviaturas desde el fichero indicado y obviar la búsqueda de las mismas.
 - **\-C EXPORT-CHARSET**: Exporta el juego de caracteres 6x8 usado por defecto en formato JSON.
-- **\-c IMPORT-CHARSET**: Importa en formato JSON el juego de caracteres 6x8 a emplear.
+- **\-c IMPORT-CHARSET**: Importa en formato JSON el juego de caracteres a emplear.
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **input.txt**: Fichero de entrada con el guión de la aventura.
@@ -73,25 +73,26 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 ## Sintaxis
 
-La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.  
-Todo texto que aparezca en el fichero se considera texto, incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete.  
-La parte programable se define dentro de dos pares de corchetes, abiertos y cerrados respectivamente.  
+La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.
+Los comandos para el intérprete se delimita dentro de dos pares de corchetes, abiertos y cerrados respectivamente.
+Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete.
 Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 
 ```
-Esto es texto [[ INK 6 ]] Esto es texto de nuevo
+Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Sigue siendo texto [[
 # Esto es un comentario dentro del código
         WAITKEY
         INK 7: PAPER 0
 # Los comandos se separan por saltos de línea o dos puntos en la misma línea
     ]]
-    Esto vuelve a ser texto.
+    Esto vuelve a ser texto pero blanco, y ¡ojo con el salto de línea que lo precede!
 ```
 
-El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla. Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimendo.
+El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimendo (este último comportamiento es opcional).
 
-Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8), y que puede seleccionar con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
+
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.
 De nuevo, éste es un ejemplo autoexplicativo:
 
 ```
@@ -111,10 +112,10 @@ Elige una opción:
 [[  LABEL Final ]] Gracias por jugar.
 ```
 
-El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar donde se haya llegado al comando.  
+El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 8 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
-Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
+Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL Opcion1`, con lo que imprimirá el texto _"Has elegido la opción 1"_, y después pasa a `GOTO final` que hará un salto incondicional a donde está definido `LABEL Final`, motrando "_Gracias por jugar_" e ignorando todo lo que haya entre medias.
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
@@ -148,7 +149,7 @@ Salta a la etiqueta labelId.
 
 ### GOSUB labelId
 
-Salto de subrutina, hace un salto a la etiqueta labelId, pero vuelve a este punto en cuanto encuentra un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta labelId, pero vuelve a este punto en cuanto encuentra un comando `RETURN`.
 Se permiten hasta 8 niveles de anidamiento.
 
 ### RETURN
@@ -177,7 +178,7 @@ Permite al jugador seleccionar una de las opciones que haya en este momento en p
 
 ### CHOOSE IF WAIT expression THEN GOTO labelId
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.  
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.
 El timeout tiene como máximo 65535 (16 bits).
 
 ### INKEY expression
@@ -246,17 +247,17 @@ Igual que ´BRIGHT´ pero usando indirección con un flag dado.
 
 ### SFX expression
 
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
+Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### SFX @ flag_no
 
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado en el flag correspondiente.  
+Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado en el flag correspondiente.
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### PICTURE expression
 
-Carga en el buffer la imagen indicada como parámentro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
+Carga en el buffer la imagen indicada como parámentro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
 ### PICTURE @ flag_no
@@ -265,8 +266,8 @@ Igual que `PICTURE`, pero usando el contenido de una variable como parámetro.
 
 ### DISPLAY expression
 
-Muestra el contenido actual del buffer en pantalla.  
-El parámetro indica si se muestra o no la imagen, con un 0 se muestra, y con un valor distinto de cero, no. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
+Muestra el contenido actual del buffer en pantalla.
+El parámetro indica si se muestra o no la imagen, con un 0 se muestra, y con un valor distinto de cero, no. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobreescrito.
 
 ### DISPLAY @ flag_no
@@ -285,7 +286,7 @@ Igual que `WAIT`, pero con la salvedad de que el jugador puede abortar la pausa 
 
 Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 1, máximo 65535.
 
-### MARGINS expression COMMA expression COMMA expression COMMA expression
+### MARGINS expression, expression, expression, expression
 
 Define el área de pantalla donde se escribirá el texto. Los parámetros, por órden, son:
 
@@ -296,9 +297,9 @@ Define el área de pantalla donde se escribirá el texto. Los parámetros, por �
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
-### AT expression COMMA expression
+### AT expression, expression
 
-Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
+Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.
 Los parámetros, por órden, son:
 
 - Columna relativa al origen del área de texto.
@@ -308,7 +309,7 @@ Las posiciones se asumen en tamaño de carácter 8x8.
 
 ### SET flag_no TO RANDOM
 
-Almacena en el flag indicado un número aleatorio.
+Almacena en el flag indicado un número aleatorio entre 0 y 255.
 
 ### SET NOT flag_no
 
@@ -324,22 +325,22 @@ Almacena en el flag indicado en el primer parámetro el valor del segundo flag.
 
 ### SET flag_no + expression
 
-Almacena en el flag indicado la suma de su contenido con el valor del segundo parámetro.  
+Almacena en el flag indicado la suma de su contenido con el valor del segundo parámetro.
 Si la suma supera 255, entonces queda como 255.
 
 ### SET flag_no + @ flag_no
 
-Almacena en el flag indicado la suma de su contenido con el contenido del flag del segundo parámetro.  
+Almacena en el flag indicado la suma de su contenido con el contenido del flag del segundo parámetro.
 Si la suma supera 255, entonces queda como 255.
 
 ### SET flag_no - expression
 
-Almacena en el flag indicado la resta de su contenido con el valor del segundo parámetro.  
+Almacena en el flag indicado la resta de su contenido con el valor del segundo parámetro.
 Si la resta resulta menor que cero, queda almacenado cero.
 
 ### SET flag_no - @ flag_no
 
-Almacena en el flag indicado la resta de su contenido con el contenido del flag del segundo parámetro.  
+Almacena en el flag indicado la resta de su contenido con el contenido del flag del segundo parámetro.
 Si la resta resulta menor que cero, queda almacenado cero.
 
 ### SET flag_no AND expression
@@ -410,12 +411,12 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el conte
 
 ## Cómo generar una aventura
 
-Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles en el siguiente párrafo). Es importante que la codificación del fichero sea UTF-8.
+Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles en el siguiente párrafo). Es importante que la codificación del fichero sea UTF-8 o ISO-8859-15.
 
 Una vez tenemos la aventura, usamos el compilador `CYDC` para generar el fichero **SCRIPT.DAT**. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
-A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.  
-Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión, si hemos hecho muchas ediciones posteriores.
+A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.
+Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
 Si son necesarias imágenes, las comprimimos con CDC con el detalle ya indicado que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así).
 
@@ -423,36 +424,61 @@ Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de 
 
 Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, tendremos que usar algún programa que nos permita crear imágenes de discos +3. Con ella incluimos los ficheros `CYD.BIN`, `SCRIPT.DAT`, los ficheros de imágenes `*.CSC` (si existiesen) y el fichero `BEEPFX.BIN` como se ha indicado antes.
 
-Y con esto podríamos ejecutar la aventura. El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
+El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
 ---
 
 ## Juego de caracteres
 
-El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
-El juego de caracteres por defecto incluido, tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante). El compilador dispone de dos parámetros, `-c` para importar un juego de caracteres nuevo, y `-C` para exportar el juego de caracteres actualmente empleado (por si puede servir de plantilla).
+El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.
+El juego de caracteres por defecto incluido, tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de carácteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
-Este es el formato de importación del juego de caracteres:
+![Juego de carácteres por defecto](assets/default_charset.png)
+
+Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).
+Los carácteres propios del castellano, corresponden a las siguientes posiciones:
+
+| Carácter | Posición|
+| --- | --- |
+| 'ª' | 16 |
+| '¡' | 17 |
+| '¿' | 18 |
+| '«' | 19 |
+| '»' | 20 |
+| 'á' | 21 |
+| 'é' | 22 |
+| 'í' | 23 |
+| 'ó' | 24 |
+| 'ú' | 25 |
+| 'ñ' | 26 |
+| 'Ñ' | 27 |
+| 'ü' | 28 |
+| 'Ü' | 29 |
+
+Los caracteres por encima del valor 126 son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
+
+- El carácter 126 es el carácter usado cuando una opción no está seleccionada en un menú.
+- Los caracteres del 127 al 134 forman el ciclo de animación de una opción seleccionada en un menú.
+- Los caracteres del 135 al 142 forman el ciclo de animación del indicador de espera.
+
+El compilador dispone de dos parámetros, `-c` para importar un juego de caracteres nuevo, y `-C` para exportar el juego de caracteres actualmente empleado, por si puede servir de plantilla o realizar personalizaciones.
+
+Este es el formato de importación/exportación del juego de caracteres:
 
 ```json
 {"Character": [255, 128, ...], "Width":[8, 6, ...]}
 ```
 
-Es un JSON con dos campos, _Character_, con un array de números que corresponde con el valor de los bytes del juego de caracteres, y _Width_, con el ancho en pixels de cada carácter (los valores no pueden ser menores que 1 ni mayores que 8).
+Es un JSON con dos campos:
 
-
-
-Los caracteres por encima del valor 126 son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
-
-- El carácter 126 es el carácter usado cuando una opción no está seleccionada.
-- Los caracteres del 127 al 134 forman el ciclo de animación de una opción seleccionada.
-- Los caracteres del 135 al 142 forman el ciclo de animación del indicador de espera.
+- _Character_: un array de números que corresponde con el valor de los bytes del juego de caracteres, por tanto, no puede haber valores mayores de 255. Cada carácter son 8 bytes consecutivos, y cada byte corresponde con los pixels de cada línea del carácter.
+- _Width_: un array con el ancho en pixels de cada carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
 
 ---
 
 ## Códigos de error
 
-La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.  
+La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
 - Error 0: Drive not ready
@@ -493,12 +519,6 @@ Los errores del motor, son errores propios del motor.
 
 ---
 
-## ToDo
-
-- Una herramienda para comvertir el juego de caracteres.
-
----
-
 ## Referencias y agradecimientos
 
 - David Beazley por [PLY](https://www.dabeaz.com/ply/ply.html)
@@ -509,3 +529,4 @@ Los errores del motor, son errores propios del motor.
 ---
 
 ## Licencia
+

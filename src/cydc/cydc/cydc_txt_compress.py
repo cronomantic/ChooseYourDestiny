@@ -37,6 +37,7 @@ class CydcTextCompressor(object):
     )
 
     def _replace_chars(self, old_string):
+        """Replace carriage returns and special characters"""
         new_string = ""
         for char in old_string:
             if ord(char) > 127:
@@ -51,14 +52,14 @@ class CydcTextCompressor(object):
             new_string += chr(char)
         return new_string
 
-    """  
-    Devuelve cuántas veces aparece cada combinación de chares en las strings dadas, y cuánto se ahorraría por abreviar cada una de ellas
-    strings strings de las que contar las ocurrencias
-    minAbrev Longitud mínima de las tokens
-    maxLenToken Longitud máxima de las tokens
-    """
-
     def _token_counter(self, strings, min_len, max_len):
+        """  
+        Returns how may times every character combination appears on the given strings, and
+        how much savings you get with them.
+        strings: strings to process
+        minAbrev: Min lenght of found tokens
+        maxLenToken: Max lenght of found tokens
+    """
         savings = {}
         tokens = {}
         for string in strings:
@@ -73,23 +74,23 @@ class CydcTextCompressor(object):
                         savings[token] += saving
                         tokens[token] += 1
                     else:
-                        savings[token] = 0  # No se ahorra ni desperdicia nada
+                        savings[token] = 0  # Nothing saved nor wasted
                         tokens[token] = 1
         return (savings, tokens)
 
     """
-        Calcula y devuelve las tokens ï¿½ptimas, y la longitud de las strings tras aplicarse
-         maxLenToken Longitud mï¿½xima de las tokens
-        textos strings sobre las que aplicar tokens
+        Returns the optimal abbreviations, and the lengths of the strings after the substitution.
+        maxLenToken: Max token lenght
+        strings: Strings to compress
     """
 
     def _generate_tokens(self, strings, max_len_token):
-        len_after = 0  # Longitud total de las strings tras aplicar tokens, incluyendo espacio de ï¿½stas
-        min_len_token = 2  # Longitud mï¿½nima de las tokens
+        len_after = 0  # Max string lenght after token substitution
+        min_len_token = 2  # Minimal token lenght
         # Tomamos las mejores tokens
-        optimum_tokens = []  # tokens ï¿½ptimas calculadas
+        optimum_tokens = []  # Optimal tokens
         for i in range(self.num_tokens):
-            # Calculamos cuï¿½ntas veces aparece cada combinaciï¿½n
+            # Calculate how many appearances some combination has
             (savings, occurrences) = self._token_counter(
                 strings, min_len_token, max_len_token
             )
@@ -99,16 +100,15 @@ class CydcTextCompressor(object):
             token = savings_ordered[0]
             saving = savings[token]
             # print ((token, saving, occurrences[token]))
-            # Buscamos superconjuntos entre el resto de combinaciones posibles
-            # saving mï¿½ximo combinado por reemplazar token por un superconjunto, entre ambos
+            # Find supersets on the remainding possible combinations
+            # Max saving by replacing a token with superset
             max_savings_up = saving
             max_super_set = None
             pos_max_saving = None
             s_set = None
             if (
                 i < self.superset_limit
-            ):  # En las ï¿½ltimas, es poco probable que se aproveche esto
-                # Buscamos superconjuntos entre el resto de combinaciones posibles
+            ):  # Find supersets on the remainding possible combinations
                 for d in range(1, len(savings_ordered)):
                     if token in savings_ordered[d]:
                         s_set = savings_ordered[d]
@@ -119,25 +119,23 @@ class CydcTextCompressor(object):
                             max_savings_up = savings_up
                             max_super_set = s_set
                             pos_max_saving = d
-                            # print ('"%s" (%d) es superconjunto de "%s", savings %d, occurrences %d. savings combinados tomando ?ste %d' %
-                            #     (s_set, d, token, savings[s_set], occurrences[s_set], savings_up))
-            # Tenï¿½a algï¿½n superconjunto (TODO: puede que siempre ocurra, si len (token) < max_len_token)
+            # There was some superset (TODO: puede que siempre ocurra, si len (token) < max_len_token)
             if pos_max_saving:
                 # print ('La entrada "' + savings_ordered[pos_max_saving] + '" (' + str (pos_max_saving) + ') reemplaza "' + token + '" (0)')
                 token = max_super_set
             if max_savings_up < 1:
-                break  # Ya no se ahorra nada mï¿½s
-            # Aï¿½adimos esta token a la lista de tokens ï¿½ptimas calculadas
+                break  # No more savings
+            # Adding the token to the optimal token list
             saving = savings[token]
             # print ((token, saving, occurrences[token]))
             optimum_tokens.append((token, saving, occurrences[token]))
             len_after += len(token)
-            # Quitamos las occurrences de esta token en las strings
+            # Remove token appearances on the string
             c = 0
             new_strings = []
             while c < len(strings):
                 parts = strings[c].split(token)
-                if len(parts) > 1:  # La token aparecï¿½a en esa string
+                if len(parts) > 1:  # The token is already on the string
                     strings[c] = parts[0]
                     for p in range(1, len(parts)):
                         new_strings.append(parts[p])
@@ -166,8 +164,8 @@ class CydcTextCompressor(object):
         if self.verbose:
             print(self._("Replacing special characters..."))
 
-        lenBefore = 0  # Longitud total de los textos antes de abreviar
-        texts = []  # strings sobre las que aplicar tokens
+        lenBefore = 0  # Total length before compressing
+        texts = []  # strings to compress with tokens
         for string in strings:
             string = self._replace_chars(string)
             texts.append(string)
@@ -204,10 +202,10 @@ class CydcTextCompressor(object):
                     break
                 if len_token < minLength:
                     tokens = (
-                        posibles  # Conjunto de tokens que produjo la m?xima reducc??n
+                        posibles  # Token set with maximum reduction
                     )
-                    minLength = len_token  # Reducciï¿½n mï¿½xima de longitud total de textos lograda
-                    maxLen = maxLenToken  # Longitud mï¿½xima en la busqueda de tokens
+                    minLength = len_token  # Max. reduction archieved
+                    maxLen = maxLenToken  # Max. lenght tokens
             print(lenBefore - minLength, self._("bytes saved from text compression"))
             if self.verbose:
                 print()
@@ -221,10 +219,10 @@ class CydcTextCompressor(object):
                 print(tokens)
             print()
 
-            # Ponemos tokens de relleno
+            # Padding tokens
             for i in range(len(tokens), self.num_tokens):
                 tokens.append(chr(127))
-            # Hay que dejar eso como la primera token
+            # Set this as the first token
             tokens = [chr(127)] + tokens
 
             tokensTmp = []
