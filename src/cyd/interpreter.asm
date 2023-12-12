@@ -255,7 +255,7 @@ OP_SUB_D:
     ld c, (hl)
     inc hl
     ld a, (de)
-    sub a, c
+    sub c
     jr nc, 1f
     xor a
 1:  ld (de), a 
@@ -287,7 +287,7 @@ OP_SUB_I:
     ld a, (bc)
     ld c, a
     ld a, (de)
-    sub a, c
+    sub c
     jr nc, 1f
     xor a
 1:  ld (de), a 
