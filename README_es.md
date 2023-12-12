@@ -16,9 +16,9 @@ Este programa es el compilador que traduce el texto de la aventura a un fichero 
 
 ```
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
-         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
-         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
-         input.txt SCRIPT.DAT
+        [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
+        [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
+        input.txt SCRIPT.DAT
 ```
 
 - **\-h**: Muestra la ayuda
@@ -42,7 +42,7 @@ Este es el motor principal del juego, y que debe incluirse en el disco junto con
 
 La aventura se puede lanzar con en autolanzador del menú de inicio del Spectrum +3 o desde Basic con el comando `LOAD"DISK"`.
 
-Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC y efectos de sonido añadiendo un fichero generado con dicha utilidad llamado `BEEPFX.BIN`. Mas información en las secciones relevantes.
+Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC y efectos de sonido añadiendo un fichero generado con dicha utilidad llamado `SFX.BIN`. Mas información en las secciones relevantes.
 
 ---
 
@@ -52,11 +52,11 @@ Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostr
 
 ```
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
-  -f, --force                Force overwrite of output file
-  -m, --mirror               The right side of the image is the reflection of the left one.
-  -o, --output=FILE          Output path for the file
-  -l, --num-lines=NUMBER     Number of visible lines
-  -h, --help                 Shows the command help
+    -f, --force                Force overwrite of output file
+    -m, --mirror               The right side of the image is the reflection of the left one.
+    -o, --output=FILE          Output path for the file
+    -l, --num-lines=NUMBER     Number of visible lines
+    -h, --help                 Shows the command help
 ```
 
 Esto es una definición de los parámetros:
@@ -73,9 +73,9 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 ## Sintaxis
 
-La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.
-Los comandos para el intérprete se delimita dentro de dos pares de corchetes, abiertos y cerrados respectivamente.
-Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete.
+La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.  
+Los comandos para el intérprete se delimita dentro de dos pares de corchetes, abiertos y cerrados respectivamente.  
+Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete.  
 Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 
 ```
@@ -91,8 +91,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimendo (este último comportamiento es opcional).
 
-
-Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
 De nuevo, éste es un ejemplo autoexplicativo:
 
 ```
@@ -112,10 +111,10 @@ Elige una opción:
 [[  LABEL Final ]] Gracias por jugar.
 ```
 
-El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.
+El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 8 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
-Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
+Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL Opcion1`, con lo que imprimirá el texto _"Has elegido la opción 1"_, y después pasa a `GOTO final` que hará un salto incondicional a donde está definido `LABEL Final`, motrando "_Gracias por jugar_" e ignorando todo lo que haya entre medias.
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
@@ -149,7 +148,7 @@ Salta a la etiqueta labelId.
 
 ### GOSUB labelId
 
-Salto de subrutina, hace un salto a la etiqueta labelId, pero vuelve a este punto en cuanto encuentra un comando `RETURN`.
+Salto de subrutina, hace un salto a la etiqueta labelId, pero vuelve a este punto en cuanto encuentra un comando `RETURN`.  
 Se permiten hasta 8 niveles de anidamiento.
 
 ### RETURN
@@ -178,7 +177,7 @@ Permite al jugador seleccionar una de las opciones que haya en este momento en p
 
 ### CHOOSE IF WAIT expression THEN GOTO labelId
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.  
 El timeout tiene como máximo 65535 (16 bits).
 
 ### INKEY expression
@@ -247,17 +246,17 @@ Igual que ´BRIGHT´ pero usando indirección con un flag dado.
 
 ### SFX expression
 
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.
+Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### SFX @ flag_no
 
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado en el flag correspondiente.
+Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado en el flag correspondiente.  
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### PICTURE expression
 
-Carga en el buffer la imagen indicada como parámentro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.
+Carga en el buffer la imagen indicada como parámentro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
 ### PICTURE @ flag_no
@@ -266,8 +265,8 @@ Igual que `PICTURE`, pero usando el contenido de una variable como parámetro.
 
 ### DISPLAY expression
 
-Muestra el contenido actual del buffer en pantalla.
-El parámetro indica si se muestra o no la imagen, con un 0 se muestra, y con un valor distinto de cero, no. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.
+Muestra el contenido actual del buffer en pantalla.  
+El parámetro indica si se muestra o no la imagen, con un 0 se muestra, y con un valor distinto de cero, no. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobreescrito.
 
 ### DISPLAY @ flag_no
@@ -299,7 +298,7 @@ Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
 ### AT expression, expression
 
-Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.
+Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
 Los parámetros, por órden, son:
 
 - Columna relativa al origen del área de texto.
@@ -323,24 +322,24 @@ Almacena en el flag indicado el valor del segundo parámetro (Sólo puede ser de
 
 Almacena en el flag indicado en el primer parámetro el valor del segundo flag.
 
-### SET flag_no + expression
+### SET flag_no ADD expression
 
-Almacena en el flag indicado la suma de su contenido con el valor del segundo parámetro.
+Almacena en el flag indicado la suma de su contenido con el valor del segundo parámetro.  
 Si la suma supera 255, entonces queda como 255.
 
-### SET flag_no + @ flag_no
+### SET flag_no ADD @ flag_no
 
-Almacena en el flag indicado la suma de su contenido con el contenido del flag del segundo parámetro.
+Almacena en el flag indicado la suma de su contenido con el contenido del flag del segundo parámetro.  
 Si la suma supera 255, entonces queda como 255.
 
-### SET flag_no - expression
+### SET flag_no SUB expression
 
-Almacena en el flag indicado la resta de su contenido con el valor del segundo parámetro.
+Almacena en el flag indicado la resta de su contenido con el valor del segundo parámetro.  
 Si la resta resulta menor que cero, queda almacenado cero.
 
-### SET flag_no - @ flag_no
+### SET flag_no SUB @ flag_no
 
-Almacena en el flag indicado la resta de su contenido con el contenido del flag del segundo parámetro.
+Almacena en el flag indicado la resta de su contenido con el contenido del flag del segundo parámetro.  
 Si la resta resulta menor que cero, queda almacenado cero.
 
 ### SET flag_no AND expression
@@ -411,49 +410,75 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el conte
 
 ## Cómo generar una aventura
 
-Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles en el siguiente párrafo). Es importante que la codificación del fichero sea UTF-8 o ISO-8859-15.
+Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
+
+Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Carácteres](#Juego-de-caracteres), que serán convertidos a los códigos allí indicados.
 
 Una vez tenemos la aventura, usamos el compilador `CYDC` para generar el fichero **SCRIPT.DAT**. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
-A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.
+A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.  
 Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
-Si son necesarias imágenes, las comprimimos con CDC con el detalle ya indicado que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así).
+Si son necesarias imágenes, las comprimimos con CSC con el detalle que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así).
 
-Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de Shiru. Debemos exportar el fichero de efectos como un binario, que se llamará `BEEPFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal.
+Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de Shiru. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal.
 
-Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, tendremos que usar algún programa que nos permita crear imágenes de discos +3. Con ella incluimos los ficheros `CYD.BIN`, `SCRIPT.DAT`, los ficheros de imágenes `*.CSC` (si existiesen) y el fichero `BEEPFX.BIN` como se ha indicado antes.
+Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, tendremos que usar algún programa que nos permita crear imágenes de discos +3. Con ella incluimos los ficheros `CYD.BIN` y `DISK` (que se encuentran en el directorio _dist_), el fichero `SCRIPT.DAT` compilado, los ficheros de imágenes `*.CSC` (si existiesen) y el fichero `SFX.BIN` (si fuese necesario) como se ha indicado antes.
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
+
+Como ejemplo y para Windows, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#Sintaxis).  
+y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probrarla.
+
+Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
+
+El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
+
+```
+
+REM Name of the game
+SET GAME=test
+REM This name will be used as:
+REM   - The file to compile will be test.txt with this example
+REM   - The +3 disk image file will be called test.dsk with this example
+
+REM Number of lines used on SCR files at compressing
+SET IMGLINES=192
+```
+
+- La variable `GAME` será el nombe del fichero txt que se compilará y el nombre del fichero DSK resultante.
+- La variable `IMGLINES` es el número de lineas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
+
+Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo.
 
 ---
 
 ## Juego de caracteres
 
-El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.
+El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
 El juego de caracteres por defecto incluido, tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de carácteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
 ![Juego de carácteres por defecto](assets/default_charset.png)
 
-Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).
+Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).  
 Los carácteres propios del castellano, corresponden a las siguientes posiciones:
 
-| Carácter | Posición|
-| --- | --- |
-| 'ª' | 16 |
-| '¡' | 17 |
-| '¿' | 18 |
-| '«' | 19 |
-| '»' | 20 |
-| 'á' | 21 |
-| 'é' | 22 |
-| 'í' | 23 |
-| 'ó' | 24 |
-| 'ú' | 25 |
-| 'ñ' | 26 |
-| 'Ñ' | 27 |
-| 'ü' | 28 |
-| 'Ü' | 29 |
+| Carácter | Posición |
+| -------- | -------- |
+| 'ª'      | 16       |
+| '¡'      | 17       |
+| '¿'      | 18       |
+| '«'      | 19       |
+| '»'      | 20       |
+| 'á'      | 21       |
+| 'é'      | 22       |
+| 'í'      | 23       |
+| 'ó'      | 24       |
+| 'ú'      | 25       |
+| 'ñ'      | 26       |
+| 'Ñ'      | 27       |
+| 'ü'      | 28       |
+| 'Ü'      | 29       |
 
 Los caracteres por encima del valor 126 son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
@@ -465,7 +490,7 @@ El compilador dispone de dos parámetros, `-c` para importar un juego de caracte
 
 Este es el formato de importación/exportación del juego de caracteres:
 
-```json
+```
 {"Character": [255, 128, ...], "Width":[8, 6, ...]}
 ```
 
@@ -478,7 +503,7 @@ Es un JSON con dos campos:
 
 ## Códigos de error
 
-La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.
+La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.  
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
 - Error 0: Drive not ready
@@ -511,7 +536,7 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 
 La aparición de estos errores ocurren cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 
-Los errores del motor, son errores propios del motor.
+Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
 
 - Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
 - Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
@@ -524,9 +549,10 @@ Los errores del motor, son errores propios del motor.
 - David Beazley por [PLY](https://www.dabeaz.com/ply/ply.html)
 - Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0).
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
-- Shiru por BeepFx.
+- Shiru por [BeepFx](http://shiru.untergrund.net).
+- Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
+- Ximo, El_Mesías y Arnau Jess por el apoyo.
 
 ---
 
 ## Licencia
-

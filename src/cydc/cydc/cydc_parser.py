@@ -187,15 +187,15 @@ class CydcParser(object):
 
     def p_statement_print_ind(self, p):
         "statement : PRINT INDIRECTION expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("PRINT_I", p[4])
+        if self._check_byte_value(p[3]):
+            p[0] = ("PRINT_I", p[3])
         else:
             p[0] = None
 
     def p_statement_print_dir(self, p):
         "statement : PRINT expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PRINT_D", p[3])
+        if self._check_byte_value(p[2]):
+            p[0] = ("PRINT_D", p[2])
         else:
             p[0] = None
 
