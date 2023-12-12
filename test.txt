@@ -1,0 +1,44 @@
+[[
+    PAGEPAUSE 1
+    BORDER 0
+    INK 7
+    BRIGHT 1
+    FLASH 0
+    PAPER 0
+    CLEAR
+]][[
+    PICTURE 0
+    DISPLAY 0
+    WAIT 75
+    CLEAR
+]]Elige una opción:
+
+[[OPTION GOTO Opcion1]]Primera opción.
+[[OPTION GOTO Opcion2]]Segunda opción.
+[[OPTION GOTO Opcion3]]Tercera opción.
+[[
+    CHOOSE
+    LABEL Opcion1]]Has elegido la opción 1.[[
+    GOTO Siguiente
+    LABEL Opcion2]]Has elegido la opción 2.[[
+    GOTO Siguiente
+    LABEL Opcion3]]Has elegido la opción 3.[[  
+    LABEL Siguiente
+    WAITKEY
+    SET 0 TO 0
+    LABEL SumaOResta
+    CLEAR
+]]  Tienes [[PRINT @0]] gamusinos.
+¿Qué haces?
+
+[[OPTION GOTO Suma1]]Sumar 1 gamusino.
+[[OPTION GOTO Resta1]]Restar 1 gamusino.
+[[OPTION GOTO Final]]Fin.
+[[  CHOOSE
+    LABEL Suma1
+    SET 0 ADD 1
+    GOTO SumaOResta
+    LABEL Resta1
+    SET 0 SUB 1
+    GOTO SumaOResta
+    LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
