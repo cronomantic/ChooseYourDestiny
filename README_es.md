@@ -42,7 +42,7 @@ Este es el motor principal del juego, y que debe incluirse en el disco junto con
 
 La aventura se puede lanzar con en autolanzador del menú de inicio del Spectrum +3 o desde Basic con el comando `LOAD"DISK"`.
 
-Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC y efectos de sonido añadiendo un fichero generado con dicha utilidad llamado `SFX.BIN`. Mas información en las secciones relevantes.
+Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC y efectos de sonido añadiendo un fichero generado con BeepFx llamado `SFX.BIN`. Mas información en las secciones relevantes.
 
 ---
 
@@ -75,16 +75,14 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.  
 Los comandos para el intérprete se delimita dentro de dos pares de corchetes, abiertos y cerrados respectivamente.  
-Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete.  
+Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 
 ```
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Sigue siendo texto [[
-# Esto es un comentario dentro del código
         WAITKEY
         INK 7: PAPER 0
-# Los comandos se separan por saltos de línea o dos puntos en la misma línea
     ]]
     Esto vuelve a ser texto pero blanco, y ¡ojo con el salto de línea que lo precede!
 ```
@@ -408,6 +406,31 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el conte
 
 ---
 
+## Imágenes
+
+Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.
+Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imágen 0, `001.CSC` para la imagen 1, y así con el resto.
+
+Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar ésto con otro parámetro de la misma.
+
+Hay dos comandos necesarios para mostrar una imágen, el comando `PICTURE n` cargará en un buffer la imágen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
+
+Para mostar una imagen cargada en el buffer, usamos `DISPLAY n` ó `DISPLAY @n`, donde n en el primer caso, o el contenido del flag n en el segundo, tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobreescribe todo lo que hubiese en pantalla hasta el momento.
+
+Además, al cargarse el programa, antes de cargar el fichero de la aventura, el motor busca el fichero `000.DCP` en disco. Si existe, lo carga y lo muestra automáticamente como pantalla de presentación/carga. Si no existe el fichero, prosigue simplemente borrando la pantalla.
+
+---
+
+## Efectos de sonido
+
+Añadir efectos de sonido con el beeper es muy sencillo. Para ello tenemos que crear un banco de efectos con la utilidad BeepFx. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal.
+
+Este fichero habrá que añadirlo posteriormente a la imagen de disco. Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efecto a reproducir. Si se llama a este comando sin que exista un fichero de efectos cargado, será ignorado y seguirá la ejecución.
+
+No está contemplado llamar a un número de efecto que no exista en el fichero incluido.
+
+---
+
 ## Cómo generar una aventura
 
 Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
@@ -419,9 +442,9 @@ Una vez tenemos la aventura, usamos el compilador `CYDC` para generar el fichero
 A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.  
 Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
-Si son necesarias imágenes, las comprimimos con CSC con el detalle que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así).
+Si son necesarias imágenes, las comprimimos con CSC con el detalle que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así), como se ha indicado en una sección anterior.
 
-Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de Shiru. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal.
+Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de Shiru. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal, como ya se ha indicado en la sección antorior.
 
 Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, tendremos que usar algún programa que nos permita crear imágenes de discos +3. Con ella incluimos los ficheros `CYD.BIN` y `DISK` (que se encuentran en el directorio _dist_), el fichero `SCRIPT.DAT` compilado, los ficheros de imágenes `*.CSC` (si existiesen) y el fichero `SFX.BIN` (si fuese necesario) como se ha indicado antes.
 

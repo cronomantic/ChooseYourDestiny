@@ -5,10 +5,6 @@
     BRIGHT 1
     FLASH 0
     PAPER 0
-    CLEAR
-]][[
-    PICTURE 0
-    DISPLAY 0
     WAIT 75
     CLEAR
 ]]Elige una opción:
