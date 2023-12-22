@@ -477,7 +477,7 @@ OP_DISPLAY_D:
     ld a, (hl)
     inc hl
     or a
-    jp nz, EXEC_LOOP
+    jp z, EXEC_LOOP
     push hl
     call COPY_SCREEN
     pop hl
@@ -499,7 +499,7 @@ OP_DISPLAY_I:
     ld d, HIGH FLAGS
     ld a, (de)
     or a
-    jp nz, EXEC_LOOP
+    jp z, EXEC_LOOP
     push hl
     call COPY_SCREEN
     pop hl
@@ -1014,7 +1014,103 @@ OP_SFX_I:
 
 1:  pop hl
     jp EXEC_LOOP
+
+
+OP_TRACK_D:
+    ld a, (hl)
+    inc hl
+    di
+    push hl
+    call LOAD_MUSIC
+    pop hl
+    ei
+    jp EXEC_LOOP
+
+OP_TRACK_I:
+    ld e, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    ld a, (de)
+    di
+    push hl
+    call LOAD_MUSIC
+    pop hl
+    ei
+    jp EXEC_LOOP
+
+OP_PLAY_D:
+    ld a, (hl)
+    inc hl
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    res 2, (hl)
+    jr 1f
+2:  set 2, (hl)
+1:  pop hl
+    jp EXEC_LOOP
+
+OP_PLAY_I:
+    ld e, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    ld a, (de)
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    res 2, (hl)
+    jr 1f
+2:  set 2, (hl)
+1:  pop hl
+    jp EXEC_LOOP
+
+OP_LOOP_D:
+    ld a, (hl)
+    inc hl
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    set 0, (hl)
+    jr 1f
+2:  res 0, (hl)
+1:  pop hl
+    jp EXEC_LOOP
+
+OP_LOOP_I:
+    ld e, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    ld a, (de)
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    set 0, (hl)
+    jr 1f
+2:  res 0, (hl)
+1:  pop hl
+    jp EXEC_LOOP
 ;------------------------
+
     ALIGN 256
 OPCODES:
     DW OP_END
@@ -1079,3 +1175,9 @@ OPCODES:
     DW OP_TAB
     DW OP_SFX_D
     DW OP_SFX_I
+    DW OP_TRACK_D
+    DW OP_TRACK_I
+    DW OP_PLAY_D
+    DW OP_PLAY_I
+    DW OP_LOOP_D
+    DW OP_LOOP_I

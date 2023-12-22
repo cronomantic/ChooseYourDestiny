@@ -21,9 +21,12 @@
 ; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
+;
 
     DEVICE ZXSPECTRUM48
-    
+
+    DEFINE RELEASE "0.2"
+
     ORG INIT_ADDR
 START:
 
@@ -31,23 +34,26 @@ START:
 
 INT_STACK_ADDR EQU $8000
 
-DISK_BUFFER_SIZE EQU (16*1024)/512
-DISK_BUFFER EQU ((128-DISK_BUFFER_SIZE) << 8) + DISK_BUFFER_SIZE
+DISK_BUFFER_SIZE    EQU (16*1024)/512
+DISK_BUFFER         EQU ((128-DISK_BUFFER_SIZE) << 8) + DISK_BUFFER_SIZE
 
-SCRIPT_BANK   EQU 0
-SCRIPT_FILE_H EQU 0 << 8
+SCRIPT_BANK     EQU 0
+SCRIPT_FILE_H   EQU 0 << 8
 
 BEEPFX_BANK     EQU 1
 BEEPFX_FILE_H   EQU 2 << 8
 
-CHUNK_ADDR EQU $C000
+VORTEX_BANK     EQU 3
+VORTEX_FILE_H   EQU 3 << 8
+
+CHUNK_ADDR      EQU $C000
 
     call PLUS3_DOS_INIT
     ld hl, 0                  ; No RAM disk
     ld de, DISK_BUFFER        ; Restrict cache to bank 6
     call PLUS3_DOS_SET_1346
     jp nc, DISK_ERROR          ; Error 1 if NC
-
+ 
     di
     ld sp, INITIAL_STACK      ; Set stack
     ld a, high ISR_TABLE      ; load interrupt service routine
@@ -72,6 +78,10 @@ UPDATE_SCR_FLAG:
     DB 0
 DOWN_COUNTER:
     DW 0
+
+    org $8060
+SIGNATURE:
+    DB "Choose Your Destiny v", RELEASE, 0
 
     org $8080
 ISR:
@@ -206,9 +216,33 @@ ISR:
     ld (UPDATE_SCR_FLAG), a
 
 .no_screen:
-    ;maybe call vortex tracker here?
-    ;----
+    ;call vortex tracker here?
+    ld hl, VTR_STAT
+    bit 1, (hl)        ;Test if loaded module
+    jr z, .no_ay
 
+    ld bc, $7ffd
+    ld a, VORTEX_BANK|%00010000
+    out (c), a  ;Sets bank 3
+
+    bit 2, (hl)        ;test if play module
+    jr z, .mute
+
+    push hl
+    call VTR_ISR
+    pop hl
+
+    bit 0, (hl)
+    jr z, .no_ay
+
+    bit 7, (hl) ;test if end of song
+    jr z, .no_ay
+    res 2, (hl) ;Disable play  
+
+.mute:
+    call VTR_MUTE
+
+.no_ay:
     ; Downcounter for pauses
     ld hl, (DOWN_COUNTER)
     ld a, l
@@ -447,6 +481,7 @@ RANDOM:
     INCLUDE "bank_zx128.asm"
     INCLUDE "plus3dos.asm"
     INCLUDE "dzx0_turbo.asm"
+    INCLUDE "music_manager.asm"
     INCLUDE "screen_manager.asm"
     INCLUDE "text_manager.asm"
     INCLUDE "interpreter.asm"
@@ -499,9 +534,9 @@ FILE_HEADER:
 NUM_CHUNKS          EQU  FILE_HEADER
 CHUNK_OFFSET_PTR    EQU  FILE_HEADER + 2
 CHUNK_SIZE_PTR      EQU  FILE_HEADER + 4
-TOKENS_ADDR           EQU  FILE_HEADER + 6
-CHARSET_ADDR          EQU  FILE_HEADER + 8
-CHARSET_WIDTHS_ADDR   EQU  FILE_HEADER + 10
+TOKENS_ADDR         EQU  FILE_HEADER + 6
+CHARSET_ADDR        EQU  FILE_HEADER + 8
+CHARSET_WIDTHS_ADDR EQU  FILE_HEADER + 10
 
 
 TOTAL_SIZE = $ - START
