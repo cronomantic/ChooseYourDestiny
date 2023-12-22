@@ -31,7 +31,7 @@ IF NOT EXIST .\%GAME%.txt (
 )
 
 REM  ---- PREPARE IMAGES ----
-ECHO.
+ECHO ---------------------
 ECHO Preparing images (if any)...
 CD IMAGES
 for /L %%i in (0, 1, 9) do (CALL :CHECK_IF_COMPRESS 00%%i.SCR 00%%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=00%%i.CSC 00%%i.SCR  > nul 2>&1))
@@ -40,7 +40,7 @@ for /L %%i in (100, 1, 256) do (CALL :CHECK_IF_COMPRESS %%i.SCR %%i.CSC && (..\D
 CD ..
 
 REM  ---- COMPILING ADVENTURE ----
-ECHO.
+ECHO ---------------------
 ECHO Compiling the script...
 IF NOT exist .\tokens.json (
   rem Token file does not exists, create a new one
@@ -53,7 +53,7 @@ IF NOT exist .\tokens.json (
 )
 
 REM  ---- Making DISK ----
-ECHO.
+ECHO ---------------------
 ECHO Building the disk image...
 IF NOT EXIST tools\mkp3fs.exe (
   echo mkp3fs.exe file not found!
@@ -86,15 +86,22 @@ for /L %%i in (0, 1, 9) do IF exist IMAGES\00%%i.CSC (CALL SET "IMAGEFILES=%%IMA
 for /L %%i in (10, 1, 99) do IF exist IMAGES\0%%i.CSC (CALL SET "IMAGEFILES=%%IMAGEFILES%% IMAGES\0%%i.CSC")
 for /L %%i in (100, 1, 255) do IF exist IMAGES\%%i.CSC (CALL SET "IMAGEFILES=%%IMAGEFILES%% IMAGES\%%i.CSC")
 SET LISTFILES=%LISTFILES%%IMAGEFILES%
+
+SET TRACKFILES=
+for /L %%i in (0, 1, 9) do IF exist TRACKS\00%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\00%%i.PT3")
+for /L %%i in (10, 1, 99) do IF exist TRACKS\0%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\0%%i.PT3")
+for /L %%i in (100, 1, 255) do IF exist TRACKS\%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\%%i.PT3")
+SET LISTFILES=%LISTFILES%%TRACKFILES%
+
 IF EXIST %GAME%.DSK DEL %GAME%.DSK > nul 2>&1
 tools\mkp3fs.exe -180 -label %GAME% %GAME%.DSK %LISTFILES% > nul 2>&1
 IF ERRORLEVEL 1 GOTO ERROR
-ECHO.
+ECHO ---------------------
 ECHO Success!
 GOTO END
 
 :ERROR
-ECHO. 
+ECHO ---------------------
 ECHO Compile error, please check
 PAUSE
 :END
