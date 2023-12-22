@@ -264,12 +264,12 @@ Igual que `PICTURE`, pero usando el contenido de una variable como parámetro.
 ### DISPLAY expression
 
 Muestra el contenido actual del buffer en pantalla.  
-El parámetro indica si se muestra o no la imagen, con un 0 se muestra, y con un valor distinto de cero, no. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
+El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobreescrito.
 
 ### DISPLAY @ flag_no
 
-Igual que `DISPLAY`, pero el parámetro que indica si se muestra o no, lo toma de una variable.
+Igual que `DISPLAY`, pero el parámetro que indica si se muestra o no lo toma de una variable.
 
 ### WAIT expression
 
@@ -403,6 +403,30 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el segun
 ### IF flag_no > @ flag_no THEN GOTO labelId
 
 Si el contenido del flag indicado por el primer parámetro es mayor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
+
+### TRACK expression
+
+Carga en memoria el fichero de Vortex Tracker como parámentro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobreescribirá.
+
+### TRACK @ flag_no
+
+Igual que `TRACK`, pero el fichero a cargar viene del contenido de la variable del parámetro.
+
+### PLAY expression
+
+Si el parámetro es distinto de cero y la música está desactivada, reproduce la pista musical cargada. Si está en ese momento reproduciendo, y se pasa 0 como parámetro, para la reproducción.
+
+### PLAY @ flag_no
+
+Igual que `PLAY`, pero con el contenido del flag indicado.
+
+### LOOP expression
+
+Establece si al acabar la pista musical cargada en ese momento, se repite de nuevo o no. Un valor 0 significa falso y distinto de cero, verdadero.
+
+### LOOP @ flag_no
+
+Igual que `LOOP`, pero toma el parámetro del contenido de la variable indicada.
 
 ---
 
@@ -564,6 +588,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
 - Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
 - Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`, o puede que se haya borrado inadvertidamente la pantalla, y por tanto, las opciones.
+- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
+- Error 5: No hay un módulo de música cargado para realizar la operación.
 
 ---
 
@@ -579,3 +605,14 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 ---
 
 ## Licencia
+
+```plain
+
+Copyright (c) 2024 Sergio Chico
+
+Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
+
+El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
+EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
+
+```

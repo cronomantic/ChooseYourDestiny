@@ -23,7 +23,7 @@
 #
 
 import sys
-from cydc_font import CydcFont
+from .cydc_font import CydcFont
 
 
 class CydcCodegen(object):
@@ -93,6 +93,12 @@ class CydcCodegen(object):
         "TAB": 0x3B,
         "SFX_D": 0x3C,
         "SFX_I": 0x3D,
+        "TRACK_D": 0x3E,
+        "TRACK_I": 0x3F,
+        "PLAY_D": 0x40,
+        "PLAY_I": 0x41,
+        "LOOP_D": 0x42,
+        "LOOP_I": 0x43,
     }
 
     def __init__(self, gettext):

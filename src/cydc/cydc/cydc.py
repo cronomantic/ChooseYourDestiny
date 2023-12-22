@@ -29,10 +29,10 @@ import os
 import gettext
 import argparse
 import json
-from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
-from cydc_parser import CydcParser
-from cydc_codegen import CydcCodegen
-from cydc_font import CydcFont
+from .cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
+from .cydc_parser import CydcParser
+from .cydc_codegen import CydcCodegen
+from .cydc_font import CydcFont
 
 
 def main():

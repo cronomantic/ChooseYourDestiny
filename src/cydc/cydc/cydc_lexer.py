@@ -22,7 +22,7 @@
 # SOFTWARE.
 #
 
-import ply.lex as lex
+from .ply import lex as lex
 
 
 class CydcLexer(object):
@@ -72,8 +72,11 @@ class CydcLexer(object):
         "CHAR": "CHAR",
         "TAB": "TAB",
         "BRIGHT": "BRIGHT",
-        "FLASH" : "FLASH" ,
-        "SFX" : "SFX" ,
+        "FLASH" : "FLASH",
+        "SFX" : "SFX",
+        "TRACK" : "TRACK",
+        "PLAY" : "PLAY",
+        "LOOP" : "LOOP",
     }
 
     # token_list
