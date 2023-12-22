@@ -22,8 +22,8 @@
 # SOFTWARE.
 #
 
-import ply.yacc as yacc
-from cydc_lexer import CydcLexer
+from .ply import yacc as yacc
+from .cydc_lexer import CydcLexer
 
 
 class CydcParser(object):
@@ -314,17 +314,24 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_picture_dir(self, p):
-        "statement : PICTURE expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PICTURE_D", p[2])
-        else:
-            p[0] = None
-
     def p_statement_display_dir(self, p):
         "statement : DISPLAY expression"
         if self._check_byte_value(p[2]):
             p[0] = ("DISPLAY_D", p[2])
+        else:
+            p[0] = None
+
+    def p_statement_picture_ind(self, p):
+        "statement : PICTURE INDIRECTION expression"
+        if self._check_byte_value(p[3]):
+            p[0] = ("PICTURE_I", p[3])
+        else:
+            p[0] = None
+
+    def p_statement_picture_dir(self, p):
+        "statement : PICTURE expression"
+        if self._check_byte_value(p[2]):
+            p[0] = ("PICTURE_D", p[2])
         else:
             p[0] = None
 
@@ -346,6 +353,48 @@ class CydcParser(object):
         "statement : TYPERATE expression"
         if self._check_word_value(p[2]):
             p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        else:
+            p[0] = None
+
+    def p_statement_track_ind(self, p):
+        "statement : TRACK INDIRECTION expression"
+        if self._check_byte_value(p[3]):
+            p[0] = ("TRACK_I", p[3])
+        else:
+            p[0] = None
+
+    def p_statement_track_dir(self, p):
+        "statement : TRACK expression"
+        if self._check_byte_value(p[2]):
+            p[0] = ("TRACK_D", p[2])
+        else:
+            p[0] = None
+
+    def p_statement_play_ind(self, p):
+        "statement : PLAY INDIRECTION expression"
+        if self._check_byte_value(p[3]):
+            p[0] = ("PLAY_I", p[3])
+        else:
+            p[0] = None
+
+    def p_statement_play_dir(self, p):
+        "statement : PLAY expression"
+        if self._check_byte_value(p[2]):
+            p[0] = ("PLAY_D", p[2])
+        else:
+            p[0] = None
+
+    def p_statement_loop_ind(self, p):
+        "statement : LOOP INDIRECTION expression"
+        if self._check_byte_value(p[3]):
+            p[0] = ("LOOP_I", p[3])
+        else:
+            p[0] = None
+
+    def p_statement_loop_dir(self, p):
+        "statement : LOOP expression"
+        if self._check_byte_value(p[2]):
+            p[0] = ("LOOP_D", p[2])
         else:
             p[0] = None
 
