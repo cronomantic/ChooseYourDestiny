@@ -5,7 +5,18 @@
     BRIGHT 1
     FLASH 0
     PAPER 0
+    TRACK 0
     WAIT 75
+    CLEAR
+]]¿Quieres escuchar música?
+[[OPTION GOTO MusicaSi]]Si
+[[OPTION GOTO MusicaNo]]No
+[[
+    CHOOSE
+    LABEL MusicaSi
+    LOOP 1
+    PLAY 1
+    LABEL MusicaNo
     CLEAR
 ]]Elige una opción:
 
