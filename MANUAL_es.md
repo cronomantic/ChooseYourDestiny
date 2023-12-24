@@ -4,17 +4,15 @@ El programa es un interprete para ejecutar historias de tipo "Escoje tu propia a
 
 Consiste una máquina virtual que va intepretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje mas "humano" con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
 
-El intérprete lee en cada momento un trozo de la aventura llamado "chunk" o "trozo" que ocupa 16 Kbytes, el mismo tamaño que el banco del Spectrum. El compilador divide el guión en estos fragmentos y ajusta de forma correspondiente las referencias en los saltos. Cuando el intérprete debe cambiar en "trozo" en ejecución, descarta el que haya cargado y carga el nuevo desde disco.
-
-Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru.
+Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
 ---
 
 ## CYDC (Compilador)
 
-Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la lógica de la aventura, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
+Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
-```
+```batch
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
@@ -42,15 +40,19 @@ Este es el motor principal del juego, y que debe incluirse en el disco junto con
 
 La aventura se puede lanzar con en autolanzador del menú de inicio del Spectrum +3 o desde Basic con el comando `LOAD"DISK"`.
 
-Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC y efectos de sonido añadiendo un fichero generado con BeepFx llamado `SFX.BIN`. Mas información en las secciones relevantes.
+Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC, melodías de Vortex Tracker y efectos de sonido añadiendo un fichero generado con BeepFx llamado `SFX.BIN`. Mas información en las secciones relevantes.
+
+El funcionamiento del motor consiste en un intérprete que carga desde disco un trozo de la aventura llamado "chunk" o "trozo" que ocupa 16 Kbytes (el mismo tamaño que el banco del Spectrum) y va imprimiendo los textos comprimidos o ejecutando los comandos incluidos en éste de forma secuencial, aunque hay comandos de salto que pueden alterar el flujo de ejecución de forma obligatoria o condicional. Cuando el intérprete debe cambiar en "trozo" en ejecución, descarta el que haya cargado y carga el nuevo "trozo" a ejecutar desde disco.
+
+El compilador se encarga de covertir el guión de la aventura en un fichero binario dividido estos "trozos" y ajusta de forma correspondiente las referencias en los saltos.
 
 ---
 
 ## CSC (Compresor de Imágenes)
 
-Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose forzar este comportamiento descartando el lado derecho de la imagen.
+Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```
+```batch
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -69,14 +71,14 @@ Esto es una definición de los parámetros:
 
 El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.CSC`, la imagen número 1 `001.CSC`, y así hasta 255.
 
+Éstos ficheros deben incluirse en el disco.
+
 ---
 
 ## Sintaxis
 
 La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.  
-Los comandos para el intérprete se delimita dentro de dos pares de corchetes, abiertos y cerrados respectivamente.  
-Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
-Este es un ejemplo resumido y auto-explicativo de la sintaxis:
+Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea. Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 
 ```
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
@@ -110,14 +112,14 @@ Elige una opción:
 ```
 
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
-Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 8 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
+Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 16 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
 Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL Opcion1`, con lo que imprimirá el texto _"Has elegido la opción 1"_, y después pasa a `GOTO final` que hará un salto incondicional a donde está definido `LABEL Final`, motrando "_Gracias por jugar_" e ignorando todo lo que haya entre medias.
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
-Además, hay a disposición del programador 256 variables o 'flags' de un byte para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
+Además, hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
 
 Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado no es el valor a utilizar, si no que el valor lo obtiene de la variable indicada. Es decir:
 
@@ -127,6 +129,8 @@ INK @7
 ```
 
 El primer comando pondrá el color del texto en blanco (color 7), mientras que el segundo pondrá el color del texto con el valor contenido en la variable número 7.
+
+En la siguiente sección se encuentran descritos todos los comandos disponibles.
 
 ---
 
@@ -204,7 +208,7 @@ Controla si al rellenar el área de texto actual, debe solicitar continuar al ju
 
 ### INK expression
 
-Define el valor del color de los caracteres (tinta). Valores de 0-7.
+Define el valor del color de los caracteres (tinta). Valores de 0-7, correspondientes a los colores del Spectrum.
 
 ### INK @ flag_no
 
@@ -212,7 +216,7 @@ Igual que ´INK´ pero usando indirección con un flag cuyo contenido será el c
 
 ### PAPER expression
 
-Define el valor del color del fondo (papel). Valores de 0-7.
+Define el valor del color del fondo (papel). Valores de 0-7, correspondientes a los colores del Spectrum.
 
 ### PAPER @ flag_no
 
@@ -432,7 +436,7 @@ Igual que `LOOP`, pero toma el parámetro del contenido de la variable indicada.
 
 ## Imágenes
 
-Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.
+Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.  
 Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imágen 0, `001.CSC` para la imagen 1, y así con el resto.
 
 Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar ésto con otro parámetro de la misma.
@@ -452,6 +456,16 @@ Añadir efectos de sonido con el beeper es muy sencillo. Para ello tenemos que c
 Este fichero habrá que añadirlo posteriormente a la imagen de disco. Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efecto a reproducir. Si se llama a este comando sin que exista un fichero de efectos cargado, será ignorado y seguirá la ejecución.
 
 No está contemplado llamar a un número de efecto que no exista en el fichero incluido.
+
+---
+
+## Melodías
+
+El motor `CYD` también permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará el fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes.
+
+Una vez cargado un módulo, se prodrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
+
+Cuando se llegue al final del módulo, la reproducción se detendrá automáticamente, pero podemos cambiar este comportamiento con el comando `LOOP`. De nuevo, según se indica en la referencia, si el parámetro es igual a cero, al llegar al final se detendrá la reproducción, como se ha indicado antes. Pero si el parámetro es distinto de cero, el módulo volverá a reproducirse desde el principio.
 
 ---
 
@@ -477,11 +491,11 @@ El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que
 Como ejemplo y para Windows, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#Sintaxis).  
 y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probrarla.
 
-Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
+Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
-```
+```batch
 
 REM Name of the game
 SET GAME=test
@@ -537,7 +551,7 @@ El compilador dispone de dos parámetros, `-c` para importar un juego de caracte
 
 Este es el formato de importación/exportación del juego de caracteres:
 
-```
+```python
 {"Character": [255, 128, ...], "Width":[8, 6, ...]}
 ```
 
@@ -589,7 +603,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
 - Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`, o puede que se haya borrado inadvertidamente la pantalla, y por tanto, las opciones.
 - Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
-- Error 5: No hay un módulo de música cargado para realizar la operación.
+- Error 5: No hay un módulo de música cargado para reproducir.
 
 ---
 
@@ -614,5 +628,4 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
-
 ```
