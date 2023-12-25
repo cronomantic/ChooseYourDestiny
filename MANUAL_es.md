@@ -488,7 +488,7 @@ Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, ten
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#Sintaxis).  
+Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#Sintaxis).  
 y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probrarla.
 
 Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
