@@ -28,7 +28,7 @@ try:
     import progressbar
 
     pbarAvailable = True
-except:
+except ImportError:
     pbarAvailable = False
 
 
@@ -38,52 +38,18 @@ NUM_TOKENS = 128
 class CydcTextCompressor(object):
     def __init__(self, gettext, superset_limit, verbose=False):
         self._ = gettext.gettext
-        self.special_chars = [c.decode("iso-8859-15") for c in self.special_characters]
         self.superset_limit = superset_limit
         self.verbose = verbose
         self.num_tokens = NUM_TOKENS
 
-    special_characters = (
-        b"\xAA",
-        b"\xA1",
-        b"\xBF",
-        b"\xAB",
-        b"\xBB",
-        b"\xE1",
-        b"\xE9",
-        b"\xED",
-        b"\xF3",
-        b"\xFA",
-        b"\xF1",
-        b"\xD1",
-        b"\xFC",
-        b"\xDC",
-    )
-
-    def _replace_chars(self, old_string):
-        """Replace carriage returns and special characters"""
-        new_string = ""
-        for char in old_string:
-            if ord(char) > 127:
-                try:
-                    char = self.special_chars.index(char) + 16
-                except:
-                    char = ord(char)
-            elif char == "\n":
-                char = ord("\r")
-            else:
-                char = ord(char)
-            new_string += chr(char)
-        return new_string
-
     def _token_counter(self, strings, min_len, max_len):
-        """  
+        """
         Returns how may times every character combination appears on the given strings, and
         how much savings you get with them.
         strings: strings to process
         minAbrev: Min lenght of found tokens
         maxLenToken: Max lenght of found tokens
-    """
+        """
         savings = {}
         tokens = {}
         for string in strings:
@@ -102,13 +68,13 @@ class CydcTextCompressor(object):
                         tokens[token] = 1
         return (savings, tokens)
 
-    """
-        Returns the optimal abbreviations, and the lengths of the strings after the substitution.
-        maxLenToken: Max token lenght
-        strings: Strings to compress
-    """
-
     def _generate_tokens(self, strings, max_len_token):
+        """
+        Returns the optimal abbreviations, and the lengths of the strings after the substitution.
+        strings: Strings to compress
+        max_len_token: Max token lenght
+        """
+
         len_after = 0  # Max string lenght after token substitution
         min_len_token = 2  # Minimal token lenght
         # Tomamos las mejores tokens
@@ -191,18 +157,8 @@ class CydcTextCompressor(object):
         lenBefore = 0  # Total length before compressing
         texts = []  # strings to compress with tokens
         for string in strings:
-            string = self._replace_chars(string)
             texts.append(string)
             lenBefore += len(string) + 1
-
-        for string in strings:
-            for char in string:
-                if ord(char) > 255:
-                    sys.exit(
-                        self._(
-                            f"ERROR: Invalid character.{ord(char)} - {char} in {string}"
-                        )
-                    )
 
         if self.verbose:
             print(self._("Length of texts without compression:"), lenBefore)
@@ -225,9 +181,7 @@ class CydcTextCompressor(object):
                 except KeyboardInterrupt:
                     break
                 if len_token < minLength:
-                    tokens = (
-                        posibles  # Token set with maximum reduction
-                    )
+                    tokens = posibles  # Token set with maximum reduction
                     minLength = len_token  # Max. reduction archieved
                     maxLen = maxLenToken  # Max. lenght tokens
             print(lenBefore - minLength, self._("bytes saved from text compression"))
@@ -248,11 +202,6 @@ class CydcTextCompressor(object):
                 tokens.append(chr(127))
             # Set this as the first token
             tokens = [chr(127)] + tokens
-
-            tokensTmp = []
-            for token in tokens:
-                tokensTmp.append(self._replace_chars(token))
-            tokens = tokensTmp
 
             if self.verbose:
                 print(self._("Calculating savings..."))
@@ -317,7 +266,6 @@ class CydcTextCompressor(object):
                 else:
                     # byte = hex(ord(char))[2:].zfill(2)
                     byte = ord(char)
-
                 tokenBytes.append(byte)
                 remnant -= 1
 
