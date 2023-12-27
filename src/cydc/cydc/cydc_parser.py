@@ -40,8 +40,10 @@ class CydcParser(object):
 
     def p_script(self, p):
         """
-        script : script TEXT
+        script : script ERROR_TEXT
+               | script TEXT
                | script code
+               | ERROR_TEXT
                | TEXT
                | code
         """
@@ -49,6 +51,16 @@ class CydcParser(object):
             p[0] = []
             if isinstance(p[1], list):
                 p[0] += p[1]
+            elif isinstance(p[1], tuple):
+                t = p[1]
+                if t[0] == "ERROR_TEXT":
+                    for err in t[1]:
+                        self.errors.append(
+                            f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]+1}"
+                        )
+                    p[0] = None
+                else:
+                    p[0].append(p[1])
             else:
                 p[0].append(p[1])
         elif len(p) == 3:
@@ -58,6 +70,16 @@ class CydcParser(object):
             if p[2]:
                 if isinstance(p[2], list):
                     p[0] += p[2]
+                elif isinstance(p[2], tuple):
+                    t = p[2]
+                    if t[0] == "ERROR_TEXT":
+                        for err in t[1]:
+                            self.errors.append(
+                                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]+1}"
+                            )
+                        p[0] = None
+                    else:
+                        p[0].append(p[2])
                 else:
                     p[0].append(p[2])
 
@@ -71,14 +93,13 @@ class CydcParser(object):
         elif len(p) == 3 and p[1]:
             p[0] = p[1]
 
-
     def p_program(self, p):
         """
         program : program statements_nl
                 | program statements
                 | statements_nl
                 | statements
-                
+
         """
         if len(p) == 2 and p[1]:
             p[0] = []
@@ -95,7 +116,6 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
-
 
     def p_statements_nl(self, p):
         """
