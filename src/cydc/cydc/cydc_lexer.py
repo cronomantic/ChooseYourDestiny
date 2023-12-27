@@ -29,6 +29,25 @@ class CydcLexer(object):
     def __init__(self):
         self.lexer = None
         self.txt_pos = 0
+        self.special_chars = [
+            c.decode("iso-8859-15")
+            for c in (
+                b"\xAA",
+                b"\xA1",
+                b"\xBF",
+                b"\xAB",
+                b"\xBB",
+                b"\xE1",
+                b"\xE9",
+                b"\xED",
+                b"\xF3",
+                b"\xFA",
+                b"\xF1",
+                b"\xD1",
+                b"\xFC",
+                b"\xDC",
+            )
+        ]
 
     states = (
         ("code", "exclusive"),
@@ -72,15 +91,23 @@ class CydcLexer(object):
         "CHAR": "CHAR",
         "TAB": "TAB",
         "BRIGHT": "BRIGHT",
-        "FLASH" : "FLASH",
-        "SFX" : "SFX",
-        "TRACK" : "TRACK",
-        "PLAY" : "PLAY",
-        "LOOP" : "LOOP",
+        "FLASH": "FLASH",
+        "SFX": "SFX",
+        "TRACK": "TRACK",
+        "PLAY": "PLAY",
+        "LOOP": "LOOP",
     }
 
     # token_list
-    tokens = ["OPEN_CODE", "CLOSE_CODE", "TEXT", "COLON", "ERROR_OPEN_CODE", "NEWLINE"]
+    tokens = [
+        "OPEN_CODE",
+        "CLOSE_CODE",
+        "TEXT",
+        "COLON",
+        "ERROR_OPEN_CODE",
+        "NEWLINE",
+        "ERROR_TEXT",
+    ]
     tokens += ["DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
     tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "LPAREN", "RPAREN"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
@@ -90,8 +117,7 @@ class CydcLexer(object):
         r"\[\["
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos - 2]
         if len(string) > 0:
-            t.type = "TEXT"
-            t.value = ("TEXT", string)
+            t.type, t.value = self._parse_string(string, t.lexer.lineno)
             t.lexer.begin("code")  # Enter 'ccode' state
             return t
         else:
@@ -119,12 +145,8 @@ class CydcLexer(object):
         return t
 
     def t_INITIAL_NEWLINE(self, t):
-        r"\n+"
-        t.lexer.lineno += t.value.count("\n")
-        return None
-
-    def t_code_COMMENT(self, t):
-        r"--.*"
+        r"(\n|\r|\r\n)+"
+        # t.lexer.lineno += t.value.count("\n")
         return None
 
     t_code_COLON = r":"
@@ -174,8 +196,7 @@ class CydcLexer(object):
     def t_INITIAL_eof(self, t):
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos]
         if len(string) > 0:
-            t.type = "TEXT"
-            t.value = ("TEXT", string)
+            t.type, t.value = self._parse_string(string, t.lexer.lineno)
             self.txt_pos = t.lexer.lexpos
             return t
         else:
@@ -207,6 +228,45 @@ class CydcLexer(object):
             if not tok:
                 break
             print(tok)
+
+    def _replace_chars(self, old_string):
+        """Replace carriage returns and special characters"""
+        new_string = ""
+        for char in old_string:
+            if ord(char) > 127:
+                try:
+                    char = self.special_chars.index(char) + 16
+                except ValueError:
+                    char = ord(char)
+            elif char == "\n":
+                char = ord("\r")
+            else:
+                char = ord(char)
+            new_string += chr(char)
+        return new_string
+
+    def _parse_string(self, old_string, current_line):
+        """parse to check if string is correct"""
+        new_string = self._replace_chars(old_string)
+        pos = 0
+        line = current_line
+        errors = []
+        for char in new_string:
+            if ord(char) == ord("\r"):
+                pos = 0
+                line += 1
+            elif ord(char) > 127:
+                errors.append((line, pos, char))
+                pos += 1
+            else:
+                pos += 1
+        if len(errors) > 0:
+            token_type = "ERROR_TEXT"
+            token_value = ("ERROR_TEXT", errors)
+        else:
+            token_type = "TEXT"
+            token_value = ("TEXT", new_string)
+        return token_type, token_value
 
 
 if __name__ == "__main__":

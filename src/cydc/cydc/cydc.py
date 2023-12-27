@@ -264,6 +264,7 @@ def main():
             fco.write(font.getJson())
 
     ######################################################################
+            
     if verbose:
         print(_("Generating final bytecode..."))
 
