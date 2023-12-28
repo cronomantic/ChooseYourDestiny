@@ -6,13 +6,97 @@ Consiste una máquina virtual que va intepretando "tokens" que se encuentra dura
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
+
+- [Choose Your Destiny](#choose-your-destiny)
+  - [CYDC (Compilador)](#cydc-compilador)
+  - [CYD (Motor)](#cyd-motor)
+  - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
+  - [Sintaxis](#sintaxis)
+  - [Comandos](#comandos)
+    - [END](#end)
+    - [CLEAR](#clear)
+    - [GOTO labelId](#goto-labelid)
+    - [GOSUB labelId](#gosub-labelid)
+    - [RETURN](#return)
+    - [LABEL labelId](#label-labelid)
+    - [CENTER](#center)
+    - [WAITKEY](#waitkey)
+    - [OPTION GOTO labelId](#option-goto-labelid)
+    - [CHOOSE](#choose)
+    - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
+    - [INKEY expression](#inkey-expression)
+    - [CHAR expression](#char-expression)
+    - [PRINT expression](#print-expression)
+    - [PRINT @ flag\_no](#print--flag_no)
+    - [TAB expression](#tab-expression)
+    - [PAGEPAUSE expression](#pagepause-expression)
+    - [INK expression](#ink-expression)
+    - [INK @ flag\_no](#ink--flag_no)
+    - [PAPER expression](#paper-expression)
+    - [PAPER @ flag\_no](#paper--flag_no)
+    - [BORDER expression](#border-expression)
+    - [BORDER @ flag\_no](#border--flag_no)
+    - [BRIGHT expression](#bright-expression)
+    - [BRIGHT @ flag\_no](#bright--flag_no)
+    - [FLASH expression](#flash-expression)
+    - [FLASH @ flag\_no](#flash--flag_no)
+    - [SFX expression](#sfx-expression)
+    - [SFX @ flag\_no](#sfx--flag_no)
+    - [PICTURE expression](#picture-expression)
+    - [PICTURE @ flag\_no](#picture--flag_no)
+    - [DISPLAY expression](#display-expression)
+    - [DISPLAY @ flag\_no](#display--flag_no)
+    - [WAIT expression](#wait-expression)
+    - [PAUSE expression](#pause-expression)
+    - [TYPERATE expression](#typerate-expression)
+    - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
+    - [AT expression, expression](#at-expression-expression)
+    - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
+    - [SET NOT flag\_no](#set-not-flag_no)
+    - [SET flag\_no TO expression](#set-flag_no-to-expression)
+    - [SET flag\_no TO @ flag\_no](#set-flag_no-to--flag_no)
+    - [SET flag\_no ADD expression](#set-flag_no-add-expression)
+    - [SET flag\_no ADD @ flag\_no](#set-flag_no-add--flag_no)
+    - [SET flag\_no SUB expression](#set-flag_no-sub-expression)
+    - [SET flag\_no SUB @ flag\_no](#set-flag_no-sub--flag_no)
+    - [SET flag\_no AND expression](#set-flag_no-and-expression)
+    - [SET flag\_no AND @ flag\_no](#set-flag_no-and--flag_no)
+    - [SET flag\_no OR expression](#set-flag_no-or-expression)
+    - [SET flag\_no OR @ flag\_no](#set-flag_no-or--flag_no)
+    - [IF flag\_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
+    - [IF flag\_no = @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
+    - [IF flag\_no \<\> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
+    - [IF flag\_no \<\> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
+    - [IF flag\_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
+    - [IF flag\_no \<= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
+    - [IF flag\_no \>= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
+    - [IF flag\_no \>= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
+    - [IF flag\_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
+    - [IF flag\_no \< @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
+    - [IF flag\_no \> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
+    - [IF flag\_no \> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
+    - [TRACK expression](#track-expression)
+    - [TRACK @ flag\_no](#track--flag_no)
+    - [PLAY expression](#play-expression)
+    - [PLAY @ flag\_no](#play--flag_no)
+    - [LOOP expression](#loop-expression)
+    - [LOOP @ flag\_no](#loop--flag_no)
+  - [Imágenes](#imágenes)
+  - [Efectos de sonido](#efectos-de-sonido)
+  - [Melodías](#melodías)
+  - [Cómo generar una aventura](#cómo-generar-una-aventura)
+  - [Juego de caracteres](#juego-de-caracteres)
+  - [Códigos de error](#códigos-de-error)
+  - [Referencias y agradecimientos](#referencias-y-agradecimientos)
+  - [Licencia](#licencia)
+
 ---
 
 ## CYDC (Compilador)
 
 Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
-```
+```batch
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
@@ -52,7 +136,7 @@ El compilador se encarga de covertir el guión de la aventura en un fichero bina
 
 Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```
+```batch
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -477,7 +561,7 @@ Cuando se llegue al final del módulo, la reproducción se detendrá automática
 
 Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
 
-Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Carácteres](#Juego-de-caracteres), que serán convertidos a los códigos allí indicados.
+Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Carácteres](#juego-de-caracteres), que serán convertidos a los códigos allí indicados.
 
 Una vez tenemos la aventura, usamos el compilador `CYDC` para generar el fichero **SCRIPT.DAT**. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
@@ -492,15 +576,14 @@ Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, ten
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#Sintaxis).  
+Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis).  
 y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probrarla.
 
 Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
-```
-
+```batch
 REM Name of the game
 SET GAME=test
 REM This name will be used as:
@@ -626,7 +709,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ## Licencia
 
-```
+```plain
 
 Copyright (c) 2023 Sergio Chico
 
