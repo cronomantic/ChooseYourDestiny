@@ -56,7 +56,7 @@ class CydcParser(object):
                 if t[0] == "ERROR_TEXT":
                     for err in t[1]:
                         self.errors.append(
-                            f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]+1}"
+                            f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
                         )
                     p[0] = None
                 else:
@@ -75,7 +75,7 @@ class CydcParser(object):
                     if t[0] == "ERROR_TEXT":
                         for err in t[1]:
                             self.errors.append(
-                                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]+1}"
+                                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
                             )
                         p[0] = None
                     else:

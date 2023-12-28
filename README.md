@@ -1,5 +1,7 @@
 # ChooseYourDestiny
 
+![ChooseYourDestiny](./assets/logo.jpg)
+
 An interpreter to run choose-your-own-adventure stories or optional adventures, for the Spectrum +3.
 
 It consists of a virtual machine that interprets "tokens" found during the text to perform the different interactive actions and a compiler that is responsible for translating the adventure from a more "human" language to a binary file interpretable by the engine.
