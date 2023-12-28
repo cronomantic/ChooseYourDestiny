@@ -12,7 +12,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
-```batch
+```
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
@@ -52,7 +52,7 @@ El compilador se encarga de covertir el guión de la aventura en un fichero bina
 
 Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```batch
+```
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -77,14 +77,18 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 ## Sintaxis
 
-La sintaxis del guión es sencilla, y está orientada más a la escritura y la presentación que a la lógica programable.  
-Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea. Este es un ejemplo resumido y auto-explicativo de la sintaxis:
+Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
+
+Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que haya en medio se considera un comentario.
+
+Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 
 ```
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Sigue siendo texto [[
         WAITKEY
         INK 7: PAPER 0
+        /* Esto es un comentario */
     ]]
     Esto vuelve a ser texto pero blanco, y ¡ojo con el salto de línea que lo precede!
 ```
@@ -108,7 +112,7 @@ Elige una opción:
 [[
     GOTO Final
     LABEL Opcion3]]Has elegido la opción 3.
-[[  LABEL Final ]] Gracias por jugar.
+[[  LABEL Final ]] Gracias por jugar.[[WAITKEY]]
 ```
 
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
@@ -121,7 +125,7 @@ Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (c
 
 Además, hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
 
-Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado no es el valor a utilizar, si no que el valor lo obtiene de la variable indicada. Es decir:
+Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado no es el valor a utilizar, sino que el valor lo obtiene de la variable indicada. Es decir:
 
 ```
 INK 7
@@ -495,7 +499,7 @@ Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al c
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
-```batch
+```
 
 REM Name of the game
 SET GAME=test
@@ -614,13 +618,15 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
-- Ximo, El_Mesías y Arnau Jess por el apoyo.
+- Ximo por su inestimable ayuda.
+- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
+- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
 ---
 
 ## Licencia
 
-```plain
+```
 
 Copyright (c) 2023 Sergio Chico
 

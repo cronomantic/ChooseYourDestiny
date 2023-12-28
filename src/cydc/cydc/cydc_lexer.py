@@ -124,6 +124,10 @@ class CydcLexer(object):
             t.lexer.begin("code")
             return None
 
+    def t_code_comment(self, t):
+        r'/\*(.|\n|\r|\r\n)*?\*/'
+        return None
+
     def t_code_OPEN_CODE(self, t):
         r"\[\["
         t.type = "ERROR_OPEN_CODE"
