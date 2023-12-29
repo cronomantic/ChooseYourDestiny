@@ -188,8 +188,7 @@ De nuevo, éste es un ejemplo autoexplicativo:
    INK   7
    BORDER 0
    CLEAR
-]][[ LABEL Localidad1]]
-Estás en la localidad 1. ¿Donde quieres ir?
+   LABEL Localidad1]]Estás en la localidad 1. ¿Donde quieres ir?
 [[OPTION GOTO Localidad2]]Ir a la localidad 2
 [[OPTION GOTO Localidad3]]Ir a la localidad 3
 [[CHOOSE]]
