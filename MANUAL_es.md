@@ -6,7 +6,6 @@ Consiste una máquina virtual que va intepretando "tokens" que se encuentra dura
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
-
 - [Choose Your Destiny](#choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CYD (Motor)](#cyd-motor)
@@ -87,6 +86,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
+  - [F.A.Q](#faq)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
   - [Licencia](#licencia)
 
@@ -96,7 +96,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
-```batch
+```
 cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
@@ -136,7 +136,7 @@ El compilador se encarga de covertir el guión de la aventura en un fichero bina
 
 Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```batch
+```cmd
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -170,9 +170,9 @@ Este es un ejemplo resumido y auto-explicativo de la sintaxis:
 ```
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Sigue siendo texto [[
+         /* Esto es un comentario y lo siguiente son comandos */
         WAITKEY
         INK 7: PAPER 0
-        /* Esto es un comentario */
     ]]
     Esto vuelve a ser texto pero blanco, y ¡ojo con el salto de línea que lo precede!
 ```
@@ -183,29 +183,30 @@ Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que
 De nuevo, éste es un ejemplo autoexplicativo:
 
 ```
-Elige una opción:
-[[OPTION GOTO Opcion1]]Primera opción.
-[[OPTION GOTO Opcion2]]Segunda opción.
-[[OPTION GOTO Opcion3]]Tercera opción.
-[[
-    CHOOSE
-    LABEL Opcion1]]Has elegido la opción 1.
-[[
-    GOTO Final
-    LABEL Opcion2]]Has elegido la opción 2.
-[[
-    GOTO Final
-    LABEL Opcion3]]Has elegido la opción 3.
-[[  LABEL Final ]] Gracias por jugar.[[WAITKEY]]
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0
+   INK   7
+   BORDER 0
+   CLEAR
+]][[ LABEL Localidad1]]
+Estás en la localidad 1. ¿Donde quieres ir?
+[[OPTION GOTO Localidad2]]Ir a la localidad 2
+[[OPTION GOTO Localidad3]]Ir a la localidad 3
+[[CHOOSE]]
+[[ LABEL Localidad2]]¡¡¡Lo lograste!!!
+[[ GOTO Final]]
+[[ LABEL Localidad3]]¡¡¡Estas muerto!!!
+[[ GOTO Final]]
+[[ LABEL Final : WAITKEY: END ]]
 ```
 
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 16 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
 Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
-En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL Opcion1`, con lo que imprimirá el texto _"Has elegido la opción 1"_, y después pasa a `GOTO final` que hará un salto incondicional a donde está definido `LABEL Final`, motrando "_Gracias por jugar_" e ignorando todo lo que haya entre medias.
+En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
 
-Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
+Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
 Además, hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
 
@@ -694,6 +695,16 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ---
 
+## F.A.Q
+
+1.  **Mi antivirus da un aviso al ejecutar cydc.exe en Windows.**  
+    `cydc` está hecho con Python, y necesita tener el entorno de ejecución instalado. Para evitar inconveniencias al usuario, se ha utilizado la herramienta PyInstaller, que crea un ejecutable que aglutina un entorno de ejecución Python reducido y el programa `cydc`.  
+    Sin embargo, este comportamiento puede hacer disparar la alerta heurística de los antivirus y dar un falso positivo. Para evitar ésto hay dos posibles opciones:
+    1. Añadir una excepción al antivirus para que ignore el ejecutable.
+    2. Instalar Python y ejecutar directamente los scripts que hay dentro de la carpeta `src/cydc`.
+
+---
+
 ## Referencias y agradecimientos
 
 - David Beazley por [PLY](https://www.dabeaz.com/ply/ply.html)
@@ -701,6 +712,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
+- [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - Ximo por su inestimable ayuda.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
@@ -709,7 +721,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ## Licencia
 
-```plain
+```
 
 Copyright (c) 2023 Sergio Chico
 
