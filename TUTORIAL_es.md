@@ -1,5 +1,7 @@
 # Tutorial de Choose Your Destiny
 
+(En progreso)
+
 - [Tutorial de Choose Your Destiny](#tutorial-de-choose-your-destiny)
   - [Instalación](#instalación)
     - [Windows](#windows)
@@ -240,4 +242,3 @@ Si elegimos la primera opción, nos sale esto:
 Y si elegimos la segunda:
 
 ![Pantalla 5](assets/tut008.png)
-
