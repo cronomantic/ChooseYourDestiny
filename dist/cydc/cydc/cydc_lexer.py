@@ -125,7 +125,8 @@ class CydcLexer(object):
             return None
 
     def t_code_comment(self, t):
-        r'/\*(.|\n|\r|\r\n)*?\*/'
+        r"/\*(.|\n|\r|\r\n)*?\*/"
+        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
     def t_code_OPEN_CODE(self, t):
@@ -135,7 +136,7 @@ class CydcLexer(object):
 
     def t_code_CLOSE_CODE(self, t):
         r"\]\]"
-        t.lexer.lineno += t.value.count("\n")
+        # t.lexer.lineno += t.value.count("\n")
         self.txt_pos = t.lexer.lexpos
         t.lexer.begin("INITIAL")
         return t
@@ -145,12 +146,12 @@ class CydcLexer(object):
 
     def t_code_NEWLINE(self, t):
         r"(\n|\r|\r\n)+"
-        t.lexer.lineno += t.value.count("\n")
+        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return t
 
     def t_INITIAL_NEWLINE(self, t):
         r"(\n|\r|\r\n)+"
-        # t.lexer.lineno += t.value.count("\n")
+        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
     t_code_COLON = r":"
@@ -271,6 +272,13 @@ class CydcLexer(object):
             token_type = "TEXT"
             token_value = ("TEXT", new_string)
         return token_type, token_value
+
+    def _count_newlines(self, num_r, num_n):
+        if num_n == 0 and num_r == 0:
+            return 0
+        elif num_n == 0 and num_r > 0:
+            return num_r
+        return num_n
 
 
 if __name__ == "__main__":
