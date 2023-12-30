@@ -9,6 +9,14 @@
   - [Formato del fichero fuente](#formato-del-fichero-fuente)
   - [Saltos y etiquetas](#saltos-y-etiquetas)
   - [Opciones](#opciones)
+  - [Esperas](#esperas)
+  - [Formato del texto](#formato-del-texto)
+  - [Imágenes](#imágenes)
+  - [Efectos de sonido](#efectos-de-sonido)
+  - [Música](#música)
+  - [Variables e indirecciones](#variables-e-indirecciones)
+
+---
 
 ## Instalación
 
@@ -17,6 +25,8 @@
 Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYourDestiny.Win64.zip de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada Tutorial que puedes crear donde creas conveniente.
 
 El ejecutable para compilar aventuras se llama `MakeAdv.bat`, si al ejecutarlo te da error el antivirus, es debido a que el compilador tiene incorporado un entorno Python que puede hacer dar un falso positivo al detector heurístico de éstos. Para evitarlo, puedes añadir una excepción al archivo `dist\cydc.exe` en tu antivirus.
+
+---
 
 ## Preparando nuestra primera aventura
 
@@ -163,6 +173,8 @@ Un último punto son los comentarios. Dentro del código podemos poner comentari
 
 Con esto ya deberías tener una buena noción de cómo funciona el código fuente de CYD.
 
+---
+
 ## Saltos y etiquetas
 
 En el ejemplo del capítulo anterior, habrás notado que cuando pulsamos la tecla de selección, se resetea el Spectrum. Eso es debido a que al pulsar la tecla de validación (estando en espera con WAITKEY), llega al final del fichero. Cuando ésto sucede, se reinicia el Spectrum. Podemos hacer lo mismo usando el comando END en cualquier parte del código.
@@ -201,13 +213,15 @@ Sin embargo, podemos mejorar el ejemplo así:
 ]]
 ```
 
-Ahora la etiqueta está declarada justo antes del borrado de la pantalla, y allí irá cuando se alcance el GOTO, dejando sin ejecutar de nuevo el INK y el BRIGHT. ¿Por qué? Pues porque ya no es necesario ejecutarlos de nuevo, ya hemos puesto el color del texto y el brillo al principio y ¡ponerlos de nuevo es redundante!
+Ahora la etiqueta está declarada justo antes del borrado de la pantalla, y allí irá cuando se alcance el GOTO, dejando sin ejecutar de nuevo el INK y el BRIGHT. ¿Por qué? Pues porque ya no es necesario ejecutarlos otra vez, ya hemos puesto el color del texto y el brillo al principio y ¡ejecutarlos de nuevo es redundante!
 
 El concepto de etiquetas y saltos es fundamental para comprender cómo hacer un "Elige tu propia aventura", ya que presentaremos opciones al jugador, y dependiendo de esas opciones, iremos de un lugar a otro del texto.
 
-Un importante detalle es el formato de los identificadores de etiquetas. Éstos sólo pueden ser una **secuencia de cifras y letras, sin espacios y deben empezar por una letra**. Es decir, `LABEL 1` o `LABEL La Etiqueta` no son válidos, pero `LABEL l1` o `LABEL LaEtiqueta` sí lo son. Además son sensibles al caso, es decir, que **se distinguen mayúsculas y minúsculas**, con lo que `LABEL Etiqueta` y `LABEL etiqueta` no son la misma etiqueta. Y, obviamente, no se puede declarar una etiqueta dos veces.
+Un importante detalle es el formato de los identificadores de etiquetas. Éstos sólo pueden ser una **secuencia de cifras y letras, sin espacios y deben empezar por una letra**. Es decir, `LABEL 1` o `LABEL La Etiqueta` no son válidos, pero `LABEL l1` o `LABEL LaEtiqueta` sí lo son. Además son sensibles al caso, es decir, que **se distinguen mayúsculas y minúsculas**, con lo que `LABEL Etiqueta` y `LABEL etiqueta` no son la misma etiqueta. Y, obviamente, no se puede declarar una etiqueta con el mismo nombre dos veces.
 
 Por el contrario, los comandos no son sensibles al caso, es decir, que `CLEAR`, `clear` ó `Clear`, son perfectamente válidos. Sin embargo, yo recomiendo ponerlos en mayúsculas para distinguirlos mejor.
+
+---
 
 ## Opciones
 
@@ -232,13 +246,90 @@ Las opciones es el punto mas importante del motor. De nuevo, vamos a verlo con e
 
 Al compilar y ejecutar tenemos esto:
 
-![Pantalla 6](assets/tut006.png)
+![Menú de opciones](assets/tut006.png)
 
 Nos aparecen dos opciones que podemos elegir con las teclas **P** y **Q** y seleccionar una con **Space** o **Enter**.
 Si elegimos la primera opción, nos sale esto:
 
-![Pantalla 7](assets/tut007.png)
+![PElegimos la primera opción](assets/tut007.png)
 
 Y si elegimos la segunda:
 
-![Pantalla 5](assets/tut008.png)
+![Elegimos la segunda opción](assets/tut008.png)
+
+
+Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción seleccionable. El lugar donde esté el cursor en ese momento será el punto donde aparezca el icono de opción. Vamos a recolocar un poco las opciones para ilustrar esto último:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+]][[ LABEL Localidad1]]Estás en la localidad 1.
+¿Donde quieres ir?
+
+  [[ OPTION GOTO Localidad2 ]]Ir a la localidad 2
+
+  [[ OPTION GOTO Localidad3 ]]Ir a la localidad 3
+[[ CHOOSE ]]
+[[ LABEL Localidad2 ]]¡¡¡Lo lograste!!!
+[[ GOTO Final ]]
+[[ LABEL Localidad3 ]]¡¡¡Estas muerto!!!
+[[ GOTO Final]]
+[[ LABEL Final : WAITKEY: END ]]
+```
+
+![Menú organizado](assets/tut009.png)
+
+Como se puede ver, hemos separado las opciones con saltos de línea y puesto dos espacios de sangrado por delante del comando `OPTION GOTO` y eso se refleja en el resultado final.
+
+Una vez declaradas las opciones, con el comando `CHOOSE`, activamos el menú, que nos permitirá elegir entre una de las opciones que ya estuviesen en pantalla. Cuando seleccionemos una, se saltará a la etiqueta indicada en el correspondiente `OPTION GOTO`. En el ejemplo, Si seleccionamos la primera opción, `OPTION GOTO Localidad2`, saltará a la etiqueta `LABEL Localidad2` e imprimirá *Lo lograste* y luego saltará a la etiqueta `LABEL Final`. El `GOTO Final` es necesario hacerlo, porque si no, nos imprimiría *¡¡¡Lo lograste!!!* y después *¡¡¡Estas muerto!!!*; el `GOTO` es necesario, en este caso, para evitar que se ejecute el resultado de la segunda opción.
+
+**IMPORTANTE**, cuando se ejecute `CHOOSE`, **¡sólo se podrán elegir las opciones que haya en ese momento en la pantalla!**. Ten en cuenta que si imprimes en la última línea y pasas a la siguiente, la pantalla se borra para seguir imprimiendo desde el principio. Cuando sucede ésto, las opciones que hubiese hasta ese momento son descartadas, con lo que si imprimes demasiado puedes perder opciones. Ten cuidado con esto a la hora de disponer tu menú de opciones en pantalla.
+
+Como nota adicional con `CHOOSE`, sólo se permiten un máximo de 16 opciones y un mínimo de una (inútil, pero se permite). Fuera de ese rango y el intérprete dará un error.
+
+También destacar que hay una variante de `CHOOSE` temporizada, compila y ejecuta esto sin seleccionar nada en el menú :
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+]][[ LABEL Localidad1]]Estás en la localidad 1.
+¿Donde quieres ir?
+
+  [[ OPTION GOTO Localidad2 ]]Ir a la localidad 2
+
+  [[ OPTION GOTO Localidad3 ]]Ir a la localidad 3
+[[ CHOOSE IF WAIT 500 THEN GOTO Localidad3]]
+[[ LABEL Localidad2 ]]¡¡¡Lo lograste!!!
+[[ GOTO Final ]]
+[[ LABEL Localidad3 ]]¡¡¡Estas muerto!!!
+[[ GOTO Final]]
+[[ LABEL Final : WAITKEY: END ]]
+```
+
+Te darás cuenta que al pasar unos 10 segundos, ha mostrado *¡¡¡Estas muerto!!!*.
+
+Lo que hace `CHOOSE IF WAIT 500 THEN GOTO Localidad3` es lo mismo que `CHOOSE`, activar la selección de opciones, pero con la salvedad que también realiza una cuenta atrás, en este caso desde 500. Si dicha cuenta atrás llega a cero sin seleccionarse nada, entonces se hace el salto a la etiqueta indicada; en este caso *Localidad3*.
+El contador funciona en base a los fotogramas del Spectrum, es decir, 1/50 de segundo, con lo que 500/50 = 10 segundos. Esto lo veremos en el siguiente capítulo.
+
+Con esto ya tenemos las base para hacer un "Elije tu propia aventura" básico. Pero todavía tenemos muchas más posibilidades que explorar...
+
+---
+
+## Esperas
+
+## Formato del texto
+
+## Imágenes
+
+## Efectos de sonido
+
+## Música
+
+## Variables e indirecciones
+
