@@ -37,11 +37,9 @@
     CLEAR
 ]]  Tienes [[PRINT @0]] gamusinos.
 ¿Qué haces?
-[[CHOICE]]
 [[OPTION GOTO Suma1]]Sumar 1 gamusino.
 [[OPTION GOTO Resta1]]Restar 1 gamusino.
 [[OPTION GOTO Final]]Fin.
-[[CHOICE]]
 [[  CHOOSE
     LABEL Suma1
     SET 0 ADD 1
