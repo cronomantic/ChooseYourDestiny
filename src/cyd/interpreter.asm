@@ -820,9 +820,9 @@ OP_CHOOSE:
 
 OP_CHOOSE_W:
 
-    ld d, (hl)
-    inc hl
     ld e, (hl)
+    inc hl
+    ld d, (hl)
     inc hl
 
     push de            ;Save timeout
@@ -833,10 +833,7 @@ OP_CHOOSE_W:
     inc hl
     ld b, (hl)
 
-    ld de, 2*MAXIMUM_OPTIONS
-    ld hl, OPTIONS_POS
-    add hl, de
-
+    ld hl, TIMEOUT_OPTION
     ld (hl), a
     inc hl
     ld (hl), c
