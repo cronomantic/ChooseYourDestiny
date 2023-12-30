@@ -259,7 +259,7 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO labelId
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 8 como máximo en una pantalla.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
 
 ### CHOOSE
 
