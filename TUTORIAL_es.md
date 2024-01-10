@@ -9,7 +9,7 @@
   - [Formato del fichero fuente](#formato-del-fichero-fuente)
   - [Saltos y etiquetas](#saltos-y-etiquetas)
   - [Opciones](#opciones)
-  - [Esperas](#esperas)
+  - [Pausas y esperas](#pausas-y-esperas)
   - [Formato del texto](#formato-del-texto)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
@@ -286,9 +286,9 @@ Como se puede ver, hemos separado las opciones con saltos de línea y puesto dos
 
 Una vez declaradas las opciones, con el comando `CHOOSE`, activamos el menú, que nos permitirá elegir entre una de las opciones que ya estuviesen en pantalla. Cuando seleccionemos una, se saltará a la etiqueta indicada en el correspondiente `OPTION GOTO`. En el ejemplo, Si seleccionamos la primera opción, `OPTION GOTO Localidad2`, saltará a la etiqueta `LABEL Localidad2` e imprimirá *Lo lograste* y luego saltará a la etiqueta `LABEL Final`. El `GOTO Final` es necesario hacerlo, porque si no, nos imprimiría *¡¡¡Lo lograste!!!* y después *¡¡¡Estas muerto!!!*; el `GOTO` es necesario, en este caso, para evitar que se ejecute el resultado de la segunda opción.
 
-**IMPORTANTE**, cuando se ejecute `CHOOSE`, **¡sólo se podrán elegir las opciones que haya en ese momento en la pantalla!**. Ten en cuenta que si imprimes en la última línea y pasas a la siguiente, la pantalla se borra para seguir imprimiendo desde el principio. Cuando sucede ésto, las opciones que hubiese hasta ese momento son descartadas, con lo que si imprimes demasiado puedes perder opciones. Ten cuidado con esto a la hora de disponer tu menú de opciones en pantalla.
+**IMPORTANTE**, cuando se ejecute `CHOOSE`, **¡sólo se podrán elegir las opciones que haya en ese momento en la pantalla!**. Ten en cuenta que si imprimes en la última línea y pasas a la siguiente, la pantalla se borra para seguir imprimiendo desde el principio. Cuando se borra la pantalla las opciones que hubiese hasta ese momento son descartadas, con lo que si imprimes demasiado puedes perder opciones. Ten cuidado con esto a la hora de disponer tu menú de opciones en pantalla.
 
-Como nota adicional con `CHOOSE`, sólo se permiten un máximo de 16 opciones y un mínimo de una (inútil, pero se permite). Fuera de ese rango y el intérprete dará un error.
+Como nota adicional con `CHOOSE`, sólo se permiten un máximo de 16 opciones y un mínimo de una (inútil, pero se permite). Fuera de ese rango el intérprete dará un error.
 
 También destacar que hay una variante de `CHOOSE` temporizada, compila y ejecuta esto sin seleccionar nada en el menú :
 
@@ -321,15 +321,74 @@ Con esto ya tenemos las base para hacer un "Elije tu propia aventura" básico. P
 
 ---
 
-## Esperas
+## Pausas y esperas
+
+En los ejemplos anteriores ya habrás visto el comando `WAITKEY`. Ese comando genera una pausa, con un icono animado, en espera de que se pulse la tecla de confirmación. Con eso puedes controlar la visualización del texto y evitar que el usuario tenga que leer un muro de texto de una sentada, además de permitir controlar la presentación.
+
+Un ejemplo sería cuando se está acabando la "página" y queremos que el usuario pulse una tecla para pasar a la siguiente, que podemos hacer así:
+
+```
+Texto al final de la página.[[ 
+  WAITKEY 
+  CLEAR
+]]Texto al principio de la siguiente página.
+```
+
+Con el `WAITKEY` hacemos la espera, y al confirmar, con el `CLEAR` siguiente borramos el texto en pantalla y comenzamos a escribir desde el principio de lo que sería la siguiente "página".
+
+Sin embargo, hay una opción para que CYD haga esto por sí solo. El comportamiento por defecto cuando acabamos de imprimir en la última línea es borrar completamente la pantalla y seguir escribiendo; pero con el comando `PAGEPAUSE` podemos activar un comportamiento alternativo. Si indicamos `PAGEPAUSE 1`, por ejemplo, cuando se acabe el espacio disponible, generará automáticamente una espera para que el usuario pulse la tecla de confirmación antes de borrar la pantalla y seguir imprimiendo.
+
+Además, también se dispone de esperas "temporizadas", siendo `CHOOSE IF WAIT X THEN GOTO Y` del capítulo anterior un ejemplo. Cuando se ejecutan, un contador se carga con el valor que se pasa como parámetro y se realiza una cuenta atrás hasta que el contador llega a cero. El contador se decrementa una vez cada fotograma del Spectrum, es decir, una vez cada 1/50 de segundo, o lo que es lo mismo, 50 veces por segundo. De tal manera, que si queremos esperar un segundo, tenemos que poner el contador a 50.
+
+Con ésto, ya tenemos lo necesario para conocer los comandos:
+
+- Con el comando `WAIT`, se realiza una espera incondicional, es una detención hasta que se agote el contador.
+  
+```
+Espera tres segundos[[WAIT 150]]
+Ya está[[WAITKEY]]
+```
+
+- El comando `PAUSE` es una combinación de `WAITKEY` y `WAIT`, se realiza una espera hasta que se agote el contador ó el usuario pulse la tecla de confirmación, podríamos considerarlo un `WAITKEY` con caducidad.
+  
+```
+Espera tres segundos o pulsa una tecla[[PAUSE 150]]
+Ya está[[WAITKEY]]
+```
+
+- `CHOOSE IF WAIT X THEN GOTO Y` ya ha sido explicado el en capítulo anterior, si se agota el contador antes de que se seleccione una opción del menú, se realiza el salto indicado.
+
+Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado con el resto de comandos de espera. Con este comando indicamos la espera que se produce cada vez que se imprime un carácter. Ésta espera no está ajustada a los fotogramas, sino que es un contador que ya depende de la velocidad del procesador (más rápido). La idea de este comando es la de escribir de forma más pausada y paulatina, para cierta situaciones "dramáticas".
+
+```
+[[TYPERATE 100]]Esto imprime lento
+[[TYPERATE 1]]Esto imprime normal[[WAITKEY]]
+```
+
+---
 
 ## Formato del texto
 
+Una de las partes más importantes para el diseño de una aventura con CYD es ajustar la presentación del texto. CYD no "sabe" como presentar el texto. Como autores, tenemos que ayudarle.
+
+Como ya se ha indicado, el motor simplemente imprime el texto que se encuentre a pantalla completa, procurando que nunca divida palabras entre una línea y la siguiente. Cuando llegue a la última línea, se borra la pantalla y sigue imprimiendo (excepto si se usa el comando `PAGEPAUSE`, como ya se ha indicado).
+
+
+
+---
+
 ## Imágenes
+
+---
 
 ## Efectos de sonido
 
+---
+
 ## Música
+
+---
 
 ## Variables e indirecciones
 
+---
