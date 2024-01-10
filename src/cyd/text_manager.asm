@@ -417,6 +417,8 @@ UPDATE_POS:
     cp l           ; MAX_X-X
     jr nc, .upd_pos ; MAX_X >= X
 .new_l:
+    ld a, 1
+    ld (SKIP_SPACES), a ;NEWLINE DONE
     ld bc, (MIN_X) ; b = MIN_Y, c = MIN_X
     ld l, c        ; Set X = MIN_X
     inc h          ; Increment Y
@@ -782,21 +784,31 @@ PRINT_STR:
     jr z, .space
     push hl
     call PUT_VAR_CHAR
+    xor a
+    ld (SKIP_SPACES), a      ; Disable space skip after a non-space character
     pop hl
     inc hl
     jp .loop3
 
-.space:                        ; Space is not printed in this case
-    push de                   ; Reserve space only
+.space:     
+    ld a, (SKIP_SPACES)
+    or a
+    jr nz, .skip_space   ; Space is not printed in this case
+    push de              ; Reserve space only
     push bc
     push hl
     ld a, 32
-    ;call GET_CHARACTER_WIDTH
-    ;call UPDATE_POS
     call PUT_VAR_CHAR
+    ld a, (SKIP_SPACES)  ;Skip space after auto-carriage return
+    or a
+    jr z, .no_backstep ; Space is not printed in this case
+    ld a, (MIN_X)
+    ld (POS_X), a
+.no_backstep:    
     pop hl
     pop bc
     pop de
+.skip_space:
     inc hl
     jp .loop1
 
@@ -805,6 +817,8 @@ PRINT_STR:
     push bc
     push hl
     call CRLF
+    xor a                    ; Disable space skip after a EOL
+    ld (SKIP_SPACES), a
     pop hl
     pop bc
     pop de
