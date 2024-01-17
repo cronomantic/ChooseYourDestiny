@@ -10,7 +10,7 @@
   - [Saltos y etiquetas](#saltos-y-etiquetas)
   - [Opciones](#opciones)
   - [Pausas y esperas](#pausas-y-esperas)
-  - [Formato del texto](#formato-del-texto)
+  - [Disposición del texto en pantalla](#disposición-del-texto-en-pantalla)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
   - [Música](#música)
@@ -367,17 +367,153 @@ Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado 
 
 ---
 
-## Formato del texto
+## Disposición del texto en pantalla
 
 Una de las partes más importantes para el diseño de una aventura con CYD es ajustar la presentación del texto. CYD no "sabe" como presentar el texto. Como autores, tenemos que ayudarle.
 
-Como ya se ha indicado, el motor simplemente imprime el texto que se encuentre a pantalla completa, procurando que nunca divida palabras entre una línea y la siguiente. Cuando llegue a la última línea, se borra la pantalla y sigue imprimiendo (excepto si se usa el comando `PAGEPAUSE`, como ya se ha indicado).
+Podemos visualizar su comportamiento imaginando que en la pantalla hay un cursor invisible que va imprimiendo el texto de izquierda a derecha y de arriba a abajo. El motor siempre procura que las palabras no se dividan, de tal manera que si la siguiente palabra no cabe en lo que queda de línea, salta a la línea siguiente y la imprime allí. Se considera una palabra cualquier texto separado por espacios.
 
+Pongamos un texto tipo *Loren ipsum*, todo seguido, sin saltos de línea:
 
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+]]Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget pretium felis. Quisque tincidunt tortor eget libero fermentum, rutrum aliquet nisl semper. Pellentesque id eros non leo ullamcorper hendrerit. Fusce pretium bibendum lectus, vel dignissim velit interdum quis. Integer vel ipsum ac elit tincidunt vulputate. Mauris sagittis sapien in justo pretium cursus. Proin nec tincidunt purus, et tempus metus. Nunc dapibus vel ante eu dictum. Donec vestibulum scelerisque orci in tempus. Nunc quis velit id velit faucibus tempus vel id tellus.[[ WAITKEY: END ]]
+```
+
+El resultado:
+
+![Ejemplo de texto 1](assets/tut010.png)
+
+Puedes ver que las palabras que no caben en su renglón, continúan en la línea siguiente sin cortarse.
+
+Cuando el cursor de impresión llega a la última línea y debe pasar a la siguiente, se borra la pantalla y sigue imprimiendo desde el origen de la pantalla, arriba a la izquierda; excepto si se usa el comando `PAGEPAUSE`, que genera una espera de confirmación antes de borrar la pantalla.
+
+Podemos maquetar la pantalla adecuadamente usando espacios y saltos de línea según convenga, pero si queremos hacer una sangría o tabulaciones, dispones del comando `TAB pos`, que desplaza el cursor tantas posiciones a la derecha como indicadas en el parámetro:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+]]Texto normal
+[[TAB 5]]Texto 5 posiciones a la derecha.[[ WAITKEY: END ]]
+```
+
+![Ejemplo de TAB](assets/tut011.png)
+
+Notarás que el texto de arriba no *parece* cuadrar con el de abajo en 5 posiciones. Esto trae a colación un punto importante. La pantalla del Spectrum tiene, de forma natural, 32 caracteres por línea, que es algo insuficiente para textos largos. CYD soporta fuentes de ancho variable y la que tiene por defecto usa caracteres de 6x8, lo que nos permite tener 42 caracteres por línea, pero esto ocasiona que no coíncida con la rejilla de atributos del spectrum, que es 8x8, y haya "colour clash" o choque de atributos.
+
+Por este motivo, `TAB` y todos los comandos que ahora explicaré, tienen un sistema de coordenadas basadas en caracteres de 8x8 píxeles, es decir, 32 columnas y 24 filas, contadas de 0 a 31 y 0 a 23 respectivamente.
+
+Vamos ahora a ver un comando para situar el cursor de impresión en cualquier punto de la pantalla. Con el comando `AT columna,fila`, podemos indicar las coordenadas donde queremos colocar el cursor para seguir impriendo. Vamos a verlo con éste ejemplo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+]]
+Texto abajo
+[[AT 5,0]]¿Esto está arriba?.[[ WAITKEY: END ]]
+```
+
+![Ejemplo de TAB](assets/tut012.png)
+
+¿Qué ha pasado aquí? Si examinamos el código, vemos que antes de "Texto abajo", hay un salto de línea. Con lo que el cursor salta a la línea siguiente e imprime el "Texto abajo", pero después tenemos `AT 5,0`, que significa *mueve el cursor a la columna 5 y fila 0*, es decir, que vuelve a la fila anterior y 5 posiciones a la derecha desde el origen.
+
+Con esto ya podemos colocar textos donde queramos. Pero nos falta algo para controlar del todo la disposición del texto en pantalla, y es definir unos márgenes. Por defecto CYD imprime el texto a pantalla completa, pero puede interesarnos que sólo imprima en cierta zona para no "tapar" imágenes que queramos mostrar. Para ello disponemos del comando `MARGINS`, que nos permite indicar el "rectángulo" o area de impresión de los textos.
+
+El formato del comando es `MARGINS col_origen, fila_origen, ancho, alto`, donde los parámetros, son la columna y la fila origen del área de impresión y el correspondiente ancho y alto. Por defecto, el motor arranca como si se hubiese ejecutado el comando `MARGINS 0, 0, 32, 24`, es decir, el origen en lado izquierdo superior de la pantalla y el tamaño la pantalla completa.
+
+Vamos ahora a retomar el ejemplo inicial de éste capítulo y vamos a ponerlo en la zona inferior de la pantalla:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   MARGINS 0, 10, 32, 14
+]]Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget pretium felis. Quisque tincidunt tortor eget libero fermentum, rutrum aliquet nisl semper. Pellentesque id eros non leo ullamcorper hendrerit. Fusce pretium bibendum lectus, vel dignissim velit interdum quis. Integer vel ipsum ac elit tincidunt vulputate. Mauris sagittis sapien in justo pretium cursus. Proin nec tincidunt purus, et tempus metus. Nunc dapibus vel ante eu dictum. Donec vestibulum scelerisque orci in tempus. Nunc quis velit id velit faucibus tempus vel id tellus.[[ WAITKEY: END ]]
+```
+
+Hemos bajado el origen del área de impresión a la fila 10, y su alto lo reducimos a 14:
+
+![Ejemplo de MARGINS](assets/tut013.png)
+
+Con esto podemos ajustar la zona donde queramos que se imprima. Nótese el efecto de `PAGEPAUSE 1`, que al no caber todo, genera un icono de confirmación en el centro.
+
+Vamos ahora a usar lo mismo en el segundo ejemplo de este capítulo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   MARGINS 0, 10, 32, 14
+]]
+Texto abajo
+[[AT 5,0]]¿Esto está arriba?.[[ WAITKEY: END ]]
+```
+
+¿Notas algo raro?
+
+![Ejemplo de coordenadas MARGINS](assets/tut014.png)
+
+Si no lo has visto, pues que las coordenadas de `AT` no son, en este caso, las coordenadas de pantalla. Las coordenadas de `AT` **son siempre relativas al origen del área de impresión**. Cuando teníamos definida el área como la pantalla completa, pues correspondía con las coordenadas de la pantalla, (0,0). Ahora son relativas al nuevo origen, (0,10), lo que mandaría el cursor a la posición (5,10) en pantalla.
+
+Por último, vamos a ver un problema de choque de atributos, con este ejemplo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   INK   7    /* Color de texto azul */
+]]LALALALALA[[INK 4 /* COlor verde */]] LOLOLOLOLOLO[[ WAITKEY: END ]]
+```
+
+Se puede ver que al cambiar el color a verde con el comando `INK`, debido a que el siguiente caracter a imprimir (un espacio), se queda entre medias de dos celdas de atributos, se pinta el carácter anterior de blanco:
+
+![Color Clash!](assets/tut015.png)
+
+Esto lo podemos solventar realizando el cambio de color después del espacio:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   INK   7    /* Color de texto azul */
+]]LALALALALA [[INK 4 /* COlor verde */]]LOLOLOLOLOLO[[ WAITKEY: END ]]
+```
+
+Y ahora ya está correcto:
+
+![Color Clash evitado!](assets/tut015.png)
+
+Será necesario por parte del autor realizar estos pequeños ajustes para mejorar la presentación del texto. Si se quiere evitar totalmente, pues no hay que mezclar colores diferentes dentro de la misma línea.
 
 ---
 
 ## Imágenes
+
+Para darle más "color" a la aventura, es posible añadir imágenes en formato SCR. Estas imágenes serán comprimidas con la utilidad `CSC`, creando archivos con la misma extensión, que deberán ser incluidos en el disco final.
+
 
 ---
 
