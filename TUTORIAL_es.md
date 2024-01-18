@@ -518,7 +518,7 @@ En el manual se encuenta explicado cómo funciona `CSC`, por si quieres hacerlo 
 
 Vamos a usar una imagen que tenemos de ejemplo, llamada `ORIGIN1.SCR`, dentro del directorio `\IMAGES`. Cópiala y renómbrala como `001.SCR`. Y pon el siguiente código en `tutorial.txt`:
 
-´´´
+```
 [[ /* Pone colores de pantalla y la borra */
    PAPER 0    /* Color de fondo negro  */
    BORDER 0   /* Borde de color negro  */
@@ -535,7 +535,7 @@ Voy a mostrar la imagen.[[
    DISPLAY 1
 ]]
 Hecho[[ WAITKEY: END ]]
-´´´
+```
 
 Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `ORIGIN1.SCR`, `000.SCR`, `001.SCR`, `000.CSC` y `001.CSC`. El guión `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
 
