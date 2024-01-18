@@ -498,13 +498,13 @@ Esto lo podemos solventar realizando el cambio de color después del espacio:
    BORDER 0   /* Borde de color negro  */
    CLEAR      /* Borramos la pantalla*/
    PAGEPAUSE 1
-   INK   7    /* Color de texto azul */
-]]LALALALALA [[INK 4 /* COlor verde */]]LOLOLOLOLOLO[[ WAITKEY: END ]]
+   INK   7    /* Color de texto blanco */
+]]LALALALALA [[INK 4 /*COlor verde */]]LOLOLOLOLOLO[[ WAITKEY: END ]]
 ```
 
 Y ahora ya está correcto:
 
-![Color Clash evitado!](assets/tut015.png)
+![Color Clash evitado!](assets/tut016.png)
 
 Será necesario por parte del autor realizar estos pequeños ajustes para mejorar la presentación del texto. Si se quiere evitar totalmente, pues no hay que mezclar colores diferentes dentro de la misma línea.
 
@@ -512,8 +512,61 @@ Será necesario por parte del autor realizar estos pequeños ajustes para mejora
 
 ## Imágenes
 
-Para darle más "color" a la aventura, es posible añadir imágenes en formato SCR. Estas imágenes serán comprimidas con la utilidad `CSC`, creando archivos con la misma extensión, que deberán ser incluidos en el disco final.
+Para darle más vistosidad a la aventura, es posible añadir imágenes en formato SCR, de pantalla de Spectrum. Estas imágenes serán comprimidas con la utilidad `CSC`, creando archivos con la misma extensión, que deberán ser incluidos en el disco final.
 
+En el manual se encuenta explicado cómo funciona `CSC`, por si quieres hacerlo manualmente. Pero el guión `MakeAdv` busca y comprime automáticamente los ficheros SCR que haya en el directorio `\IMAGES`, con lo que simplemente tendrás que despositar los ficheros allí.
+
+Vamos a usar una imagen que tenemos de ejemplo, llamada `ORIGIN1.SCR`, dentro del directorio `\IMAGES`. Cópiala y renómbrala como `001.SCR`. Y pon el siguiente código en `tutorial.txt`:
+
+´´´
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+]]Voy a cargar la pantalla 1.[[
+   WAITKEY
+   /* Cargamos la imagen del fichero 001.CSC */
+   PICTURE 1]]
+Voy a mostrar la imagen.[[
+   WAITKEY
+   /* Cargamos la imagen cargada  */
+   DISPLAY 1
+]]
+Hecho[[ WAITKEY: END ]]
+´´´
+
+Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `ORIGIN1.SCR`, `000.SCR`, `001.SCR`, `000.CSC` y `001.CSC`. El guión `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
+
+Ahora ya podemos lanzar el emulador. Lo primero que verás es esto:
+
+![Con imagen](assets/tut017.png)
+
+Cuando se pulse la tecla de confirmación, se lanzará el comando `PICTURE 1`. Lo que hará este comando es cargar y descomprimir en memoria la imágen del fichero `001.CSC`, pero cuidado, ¡todavía no se muestra!, pero notarás que se ha accedido a disco (esto depende del emulador).
+
+![Cargando imagen](assets/tut018.png)
+
+Con esto tenemos la imagen cargada, pero para mostrarla , tenemos que usar el comando `DISPLAY 1`, y entonces ya se muestra la imagen:
+
+![Mostrando imagen](assets/tut019.png)
+
+Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imágen ó no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
+
+Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imágen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño, ya que al separar la carga, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comienza un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
+
+De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o mostrar una imagen sin cargarla antes.
+
+Al visualizar imágenes hay que tener en cuenta que siempre se sobreescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guión `MakeAdv.bat`:
+
+```batch
+REM Number of lines used on SCR files at compressing
+SET IMGLINES=192
+```
+
+Tras cargar la imagen, podemos ajustar el tamaño del área de impresión para que no se sobreescriba el dibujo usando `MARGINS`.
+
+Y por último, la imagen 0 es especial ya que se considera la pantalla de presentación. Al iniciarse la aventura se cargará y visualizará automáticamente la imagen del fichero `000.CSC`, si exisitiese éste en el disco.
 
 ---
 
