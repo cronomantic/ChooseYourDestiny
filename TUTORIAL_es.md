@@ -12,8 +12,8 @@
   - [Pausas y esperas](#pausas-y-esperas)
   - [Disposición del texto en pantalla](#disposición-del-texto-en-pantalla)
   - [Imágenes](#imágenes)
-  - [Efectos de sonido](#efectos-de-sonido)
-  - [Música](#música)
+  - [Efectos de sonido (Beeper)](#efectos-de-sonido-beeper)
+  - [Música (AY)](#música-ay)
   - [Variables e indirecciones](#variables-e-indirecciones)
 
 ---
@@ -570,11 +570,64 @@ Y por último, la imagen 0 es especial ya que se considera la pantalla de presen
 
 ---
 
-## Efectos de sonido
+## Efectos de sonido (Beeper)
+
+Para mejorar la ambientación de nuestra aventura, el motor permite emitir efectos de sonido por el Beeper. Para ello nos valemos de la herramienta BeepFx de Shiru, una herramienta muy usada en nuevos desarrollos para Spectrum.
+
+![BeepFx](assets/tut020.png)
+
+En este tutorial no vamos a enseñar cómo se maneja la herramienta, pero vamos a tomar uno de los archivos de ejemplo que incluye el paquete. Desde el menú `File -> Open project`, abrimos el fichero `demo.spj`, donde hay una serie de efectos ya creados. Los podemos reproducir con la opción `Play Effect`:
+
+![Ejemplo BeepFx](assets/tut021.png)
+
+Ahora vamos a exportarlo a un fichero con el que podamos usarlos con el motor. Para ello vamos al menú `File -> Compile`, donde nos saldrá esta ventana:
+
+![Exportar desde BeepFx](assets/tut022.png)
+
+Ahora viene lo importante, **tenemos que cambiar `Code Address` a 49152**, y dejar siempre marcadas la opción `Binary` e `Include player code`:
+
+![Opciones para BeepFx](assets/tut023.png)
+
+Le damos al botón `Compile` y nos sale un diálogo para guardar el fichero. **Lo tenemos que llamar `SFX.BIN`** y lo guardamos en la carpeta donde estemos desarrollando nuestra aventura. Cuando ejecutemos el guión `MakeAdv.bat`. Si éste encuentra en su mismo directorio el fichero `SFX.BIN`, lo incluirá automáticamente en la imagen de disco y lo podremos usar desde el motor.
+
+Vamos a poner un ejemplo, pon esto como código de la aventura:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   LABEL Menu
+   CLEAR]]Selecciona el efecto a reproducir:
+
+  [[ OPTION GOTO Efecto0 ]]Efecto 0
+  [[ OPTION GOTO Efecto1 ]]Efecto 1
+  [[ OPTION GOTO Efecto2 ]]Efecto 2
+  [[ OPTION GOTO Efecto3 ]]Efecto 3
+  [[ OPTION GOTO Efecto4 ]]Efecto 4
+  [[ OPTION GOTO Final ]]Salir
+
+[[ CHOOSE 
+   LABEL Efecto0 : SFX 0 : GOTO Menu
+   LABEL Efecto1 : SFX 1 : GOTO Menu
+   LABEL Efecto2 : SFX 2 : GOTO Menu
+   LABEL Efecto3 : SFX 3 : GOTO Menu
+   LABEL Efecto4 : SFX 4 : GOTO Menu
+   LABEL Final]]Adios...[[WAITKEY: END ]]
+```
+
+Como se puede ver, con el comando `SFX`, podemos reproducir cualquiera de los efectos del fichero indicando su número como parámetro.
+
+Una peculiaridad del comando SFX es que, al contrario que las imágenes, si el fichero SFX.BIN no se encuentra en el disco, fallará silenciosamente sin dar error y el efecto de sonido simplemente no se reproducirá.
+
+Como detalle más técnico, indicar que el contenido del fichero SFX.BIN se alojará en el banco 1 de la memoria del Spectrum, y por lo tanto, tenemos un límite de tamaño de 16Kb.
 
 ---
 
-## Música
+## Música (AY)
+
+
 
 ---
 
