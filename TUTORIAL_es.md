@@ -15,6 +15,7 @@
   - [Efectos de sonido (Beeper)](#efectos-de-sonido-beeper)
   - [Música (AY)](#música-ay)
   - [Variables e indirecciones](#variables-e-indirecciones)
+  - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
 
 ---
 
@@ -572,7 +573,7 @@ Y por último, la imagen 0 es especial ya que se considera la pantalla de presen
 
 ## Efectos de sonido (Beeper)
 
-Para mejorar la ambientación de nuestra aventura, el motor permite emitir efectos de sonido por el Beeper. Para ello nos valemos de la herramienta BeepFx de Shiru, una herramienta muy usada en nuevos desarrollos para Spectrum.
+Para mejorar la ambientación de nuestra aventura, el motor permite emitir efectos de sonido por el Beeper. Para ello nos valemos de la herramienta [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) de Shiru, una herramienta muy usada en nuevos desarrollos para Spectrum.
 
 ![BeepFx](assets/tut020.png)
 
@@ -627,10 +628,133 @@ Como detalle más técnico, indicar que el contenido del fichero SFX.BIN se aloj
 
 ## Música (AY)
 
+CYD también permite tocar música usando el chip AY, usando módulos creados con Vortex Tracker, en formato `PT3`.
+El funcionamiento es intencionadamente similar al de las imágenes. Los nombres de los ficheros de los módulos tienen que ser números de 3 dígitos con la extensión `.PT3`, de tal manera que sean `000.PT3`, `001.PT3` y así sucesivamente, e incluirse en el disco. Para facilitar la tarea, el guión `MakeAdv.bat` lo hará por nosotros con todos los ficheros que cumplan ésta nomenclatura y se encuentren dentro de la carpeta `.\TRACKS`.
 
+Los comandos que disponemos también son similares a los comandos de manejo de imágenes. Con el comando `TRACK`, cargamos desde disco en memoria un módulo de música, de tal manera que con `TRACK 0`, cargaríamos el módulo `000.PT3`, con `TRACK 1` cargaríamos `001.PT3`, etc.
+
+Una vez cargado el módulo, pasaríamos a reproducirlo con el comando `PLAY 1` cuando necesitemos hacerlo. El parámetro del comando `PLAY` es un número que si es es cero, para la música (si se estuviese ya reproduciendo), y si es distinto de cero, la reproduce desde el comienzo (si estuviese ya parada).
+
+Por último, con el comando `LOOP` indicamos si queremos que el módulo se reproduzca sólo una vez o queremos que se reproduzca indefinidamente. Si el valor de su parámetro es cero, sólo lo hará una vez, y si es distinto de cero, comenzará a reproducirse de nuevo cuando acabe.
+
+Un detalle a tener en cuenta es que el efecto del comando `LOOP` es propio del reproductor incorporado y sólo es válido cuando el propio módulo pueda acabar. El formato `.PT3` tiene comandos de repetición, haciendo que el módulo se reproduzca sin fin por sí mismo, con lo que es conveniente reproducir el mismo con un reproductor externo para ver si ésto es así.
 
 ---
 
 ## Variables e indirecciones
 
 ---
+
+Con lo que ya sabemos, ya podríamos hacer una aventura por opciones relativamente simple, tipo "Elige tu Propia Aventura", pero podemos ir más lejos.
+
+El motor dispone de 256 variables ó banderas de un byte, es decir, 256 almacenes donde podemos almacenar valores del 0 al 255. Cada una de estas variables es identificada a su vez por un número del 0 al 255. Vamos a verlo con un ejemplo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   CLEAR]][[SET 1 TO 5]]Tienes [[PRINT @1]] gamusinos.
+[[WAITKEY : END]]
+```
+
+Este es el resultado:
+
+![Variables](assets/tut024.png)
+
+Lo primero que vemos nuevo es ésto `SET 1 TO 5`, con ésto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
+
+Una cosa que habrás notado es que `PRINT` pone una arroba delande del número de variable. A eso le llamamos *indirección*. Para explicarlo mejor, quítale la arroba de tal manera que quede ésto:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   CLEAR]][[SET 1 TO 5]]Tienes [[PRINT 1]] gamusinos.
+[[WAITKEY : END]]
+```
+
+Este es el resultado si lo ejecutamos así:
+
+![Indirección](assets/tut025.png)
+
+¡Vaya! Pues eso es lo que es la indirección, cuando pones una arroba delante, significa **coge el valor de la variable cuyo número indíco detras**. Si has consultado el [manual](MANUAL_es.md), habrás visto que casi todos los  comandos tienen parámetros directos e indirectos, donde en el primer caso pones un valor específico y en el segundo indicas la variable donde debe coger su valor.
+
+Por eso, con `PRINT 1`, lo que estás indicando es "Imprime el valor 1", pero con `PRINT @1`, lo que se indica es "Imprime el contenido de la variable 1".
+
+Vamos a afianzar este concepto con este ejemplo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   CLEAR
+   SET 1 TO 5
+   SET 0 TO @1
+]]Tienes [[PRINT @0]] gamusinos.
+[[WAITKEY : END]]
+```
+
+De nuevo, volvemos a tener 5 gamusinos:
+
+![Indirección de nuevo](assets/tut026.png)
+
+Con `SET 1 TO 5` almacenamos 5 en la variable num. 1. Luego con `SET 0 TO @1`, lo que hacemos es almacenar en la variable número 0 el valor que contiene la variable número 1 y finalmente, con `PRINT @0`, mostramos el contenido de la variable número 0.
+
+Ahora vamos a ver un ejemplo más práctico de las variables, que pondrá a prueba nuestros conocimientos adquiridos en este tutorial:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   SET 0 TO 0
+   LABEL Inicio
+   CLEAR
+]]Tienes [[PRINT @0]] gamusinos.
+Necesitas 10 gamusinos para poder salir...
+¿Qué haces?
+
+[[OPTION GOTO Suma1]]Cojo 1 gamusino.
+[[OPTION GOTO Resta1]]Dejo 1 gamusino.
+[[ 
+   IF 0 <> 10 THEN GOTO Escoger
+   OPTION GOTO Final]]Salir.
+[[
+   LABEL Escoger  
+   CHOOSE
+   LABEL Suma1
+   SET 0 ADD 1
+   GOTO Inicio
+   LABEL Resta1
+   SET 0 SUB 1
+   GOTO Inicio
+   LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
+```
+
+Nos presenta este menú:
+
+![Sumar y restar](assets/tut027.png)
+
+Si elegimos la primera opción, suma 1 a la variable 0, que hace el comando `SET 0 ADD 1`, y la segunda opción resta, y lo hace con `SET 0 SUB 1`.
+
+La primera cosa que puede llamar la atención es que si doy a restar cuando el valor es cero, no hace nada. Ésto es correcto, no se puede restar por debajo de cero ni se puede sumar por encima de 255 en las variables.
+
+Y la segunda, ¿dónde está la opción de salir? Vamos a coger gamusinos hasta que tengamos 10, como se nos indica:
+
+![Condicionales](assets/tut028.png)
+
+¡Ahora ya podemos salir! El secreto está en los condicionales. Si miramos en la opción de salir, vemos que antes hay `IF 0 <> 10 THEN GOTO Escoger`, lo que significa "Si la variable cero no es igual a 10, saltar a la etiqueta 'Escoger'", lo cual hace que se salte la opción de "Salir" y no se refleje en el menú hasta que el valor de la variable 0 sea 10.
+
+Es decir, con las variables y las condiciones, tenemos las herramientas necesarias para hacer menús de opciones o textos que varíen dependiendo de ciertas condiciones y hacer nuestra aventura más dinámica.
+
+---
+
+## Compresión de textos y abreviaturas
+
