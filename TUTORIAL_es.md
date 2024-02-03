@@ -23,9 +23,9 @@
 
 ### Windows
 
-Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYourDestiny.Win64.zip de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada Tutorial que puedes crear donde creas conveniente.
+Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYourDestiny.Win64.zip de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada Tutorial, que puedes crear donde creas conveniente.
 
-El ejecutable para compilar aventuras se llama `MakeAdv.bat`, si al ejecutarlo te da error el antivirus, es debido a que el compilador tiene incorporado un entorno Python que puede hacer dar un falso positivo al detector heurístico de éstos. Para evitarlo, puedes añadir una excepción al archivo `dist\cydc.exe` en tu antivirus.
+El guión para montar aventuras se llama `MakeAdv.bat`, si al ejecutarlo te da una alerta el antivirus, es debido a que el ejecutable del compilador tiene incorporado un entorno Python que puede dar un falso positivo a su detector heurístico. Para evitarlo, puedes añadir una excepción al archivo `dist\cydc.exe` en tu antivirus.
 
 ---
 
@@ -61,13 +61,13 @@ REM   - The +3 disk image file will be called test.dsk with this example
 ...
 ```
 
-Guardamos el fichero y ahora creamos un fichero nuevo de texto, llamado `Tutorial.txt`. En este fichero, escribimos ésto:
+Guardamos el fichero y ahora creamos un fichero nuevo de texto, llamado `Tutorial.txt`. En éste fichero, escribimos ésto:
 
 ```
 Hola Mundo[[WAITKEY]]
 ```
 
-Y lo guardamos en el mismo sitio que `MakeAdv.bat`. Ejecutamos el fichero BAT y si todo va bien, se te habrá creado un fichero de disco llamado Tutorial.DSK, que puedes ejecutar con tu emulador favorito.
+Y lo guardamos en el mismo sitio que `MakeAdv.bat`. Ejecutamos el fichero BAT y si todo va bien, habrá creado un fichero de disco llamado Tutorial.DSK, que puedes ejecutar con tu emulador favorito.
 
 ## Formato del fichero fuente
 
@@ -77,7 +77,7 @@ Al lanzar el fuchero DSK resultante con un emulador, sale ésto:
 
 Vamos a analizar lo que sucede...
 
-Al cargar sale la pantalla que tenemos dentro de la carpeta IMAGES, que tiene el nombre `000.scr`. Si existe, esta pantalla se carga automáticamente al cargar el intérprete, por lo que la pantalla 0 se considera la pantalla de presentación.
+Al cargar sale la pantalla que tenemos dentro de la carpeta IMAGES, que tiene el nombre `000.scr`. Si existe, ésta pantalla se carga automáticamente al iniciar el intérprete, por lo que la pantalla 0 se considera la pantalla de presentación.
 
 Volviendo al código de la aventura, vemos que se pinta el texto *Hola Mundo* y después sale una especie de cursor. Si pulsamos la tecla `Enter` o `Space`, se reinicia el programa. Si volvemos al código:
 
@@ -107,7 +107,7 @@ Si compilamos y cargamos de nuevo, vemos que ahora el icono está en la siguient
 
 Eso es debido a que el salto de línea, al estar fuera de los dobles corchetes, es considerado texto imprimible, y por tanto, el icono de espera pasa a la siguiente línea. Ten en cuenta estas situaciones cuando escribas la aventura.
 
-Dejemos de momento esto como estaba y vamos a añadir más comandos. Teclea ésto dentro de `Tutorial.txt`:
+Dejémos de momento esto como estaba y vamos a añadir más comandos. Teclea ésto dentro de `Tutorial.txt`:
 
 ```
 [[CLEAR]]Hola Mundo[[WAITKEY]]
