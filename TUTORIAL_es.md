@@ -71,7 +71,7 @@ Y lo guardamos en el mismo sitio que `MakeAdv.bat`. Ejecutamos el fichero BAT y 
 
 ## Formato del fichero fuente
 
-Al lanzar el fuchero DSK resultante con un emulador, sale ésto:
+Al lanzar el fichero DSK resultante con un emulador, sale ésto:
 
 ![Pantalla 1](assets/tut001.png)
 
@@ -107,7 +107,7 @@ Si compilamos y cargamos de nuevo, vemos que ahora el icono está en la siguient
 
 Eso es debido a que el salto de línea, al estar fuera de los dobles corchetes, es considerado texto imprimible, y por tanto, el icono de espera pasa a la siguiente línea. Ten en cuenta estas situaciones cuando escribas la aventura.
 
-Dejémos de momento esto como estaba y vamos a añadir más comandos. Teclea ésto dentro de `Tutorial.txt`:
+Dejemos de momento esto como estaba y vamos a añadir más comandos. Teclea ésto dentro de `Tutorial.txt`:
 
 ```
 [[CLEAR]]Hola Mundo[[WAITKEY]]
@@ -140,7 +140,7 @@ Para ello usamos el comando BRIGHT 1, (de nuevo, mirar la referencia en el [manu
 
 Esto ya está mejor.
 
-Pero tanto corchete puede ser bastante confuso y poco agradable a la vista. Como ya he indicado, cada vez que se encuetra `[[`, el compilador interpreta que lo siguiente son comandos. ¿Cómo podemos encadenarlos sin estar abriendo y cerrando corchetes? Pues hay dos maneras:
+Pero tanto corchete puede ser bastante confuso y poco agradable a la vista. Como ya he indicado, cada vez que se encuentra `[[`, el compilador interpreta que lo siguiente son comandos. ¿Cómo podemos encadenarlos sin estar abriendo y cerrando corchetes? Pues hay dos maneras:
 
 - Mediante saltos de línea:
   
@@ -259,7 +259,7 @@ Y si elegimos la segunda:
 ![Elegimos la segunda opción](assets/tut008.png)
 
 
-Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción seleccionable. El lugar donde esté el cursor en ese momento será el punto donde aparezca el icono de opción. Vamos a recolocar un poco las opciones para ilustrar esto último:
+Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción seleccionable. El lugar donde esté el cursor en ese momento será el punto donde aparezca el icono de opción. Vamos a re-colocar un poco las opciones para ilustrar esto último:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -409,11 +409,11 @@ Podemos maquetar la pantalla adecuadamente usando espacios y saltos de línea se
 
 ![Ejemplo de TAB](assets/tut011.png)
 
-Notarás que el texto de arriba no *parece* cuadrar con el de abajo en 5 posiciones. Esto trae a colación un punto importante. La pantalla del Spectrum tiene, de forma natural, 32 caracteres por línea, que es algo insuficiente para textos largos. CYD soporta fuentes de ancho variable y la que tiene por defecto usa caracteres de 6x8, lo que nos permite tener 42 caracteres por línea, pero esto ocasiona que no coíncida con la rejilla de atributos del spectrum, que es 8x8, y haya "colour clash" o choque de atributos.
+Notarás que el texto de arriba no *parece* cuadrar con el de abajo en 5 posiciones. Esto trae a colación un punto importante. La pantalla del Spectrum tiene, de forma natural, 32 caracteres por línea, que es algo insuficiente para textos largos. CYD soporta fuentes de ancho variable y la que tiene por defecto usa caracteres de 6x8, lo que nos permite tener 42 caracteres por línea, pero esto ocasiona que no coincida con la rejilla de atributos del Spectrum, que es 8x8, y haya "colour clash" o choque de atributos.
 
 Por este motivo, `TAB` y todos los comandos que ahora explicaré, tienen un sistema de coordenadas basadas en caracteres de 8x8 píxeles, es decir, 32 columnas y 24 filas, contadas de 0 a 31 y 0 a 23 respectivamente.
 
-Vamos ahora a ver un comando para situar el cursor de impresión en cualquier punto de la pantalla. Con el comando `AT columna,fila`, podemos indicar las coordenadas donde queremos colocar el cursor para seguir impriendo. Vamos a verlo con éste ejemplo:
+Vamos ahora a ver un comando para situar el cursor de impresión en cualquier punto de la pantalla. Con el comando `AT columna,fila`, podemos indicar las coordenadas donde queremos colocar el cursor para seguir imprimiendo. Vamos a verlo con éste ejemplo:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -487,7 +487,7 @@ Por último, vamos a ver un problema de choque de atributos con este ejemplo:
 ]]LALALALALA[[INK 4 /* COlor verde */]] LOLOLOLOLOLO[[ WAITKEY: END ]]
 ```
 
-Se puede ver que al cambiar el color a verde con el comando `INK`, debido a que el siguiente caracter a imprimir (un espacio), se queda entre medias de dos celdas de atributos, se pinta el carácter anterior de blanco:
+Se puede ver que al cambiar el color a verde con el comando `INK`, debido a que el siguiente carácter a imprimir (un espacio), se queda entre medias de dos celdas de atributos, se pinta el carácter anterior de blanco:
 
 ![Color Clash!](assets/tut015.png)
 
@@ -515,7 +515,7 @@ Será necesario por parte del autor realizar estos pequeños ajustes para mejora
 
 Para darle más vistosidad a la aventura, es posible añadir imágenes en formato SCR, de pantalla de Spectrum. Estas imágenes serán comprimidas con la utilidad `CSC`, creando archivos con la misma extensión, que deberán ser incluidos en el disco final.
 
-En el manual se encuenta explicado cómo funciona `CSC`, por si quieres hacerlo manualmente. Pero el guión `MakeAdv` busca y comprime automáticamente los ficheros SCR que haya en el directorio `\IMAGES`, con lo que simplemente tendrás que despositar los ficheros allí.
+En el manual se encuentra explicado cómo funciona `CSC`, por si quieres hacerlo manualmente. Pero el guion `MakeAdv` busca y comprime automáticamente los ficheros SCR que haya en el directorio `\IMAGES`, con lo que simplemente tendrás que depositar los ficheros allí.
 
 Vamos a usar una imagen que tenemos de ejemplo, llamada `ORIGIN1.SCR`, dentro del directorio `\IMAGES`. Cópiala y renómbrala como `001.SCR`. Y pon el siguiente código en `tutorial.txt`:
 
@@ -544,7 +544,7 @@ Ahora ya podemos lanzar el emulador. Lo primero que verás es esto:
 
 ![Con imagen](assets/tut017.png)
 
-Cuando se pulse la tecla de confirmación, se lanzará el comando `PICTURE 1`. Lo que hará este comando es cargar y descomprimir en memoria la imágen del fichero `001.CSC`, pero cuidado, ¡todavía no se muestra!, pero notarás que se ha accedido a disco (esto depende del emulador).
+Cuando se pulse la tecla de confirmación, se lanzará el comando `PICTURE 1`. Lo que hará este comando es cargar y descomprimir en memoria la imagen del fichero `001.CSC`, pero cuidado, ¡todavía no se muestra!, pero notarás que se ha accedido a disco (esto depende del emulador).
 
 ![Cargando imagen](assets/tut018.png)
 
@@ -552,22 +552,22 @@ Con esto tenemos la imagen cargada, pero para mostrarla , tenemos que usar el co
 
 ![Mostrando imagen](assets/tut019.png)
 
-Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imágen ó no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
+Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen ó no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
 
-Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imágen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño, ya que al separar la carga, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comienza un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
+Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño, ya que al separar la carga, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comienza un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
 
 De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o mostrar una imagen sin cargarla antes.
 
-Al visualizar imágenes hay que tener en cuenta que siempre se sobreescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guión `MakeAdv.bat`:
+Al visualizar imágenes hay que tener en cuenta que siempre se sobreescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guion `MakeAdv.bat`:
 
 ```batch
 REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 ```
 
-Tras cargar la imagen, podemos ajustar el tamaño del área de impresión para que no se sobreescriba el dibujo usando `MARGINS`.
+Tras cargar la imagen, podemos ajustar el tamaño del área de impresión para que no se sobrescriba el dibujo usando `MARGINS`.
 
-Y por último, la imagen 0 es especial ya que se considera la pantalla de presentación. Al iniciarse la aventura se cargará y visualizará automáticamente la imagen del fichero `000.CSC`, si exisitiese éste en el disco.
+Y por último, la imagen 0 es especial ya que se considera la pantalla de presentación. Al iniciarse la aventura se cargará y visualizará automáticamente la imagen del fichero `000.CSC`, si existiese éste en el disco.
 
 ---
 
@@ -589,7 +589,7 @@ Ahora viene lo importante, **tenemos que cambiar `Code Address` a 49152**, y dej
 
 ![Opciones para BeepFx](assets/tut023.png)
 
-Le damos al botón `Compile` y nos sale un diálogo para guardar el fichero. **Lo tenemos que llamar `SFX.BIN`** y lo guardamos en la carpeta donde estemos desarrollando nuestra aventura. Cuando ejecutemos el guión `MakeAdv.bat`. Si éste encuentra en su mismo directorio el fichero `SFX.BIN`, lo incluirá automáticamente en la imagen de disco y lo podremos usar desde el motor.
+Le damos al botón `Compile` y nos sale un diálogo para guardar el fichero. **Lo tenemos que llamar `SFX.BIN`** y lo guardamos en la carpeta donde estemos desarrollando nuestra aventura. Cuando ejecutemos el guion `MakeAdv.bat`. Si éste encuentra en su mismo directorio el fichero `SFX.BIN`, lo incluirá automáticamente en la imagen de disco y lo podremos usar desde el motor.
 
 Vamos a poner un ejemplo, pon esto como código de la aventura:
 
@@ -629,7 +629,7 @@ Como detalle más técnico, indicar que el contenido del fichero SFX.BIN se aloj
 ## Música (AY)
 
 CYD también permite tocar música usando el chip AY, usando módulos creados con Vortex Tracker, en formato `PT3`.
-El funcionamiento es intencionadamente similar al de las imágenes. Los nombres de los ficheros de los módulos tienen que ser números de 3 dígitos con la extensión `.PT3`, de tal manera que sean `000.PT3`, `001.PT3` y así sucesivamente, e incluirse en el disco. Para facilitar la tarea, el guión `MakeAdv.bat` lo hará por nosotros con todos los ficheros que cumplan ésta nomenclatura y se encuentren dentro de la carpeta `.\TRACKS`.
+El funcionamiento es intencionadamente similar al de las imágenes. Los nombres de los ficheros de los módulos tienen que ser números de 3 dígitos con la extensión `.PT3`, de tal manera que sean `000.PT3`, `001.PT3` y así sucesivamente, e incluirse en el disco. Para facilitar la tarea, el guion `MakeAdv.bat` lo hará por nosotros con todos los ficheros que cumplan ésta nomenclatura y se encuentren dentro de la carpeta `.\TRACKS`.
 
 Los comandos que disponemos también son similares a los comandos de manejo de imágenes. Con el comando `TRACK`, cargamos desde disco en memoria un módulo de música, de tal manera que con `TRACK 0`, cargaríamos el módulo `000.PT3`, con `TRACK 1` cargaríamos `001.PT3`, etc.
 
@@ -663,7 +663,7 @@ Este es el resultado:
 
 Lo primero que vemos nuevo es ésto `SET 1 TO 5`, con ésto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
 
-Una cosa que habrás notado es que `PRINT` pone una arroba delande del número de variable. A eso le llamamos *indirección*. Para explicarlo mejor, quítale la arroba de tal manera que quede ésto:
+Una cosa que habrás notado es que `PRINT` pone una arroba delante del número de variable. A eso le llamamos *indirección*. Para explicarlo mejor, quítale la arroba de tal manera que quede ésto:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -679,7 +679,7 @@ Este es el resultado si lo ejecutamos así:
 
 ![Indirección](assets/tut025.png)
 
-¡Vaya! Pues eso es lo que es la indirección, cuando pones una arroba delante, significa **coge el valor de la variable cuyo número indíco detras**. Si has consultado el [manual](MANUAL_es.md), habrás visto que casi todos los  comandos tienen parámetros directos e indirectos, donde en el primer caso pones un valor específico y en el segundo indicas la variable donde debe coger su valor.
+¡Vaya! Pues eso es lo que es la indirección, cuando pones una arroba delante, significa **coge el valor de la variable cuyo número indico detras**. Si has consultado el [manual](MANUAL_es.md), habrás visto que casi todos los  comandos tienen parámetros directos e indirectos, donde en el primer caso pones un valor específico y en el segundo indicas la variable donde debe coger su valor.
 
 Por eso, con `PRINT 1`, lo que estás indicando es "Imprime el valor 1", pero con `PRINT @1`, lo que se indica es "Imprime el contenido de la variable 1".
 
@@ -758,8 +758,8 @@ Es decir, con las variables y las condiciones, tenemos las herramientas necesari
 
 Para ahorrar espacio en disco, el compilador realiza una compresión de los textos, buscando las subcadenas más comunes en el mismo y sustituyéndolas por "tokens" o abreviaturas.
 
-El guión `MakeAdv.bat` hará que el compilador busque las abreviaturas si no encuentra un fichero de nombre `tokens.json` en su carpeta, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra éste fichero, se lo pasará como parámetro al compilador para que utilice las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas de nuevo, simplemente con borrar el fichero `tokens.json` antes de ejecutarlo.
+El guion `MakeAdv.bat` hará que el compilador busque las abreviaturas si no encuentra un fichero de nombre `tokens.json` en su carpeta, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra éste fichero, se lo pasará como parámetro al compilador para que utilice las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas de nuevo, simplemente con borrar el fichero `tokens.json` antes de ejecutarlo.
 
-El proceso de búsqueda de abreviaturas puede ser muy costoso conforme se incrementa la cantidad de texto en la aventura. Mi consejo es escribir el guión de la aventura *antes* de ponernos a programar y ponerlo todo en un fichero de texto que le pasaremos al compilador, para que nos genere un fichero de abreviaturas adecuado. Una vez lo tengamos, ya podemos ir añadiendo comandos a dicho texto para ir dando forma a la aventura.  Una vez que ya la tengas *casi* finalizada, puedes volver a generar abreviaturas para ver si se puede rascar algo más de espacio.
+El proceso de búsqueda de abreviaturas puede ser muy costoso conforme se incrementa la cantidad de texto en la aventura. Mi consejo es escribir el guion de la aventura *antes* de ponernos a programar y ponerlo todo en un fichero de texto que le pasaremos al compilador, para que nos genere un fichero de abreviaturas adecuado. Una vez lo tengamos, ya podemos ir añadiendo comandos a dicho texto para ir dando forma a la aventura.  Una vez que ya la tengas *casi* finalizada, puedes volver a generar abreviaturas para ver si se puede rascar algo más de espacio.
 
 ---
