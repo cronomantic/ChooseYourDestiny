@@ -15,6 +15,7 @@
   - [Efectos de sonido (Beeper)](#efectos-de-sonido-beeper)
   - [Música (AY)](#música-ay)
   - [Variables e indirecciones](#variables-e-indirecciones)
+  - [Subrutinas](#subrutinas)
   - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
 
 ---
@@ -751,6 +752,63 @@ Y la segunda, ¿dónde está la opción de salir? Vamos a coger gamusinos hasta 
 ¡Ahora ya podemos salir! El secreto está en los condicionales. Si miramos en la opción de salir, vemos que antes hay `IF 0 <> 10 THEN GOTO Escoger`, lo que significa "Si la variable cero no es igual a 10, saltar a la etiqueta 'Escoger'", lo cual hace que se salte la opción de "Salir" y no se refleje en el menú hasta que el valor de la variable 0 sea 10.
 
 Es decir, con las variables y las condiciones, tenemos las herramientas necesarias para hacer menús de opciones o textos que varíen dependiendo de ciertas condiciones y hacer nuestra aventura más dinámica.
+
+---
+
+## Subrutinas
+
+Las subrutinas son un tipo de salto especial, que guarda en un almacén la posición desde la cual se llamó, y que se puede recuperar posteriormente, pudiendo continuar desde el mismo punto en el que se entró. Éste es un concepto de la programación clásico de "subrutinas" o "subprogramas", para realizar tareas repetitivas y que seguramente suene a los que hayan programado algo en Basic.
+
+Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   SET 0 TO 0
+   LABEL Inicio
+   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+¿Qué haces?
+
+[[OPTION GOTO Suma1]]Cojo 1 gamusino.
+[[OPTION GOTO Resta1]]Dejo 1 gamusino.
+[[OPTION GOTO Final]]Salir.
+[[
+   LABEL Escoger  
+   CHOOSE
+   LABEL Suma1
+   SET 0 ADD 1
+   GOTO Inicio
+   LABEL Resta1
+   SET 0 SUB 1
+   GOTO Inicio
+   LABEL Final]]¡Gracias por jugar!
+Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+   WAITKEY
+   END
+   /* Subrutina de impresión de gamusinos*/
+   LABEL ImprimirGamusimos : PRINT @0]] gamusinos[[RETURN]]
+```
+
+El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del número de Gamusinos dos veces, cuando elegimos una opción y al final del todo. 
+
+![Subrutinas](assets/tut029.png)
+
+Para ello hacemos una subrutina que realice esta función:
+
+```
+[[LABEL ImprimirGamusimos]]Tienes [[PRINT @0]] gamusinos[[RETURN]]
+```
+
+Declaramos una etiqueta llamada `ImprimirGamusinos` que sirve de punto de salto. Luego tenemos la impresión del número de gamusinos, y luego el comando `RETURN`. La llamada la realizamos con `GOSUB ImprimirGamusinos` en los dos puntos donde queremos que se ejecute.
+
+Como ya he indicado, `GOSUB ImprimirGamusinos`, lo que hace es hacer un salto a la etiqueta `ImprimirGamusinos`, pero con la salvedad que se guarda en la *pila* el punto de la llamada a la subrutina. Toda subrutina debe tener un punto de retorno, es decir, un punto de finalización con el que se indica al motor que debe volver al punto donde lo habíamos dejado, y eso lo hace el comando `RETURN`, que recupera de la pila el último punto de retorno y salta a esa posición.
+
+Una cosa que hay que fijarse es que la subrutina está al final, después de `END`. Esto es así para que no se ejecute sin que la llamemos explícitamente. Ten en cuenta que el intérprete no diferencia una subrutina de código "normal", y si llega a ese punto la ejecutará y hará un `RETURN` inválido al final. Por ello, recomiendo para evitar estas situaciones, situarlas al final después de un `END`, o usar un `GOTO` delante para saltarla en el caso de que accidentalmente llegue a ella.
+
+Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pueden anidarse, es decir, se puede llamar a una subrutina dentro de otra. Se almacenarán en la pila las direcciones de retorno en orden inverso, pero **CUIDADO, la pila sólo soporta 16 direcciones como máximo**. Esto quiere decir que no puedes superar más de 16 niveles de anidamiento. Y como ya expliqué en el párrafo anterior, si se hace un `RETURN` sin un `GOSUB` previo, tendrás como mínimo un error, y como máximo, comportamiento erróneo.
 
 ---
 
