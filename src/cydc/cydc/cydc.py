@@ -38,7 +38,7 @@ from .cydc_font import CydcFont
 def main():
     """Main function"""
 
-    version = "0.0.1"
+    version = "0.0.2"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -98,6 +98,13 @@ def main():
         "--import-charset",
         metavar=_("IMPORT-CHARSET"),
         help=_("file with the character set to use"),
+    )
+    ###
+    arg_parser.add_argument(
+        "-x", 
+        "--export-code",
+        metavar=_("EXPORT-CODE"),
+        help=_("JSON file with the final adventure data"),
     )
     ###
     arg_parser.add_argument(
@@ -269,18 +276,24 @@ def main():
         print(_("Generating final bytecode..."))
 
     codegen = CydcCodegen(gettext)
-    code = codegen.generate_code(code=code, tokens=tokenBytes, font=font)
+    code_out = codegen.generate_code(code=code, tokens=tokenBytes, font=font)
 
-    for p, i in enumerate(code):
+    for p, i in enumerate(code_out):
         if i > 255:
             sys.exit(_(f"ERROR: Invalid character.{i} - {chr(i)} at {p} byte."))
 
     try:
         with open(args.output, "wb") as f:
-            fileBytes = bytes(code)
+            fileBytes = bytes(code_out)
             f.write(fileBytes)
     except OSError:
         sys.exit(_("ERROR: Can't write destination file."))
+  
+    if args.export_code is not None:
+        export_code_file = args.export_code
+        code_exp = codegen.generate_exportable_code(code=code, tokens=tokenBytes, font=font)
+        with open(export_code_file, "w", encoding="utf-8") as fe:
+            fe.write(json.dumps(code_exp))
 
     sys.exit(0)
     ######################################################################
