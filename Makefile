@@ -1,6 +1,7 @@
 DISK_NAME:=test
 DISK_LABEL:=TEST
 TEXT_FILENAME:=test.txt
+EXPORT_FILENAME:=test.json
 
 .PHONY: clean clean_all build
 
@@ -32,10 +33,10 @@ $(DISK_NAME).DSK: $(FILELIST)
 $(SCRIPT_FILENAME): $(TEXT_FILENAME)
 ifeq (,$(wildcard ./tokens.json))
 # Token file does not exists, create a new one
-	python $(CYDC_PATH)/cydc_cli.py -v -T tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
+	python $(CYDC_PATH)/cydc_cli.py -v -x $(EXPORT_FILENAME) -T tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
 else
 # Token file exists, use it...
-	python $(CYDC_PATH)/cydc_cli.py -v -t tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
+	python $(CYDC_PATH)/cydc_cli.py -v -x $(EXPORT_FILENAME) -t tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
 endif
 
 clean_all: clean
