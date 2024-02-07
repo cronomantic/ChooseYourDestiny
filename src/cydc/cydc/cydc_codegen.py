@@ -28,7 +28,6 @@ from .cydc_font import CydcFont
 
 class CydcCodegen(object):
     BANK_SIZE = 16 * 1024
-    BANK_OFFSET = 0xC000
 
     opcodes = {
         "END": 0x00,
@@ -105,6 +104,7 @@ class CydcCodegen(object):
         self._ = gettext.gettext
         self.symbols = {}
         self.code = []
+        self.bank_offset = 0xC000
 
     def _code_translate(self, code):
         code_banks = []
@@ -193,7 +193,7 @@ class CydcCodegen(object):
         return [(value & 0xFF), ((value >> 8) & 0xFF)]
 
     def _convert_address(self, address):
-        return self._word_to_list(address + self.BANK_OFFSET)
+        return self._word_to_list(address + self.bank_offset)
 
     def _get_index_offset(self, idx, offset):
         if offset > 0x7FFFFF:  # Max 8 Mb
@@ -245,3 +245,15 @@ class CydcCodegen(object):
         header = self._word_to_list(len(self.code)) + header
         header = self._word_to_list(len(header)) + header
         return header + code
+    
+    def set_bank_offset(self, offset):
+        if offset is not None:
+            self.bank_offset = int(offset)
+    
+    def generate_exportable_code(self, code, tokens, font=None):
+        if font is None:
+            font = CydcFont()
+        (code, self.symbols) = self._code_translate(code)
+        self.code = [self._symbol_replacement(c, self.symbols) for c in code]
+        result = {"chunks": self.code, "tokens": tokens, "chars": font.font_chars, "charw": font.font_sizes}
+        return result
