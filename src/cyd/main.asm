@@ -413,6 +413,13 @@ EXEC_LOOP:
 .smod+1:
     jp OP_END
 
+    ;Close file
+END_PROGRAM:
+    ld b, SCRIPT_FILE_H>>8
+    call PLUS3_DOS_CLOSE
+    jp nc, DISK_ERROR          ; Error 1 if NC
+    jp RESET_SYS
+
 ; A - New CHUNK number
 ; On exit, new CHUNK in C
 LOAD_CHUNK:
