@@ -25,7 +25,7 @@
 
     DEVICE ZXSPECTRUM48
 
-    DEFINE RELEASE "0.2"
+    DEFINE RELEASE "0.3"
 
     ORG INIT_ADDR
 START:
@@ -53,7 +53,7 @@ CHUNK_ADDR      EQU $C000
     ld de, DISK_BUFFER        ; Restrict cache to bank 6
     call PLUS3_DOS_SET_1346
     jp nc, DISK_ERROR          ; Error 1 if NC
- 
+
     di
     ld sp, INITIAL_STACK      ; Set stack
     ld a, high ISR_TABLE      ; load interrupt service routine
@@ -68,7 +68,13 @@ CHUNK_ADDR      EQU $C000
     ld a, 7
     call INK
     call INIT_WIN
+
+    ld a, IMG_BANK
+    call SET_RAM_BANK
+    push af
     call CLS_BUFFER
+    pop af
+    call SET_RAM_BANK
 
     jp START_LOADING
 
