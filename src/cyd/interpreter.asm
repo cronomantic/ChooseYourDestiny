@@ -1102,6 +1102,11 @@ OP_LOOP_I:
 1:  pop hl
     jp EXEC_LOOP
 ;------------------------
+ERROR_NOP:
+    ld a, 6
+    jp SYS_ERROR
+
+
 
     ALIGN 256
 OPCODES:
@@ -1173,3 +1178,6 @@ OPCODES:
     DW OP_PLAY_I
     DW OP_LOOP_D
     DW OP_LOOP_I
+    REPT 256-(($-OPCODES)/2)
+    DW ERROR_NOP
+    ENDR
