@@ -9,7 +9,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Choose Your Destiny](#choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CYD (Motor)](#cyd-motor)
-  - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
+  - [CSC (Compresor de Imágenes)](#csc-compresor-de-im%C3%A1genes)
   - [Sintaxis](#sintaxis)
   - [Comandos](#comandos)
     - [END](#end)
@@ -26,66 +26,66 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [INKEY expression](#inkey-expression)
     - [CHAR expression](#char-expression)
     - [PRINT expression](#print-expression)
-    - [PRINT @ flag\_no](#print--flag_no)
+    - [PRINT @ flag_no](#print--flag_no)
     - [TAB expression](#tab-expression)
     - [PAGEPAUSE expression](#pagepause-expression)
     - [INK expression](#ink-expression)
-    - [INK @ flag\_no](#ink--flag_no)
+    - [INK @ flag_no](#ink--flag_no)
     - [PAPER expression](#paper-expression)
-    - [PAPER @ flag\_no](#paper--flag_no)
+    - [PAPER @ flag_no](#paper--flag_no)
     - [BORDER expression](#border-expression)
-    - [BORDER @ flag\_no](#border--flag_no)
+    - [BORDER @ flag_no](#border--flag_no)
     - [BRIGHT expression](#bright-expression)
-    - [BRIGHT @ flag\_no](#bright--flag_no)
+    - [BRIGHT @ flag_no](#bright--flag_no)
     - [FLASH expression](#flash-expression)
-    - [FLASH @ flag\_no](#flash--flag_no)
+    - [FLASH @ flag_no](#flash--flag_no)
     - [SFX expression](#sfx-expression)
-    - [SFX @ flag\_no](#sfx--flag_no)
+    - [SFX @ flag_no](#sfx--flag_no)
     - [PICTURE expression](#picture-expression)
-    - [PICTURE @ flag\_no](#picture--flag_no)
+    - [PICTURE @ flag_no](#picture--flag_no)
     - [DISPLAY expression](#display-expression)
-    - [DISPLAY @ flag\_no](#display--flag_no)
+    - [DISPLAY @ flag_no](#display--flag_no)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [AT expression, expression](#at-expression-expression)
-    - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
-    - [SET NOT flag\_no](#set-not-flag_no)
-    - [SET flag\_no TO expression](#set-flag_no-to-expression)
-    - [SET flag\_no TO @ flag\_no](#set-flag_no-to--flag_no)
-    - [SET flag\_no ADD expression](#set-flag_no-add-expression)
-    - [SET flag\_no ADD @ flag\_no](#set-flag_no-add--flag_no)
-    - [SET flag\_no SUB expression](#set-flag_no-sub-expression)
-    - [SET flag\_no SUB @ flag\_no](#set-flag_no-sub--flag_no)
-    - [SET flag\_no AND expression](#set-flag_no-and-expression)
-    - [SET flag\_no AND @ flag\_no](#set-flag_no-and--flag_no)
-    - [SET flag\_no OR expression](#set-flag_no-or-expression)
-    - [SET flag\_no OR @ flag\_no](#set-flag_no-or--flag_no)
-    - [IF flag\_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
-    - [IF flag\_no = @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
-    - [IF flag\_no \<\> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
-    - [IF flag\_no \<\> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
-    - [IF flag\_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
-    - [IF flag\_no \<= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
-    - [IF flag\_no \>= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
-    - [IF flag\_no \>= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
-    - [IF flag\_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
-    - [IF flag\_no \< @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
-    - [IF flag\_no \> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
-    - [IF flag\_no \> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
+    - [SET flag_no TO RANDOM](#set-flag_no-to-random)
+    - [SET NOT flag_no](#set-not-flag_no)
+    - [SET flag_no TO expression](#set-flag_no-to-expression)
+    - [SET flag_no TO @ flag_no](#set-flag_no-to--flag_no)
+    - [SET flag_no ADD expression](#set-flag_no-add-expression)
+    - [SET flag_no ADD @ flag_no](#set-flag_no-add--flag_no)
+    - [SET flag_no SUB expression](#set-flag_no-sub-expression)
+    - [SET flag_no SUB @ flag_no](#set-flag_no-sub--flag_no)
+    - [SET flag_no AND expression](#set-flag_no-and-expression)
+    - [SET flag_no AND @ flag_no](#set-flag_no-and--flag_no)
+    - [SET flag_no OR expression](#set-flag_no-or-expression)
+    - [SET flag_no OR @ flag_no](#set-flag_no-or--flag_no)
+    - [IF flag_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
+    - [IF flag_no = @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
+    - [IF flag_no \<> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
+    - [IF flag_no \<> @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
+    - [IF flag_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
+    - [IF flag_no \<= @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
+    - [IF flag_no >= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
+    - [IF flag_no >= @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
+    - [IF flag_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
+    - [IF flag_no \< @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
+    - [IF flag_no > expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
+    - [IF flag_no > @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
     - [TRACK expression](#track-expression)
-    - [TRACK @ flag\_no](#track--flag_no)
+    - [TRACK @ flag_no](#track--flag_no)
     - [PLAY expression](#play-expression)
-    - [PLAY @ flag\_no](#play--flag_no)
+    - [PLAY @ flag_no](#play--flag_no)
     - [LOOP expression](#loop-expression)
-    - [LOOP @ flag\_no](#loop--flag_no)
-  - [Imágenes](#imágenes)
+    - [LOOP @ flag_no](#loop--flag_no)
+  - [Imágenes](#im%C3%A1genes)
   - [Efectos de sonido](#efectos-de-sonido)
-  - [Melodías](#melodías)
-  - [Cómo generar una aventura](#cómo-generar-una-aventura)
+  - [Melodías](#melod%C3%ADas)
+  - [Cómo generar una aventura](#c%C3%B3mo-generar-una-aventura)
   - [Juego de caracteres](#juego-de-caracteres)
-  - [Códigos de error](#códigos-de-error)
+  - [Códigos de error](#c%C3%B3digos-de-error)
   - [F.A.Q](#faq)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
   - [Licencia](#licencia)
@@ -136,7 +136,7 @@ El compilador se encarga de covertir el guión de la aventura en un fichero bina
 
 Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```cmd
+```
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -583,7 +583,7 @@ Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al c
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
-```batch
+```
 REM Name of the game
 SET GAME=test
 REM This name will be used as:
@@ -691,6 +691,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`, o puede que se haya borrado inadvertidamente la pantalla, y por tanto, las opciones.
 - Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
 - Error 5: No hay un módulo de música cargado para reproducir.
+- Error 6: Código de instrucción inválido.
 
 ---
 
@@ -699,8 +700,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 1.  **Mi antivirus da un aviso al ejecutar cydc.exe en Windows.**  
     `cydc` está hecho con Python, y necesita tener el entorno de ejecución instalado. Para evitar inconveniencias al usuario, se ha utilizado la herramienta PyInstaller, que crea un ejecutable que aglutina un entorno de ejecución Python reducido y el programa `cydc`.  
     Sin embargo, este comportamiento puede hacer disparar la alerta heurística de los antivirus y dar un falso positivo. Para evitar ésto hay dos posibles opciones:
-    1. Añadir una excepción al antivirus para que ignore el ejecutable.
-    2. Instalar Python y ejecutar directamente los scripts que hay dentro de la carpeta `src/cydc`.
+    1.  Añadir una excepción al antivirus para que ignore el ejecutable.
+    2.  Instalar Python y ejecutar directamente los scripts que hay dentro de la carpeta `src/cydc`.
 
 ---
 
