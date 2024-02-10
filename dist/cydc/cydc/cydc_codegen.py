@@ -106,7 +106,7 @@ class CydcCodegen(object):
         self.code = []
         self.bank_offset = 0xC000
 
-    def _code_translate(self, code):
+    def _code_translate(self, code, slice_text=False):
         code_banks = []
         code_tmp = []
         labels = {}
@@ -130,12 +130,17 @@ class CydcCodegen(object):
                     while len(p) > 1:  # A string of less than 1 character is not valid
                         l = self.BANK_SIZE - offset - 5  # remaining size
                         if len(p) >= l:  # Too big!, we slice it...
+                            # print(f"DEBUG: Text:{len(p)} - space:{l}")
+                            # print(f"DEBUG: Text too big! {self.BANK_SIZE - offset} {len(code_tmp)}")
                             bank += 1
                             offset = 0  # reset offset counter
-                            code_tmp.append(q)
-                            code_tmp += p[0 : l - 1] + [
-                                245
-                            ]  # Adding end of string character
+                            if slice_text and l > 0:
+                                # print(f"DEBUG: Slice! {l-1}")
+                                code_tmp.append(q)
+                                code_tmp += p[0 : l - 1] + [
+                                    245
+                                ]  # Adding end of string character
+                                p = p[l - 1 :]
                             code_tmp += [
                                 self.opcodes["GOTO"],
                                 bank,
@@ -144,15 +149,16 @@ class CydcCodegen(object):
                             )  # adding goto to next bank
                             code_banks.append(code_tmp)  # add new bank
                             code_tmp = []
-                            p = p[l - 1 :]
                         else:
-                            code_tmp.append(q)
+                            code_tmp.append(q)  # Add opcode
                             code_tmp += p  # add list of the text
                             offset += len(p) + 1
                             p = []
                 else:
                     # if we have not space on the current bank, change to the next
                     if (len(t) + offset + 4) >= self.BANK_SIZE:
+                        print(f"DEBUG: :{len(t) + offset + 4}")
+                        print("Change bank!")
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
@@ -206,7 +212,9 @@ class CydcCodegen(object):
     def generate_code(self, code, tokens, font=None):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code)
+        (code, self.symbols) = self._code_translate(code, slice_text=False)
+        # for i, v in enumerate(code):
+        #     print(f"1>{i} -> {len(v)}")
         self.code = [self._symbol_replacement(c, self.symbols) for c in code]
         index = []
         sizes = []
@@ -245,15 +253,22 @@ class CydcCodegen(object):
         header = self._word_to_list(len(self.code)) + header
         header = self._word_to_list(len(header)) + header
         return header + code
-    
+
     def set_bank_offset(self, offset):
         if offset is not None:
             self.bank_offset = int(offset)
-    
+
     def generate_exportable_code(self, code, tokens, font=None):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code)
+        (code, self.symbols) = self._code_translate(code, slice_text=False)
+        # for i, v in enumerate(code):
+        #     print(f"2>{i} -> {len(v)}")
         self.code = [self._symbol_replacement(c, self.symbols) for c in code]
-        result = {"chunks": self.code, "tokens": tokens, "chars": font.font_chars, "charw": font.font_sizes}
+        result = {
+            "chunks": self.code,
+            "tokens": tokens,
+            "chars": font.font_chars,
+            "charw": font.font_sizes,
+        }
         return result
