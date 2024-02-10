@@ -261,7 +261,7 @@ class CydcCodegen(object):
     def generate_exportable_code(self, code, tokens, font=None):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code, slice_text=False)
+        (code, self.symbols) = self._code_translate(code, slice_text=True)
         # for i, v in enumerate(code):
         #     print(f"2>{i} -> {len(v)}")
         self.code = [self._symbol_replacement(c, self.symbols) for c in code]
