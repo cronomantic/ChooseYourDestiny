@@ -157,8 +157,8 @@ class CydcCodegen(object):
                 else:
                     # if we have not space on the current bank, change to the next
                     if (len(t) + offset + 4) >= self.BANK_SIZE:
-                        print(f"DEBUG: :{len(t) + offset + 4}")
-                        print("Change bank!")
+                        #print(f"DEBUG: :{len(t) + offset + 4}")
+                        #print("Change bank!")
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
