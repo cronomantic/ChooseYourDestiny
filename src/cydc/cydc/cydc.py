@@ -101,10 +101,10 @@ def main():
     )
     ###
     arg_parser.add_argument(
-        "-x", 
-        "--export-code",
-        metavar=_("EXPORT-CODE"),
-        help=_("JSON file with the final adventure data"),
+        "-x",
+        "--export-json",
+        action="store_true",
+        help=_("The destination file is a JSON instead of a binary file"),
     )
     ###
     arg_parser.add_argument(
@@ -271,29 +271,33 @@ def main():
             fco.write(font.getJson())
 
     ######################################################################
-            
+
     if verbose:
         print(_("Generating final bytecode..."))
 
     codegen = CydcCodegen(gettext)
-    code_out = codegen.generate_code(code=code, tokens=tokenBytes, font=font)
 
-    for p, i in enumerate(code_out):
-        if i > 255:
-            sys.exit(_(f"ERROR: Invalid character.{i} - {chr(i)} at {p} byte."))
+    if args.export_json:
+        code_exp = codegen.generate_exportable_code(
+            code=code, tokens=tokenBytes, font=font
+        )
+        try:
+            with open(args.output, "w", encoding="utf-8") as fe:
+                fe.write(json.dumps(code_exp))
+        except OSError:
+            sys.exit(_("ERROR: Can't write destination file."))
+    else:
+        code_out = codegen.generate_code(code=code, tokens=tokenBytes, font=font)
+        for p, i in enumerate(code_out):
+            if i > 255:
+                sys.exit(_(f"ERROR: Invalid character.{i} - {chr(i)} at {p} byte."))
 
-    try:
-        with open(args.output, "wb") as f:
-            fileBytes = bytes(code_out)
-            f.write(fileBytes)
-    except OSError:
-        sys.exit(_("ERROR: Can't write destination file."))
-  
-    if args.export_code is not None:
-        export_code_file = args.export_code
-        code_exp = codegen.generate_exportable_code(code=code, tokens=tokenBytes, font=font)
-        with open(export_code_file, "w", encoding="utf-8") as fe:
-            fe.write(json.dumps(code_exp))
+        try:
+            with open(args.output, "wb") as f:
+                fileBytes = bytes(code_out)
+                f.write(fileBytes)
+        except OSError:
+            sys.exit(_("ERROR: Can't write destination file."))
 
     sys.exit(0)
     ######################################################################
