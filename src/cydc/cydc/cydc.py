@@ -101,6 +101,13 @@ def main():
     )
     ###
     arg_parser.add_argument(
+        "-S",
+        "--slice-texts",
+        action="store_true",
+        default=False,
+        help=_("The text string will be sliced between two banks"),
+    )
+    arg_parser.add_argument(
         "-x",
         "--export-json",
         action="store_true",
@@ -279,7 +286,7 @@ def main():
 
     if args.export_json:
         code_exp = codegen.generate_exportable_code(
-            code=code, tokens=tokenBytes, font=font
+            code=code, tokens=tokenBytes, font=font, slice_text=args.slice_texts
         )
         try:
             with open(args.output, "w", encoding="utf-8") as fe:
@@ -287,7 +294,9 @@ def main():
         except OSError:
             sys.exit(_("ERROR: Can't write destination file."))
     else:
-        code_out = codegen.generate_code(code=code, tokens=tokenBytes, font=font)
+        code_out = codegen.generate_code(
+            code=code, tokens=tokenBytes, font=font, slice_text=args.slice_texts
+        )
         for p, i in enumerate(code_out):
             if i > 255:
                 sys.exit(_(f"ERROR: Invalid character.{i} - {chr(i)} at {p} byte."))

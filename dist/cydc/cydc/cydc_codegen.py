@@ -157,8 +157,8 @@ class CydcCodegen(object):
                 else:
                     # if we have not space on the current bank, change to the next
                     if (len(t) + offset + 4) >= self.BANK_SIZE:
-                        #print(f"DEBUG: :{len(t) + offset + 4}")
-                        #print("Change bank!")
+                        # print(f"DEBUG: :{len(t) + offset + 4}")
+                        # print("Change bank!")
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
@@ -209,10 +209,10 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def generate_code(self, code, tokens, font=None):
+    def generate_code(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code, slice_text=False)
+        (code, self.symbols) = self._code_translate(code, slice_text)
         # for i, v in enumerate(code):
         #     print(f"1>{i} -> {len(v)}")
         self.code = [self._symbol_replacement(c, self.symbols) for c in code]
@@ -258,10 +258,10 @@ class CydcCodegen(object):
         if offset is not None:
             self.bank_offset = int(offset)
 
-    def generate_exportable_code(self, code, tokens, font=None):
+    def generate_exportable_code(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code, slice_text=False)
+        (code, self.symbols) = self._code_translate(code, slice_text)
         # for i, v in enumerate(code):
         #     print(f"2>{i} -> {len(v)}")
         self.code = [self._symbol_replacement(c, self.symbols) for c in code]
