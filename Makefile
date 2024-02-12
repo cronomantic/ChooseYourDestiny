@@ -3,11 +3,13 @@ DISK_LABEL:=TEST
 TEXT_FILENAME:=test.txt
 EXPORT_FILENAME:=test.json
 
-.PHONY: clean clean_all build
+.PHONY: clean clean_all build testtap
 
 SCRIPT_FILENAME = SCRIPT.DAT
 BEEPFX_FILENAME = SFX.BIN
-CYDC_PATH := ./src/cydc
+BEEPFX_ASM_FILENAME = SFX.asm
+CYDC_PATH := ./src/cydc/cydc
+CYDCTAP_PATH := ./src/cydtap/cydtap
 
 MKP3FS := ./tools/mkp3fs.exe
 
@@ -22,7 +24,10 @@ ifneq (,$(wildcard ./$(BEEPFX_FILENAME)))
 FILELIST += $(BEEPFX_FILENAME)
 endif
 
-build: $(DISK_NAME).DSK
+build: $(DISK_NAME).DSK testtap
+
+testtap: $(EXPORT_FILENAME)
+	python $(CYDCTAP_PATH)/cydtap.py -v -i ./IMAGES -t ./TRACKS -s $(BEEPFX_ASM_FILENAME) $(EXPORT_FILENAME) test.tap ./tools/zx0 ./tools/sjasmplus
 
 $(DISK_NAME).DSK: $(FILELIST)
 	$(MKP3FS) -180 -label $(DISK_LABEL) $(DISK_NAME).DSK $(FILELIST)
@@ -30,13 +35,22 @@ $(DISK_NAME).DSK: $(FILELIST)
 %.csc: %.scr
 	./dist/csc.exe -f -o=$@ $<
 
+$(EXPORT_FILENAME): $(TEXT_FILENAME)
+ifeq (,$(wildcard ./tokens.json))
+# Token file does not exists, create a new one
+	python $(CYDC_PATH)/cydc.py -v -x -T tokens.json $(TEXT_FILENAME) $(EXPORT_FILENAME)
+else
+# Token file exists, use it...
+	python $(CYDC_PATH)/cydc.py -v -x -t tokens.json $(TEXT_FILENAME) $(EXPORT_FILENAME)
+endif
+
 $(SCRIPT_FILENAME): $(TEXT_FILENAME)
 ifeq (,$(wildcard ./tokens.json))
 # Token file does not exists, create a new one
-	python $(CYDC_PATH)/cydc_cli.py -v -x $(EXPORT_FILENAME) -T tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
+	python $(CYDC_PATH)/cydc.py -v -T tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
 else
 # Token file exists, use it...
-	python $(CYDC_PATH)/cydc_cli.py -v -x $(EXPORT_FILENAME) -t tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
+	python $(CYDC_PATH)/cydc.py -v -t tokens.json $(TEXT_FILENAME) $(SCRIPT_FILENAME)
 endif
 
 clean_all: clean

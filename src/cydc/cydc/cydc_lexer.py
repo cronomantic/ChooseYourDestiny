@@ -22,7 +22,7 @@
 # SOFTWARE.
 #
 
-from .ply import lex as lex
+from ply import lex as lex
 
 
 class CydcLexer(object):
@@ -279,17 +279,3 @@ class CydcLexer(object):
         elif num_n == 0 and num_r > 0:
             return num_r
         return num_n
-
-
-if __name__ == "__main__":
-    test = """[[Z 0x2f x>=(3+2)]] \[\]\n
-    blablabla [[ Hola Label LABEL
-    0x000 1234 @000 2-30 ]] xx
-    [[
-        --This is a comment
-    ]] label
-    [[ cccc:dddd ]] se acabo
-    """
-    l = CydcLexer()
-    l.build()
-    l.test(test)

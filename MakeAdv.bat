@@ -24,7 +24,7 @@ REM ---- Check if the file to compress is already compressed or is newer ----
   exit /b 0
 :START
 
-IF NOT EXIST .\%GAME%.txt (
+IF NOT EXIST %~dp0\%GAME%.txt (
   ECHO.
   echo %GAME%.txt file not found!
   GOTO ERROR
@@ -44,35 +44,35 @@ ECHO ---------------------
 ECHO Compiling the script...
 IF NOT exist .\tokens.json (
   rem Token file does not exists, create a new one
-  .\dist\cydc -T tokens.json .\%GAME%.txt .\SCRIPT.DAT
+  %~dp0\dist\python\python %~dp0\dist\cydc\cydc_cli.py -T tokens.json .\%GAME%.txt .\SCRIPT.DAT
   IF ERRORLEVEL 1 GOTO ERROR
 ) else (
   rem Token file exists, use it...
-  .\dist\cydc -t tokens.json .\%GAME%.txt .\SCRIPT.DAT
+  %~dp0\dist\python\python %~dp0\dist\cydc\cydc_cli.py .\%GAME%.txt .\SCRIPT.DAT
   IF ERRORLEVEL 1 GOTO ERROR
 )
 
 REM  ---- Making DISK ----
 ECHO ---------------------
 ECHO Building the disk image...
-IF NOT EXIST tools\mkp3fs.exe (
+IF NOT EXIST %~dp0\tools\mkp3fs.exe (
   echo mkp3fs.exe file not found!
   GOTO ERROR
 )
 SET LISTFILES=
-IF NOT EXIST dist\DISK (
+IF NOT EXIST .\dist\DISK (
   echo DISK file not found!
   GOTO ERROR
 ) else (
   CALL SET LISTFILES=%LISTFILES% dist\DISK
 )
-IF NOT EXIST dist\CYD.BIN (
+IF NOT EXIST .\dist\CYD.BIN (
   echo CYD.BIN file not found!
   GOTO ERROR
 ) else (
   CALL SET LISTFILES=%LISTFILES% dist\CYD.BIN
 )
-IF NOT EXIST SCRIPT.DAT (
+IF NOT EXIST .\SCRIPT.DAT (
   echo SCRIPT.DAT file not found!
   GOTO ERROR
 ) else (
@@ -94,7 +94,7 @@ for /L %%i in (100, 1, 255) do IF exist TRACKS\%%i.PT3 (CALL SET "TRACKFILES=%%T
 SET LISTFILES=%LISTFILES%%TRACKFILES%
 
 IF EXIST %GAME%.DSK DEL %GAME%.DSK > nul 2>&1
-tools\mkp3fs.exe -180 -label %GAME% %GAME%.DSK %LISTFILES% > nul 2>&1
+%~dp0\tools\mkp3fs.exe -180 -label %GAME% %GAME%.DSK %LISTFILES% > nul 2>&1
 IF ERRORLEVEL 1 GOTO ERROR
 ECHO ---------------------
 ECHO Success!
@@ -107,4 +107,4 @@ PAUSE
 :END
 
 REM ----  CLEANING ---- 
-DEL SCRIPT.DAT > nul 2>&1
+DEL .\SCRIPT.DAT > nul 2>&1

@@ -29,16 +29,51 @@ import os
 import gettext
 import argparse
 import json
-from .cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
-from .cydc_parser import CydcParser
-from .cydc_codegen import CydcCodegen
-from .cydc_font import CydcFont
+from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
+from cydc_parser import CydcParser
+from cydc_codegen import CydcCodegen
+from cydc_font import CydcFont
 
+
+def dir_path(string):
+    """_summary_
+
+    Args:
+        string (_type_): _description_
+
+    Raises:
+        NotADirectoryError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
+
+
+def file_path(string):
+    """_summary_
+
+    Args:
+        string (_type_): _description_
+
+    Raises:
+        FileNotFoundError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if os.path.isfile(string):
+        return string
+    else:
+        raise FileNotFoundError(string)
 
 def main():
     """Main function"""
 
-    version = "0.0.2"
+    version = "0.0.3"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -127,13 +162,14 @@ def main():
     arg_parser.add_argument(
         "input",
         metavar=_("input.txt"),
+        type=file_path,
         help=_("input filename, the script for the adventure"),
     )
 
     arg_parser.add_argument(
         "output",
         metavar=_("SCRIPT.DAT"),
-        help=_("output filename, file with the compiled script"),
+        help=_("output filename, file with the compiled script if option -x is not enabled"),
     )
 
     args = arg_parser.parse_args()
@@ -310,3 +346,6 @@ def main():
 
     sys.exit(0)
     ######################################################################
+
+if __name__ == '__main__':
+    main()
