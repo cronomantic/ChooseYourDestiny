@@ -23,7 +23,7 @@
 #
 
 import sys
-from .cydc_font import CydcFont
+from cydc_font import CydcFont
 
 
 class CydcCodegen(object):

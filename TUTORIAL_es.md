@@ -25,9 +25,7 @@
 
 ### Windows
 
-Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYourDestiny.Win64.zip de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada Tutorial, que puedes crear donde creas conveniente.
-
-El guión para montar aventuras se llama `MakeAdv.bat`, si al ejecutarlo te da una alerta el antivirus, es debido a que el ejecutable del compilador tiene incorporado un entorno Python que puede dar un falso positivo a su detector heurístico. Para evitarlo, puedes añadir una excepción al archivo `dist\cydc.exe` en tu antivirus.
+Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYourDestiny.Win64.zip de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada Tutorial, que puedes crear donde creas conveniente. El guión para montar aventuras se llama `MakeAdv.bat`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos.
 
 ---
 

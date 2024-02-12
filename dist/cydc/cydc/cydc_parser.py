@@ -22,8 +22,8 @@
 # SOFTWARE.
 #
 
-from .ply import yacc as yacc
-from .cydc_lexer import CydcLexer
+from ply import yacc as yacc
+from cydc_lexer import CydcLexer
 
 
 class CydcParser(object):
@@ -667,20 +667,3 @@ class CydcParser(object):
             self.errors.append(f"Invalid word value {val}")
             return False
         return True
-
-
-if __name__ == "__main__":
-    test = """empiezo[[GOTO tag]][[
-        IF 2 = 2+3 THEN GOTO tag
-        LABEL tag
-    -- Nada de nada
-        label tag2
-        END:
-    ]]
-    [[IF 3 < @5 THEN GOTO lalala]][[GOTO lalala]]acabo"""
-    parser = CydcParser()
-    parser.build()
-    parser.lexer.test(test)
-    res = parser.parse(test)
-    print(parser.parser)
-    print("Res=" + str(res) + "\n---------------------\n")
