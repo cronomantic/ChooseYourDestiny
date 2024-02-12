@@ -9,7 +9,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Choose Your Destiny](#choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CYD (Motor)](#cyd-motor)
-  - [CSC (Compresor de Imágenes)](#csc-compresor-de-im%C3%A1genes)
+  - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [Sintaxis](#sintaxis)
   - [Comandos](#comandos)
     - [END](#end)
@@ -26,66 +26,66 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [INKEY expression](#inkey-expression)
     - [CHAR expression](#char-expression)
     - [PRINT expression](#print-expression)
-    - [PRINT @ flag_no](#print--flag_no)
+    - [PRINT @ flag\_no](#print--flag_no)
     - [TAB expression](#tab-expression)
     - [PAGEPAUSE expression](#pagepause-expression)
     - [INK expression](#ink-expression)
-    - [INK @ flag_no](#ink--flag_no)
+    - [INK @ flag\_no](#ink--flag_no)
     - [PAPER expression](#paper-expression)
-    - [PAPER @ flag_no](#paper--flag_no)
+    - [PAPER @ flag\_no](#paper--flag_no)
     - [BORDER expression](#border-expression)
-    - [BORDER @ flag_no](#border--flag_no)
+    - [BORDER @ flag\_no](#border--flag_no)
     - [BRIGHT expression](#bright-expression)
-    - [BRIGHT @ flag_no](#bright--flag_no)
+    - [BRIGHT @ flag\_no](#bright--flag_no)
     - [FLASH expression](#flash-expression)
-    - [FLASH @ flag_no](#flash--flag_no)
+    - [FLASH @ flag\_no](#flash--flag_no)
     - [SFX expression](#sfx-expression)
-    - [SFX @ flag_no](#sfx--flag_no)
+    - [SFX @ flag\_no](#sfx--flag_no)
     - [PICTURE expression](#picture-expression)
-    - [PICTURE @ flag_no](#picture--flag_no)
+    - [PICTURE @ flag\_no](#picture--flag_no)
     - [DISPLAY expression](#display-expression)
-    - [DISPLAY @ flag_no](#display--flag_no)
+    - [DISPLAY @ flag\_no](#display--flag_no)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [AT expression, expression](#at-expression-expression)
-    - [SET flag_no TO RANDOM](#set-flag_no-to-random)
-    - [SET NOT flag_no](#set-not-flag_no)
-    - [SET flag_no TO expression](#set-flag_no-to-expression)
-    - [SET flag_no TO @ flag_no](#set-flag_no-to--flag_no)
-    - [SET flag_no ADD expression](#set-flag_no-add-expression)
-    - [SET flag_no ADD @ flag_no](#set-flag_no-add--flag_no)
-    - [SET flag_no SUB expression](#set-flag_no-sub-expression)
-    - [SET flag_no SUB @ flag_no](#set-flag_no-sub--flag_no)
-    - [SET flag_no AND expression](#set-flag_no-and-expression)
-    - [SET flag_no AND @ flag_no](#set-flag_no-and--flag_no)
-    - [SET flag_no OR expression](#set-flag_no-or-expression)
-    - [SET flag_no OR @ flag_no](#set-flag_no-or--flag_no)
-    - [IF flag_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
-    - [IF flag_no = @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
-    - [IF flag_no \<> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
-    - [IF flag_no \<> @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
-    - [IF flag_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
-    - [IF flag_no \<= @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
-    - [IF flag_no >= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
-    - [IF flag_no >= @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
-    - [IF flag_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
-    - [IF flag_no \< @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
-    - [IF flag_no > expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
-    - [IF flag_no > @ flag_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
+    - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
+    - [SET NOT flag\_no](#set-not-flag_no)
+    - [SET flag\_no TO expression](#set-flag_no-to-expression)
+    - [SET flag\_no TO @ flag\_no](#set-flag_no-to--flag_no)
+    - [SET flag\_no ADD expression](#set-flag_no-add-expression)
+    - [SET flag\_no ADD @ flag\_no](#set-flag_no-add--flag_no)
+    - [SET flag\_no SUB expression](#set-flag_no-sub-expression)
+    - [SET flag\_no SUB @ flag\_no](#set-flag_no-sub--flag_no)
+    - [SET flag\_no AND expression](#set-flag_no-and-expression)
+    - [SET flag\_no AND @ flag\_no](#set-flag_no-and--flag_no)
+    - [SET flag\_no OR expression](#set-flag_no-or-expression)
+    - [SET flag\_no OR @ flag\_no](#set-flag_no-or--flag_no)
+    - [IF flag\_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
+    - [IF flag\_no = @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
+    - [IF flag\_no \<\> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
+    - [IF flag\_no \<\> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
+    - [IF flag\_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
+    - [IF flag\_no \<= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
+    - [IF flag\_no \>= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
+    - [IF flag\_no \>= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
+    - [IF flag\_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
+    - [IF flag\_no \< @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
+    - [IF flag\_no \> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
+    - [IF flag\_no \> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
     - [TRACK expression](#track-expression)
-    - [TRACK @ flag_no](#track--flag_no)
+    - [TRACK @ flag\_no](#track--flag_no)
     - [PLAY expression](#play-expression)
-    - [PLAY @ flag_no](#play--flag_no)
+    - [PLAY @ flag\_no](#play--flag_no)
     - [LOOP expression](#loop-expression)
-    - [LOOP @ flag_no](#loop--flag_no)
-  - [Imágenes](#im%C3%A1genes)
+    - [LOOP @ flag\_no](#loop--flag_no)
+  - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
-  - [Melodías](#melod%C3%ADas)
-  - [Cómo generar una aventura](#c%C3%B3mo-generar-una-aventura)
+  - [Melodías](#melodías)
+  - [Cómo generar una aventura](#cómo-generar-una-aventura)
   - [Juego de caracteres](#juego-de-caracteres)
-  - [Códigos de error](#c%C3%B3digos-de-error)
+  - [Códigos de error](#códigos-de-error)
   - [F.A.Q](#faq)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
   - [Licencia](#licencia)
@@ -97,7 +97,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
 ```
-cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
+cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
         [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
         [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
         input.txt SCRIPT.DAT
@@ -115,6 +115,8 @@ cydc.exe [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-V**: Indica la versión del programa.
 - **input.txt**: Fichero de entrada con el guión de la aventura.
 - **SCRIPT.DAT**: Fichero de salida para el motor.
+
+El compilador es un programa escrito en Python. Para mayor comodidad, se incluye en la distribución un Python embebido y un guión batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 
 ---
 
@@ -576,12 +578,11 @@ Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, ten
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis).  
-y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probrarla.
+Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla.
 
 Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
 
-El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla, se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
+El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
 ```
 REM Name of the game
