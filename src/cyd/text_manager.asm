@@ -289,7 +289,7 @@ SET_MARGINS:
     ex (sp), hl
     exx
     ret
-   
+
 
 SET_CURSOR:
     push ix
@@ -1004,6 +1004,20 @@ ADJUST_CHAR_POS:
 1:  ld a, 8
     jp UPDATE_POS
     ; d = POS_Y, e = POS_X
+
+ADJUST_CHAR_POS_NO_ADVANCE:
+    ld a, (POS_X)
+    and 7
+    jr z, 1f
+    ld c, a
+    ld a, 8
+    sub c
+    jp UPDATE_POS       ;Advance to match 8x8 character
+1:  ld a, 0
+    jp UPDATE_POS
+    ; d = POS_Y, e = POS_X
+
+
 
 ; hl character input
 ; d = POS_Y, e = POS_X
