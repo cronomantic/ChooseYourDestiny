@@ -209,7 +209,7 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def generate_code(self, code, tokens, font=None, slice_text=False):
+    def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
         (code, self.symbols) = self._code_translate(code, slice_text)
@@ -258,7 +258,7 @@ class CydcCodegen(object):
         if offset is not None:
             self.bank_offset = int(offset)
 
-    def generate_exportable_code(self, code, tokens, font=None, slice_text=False):
+    def generate_code(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
         (code, self.symbols) = self._code_translate(code, slice_text)
