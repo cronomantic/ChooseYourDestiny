@@ -645,8 +645,8 @@ OP_OPTION:
     jp EXEC_LOOP
 
 OP_WAITKEY:
-    push hl                     ;Save pointer
-    call ADJUST_CHAR_POS    ;Advance to the best position for printing the choice
+    push hl                          ;Save pointer
+    call ADJUST_CHAR_POS_NO_ADVANCE  ;Advance to the best position for printing the choice
     push de 
     push de                     ;d = POS_Y, e = POS_X
     ld a, WAIT_TO_KEY_BULLET 
@@ -692,7 +692,7 @@ OP_PAUSE:
     inc hl
     push hl                     ;Save pointer
     ld (DOWN_COUNTER), de
-    call ADJUST_CHAR_POS    ;Advance to the best position for printing the choice
+    call ADJUST_CHAR_POS_NO_ADVANCE    ;Advance to the best position for printing the choice
     push de 
     push de                     ;d = POS_Y, e = POS_X
     ld a, WAIT_TO_KEY_BULLET 
