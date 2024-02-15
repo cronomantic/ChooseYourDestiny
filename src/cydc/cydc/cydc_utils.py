@@ -66,6 +66,31 @@ def compress_zx0_list_bytes(zx0_path, chunk):
     return chunk
 
 
+def bytes2str(list_bytes=[], b_str=""):
+    """_summary_
+
+    Args:
+        list_bytes (list, optional): _description_. Defaults to [].
+        b_str (str, optional): _description_. Defaults to "".
+
+    Returns:
+        _type_: _description_
+    """
+    cnt = 0
+    for c in list_bytes:
+        if cnt == 0:
+            b_str += f"    DEFB ${c:02X}"
+        else:
+            b_str += f", ${c:02X}"
+        cnt += 1
+        if cnt == 16:
+            cnt = 0
+            b_str += "\n"
+    if cnt != 0:
+        b_str += "\n"
+    return b_str
+
+
 def make_plus3_dsk(mkp3fs_path, filename, label=None, filelist=[]):
 
     mkp3fs_path = os.path.abspath(
