@@ -23,7 +23,7 @@
 ; SOFTWARE.
 ;
 
-    DEFINE RELEASE "0.3"
+    DEFINE RELEASE "0.4"
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -40,6 +40,7 @@ VORTEX_BANK     EQU 1
 VORTEX_FILE_H   EQU 2 << 8
 
 CHUNK_ADDR      EQU $C000
+MDLADDR 		EQU $C000
 
     call PLUS3_DOS_INIT
     ld hl, 0                  ; No RAM disk
@@ -98,17 +99,11 @@ ISR:
     push bc
     push de                  ;Full context save
 
-    ;ld a, (PLUS3_DOS_BANKM)
-    ;push af                  ; Save current bank
-
     ld a, (UPDATE_SCR_FLAG)  ; Get flag
     or a                     ; test if active
     jp z, .no_screen         ; Do nothing if 0 
     ;Update screen here!
 
-    ;ld bc, $7ffd
-    ;ld a, IMG_BANK|%00010000
-    ;out (c), a              ;Sets bank 1
 
 ;Copy Pixels
     ld hl, SCREEN_BUFFER_PXL
@@ -216,6 +211,8 @@ ISR:
     ld (UPDATE_SCR_FLAG), a
 
 .no_screen:
+
+VORTEX_PLAYER_ISR:
     ;call vortex tracker here?
     ld hl, VTR_STAT
     bit 1, (hl)        ;Test if loaded module
@@ -238,7 +235,6 @@ ISR:
     pop bc
     pop af
     out (c), a
-    ;ld (PLUS3_DOS_BANKM), a
 
     pop hl
 
@@ -253,6 +249,8 @@ ISR:
     call VTR_MUTE
 
 .no_ay:
+
+
     ; Downcounter for pauses
     ld hl, (DOWN_COUNTER)
     ld a, l
@@ -273,12 +271,6 @@ ISR:
     ld (CYCLE_OPTION), a
 
 .restore_context:
-    ;Restore bank
-;    ld bc, $7ffd
-;    pop af
-;    out (c), a
-;    ld a, (PLUS3_DOS_BANKM)
-    
     pop de                  ; Restore context
     pop bc
     pop hl
@@ -301,6 +293,7 @@ ISR_TABLE:
     DEFS 257, HIGH ISR
 
 START_LOADING:
+/*
     ; Loads image 000 as loading screen
     ld hl, LOAD_FILENAME
     ld bc, IMAGE_FILE_H+1   ; FIle id=0, exclusive read
@@ -318,7 +311,7 @@ START_LOADING:
     call IMG_LOAD
     call COPY_SCREEN
 .no_intro:
-
+*/
 
     ; Open history file
     ld hl, FILENAME_SCRIPT
@@ -383,6 +376,7 @@ EXEC_LOOP:
 
     ;Close file
 END_PROGRAM:
+    call VTR_MUTE
     ld b, SCRIPT_FILE_H>>8
     call PLUS3_DOS_CLOSE
     jp nc, DISK_ERROR          ; Error 1 if NC
@@ -453,6 +447,7 @@ RANDOM:
     ret
 
 ;----------------------------------------------------
+    DEFINE USE_VORTEX
 @{INCLUDES}
 ;----------------------------------------------------
 ; System Error message
