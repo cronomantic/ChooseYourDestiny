@@ -88,5 +88,5 @@ VTR_VARSEND EQU $
 ;--------------------------------
 PLAY_MODULE     EQU %00000001
 MODULE_LOADED   EQU %10000000
-MDLADDR 		EQU $C000
+
 
