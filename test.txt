@@ -6,6 +6,8 @@
     FLASH 0
     PAPER 0
     TRACK 0
+    PICTURE 0
+    DISPLAY 1
     WAIT 75
     CLEAR
 ]]¿Quieres escuchar música?

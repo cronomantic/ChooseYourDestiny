@@ -80,7 +80,7 @@ def file_path(string):
 def main():
     """Main function"""
 
-    version = "0.0.3"
+    version = "0.4.0"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -214,13 +214,13 @@ def main():
         type=file_path,
         help=_("path to sjasmplus executable"),
     )
-    arg_parser.add_argument(
-        "zx0_path",
-        default="zx0",
-        metavar=_("ZX0_PATH"),
-        type=file_path,
-        help=_("path to zx0 executable"),
-    )
+    # arg_parser.add_argument(
+    #     "zx0_path",
+    #     default="zx0",
+    #     metavar=_("ZX0_PATH"),
+    #     type=file_path,
+    #     help=_("path to zx0 executable"),
+    # )
     arg_parser.add_argument(
         "mkp3fs_path",
         default="mkp3fs",
@@ -454,7 +454,7 @@ def main():
                 f.write(fileBytes)
         except OSError:
             sys.exit(_("ERROR: Can't write SCRIPT.DAT file."))
-    else: 
+    else:
         if font is None:
             font = CydcFont()
         l_chars = font.font_chars
@@ -498,12 +498,14 @@ def main():
                 chars=l_chars,
                 charw=l_charw,
             )
-    except ValueError:
-        sys.exit(_("ERROR: Error assembling interpreter."))
-    except OSError:
-        sys.exit(_("ERROR: Error assembling interpreter."))
-    
-    if asm_size > 16*1024:
+            print(asm_size)
+
+    except ValueError as e1:
+        sys.exit(_("ERROR: Error assembling TAP."), e1)
+    except OSError as e2:
+        sys.exit(_("ERROR: Error assembling TAP."), e2)
+
+    if asm_size > 16 * 1024:
         sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
 
     ######################################################################
@@ -511,23 +513,20 @@ def main():
         if verbose:
             print(_("Memory organization for tape version..."))
 
-        # We do this to get an rounded-up aproximation of the number of blocks
+        # We do this to get an rounded-up approximation of the number of blocks
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
         chunks = codegen.generate_code(code=code, slice_text=args.slice_texts)
 
         # To calculate the offset
-        num_blocks = len(blocks) + len(chunks)                    
+        num_blocks = len(blocks) + len(chunks)
         bank0_offset = (5 * num_blocks) + asm_size + 0x8000
         bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
-        print(f"asm_size={asm_size} num_blocks={num_blocks} bank0_offset={bank0_offset} bank0_size_available={bank0_size_available}")
-
-        #generate block again
+        # generate block again
         codegen.set_bank_offset_list([bank0_offset, 0xC000])
         codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
         chunks = codegen.generate_code(code=code, slice_text=args.slice_texts)
-
 
         if model == "128":
             spectrum_banks = [0, 1, 3, 4, 6, 7]
@@ -539,18 +538,18 @@ def main():
         tmp_available_bank_size = []
         # Make sure that the TXT blocks are first!
         for i, chunk in enumerate(chunks):
-            #tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))    
+            # tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))
             if i == 0:
                 offset = bank0_offset
                 size = bank0_size_available
             else:
                 offset = 0xC000
-                size = 16*1024
+                size = 16 * 1024
             if size < len(chunk):
                 sys.exit(_("ERROR: Block too big."))
             tmp_blocks.insert(i, chunk)
             tmp_index.insert(i, (0, i, i, offset))
-            tmp_available_bank_size.insert(i, size-len(chunk))
+            tmp_available_bank_size.insert(i, size - len(chunk))
 
         max_banks = len(spectrum_banks)
         num_banks = len(tmp_blocks)
@@ -598,15 +597,19 @@ def main():
                 sys.exit(_("ERROR: Not enough memory available"))
 
         if verbose:
+            print("\nBanks:\n-----------------")
             for i, v in enumerate(available_banks):
-                print(f"[{spectrum_banks[i]}] = {len(v)} - Free:{available_bank_size[i]}")
+                print(
+                    f"Bank [{spectrum_banks[i]}]: Size:{len(v)} - Free:{available_bank_size[i]}"
+                )
+            print("\nIndex:\n-----------------")
             for i, v in enumerate(index):
-                print(f"{v[0]} {v[1]} {v[2]} {v[3]}")
-
+                print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
+            print("\n")
         try:
             if model == "128":
                 if verbose:
-                    print(_("Assembling 128 TAP..."))
+                    print(_("Assembling Spectrum 128k TAP..."))
                 do_asm_128(
                     sjasmplus_path=args.sjasmplus_path,
                     output_path=args.output_path,
@@ -623,12 +626,28 @@ def main():
                     loading_scr=loading_scr,
                     has_tracks=has_tracks,
                 )
-        except ValueError:
-            sys.exit(_("ERROR: Error assembling TAP."))
-        except OSError:
-            sys.exit(_("ERROR: Error assembling TAP."))
-        
-   
+            else:
+                if verbose:
+                    print(_("Assembling Spectrum 48k TAP..."))
+                do_asm_48(
+                    sjasmplus_path=args.sjasmplus_path,
+                    output_path=args.output_path,
+                    tap_name=output_name,
+                    index=index,
+                    blocks=available_banks,
+                    banks=spectrum_banks,
+                    size_interpreter=asm_size,
+                    bank0_offset=bank0_offset,
+                    sfx_asm=sfx,
+                    tokens=l_tokens,
+                    chars=l_chars,
+                    charw=l_charw,
+                    loading_scr=loading_scr,
+                )
+        except ValueError as e1:
+            sys.exit(_("ERROR: Error assembling TAP."), e1)
+        except OSError as e2:
+            sys.exit(_("ERROR: Error assembling TAP."), e2)
 
     ######################################################################
     if model == "plus3":

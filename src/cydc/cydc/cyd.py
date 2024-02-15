@@ -40,7 +40,6 @@ def get_asm_128(
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
 
-
     d = dict(
         INIT_ADDR="$8000",
         TOKENS=bytes2str(tokens, ""),
@@ -51,7 +50,7 @@ def get_asm_128(
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
     )
-    #SHOW_SIZE_INTERPRETER
+    # SHOW_SIZE_INTERPRETER
 
     t = get_asm_template("bank_zx128")
     includes = t.substitute(d)
@@ -103,20 +102,20 @@ def get_asm_48(
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
 
-
     d = dict(
-        INIT_ADDR="$8000",
-        TOKENS=tokens,
-        CHARS=chars,
-        CHARW=charw,
+INIT_ADDR="$8000",
+        TOKENS=bytes2str(tokens, ""),
+        CHARS=bytes2str(chars, ""),
+        CHARW=bytes2str(charw, ""),
         INDEX=index,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
     )
-
-    t = get_asm_template("dzx0_turbo")
+    t = get_asm_template("bank_zx128")
     includes = t.substitute(d)
+    t = get_asm_template("dzx0_turbo")
+    includes += t.substitute(d)
     t = get_asm_template("screen_manager_tape")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
@@ -146,7 +145,7 @@ def get_asm_128_size(
     has_tracks=False,
 ):
     asm = get_asm_128(
-        index = "",
+        index="",
         size_index=0,
         tokens=tokens,
         chars=chars,
@@ -173,6 +172,7 @@ def get_asm_128_size(
     size = int(size[m.start() : m.end()])
     return size
 
+
 def get_asm_48_size(
     sjasmplus_path,
     output_path,
@@ -182,7 +182,7 @@ def get_asm_48_size(
     sfx_asm,
 ):
     asm = get_asm_48(
-        index = "",
+        index="",
         size_index=0,
         tokens=tokens,
         chars=chars,
@@ -207,6 +207,7 @@ def get_asm_48_size(
         raise ValueError("Size pattern not found")
     size = int(size[m.start() : m.end()])
     return size
+
 
 def do_asm_128(
     sjasmplus_path,
@@ -224,8 +225,8 @@ def do_asm_128(
     loading_scr=None,
     has_tracks=False,
 ):
-    
-    tap_path = os.path.join(output_path, tap_name+".tap")
+
+    tap_path = os.path.join(output_path, tap_name + ".tap")
 
     asm_ind = ""
     for i, v in enumerate(index):
@@ -240,7 +241,7 @@ def do_asm_128(
         charw=charw,
         sfx_asm=sfx_asm,
         has_tracks=has_tracks,
-        tap_path = tap_path
+        tap_path=tap_path,
     )
 
     block_list = ""
@@ -260,7 +261,7 @@ def do_asm_128(
         block_list += f"    DEFW ${offset:X}\n"
         block_list += f"    DEFW ${len(block):X}\n"
         block_list += f"    DEFB ${bank:X}\n"
-    block_list += "    DEFW $0\n"             #End mark
+    block_list += "    DEFW $0\n"  # End mark
 
     d = dict(
         INIT_ADDR="$8000",
@@ -270,14 +271,14 @@ def do_asm_128(
         BLOCK_LIST=block_list,
     )
     t = get_asm_template("loadertape")
-    asm = t.substitute(d) 
-    
+    asm = t.substitute(d)
+
     if loading_scr is not None:
         asm += "    ORG 16384\n"
         asm += "START_LOADING_SCREEN:\n"
         asm += bytes2str(loading_scr)
         asm += "\nSIZE_LOADING_SCREEN = $ - START_LOADING_SCREEN\n"
-        asm += f"    SAVETAP \"{tap_path}\",HEADLESS,START_LOADING_SCREEN,SIZE_LOADING_SCREEN\n\n"
+        asm += f'    SAVETAP "{tap_path}",HEADLESS,START_LOADING_SCREEN,SIZE_LOADING_SCREEN\n\n'
 
     asm += asm_int
 
@@ -289,7 +290,9 @@ def do_asm_128(
         blk_asm += f"START_BLOCK_{i}:\n"
         blk_asm += bytes2str(block)
         blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
-        blk_asm += f"    SAVETAP \"{tap_path}\",HEADLESS,START_BLOCK_{i},SIZE_BLOCK_{i}\n\n"
+        blk_asm += (
+            f'    SAVETAP "{tap_path}",HEADLESS,START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
+        )
         asm += blk_asm
 
     res = run_assembler(
@@ -299,7 +302,7 @@ def do_asm_128(
         listing=True,
         capture_output=False,
     )
-   
+
 
 def do_asm_48(
     sjasmplus_path,
@@ -307,30 +310,91 @@ def do_asm_48(
     tap_name,
     index,
     blocks,
+    banks,
+    size_interpreter,
+    bank0_offset,
     tokens,
     chars,
     charw,
     sfx_asm,
     loading_scr=None,
 ):
-    pass
-#    
-#    asm = get_asm_48(
-#        size_index=len(index),
-#        tokens=tokens,
-#        chars=chars,
-#        charw=charw,
-#        sfx_asm=sfx_asm,
-#    )
-#
-#    res = run_assembler(
-#        asm_path=sjasmplus_path,
-#        asm=asm,
-#        filename=os.path.join(output_path, "cyd.asm"),
-#        listing=True,
-#        capture_output=False,
-#    )
-    
+    tap_path = os.path.join(output_path, tap_name + ".tap")
+
+    asm_ind = ""
+    for i, v in enumerate(index):
+        asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
+        asm_ind += f"    DEFW ${v[3]:X}\n"
+
+    asm_int = get_asm_48(
+        index=asm_ind,
+        size_index=len(index),
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        tap_path=tap_path,
+    )
+
+    block_list = ""
+    if loading_scr is not None:
+        block_list += f"    DEFW LD_SCR_ADDR\n"
+        block_list += f"    DEFW LD_SCR_SIZE\n"
+        block_list += f"    DEFB $0\n"
+    block_list += f"    DEFW $8000\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFB $0\n"
+    for i, block in enumerate(blocks):
+        bank = banks[i]
+        if i == 0:
+            offset = bank0_offset
+        else:
+            offset = 0xC000
+        block_list += f"    DEFW ${offset:X}\n"
+        block_list += f"    DEFW ${len(block):X}\n"
+        block_list += f"    DEFB ${bank:X}\n"
+    block_list += "    DEFW $0\n"  # End mark
+
+    d = dict(
+        INIT_ADDR="$8000",
+        STACK_ADDRESS="$8000",
+        TAP_NAME=tap_path,
+        TAP_LABEL=tap_name,
+        BLOCK_LIST=block_list,
+    )
+    t = get_asm_template("loadertape")
+    asm = t.substitute(d)
+
+    if loading_scr is not None:
+        asm += "    ORG 16384\n"
+        asm += "START_LOADING_SCREEN:\n"
+        asm += bytes2str(loading_scr)
+        asm += "\nSIZE_LOADING_SCREEN = $ - START_LOADING_SCREEN\n"
+        asm += f'    SAVETAP "{tap_path}",HEADLESS,START_LOADING_SCREEN,SIZE_LOADING_SCREEN\n\n'
+
+    asm += asm_int
+
+    for i, block in enumerate(blocks):
+        if i == 0:
+            blk_asm = f"    ORG ${bank0_offset:X}\n"
+        else:
+            blk_asm = "    ORG $C000\n"
+        blk_asm += f"START_BLOCK_{i}:\n"
+        blk_asm += bytes2str(block)
+        blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
+        blk_asm += (
+            f'    SAVETAP "{tap_path}",HEADLESS,START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
+        )
+        asm += blk_asm
+
+    res = run_assembler(
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=True,
+        capture_output=False,
+    )
+
 
 def do_asm_plus3(
     sjasmplus_path, output_path, sfx_asm, filename_script="SCRIPT.DAT", loading_scr=None
