@@ -22,8 +22,8 @@
 ; SOFTWARE.
 
 
-;SCR_ADDR      EQU  16384
-;SCR_SIZE      EQU  6912
+LD_SCR_ADDR      EQU  16384
+LD_SCR_SIZE      EQU  6912
 
 DOS_OPEN      EQU $0106
 DOS_READ      EQU $0112
@@ -36,6 +36,8 @@ START_ADDRESS EQU 23755
 ;INIT_ADDR     EQU $5A00
 ;EXEC_ADDR     EQU @INIT_ADDR
 ;STACK_ADDRESS EQU @{INIT_ADDR}-2
+
+    @DEFINE_LOADING_SCREEN
 
     ORG START_ADDRESS
 
@@ -108,9 +110,9 @@ MAINROM:
 INIT_STATE:
     XOR A
     OUT (254), A                    ;Black border
-    LD HL, SCR_ADDR                 ;pixels
-    LD DE, SCR_ADDR+1               ;pixels + 1
-    LD BC, SCR_SIZE                 ;T
+    LD HL, LD_SCR_ADDR                 ;pixels
+    LD DE, LD_SCR_ADDR+1               ;pixels + 1
+    LD BC, LD_SCR_SIZE                 ;T
     LD (HL), L                      ;pone el primer byte a '0' ya que HL = 16384 = $4000  por tanto L = 0
     LDIR                            ;copia
 
@@ -132,10 +134,24 @@ INIT_STATE:
     LD DE, $7808                  ;H 120, L 8
                                   ;8 last buffers of RAM 6
                                   ;4kb for cache
+
+    IFNDEF LOADING_SCREEN
     JP DOS_SET_1346
+    ENDIF
+    IFDEF LOADING_SCREEN
+    CALL DOS_SET_1346
+    LD HL, LOADSCR_DAT
+    LD DE, LD_SCR_ADDR
+    LD BC, LD_SCR_SIZE
+    LDIR
+    RET
+LOADSCR_DAT:
+@{LOADSCR_DAT}
+    ENDIF
 
 FILENAME_LOAD:
     DB "@INTERPRETER_FILENAME_BASE", $FF
+
 
 SIZE_LINE0 = $ - LINEA0
 LINEA10:

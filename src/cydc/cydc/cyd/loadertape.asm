@@ -1,31 +1,15 @@
     DEVICE ZXSPECTRUM48
 
-    LUA ALLPASS
 
-      function generateFiledata(filename, startaddress)
-        local fp = assert(io.open(filename))
-        local fsize = assert(fp:seek("end"))
-        assert(fp:close())
-        if (fsize > 64*1024 or fsize == 0) then
-            error("invalid size")
-        end
-        _pc("DW " .. startaddress)
-        _pc("DW " .. fsize)
-      end
-
-      function endList()
-        _pc("DW $0000")
-      end
-
-    ENDLUA
-
-SCR_ADDR   EQU  16384
-SCR_SIZE   EQU  6912
+LD_SCR_ADDR   EQU  16384
+LD_SCR_SIZE   EQU  6912
 
 PROG       EQU  $5C53
 LD_BLOCK   EQU  $0802
 LD_BYTES   EQU  $0556
 REPORT_R   EQU  $0806
+PORT_128   EQU  $7FFD
+BANK_VAR   EQU  $5b5c
 
 
 START_ADDRESS EQU 23755
@@ -41,22 +25,24 @@ LINEA0:
     DB 234 ;TOKEN DE REM
 
 LOAD_TABLE:
-    LUA ALLPASS
-    --generateFiledata("load.scr", _c("SCR_ADDR"))
-      generateFiledata("CYD_CORE.bin", _c("INIT_ADDR"))
-      endList()
-    ENDLUA
+@{BLOCK_LIST}
 
-START:
 
+START_LOADER:
     ; Clear screen
+    DI
+    LD SP, @STACK_ADDRESS
     XOR A
     OUT (254), A                    ;Black border
-    LD HL, SCR_ADDR                 ;pixels
-    LD DE, SCR_ADDR+1               ;pixels + 1
-    LD BC, SCR_SIZE                 ;T
+    LD HL, LD_SCR_ADDR              ;pixels
+    LD DE, LD_SCR_ADDR+1            ;pixels + 1
+    LD BC, LD_SCR_SIZE              ;T
     LD (HL), L                      ;pone el primer byte a '0' ya que HL = 16384 = $4000  por tanto L = 0
     LDIR                            ;copia
+
+    CALL MAINROM
+    LD C, 0
+    CALL SETRAM
 
     LD HL, LOAD_TABLE               ;Blocks table
 LOOP_TABLE:
@@ -73,12 +59,18 @@ LOOP_TABLE:
     INC HL                          ; Get size
     LD IX, 0
     ADD IX, BC                      ; IX = start address, DE = size
+    LD C, (HL)                      ; Set Bank
+    INC HL
+    DI
+    CALL SETRAM
+    EI
     SCF                             ; Set Carry Flag -> CF=1 -> LOAD
     LD A, $FF                       ; A = 0xFF (cargar datos)
     PUSH HL
     CALL LD_BYTES                   ; Load block
     POP HL
     JR C, LOOP_TABLE                ;If load OK , next entry...
+
 RESET:                        
     XOR A                           ;Reset on error
     LD BC, $7ffd
@@ -87,9 +79,36 @@ RESET:
     LD B,$1F                        ;BC=1FFD
     OUT (C),A                       ;update port
     JP 0
+
 RUN:
-    CALL INIT_ADDR
+    DI
+    LD C, 0
+    CALL SETRAM
+    CALL @INIT_ADDR
     JR RESET
+
+SETRAM:
+    LD A,(23388)
+    AND %00010111
+    OR C
+    LD BC,$7FFD
+    OUT (C),A
+    LD (23388),A
+    RET
+
+MAINROM:
+    LD A,(23388)
+    SET 4,A
+    LD BC,$7FFD
+    OUT (C),A
+    LD (23388),A
+    LD A,(23399)
+    RES 0,A
+    SET 2,A
+    LD B, $1F ;BC=$1FFD
+    OUT (C),A
+    LD (23399),A
+    RET
 
 SIZE_LINE0 = $ - LINEA0
 LINEA10:
@@ -97,27 +116,18 @@ LINEA10:
     DW SIZE_LINE10 - 4
     DB 253 ;CLEAR
     DB '.',14,0,0 ;SHORTNUMBER
-    DW INIT_ADDR - 1
+    DW @INIT_ADDR - 1
     DB 0 ;FIN DEL SHORTNUMBER
     DB ':'
     DB 242 ;PAUSE
     DB 192 ;USR
     DB '.',14,0,0 ;SHORTNUMBER
-    DW START
+    DW START_LOADER
     DB 0 ;FIN DEL SHORTNUMBER
     DB 13
 
 SIZE_LINE10 = $ - LINEA10
-SIZEOFBASIC = $ - 23755
+SIZEOFBASIC = $ - START_ADDRESS
 
-    EMPTYTAP "CYD.tap"
-    SAVETAP "CYD.tap",BASIC,"CYD",START_ADDRESS,SIZEOFBASIC,10
-;    TAPOUT "SuperCobra.tap"
-;    INCBIN "load.scr"
-;    TAPEND
-    TAPOUT "CYD.tap"
-    INCBIN "CYD_CORE.bin"
-    TAPEND
-
-    END
-
+    EMPTYTAP "@TAP_NAME"
+    SAVETAP "@TAP_NAME",BASIC,"@TAP_LABEL",START_ADDRESS,SIZEOFBASIC,10

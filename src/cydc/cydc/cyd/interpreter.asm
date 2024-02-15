@@ -1001,11 +1001,13 @@ OP_SFX_I:
 OP_TRACK_D:
     ld a, (hl)
     inc hl
+    IFDEF USE_VORTEX
     di
     push hl
     call LOAD_MUSIC
     pop hl
     ei
+    ENDIF
     jp EXEC_LOOP
 
 OP_TRACK_I:
@@ -1013,16 +1015,19 @@ OP_TRACK_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    IFDEF USE_VORTEX
     di
     push hl
     call LOAD_MUSIC
     pop hl
     ei
+    ENDIF
     jp EXEC_LOOP
 
 OP_PLAY_D:
     ld a, (hl)
     inc hl
+    IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
     bit 1, (hl)
@@ -1035,6 +1040,7 @@ OP_PLAY_D:
     jr 1f
 2:  set 2, (hl)
 1:  pop hl
+    ENDIF
     jp EXEC_LOOP
 
 OP_PLAY_I:
@@ -1042,6 +1048,7 @@ OP_PLAY_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
     bit 1, (hl)
@@ -1054,11 +1061,13 @@ OP_PLAY_I:
     jr 1f
 2:  set 2, (hl)
 1:  pop hl
+    ENDIF
     jp EXEC_LOOP
 
 OP_LOOP_D:
     ld a, (hl)
     inc hl
+    IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
     bit 1, (hl)
@@ -1071,6 +1080,7 @@ OP_LOOP_D:
     jr 1f
 2:  res 0, (hl)
 1:  pop hl
+    ENDIF
     jp EXEC_LOOP
 
 OP_LOOP_I:
@@ -1078,6 +1088,7 @@ OP_LOOP_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
     bit 1, (hl)
@@ -1090,6 +1101,7 @@ OP_LOOP_I:
     jr 1f
 2:  res 0, (hl)
 1:  pop hl
+    ENDIF
     jp EXEC_LOOP
 ;------------------------
 ERROR_NOP:
