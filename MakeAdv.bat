@@ -6,10 +6,18 @@ REM Name of the game
 SET GAME=test
 REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
-REM   - The +3 disk image file will be called test.dsk with this example
+REM   - The name of the TAP file or +3 disk image
+
+REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
+
+REM Loading screen
+SET LOAD_SCR=%~dp0\IMAGES\000.scr
+
+REM ---------------------------------
 
 GOTO START
 REM ---- Check if the file to compress is already compressed or is newer ----
@@ -42,60 +50,33 @@ CD ..
 REM  ---- COMPILING ADVENTURE ----
 ECHO ---------------------
 ECHO Compiling the script...
-IF NOT exist .\tokens.json (
-  rem Token file does not exists, create a new one
-  %~dp0\dist\python\python %~dp0\dist\cydc\cydc_cli.py -T tokens.json .\%GAME%.txt .\SCRIPT.DAT
-  IF ERRORLEVEL 1 GOTO ERROR
-) else (
-  rem Token file exists, use it...
-  %~dp0\dist\python\python %~dp0\dist\cydc\cydc_cli.py .\%GAME%.txt .\SCRIPT.DAT
-  IF ERRORLEVEL 1 GOTO ERROR
-)
-
-REM  ---- Making DISK ----
-ECHO ---------------------
-ECHO Building the disk image...
 IF NOT EXIST %~dp0\tools\mkp3fs.exe (
   echo mkp3fs.exe file not found!
   GOTO ERROR
 )
-SET LISTFILES=
-IF NOT EXIST .\dist\DISK (
-  echo DISK file not found!
+IF NOT EXIST %~dp0\tools\sjasmplus.exe (
+  echo sjasmplus.exe file not found!
   GOTO ERROR
+)
+IF NOT exist .%~dp0\tokens.json (
+  rem Token file does not exists, create a new one
+  IF EXIST %~dp0\SFX.ASM (
+  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -T %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
+  IF ERRORLEVEL 1 GOTO ERROR
+  ) else (
+  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -T %~dp0\tokens.json -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
+  IF ERRORLEVEL 1 GOTO ERROR
+  )
 ) else (
-  CALL SET LISTFILES=%LISTFILES% dist\DISK
+  rem Token file exists, use it...
+  IF EXIST %~dp0\SFX.BIN (
+  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -t %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
+  IF ERRORLEVEL 1 GOTO ERROR
+  ) else (
+  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -t %~dp0\tokens.json -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
+  IF ERRORLEVEL 1 GOTO ERROR
+  )
 )
-IF NOT EXIST .\dist\CYD.BIN (
-  echo CYD.BIN file not found!
-  GOTO ERROR
-) else (
-  CALL SET LISTFILES=%LISTFILES% dist\CYD.BIN
-)
-IF NOT EXIST .\SCRIPT.DAT (
-  echo SCRIPT.DAT file not found!
-  GOTO ERROR
-) else (
-  CALL SET LISTFILES=%LISTFILES% SCRIPT.DAT
-)
-IF EXIST SFX.BIN (
-  CALL SET LISTFILES=%LISTFILES% SFX.BIN
-)
-SET IMAGEFILES=
-for /L %%i in (0, 1, 9) do IF exist IMAGES\00%%i.CSC (CALL SET "IMAGEFILES=%%IMAGEFILES%% IMAGES\00%%i.CSC")
-for /L %%i in (10, 1, 99) do IF exist IMAGES\0%%i.CSC (CALL SET "IMAGEFILES=%%IMAGEFILES%% IMAGES\0%%i.CSC")
-for /L %%i in (100, 1, 255) do IF exist IMAGES\%%i.CSC (CALL SET "IMAGEFILES=%%IMAGEFILES%% IMAGES\%%i.CSC")
-SET LISTFILES=%LISTFILES%%IMAGEFILES%
-
-SET TRACKFILES=
-for /L %%i in (0, 1, 9) do IF exist TRACKS\00%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\00%%i.PT3")
-for /L %%i in (10, 1, 99) do IF exist TRACKS\0%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\0%%i.PT3")
-for /L %%i in (100, 1, 255) do IF exist TRACKS\%%i.PT3 (CALL SET "TRACKFILES=%%TRACKFILES%% TRACKS\%%i.PT3")
-SET LISTFILES=%LISTFILES%%TRACKFILES%
-
-IF EXIST %GAME%.DSK DEL %GAME%.DSK > nul 2>&1
-%~dp0\tools\mkp3fs.exe -180 -label %GAME% %GAME%.DSK %LISTFILES% > nul 2>&1
-IF ERRORLEVEL 1 GOTO ERROR
 ECHO ---------------------
 ECHO Success!
 GOTO END

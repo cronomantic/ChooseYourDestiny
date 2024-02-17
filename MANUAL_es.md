@@ -1,14 +1,13 @@
 # Choose Your Destiny
 
-El programa es un interprete para ejecutar historias de tipo "Escoje tu propia aventura" o aventuras por opciones, para el Spectrum +3.
+El programa es un intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones, para el Spectrum 48, 128, +2 y +3.
 
-Consiste una máquina virtual que va intepretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje mas "humano" con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
+Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje mas "humano" con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
 - [Choose Your Destiny](#choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
-  - [CYD (Motor)](#cyd-motor)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [Sintaxis](#sintaxis)
   - [Comandos](#comandos)
@@ -94,29 +93,9 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 ## CYDC (Compilador)
 
-Este programa es el compilador que traduce el texto de la aventura a un fichero interpretable por el motor, llamado **SCRIPT.DAT**. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
+Este programa es el compilador que traduce el texto de la aventura a un fichero TAP o DSK. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
-```
-cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
-        [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE]
-        [-C EXPORT-CHARSET] [-c IMPORT-CHARSET] [-v] [-V]
-        input.txt SCRIPT.DAT
-```
-
-- **\-h**: Muestra la ayuda
-- **\-l MIN_LENGTH**: La longitud mínima de las abreviaturas a buscar (por defecto, 3).
-- **\-L MAX_LENGTH**: La longitud máxima de las abreviaturas a buscar (por defecto, 30).
-- **\-s SUPERSET_LIMIT**: Límite para el super-conjunto de la heurística de la búsqueda (por defecto, 100).
-- **\-T EXPORT-TOKENS_FILE**: Exportar al fichero JSON indicado por el parámetro las abreviaturas encontradas.
-- **\-t IMPORT-TOKENS-FILE**: Importar abreviaturas desde el fichero indicado y obviar la búsqueda de las mismas.
-- **\-C EXPORT-CHARSET**: Exporta el juego de caracteres 6x8 usado por defecto en formato JSON.
-- **\-c IMPORT-CHARSET**: Importa en formato JSON el juego de caracteres a emplear.
-- **\-v**: Modo verboso, da más información del proceso.
-- **\-V**: Indica la versión del programa.
-- **input.txt**: Fichero de entrada con el guión de la aventura.
-- **SCRIPT.DAT**: Fichero de salida para el motor.
-
-```
+```batch
 cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-csc CSC_IMAGES_PATH] [-trk TRACKS_PATH]
@@ -124,63 +103,50 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               {48,128,plus3} input.txt SJASMPLUS_PATH MKP3FS_PATH OUTPUT_PATH
 ```
 
-positional arguments:
-  {48,128,plus3}        Model of spectrum to target
-  input.txt             input filename, the script for the adventure
-  SJASMPLUS_PATH        path to sjasmplus executable
-  MKP3FS_PATH           path to mkp3fs executable
-  OUTPUT_PATH           Output path to files
+- **\-h**: Muestra la ayuda
+- **\-l MIN_LENGTH**: La longitud mínima de las abreviaturas a buscar (por defecto, 3).
+- **\-L MAX_LENGTH**: La longitud máxima de las abreviaturas a buscar (por defecto, 30).
+- **\-s SUPERSET_LIMIT**: Límite para el superconjunto de la heurística de la búsqueda (por defecto, 100).
+- **\-T EXPORT-TOKENS_FILE**: Exportar al fichero JSON indicado por el parámetro las abreviaturas encontradas.
+- **\-t IMPORT-TOKENS-FILE**: Importar abreviaturas desde el fichero indicado y obviar la búsqueda de las mismas.
+- **\-C EXPORT-CHARSET**: Exporta el juego de caracteres 6x8 usado por defecto en formato JSON.
+- **\-c IMPORT-CHARSET**: Importa en formato JSON el juego de caracteres a emplear.
+- **\-S**: Si un fragmento de texto comprimido no cabe en un banco, se divide en dos entre el banco actual y el siguiente con esta opción activada. Si no, el fragmento pasa al banco siguiente.
+- **\-n NAME**: Nombre a usar para el fichero de salida (nombre para el fichero TAP o DSK), si no se define será el mismo que el fichero de entrada.
+- **\-scr LOAD_SCR_FILE**: Ruta hacia un fichero SCR con la pantalla de carga a usar.
+- **\-csc CSC_PATH**: Ruta al directorio con las imágenes CSC comprimidas de la aventura.
+- **\-trk TRACKS_PATH**: Ruta al directorio con los ficheros PT3 de música AY.
+- **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
+- **\-v**: Modo verboso, da más información del proceso.
+- **\-V**: Indica la versión del programa.
 
-  - **\-h, \-\-help**: Muestra la ayuda
-  -l MIN_LENGTH, --min-length MIN_LENGTH
-                        minimum abbreviation length (default: 3)
-  -L MAX_LENGTH, --max-length MAX_LENGTH
-                        maximum abbreviation length (default: 30)
-  -s SUPERSET_LIMIT, --superset-limit SUPERSET_LIMIT
-                        limit for the superset search heuristic (default: 100)
-  -T EXPORT-TOKENS_FILE, --export-tokens-file EXPORT-TOKENS_FILE
-                        file to export the found tokens
-  -t IMPORT-TOKENS-FILE, --import-tokens-file IMPORT-TOKENS-FILE
-                        file with the tokens to use
-  -C EXPORT-CHARSET, --export-charset EXPORT-CHARSET
-                        file to export the current character set
-  -c IMPORT-CHARSET, --import-charset IMPORT-CHARSET
-                        file with the character set to use
-  -S, --slice-texts     The text string will be sliced between two banks
-  -n NAME, --name NAME  Name of the output file
-  -csc CSC_IMAGES_PATH, --csc-images-path CSC_IMAGES_PATH
-                        path to the directory with the CSC compressed Spectrum screens
-  -trk TRACKS_PATH, --tracks-path TRACKS_PATH
-                        path to the directory with the PT3 tracks
-  -sfx SFX_ASM_FILE, --sfx-asm-file SFX_ASM_FILE
-                        path to the asm file generated by beepfx
-  -scr LOAD_SCR_FILE, --load-scr-file LOAD_SCR_FILE
-                        path to the SCR file used as Loading screen
-  -v, --verbose         show additional information
-  -V, --version         show program's version number and exit
-El compilador es un programa escrito en Python. Para mayor comodidad, se incluye en la distribución un Python embebido y un guión batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
+-**{48,128,plus3}**: Modelo de Spectrum a emplear:
+  -- **48**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
+  -- **128**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
+  -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
 
----
+- **input.txt**: Fichero de entrada con el guion de la aventura.
+- **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
+- **MKP3FS_PATH**: Ruta al ejecutable mkp3fs.
+- **OUTPUT_PATH**: Ruta donde se depositarán los ficheros de salida.
 
-## CYD (Motor)
+El compilador es un programa escrito en Python, por lo que se requiere tener el entorno de Python instalado. Para mayor comodidad, se incluye en la distribución un Python embebido y un guion batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 
-Este es el motor principal del juego, y que debe incluirse en el disco junto con el fichero **SCRIPT.DAT** y el cargador **DISK** para tener una aventura funcional.
+**El compilador depende de dos programas externos para funcionar**. El ensamblador `SjASMPlus` y el constructor de imágenes DSK `mkp3fs`, por lo que habrá que indicar en los parámetros de entrada las correspondientes rutas a esos programas, los cuales están incluidos en la distribución en el directorio `tools`.
 
-La aventura se puede lanzar con en autolanzador del menú de inicio del Spectrum +3 o desde Basic con el comando `LOAD"DISK"`.
+También hay que indicar un directorio de destino para dejar los ficheros resultantes de la compilación.
 
-Opcionalmente, se pueden incluir imágenes comprimidas con la utilidad CSC, melodías de Vortex Tracker y efectos de sonido añadiendo un fichero generado con BeepFx llamado `SFX.BIN`. Mas información en las secciones relevantes.
+Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `CSC`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de archivos deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.CSC`, `001.CSC`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-csc` y -`pt3` respectivamente.
 
-El funcionamiento del motor consiste en un intérprete que carga desde disco un trozo de la aventura llamado "chunk" o "trozo" que ocupa 16 Kbytes (el mismo tamaño que el banco del Spectrum) y va imprimiendo los textos comprimidos o ejecutando los comandos incluidos en éste de forma secuencial, aunque hay comandos de salto que pueden alterar el flujo de ejecución de forma obligatoria o condicional. Cuando el intérprete debe cambiar en "trozo" en ejecución, descarta el que haya cargado y carga el nuevo "trozo" a ejecutar desde disco.
-
-El compilador se encarga de covertir el guión de la aventura en un fichero binario dividido estos "trozos" y ajusta de forma correspondiente las referencias en los saltos.
+Se pueden añadir efectos de sonido generados con la aplicación BeepFx de Shiru. Para utilizarlos, hay que exportar usando la opción `File->Compile` del menú superior. En la ventana flotante que aparece, debemos asegurarnos de que tenemos seleccionado `Assembly` e `Include Player Code`, el resto de opciones son indiferentes. Luego guardar el fichero en algún punto accesible para indicar la ruta desde la línea de comandos con la opción `-sfx`.
 
 ---
 
 ## CSC (Compresor de Imágenes)
 
-Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudíendose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
+Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudiéndose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
 
-```
+```batch
 CSC [-f] [-m] [-l=num_lines] [-o=output] input
     -f, --force                Force overwrite of output file
     -m, --mirror               The right side of the image is the reflection of the left one.
@@ -191,25 +157,23 @@ CSC [-f] [-m] [-l=num_lines] [-o=output] input
 
 Esto es una definición de los parámetros:
 
-- **\-f, --force**: Fuerza la sobre-escritura del fichero de destinosi ya existiese.
+- **\-f, --force**: Fuerza la sobreescritura del fichero de destino si ya existiese.
 - **\-m, --mirror**: Descarta el lado derecho de la imagen y usa la imagen espejada del izquierdo.
 - **\-o, --output=FILE**: Ruta del salida del fichero comprimido.
 - **\-l, --num-lines=NUMBER**: Número de líneas de la pantalla a tratar (en carácteres, de 1 a 24).
 - **\-h, --help**: Muestra la ayuda.
 
-El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.CSC`, la imagen número 1 `001.CSC`, y así hasta 255.
-
-Éstos ficheros deben incluirse en el disco.
+El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco o la memoria, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.CSC`, la imagen número 1 `001.CSC`, y así hasta 255, como ya se ha indicado en la sección anterior.
 
 ---
 
 ## Sintaxis
 
-Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de ésto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
+Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 
 Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que haya en medio se considera un comentario.
 
-Este es un ejemplo resumido y auto-explicativo de la sintaxis:
+Este es un ejemplo resumido y auto explicativo de la sintaxis:
 
 ```
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
@@ -221,7 +185,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Esto vuelve a ser texto pero blanco, y ¡ojo con el salto de línea que lo precede!
 ```
 
-El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimendo (este último comportamiento es opcional).
+El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
 Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
 De nuevo, éste es un ejemplo autoexplicativo:
@@ -246,7 +210,7 @@ De nuevo, éste es un ejemplo autoexplicativo:
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 16 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
-Al escoger una opción, el interprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
+Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
@@ -390,7 +354,7 @@ Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### PICTURE expression
 
-Carga en el buffer la imagen indicada como parámentro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
+Carga en el buffer la imagen indicada como parámetro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
 ### PICTURE @ flag_no
@@ -401,7 +365,7 @@ Igual que `PICTURE`, pero usando el contenido de una variable como parámetro.
 
 Muestra el contenido actual del buffer en pantalla.  
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
-Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobreescrito.
+Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
 ### DISPLAY @ flag_no
 
@@ -542,7 +506,7 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el conte
 
 ### TRACK expression
 
-Carga en memoria el fichero de Vortex Tracker como parámentro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobreescribirá.
+Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobrescribirá.
 
 ### TRACK @ flag_no
 
@@ -569,23 +533,21 @@ Igual que `LOOP`, pero toma el parámetro del contenido de la variable indicada.
 ## Imágenes
 
 Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.  
-Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imágen 0, `001.CSC` para la imagen 1, y así con el resto.
+Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imagen 0, `001.CSC` para la imagen 1, y así con el resto.
 
-Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar ésto con otro parámetro de la misma.
+Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar esto con otro parámetro de la misma.
 
-Hay dos comandos necesarios para mostrar una imágen, el comando `PICTURE n` cargará en un buffer la imágen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
+Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un buffer la imagen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
 
-Para mostar una imagen cargada en el buffer, usamos `DISPLAY n` ó `DISPLAY @n`, donde n en el primer caso, o el contenido del flag n en el segundo, tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobreescribe todo lo que hubiese en pantalla hasta el momento.
-
-Además, al cargarse el programa, antes de cargar el fichero de la aventura, el motor busca el fichero `000.DCP` en disco. Si existe, lo carga y lo muestra automáticamente como pantalla de presentación/carga. Si no existe el fichero, prosigue simplemente borrando la pantalla.
+Para mostar una imagen cargada en el buffer, usamos `DISPLAY n` ó `DISPLAY @n`, donde n en el primer caso, o el contenido del flag n en el segundo, tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
 
 ---
 
 ## Efectos de sonido
 
-Añadir efectos de sonido con el beeper es muy sencillo. Para ello tenemos que crear un banco de efectos con la utilidad BeepFx. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal.
+Añadir efectos de sonido con el beeper es muy sencillo. Para ello tenemos que crear un banco de efectos con la utilidad BeepFx. Debemos exportar el fichero de efectos como un fichero en ensamblador usando la opción `File->Compile` del menú superior. En la ventana flotante que aparece, debemos asegurarnos de que tenemos seleccionado `Assembly` e `Include Player Code`, el resto de opciones son irrelevantes, ya que el compilador modificará el fichero fuente para incrustarlo en el intérprete.
 
-Este fichero habrá que añadirlo posteriormente a la imagen de disco. Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efecto a reproducir. Si se llama a este comando sin que exista un fichero de efectos cargado, será ignorado y seguirá la ejecución.
+Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efecto a reproducir. Si se llama a este comando sin que exista un fichero de efectos cargado, será ignorado y seguirá la ejecución.
 
 No está contemplado llamar a un número de efecto que no exista en el fichero incluido.
 
@@ -593,9 +555,9 @@ No está contemplado llamar a un número de efecto que no exista en el fichero i
 
 ## Melodías
 
-El motor `CYD` también permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará el fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes.
+El motor `CYD` también permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará la pista del fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes.
 
-Una vez cargado un módulo, se prodrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
+Una vez cargado un módulo, se podrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
 
 Cuando se llegue al final del módulo, la reproducción se detendrá automáticamente, pero podemos cambiar este comportamiento con el comando `LOOP`. De nuevo, según se indica en la referencia, si el parámetro es igual a cero, al llegar al final se detendrá la reproducción, como se ha indicado antes. Pero si el parámetro es distinto de cero, el módulo volverá a reproducirse desde el principio.
 
@@ -603,53 +565,60 @@ Cuando se llegue al final del módulo, la reproducción se detendrá automática
 
 ## Cómo generar una aventura
 
-Lo primero es generar un guión de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guión de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
+Lo primero es generar un guion de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guion de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
 
-Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Carácteres](#juego-de-caracteres), que serán convertidos a los códigos allí indicados.
+Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Caracteres](#juego-de-caracteres), que serán convertidos a los códigos allí indicados.
 
-Una vez tenemos la aventura, usamos el compilador `CYDC` para generar el fichero **SCRIPT.DAT**. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
+Una vez tenemos la aventura, usamos el compilador `CYDC` para generar un fichero DSK o TAP. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
 A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.  
 Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
-Si son necesarias imágenes, las comprimimos con CSC con el detalle que deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa (`000.CSC`, `001.CSC`, y así), como se ha indicado en una sección anterior.
-
-Si queremos añadir efectos de sonido, tendremos que usar el programa BeepFX de Shiru. Debemos exportar el fichero de efectos como un binario, que se llamará `SFX.BIN` y a la hora de exportarlo **debemos indicar** como dirección inicial **49152** en decimal ó lo que es lo mismo, **0xC000** en hexadecimal, como ya se ha indicado en la sección antorior.
-
-Con esto, ya podemos ejecutar la aventura. Para ello, si usamos un emulador, tendremos que usar algún programa que nos permita crear imágenes de discos +3. Con ella incluimos los ficheros `CYD.BIN` y `DISK` (que se encuentran en el directorio _dist_), el fichero `SCRIPT.DAT` compilado, los ficheros de imágenes `*.CSC` (si existiesen) y el fichero `SFX.BIN` (si fuese necesario) como se ha indicado antes.
+Para añadir efectos de sonido, imágenes y melodías, consulta las secciones correspondientes.
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra includa en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla.
+Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla.
 
-Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, y después meterá los ficheros necesarios en un fichero de imagen de disco llamado `test.dsk`. Si un fichero llamado `SFX.BIN`, también lo incluirá en el disco.
+Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo.
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
-```
+```batch
+REM ---- Configuration variables 
+
 REM Name of the game
 SET GAME=test
 REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
-REM   - The +3 disk image file will be called test.dsk with this example
+REM   - The name of the TAP file or +3 disk image
+
+REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
+
+REM Loading screen
+SET LOAD_SCR=%~dp0\IMAGES\000.scr
 ```
 
-- La variable `GAME` será el nombe del fichero txt que se compilará y el nombre del fichero DSK resultante.
-- La variable `IMGLINES` es el número de lineas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
-
-Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo.
+- La variable `GAME` será el nombre del fichero txt que se compilará y el nombre del fichero DSK o TAP resultante.
+- La variable `TARGET` es el formato de salida, con estas posibles opciones:
+  -- 48: Genera un fichero TAP para Spectrum 48K, sin soporte de música AY.
+  -- 128: Genera un fichero TAP para Spectrum 128K.
+  -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
+- La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
+- La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 
 ---
 
 ## Juego de caracteres
 
 El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
-El juego de caracteres por defecto incluido, tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de carácteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
+El juego de caracteres por defecto incluido tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
-![Juego de carácteres por defecto](assets/default_charset.png)
+![Juego de caracteres por defecto](assets/default_charset.png)
 
 Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).  
 Los carácteres propios del castellano, corresponden a las siguientes posiciones:
@@ -725,7 +694,7 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 - Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
 - Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
-La aparición de estos errores ocurren cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
+La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 
 Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
 
@@ -767,3 +736,5 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
 ```
+
+
