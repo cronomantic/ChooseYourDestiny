@@ -104,9 +104,18 @@ class CydcCodegen(object):
         self._ = gettext.gettext
         self.symbols = {}
         self.code = []
-        self.bank_offset = 0xC000
+        self.bank_offset_list = [0xC000]
+        self.bank_size_list = [16 * 1024]
 
-    def _code_translate(self, code, slice_text=False):
+    def set_bank_offset_list(self, offset_list):
+        if offset_list is not None:
+            self.bank_offset_list = offset_list
+
+    def set_bank_size_list(self, size_list):
+        if size_list is not None:
+            self.bank_size_list = size_list
+
+    def code_translate(self, code, slice_text=False):
         code_banks = []
         code_tmp = []
         labels = {}
@@ -128,7 +137,7 @@ class CydcCodegen(object):
                 if opcode == "TEXT":
                     p = t[1]  # Get text
                     while len(p) > 1:  # A string of less than 1 character is not valid
-                        l = self.BANK_SIZE - offset - 5  # remaining size
+                        l = self._get_bank_size(bank) - offset - 5  # remaining size
                         if len(p) >= l:  # Too big!, we slice it...
                             # print(f"DEBUG: Text:{len(p)} - space:{l}")
                             # print(f"DEBUG: Text too big! {self.BANK_SIZE - offset} {len(code_tmp)}")
@@ -145,7 +154,7 @@ class CydcCodegen(object):
                                 self.opcodes["GOTO"],
                                 bank,
                             ] + self._convert_address(
-                                offset
+                                offset, bank
                             )  # adding goto to next bank
                             code_banks.append(code_tmp)  # add new bank
                             code_tmp = []
@@ -156,7 +165,7 @@ class CydcCodegen(object):
                             p = []
                 else:
                     # if we have not space on the current bank, change to the next
-                    if (len(t) + offset + 4) >= self.BANK_SIZE:
+                    if (len(t) + offset + 4) >= self._get_bank_size(bank):
                         # print(f"DEBUG: :{len(t) + offset + 4}")
                         # print("Change bank!")
                         bank += 1
@@ -164,7 +173,7 @@ class CydcCodegen(object):
                         code_tmp += [
                             self.opcodes["GOTO"],
                             bank,
-                        ] + self._convert_address(offset)
+                        ] + self._convert_address(offset, bank)
                         # Jump to next bank
                         code_banks.append(code_tmp)  # add new bank
                         code_tmp = []
@@ -176,7 +185,7 @@ class CydcCodegen(object):
             code_banks.append(code_tmp)
         return (code_banks, labels)
 
-    def _symbol_replacement(self, code, symbols):
+    def symbol_replacement(self, code, symbols):
         code_tmp = []
         queue = []
         for c in code:
@@ -186,9 +195,11 @@ class CydcCodegen(object):
                 t = symbols.get(c)
                 if t is None:
                     sys.exit(self._(f"ERROR: Label {c} does not exists!"))
-                else:
-                    c = t[0]
-                    queue = self._convert_address(t[1])
+                else:  # label found
+                    c = t[0]  # Extract bank
+                    queue = self._convert_address(
+                        t[1], c
+                    )  # Convert offset to bank address
                     queue.reverse()
             code_tmp.append(c)
         return code_tmp
@@ -198,8 +209,22 @@ class CydcCodegen(object):
             sys.exit(self._("ERROR: Invalid offset"))
         return [(value & 0xFF), ((value >> 8) & 0xFF)]
 
-    def _convert_address(self, address):
-        return self._word_to_list(address + self.bank_offset)
+    def _convert_address(self, address, bank=None):
+        if bank is None:
+            b_offset = self.bank_offset_list[0]
+        elif bank >= len(self.bank_offset_list):
+            b_offset = self.bank_offset_list[-1]
+        else:
+            b_offset = self.bank_offset_list[bank]
+        return self._word_to_list(address + b_offset)
+
+    def _get_bank_size(self, bank=None):
+        if bank is None:
+            return self.bank_size_list[0]
+        elif bank >= len(self.bank_offset_list):
+            return self.bank_size_list[-1]
+        else:
+            return self.bank_size_list[bank]
 
     def _get_index_offset(self, idx, offset):
         if offset > 0x7FFFFF:  # Max 8 Mb
@@ -209,13 +234,11 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def generate_code(self, code, tokens, font=None, slice_text=False):
+    def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self._code_translate(code, slice_text)
-        # for i, v in enumerate(code):
-        #     print(f"1>{i} -> {len(v)}")
-        self.code = [self._symbol_replacement(c, self.symbols) for c in code]
+        (code, self.symbols) = self.code_translate(code, slice_text)
+        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
         index = []
         sizes = []
         code = []
@@ -254,21 +277,7 @@ class CydcCodegen(object):
         header = self._word_to_list(len(header)) + header
         return header + code
 
-    def set_bank_offset(self, offset):
-        if offset is not None:
-            self.bank_offset = int(offset)
-
-    def generate_exportable_code(self, code, tokens, font=None, slice_text=False):
-        if font is None:
-            font = CydcFont()
-        (code, self.symbols) = self._code_translate(code, slice_text)
-        # for i, v in enumerate(code):
-        #     print(f"2>{i} -> {len(v)}")
-        self.code = [self._symbol_replacement(c, self.symbols) for c in code]
-        result = {
-            "chunks": self.code,
-            "tokens": tokens,
-            "chars": font.font_chars,
-            "charw": font.font_sizes,
-        }
-        return result
+    def generate_code(self, code, slice_text=False):
+        (code, self.symbols) = self.code_translate(code, slice_text)
+        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
+        return self.code
