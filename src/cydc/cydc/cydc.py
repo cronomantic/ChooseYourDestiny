@@ -165,8 +165,8 @@ def main():
         help=_("path to the directory with the CSC compressed Spectrum screens"),
     )
     arg_parser.add_argument(
-        "-trk",
-        "--tracks-path",
+        "-pt3",
+        "--pt3-tracks-path",
         type=dir_path,
         help=_("path to the directory with the PT3 tracks"),
     )
@@ -396,7 +396,7 @@ def main():
     if args.sfx_asm_file is not None:
         with open(args.sfx_asm_file, "r", encoding="utf-8") as f:
             sfx = f.read()
-            sfx = re.sub("org\s+\d{1,6}", "", sfx, flags=re.IGNORECASE)
+            sfx = re.sub(r"org\s+\d{1,6}", "", sfx, flags=re.IGNORECASE)
 
     blocks = []
     if args.csc_images_path is not None:
@@ -409,9 +409,9 @@ def main():
                     blocks.append(t)
 
     has_tracks = False
-    if args.tracks_path is not None and model != "48":
+    if args.pt3_tracks_path is not None and model != "48":
         for i in range(256):
-            fpath = os.path.join(args.tracks_path, f"{i:03d}.PT3")
+            fpath = os.path.join(args.pt3_tracks_path, f"{i:03d}.PT3")
             if os.path.isfile(fpath):
                 with open(fpath, "rb") as f:
                     b = list(f.read())
@@ -471,6 +471,7 @@ def main():
             do_asm_plus3(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
+                verbose=verbose,
                 sfx_asm=sfx,
                 filename_script="SCRIPT.DAT",
                 loading_scr=loading_scr,
@@ -481,6 +482,7 @@ def main():
             asm_size = get_asm_128_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
+                verbose=verbose,
                 sfx_asm=sfx,
                 tokens=l_tokens,
                 chars=l_chars,
@@ -493,12 +495,12 @@ def main():
             asm_size = get_asm_48_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
+                verbose=verbose,
                 sfx_asm=sfx,
                 tokens=l_tokens,
                 chars=l_chars,
                 charw=l_charw,
             )
-            print(asm_size)
 
     except ValueError as e1:
         sys.exit(_("ERROR: Error assembling TAP."), e1)
@@ -613,6 +615,7 @@ def main():
                 do_asm_128(
                     sjasmplus_path=args.sjasmplus_path,
                     output_path=args.output_path,
+                    verbose=verbose,
                     tap_name=output_name,
                     index=index,
                     blocks=available_banks,
@@ -632,6 +635,7 @@ def main():
                 do_asm_48(
                     sjasmplus_path=args.sjasmplus_path,
                     output_path=args.output_path,
+                    verbose=verbose,
                     tap_name=output_name,
                     index=index,
                     blocks=available_banks,

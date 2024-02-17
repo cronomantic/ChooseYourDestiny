@@ -1,3 +1,28 @@
+#
+# MIT License
+#
+# Copyright (c) 2024 Sergio Chico
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+
 import os
 import sys
 import re
@@ -103,7 +128,7 @@ def get_asm_48(
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
 
     d = dict(
-INIT_ADDR="$8000",
+        INIT_ADDR="$8000",
         TOKENS=bytes2str(tokens, ""),
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
@@ -138,6 +163,7 @@ INIT_ADDR="$8000",
 def get_asm_128_size(
     sjasmplus_path,
     output_path,
+    verbose,
     tokens,
     chars,
     charw,
@@ -159,7 +185,7 @@ def get_asm_128_size(
         asm_path=sjasmplus_path,
         asm=asm,
         filename=os.path.join(output_path, "cyd.asm"),
-        listing=True,
+        listing=verbose,
         capture_output=True,
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
@@ -176,6 +202,7 @@ def get_asm_128_size(
 def get_asm_48_size(
     sjasmplus_path,
     output_path,
+    verbose,
     tokens,
     chars,
     charw,
@@ -195,7 +222,7 @@ def get_asm_48_size(
         asm_path=sjasmplus_path,
         asm=asm,
         filename=os.path.join(output_path, "cyd.asm"),
-        listing=True,
+        listing=verbose,
         capture_output=True,
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
@@ -212,6 +239,7 @@ def get_asm_48_size(
 def do_asm_128(
     sjasmplus_path,
     output_path,
+    verbose,
     tap_name,
     index,
     blocks,
@@ -226,7 +254,7 @@ def do_asm_128(
     has_tracks=False,
 ):
 
-    tap_path = os.path.join(output_path, tap_name + ".tap")
+    tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
     asm_ind = ""
     for i, v in enumerate(index):
@@ -299,7 +327,7 @@ def do_asm_128(
         asm_path=sjasmplus_path,
         asm=asm,
         filename=os.path.join(output_path, "cyd.asm"),
-        listing=True,
+        listing=verbose,
         capture_output=False,
     )
 
@@ -307,6 +335,7 @@ def do_asm_128(
 def do_asm_48(
     sjasmplus_path,
     output_path,
+    verbose,
     tap_name,
     index,
     blocks,
@@ -319,7 +348,7 @@ def do_asm_48(
     sfx_asm,
     loading_scr=None,
 ):
-    tap_path = os.path.join(output_path, tap_name + ".tap")
+    tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
     asm_ind = ""
     for i, v in enumerate(index):
@@ -391,13 +420,18 @@ def do_asm_48(
         asm_path=sjasmplus_path,
         asm=asm,
         filename=os.path.join(output_path, "cyd.asm"),
-        listing=True,
+        listing=verbose,
         capture_output=False,
     )
 
 
 def do_asm_plus3(
-    sjasmplus_path, output_path, sfx_asm, filename_script="SCRIPT.DAT", loading_scr=None
+    sjasmplus_path,
+    output_path,
+    verbose,
+    sfx_asm,
+    filename_script="SCRIPT.DAT",
+    loading_scr=None,
 ):
 
     if sfx_asm is None:
@@ -418,9 +452,9 @@ def do_asm_plus3(
     d = dict(
         INIT_ADDR="$8000",
         STACK_ADDRESS="$8000",
-        INTERPRETER_FILENAME=os.path.join(output_path, "CYD.BIN"),
+        INTERPRETER_FILENAME=os.path.join(output_path, "CYD.BIN").replace(os.sep, "/"),
         INTERPRETER_FILENAME_BASE="CYD.BIN",
-        LOADER_FILENAME=os.path.join(output_path, "DISK"),
+        LOADER_FILENAME=os.path.join(output_path, "DISK").replace(os.sep, "/"),
         FILENAME_SCRIPT=filename_script,
         DEFINE_LOADING_SCREEN=loading_scr_def,
         LOADSCR_DAT=loading_scr,
@@ -457,7 +491,10 @@ def do_asm_plus3(
     asm += t.substitute(d)
 
     run_assembler(
-        asm_path=sjasmplus_path, asm=asm, filename=os.path.join(output_path, "cyd.asm")
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=verbose,
     )
 
 
@@ -474,9 +511,9 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
     except OSError:
         sys.exit("ERROR: Can't write temp file.")
     asm_path = os.path.abspath(asm_path)  # Get the absolute path of the executable
-    command_line = [asm_path]
+    command_line = [asm_path, "--nologo"]
     if listing:
-        command_line += ["--lst"]
+        command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
     command_line += [filename]
     try:
         stdout = None
@@ -486,7 +523,7 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
         # stderr=subprocess.DEVNULL
         result = subprocess.run(
             args=command_line,
-            check=True,
+            check=False,
             stdout=stdout,
             stderr=stderr,
             text=capture_output,
@@ -498,7 +535,7 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
         if os.path.isfile(filename):
             os.remove(filename)
     if result.returncode != 0:
-        raise OSError
+        raise OSError(result.stderr)
     return result
     # try:
     #    with open(filename + ".zx0", "rb") as f:

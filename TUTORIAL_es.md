@@ -31,7 +31,7 @@ Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo ChooseYo
 
 ## Preparando nuestra primera aventura
 
-Lo primero que vamos a hacer es cambiar un par de cosas para poder generar una aventura personalizada. Para ello abrimos el fichero `MakeAdv.bat` con cualquier editor de texto y vemos ésto al principio:
+Lo primero que vamos a hacer es cambiar un par de cosas para poder generar una aventura personalizada. Para ello abrimos el fichero `MakeAdv.bat` con cualquier editor de texto y vemos esto al principio:
 
 ```batch
 @echo off  &SETLOCAL
@@ -42,8 +42,16 @@ REM Name of the game
 SET GAME=test
 REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
-REM   - The +3 disk image file will be called test.dsk with this example
-...
+REM   - The name of the TAP file or +3 disk image
+
+REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+SET TARGET=plus3
+
+REM Number of lines used on SCR files at compressing
+SET IMGLINES=192
+
+REM Loading screen
+SET LOAD_SCR=%~dp0\IMAGES\000.scr
 ```
 
 Lo primero que vamos a hacer es poner nuestro nombre a la aventura que vamos a crear. Por ejemplo, la llamaremos `Tutorial`:
@@ -54,14 +62,22 @@ Lo primero que vamos a hacer es poner nuestro nombre a la aventura que vamos a c
 REM ---- Configuration variables 
 
 REM Name of the game
-SET GAME=Tutorial
+SET GAME=test
 REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
-REM   - The +3 disk image file will be called test.dsk with this example
-...
+REM   - The name of the TAP file or +3 disk image
+
+REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+SET TARGET=plus3
+
+REM Number of lines used on SCR files at compressing
+SET IMGLINES=192
+
+REM Loading screen
+SET LOAD_SCR=%~dp0\IMAGES\000.scr
 ```
 
-Guardamos el fichero y ahora creamos un fichero nuevo de texto, llamado `Tutorial.txt`. En éste fichero, escribimos ésto:
+Guardamos el fichero y ahora creamos un fichero nuevo de texto, llamado `Tutorial.txt`. En éste fichero, escribimos esto:
 
 ```
 Hola Mundo[[WAITKEY]]
@@ -105,7 +121,7 @@ Si compilamos y cargamos de nuevo, vemos que ahora el icono está en la siguient
 
 ![Pantalla 2](assets/tut002.png)
 
-Eso es debido a que el salto de línea, al estar fuera de los dobles corchetes, es considerado texto imprimible, y por tanto, el icono de espera pasa a la siguiente línea. Ten en cuenta estas situaciones cuando escribas la aventura.
+Eso es debido a que el salto de línea, al estar fuera de los dobles corchetes, es considerado texto imprimible y, por tanto, el icono de espera pasa a la siguiente línea. Ten en cuenta estas situaciones cuando escribas la aventura.
 
 Dejemos de momento esto como estaba y vamos a añadir más comandos. Teclea ésto dentro de `Tutorial.txt`:
 
@@ -113,7 +129,7 @@ Dejemos de momento esto como estaba y vamos a añadir más comandos. Teclea ést
 [[CLEAR]]Hola Mundo[[WAITKEY]]
 ```
 
-Ahora hemos puesto un comando por delante del texto. Si compilamos y ejecutamos, obtenemos ésto:
+Ahora hemos puesto un comando por delante del texto. Si compilamos y ejecutamos, obtenemos esto:
 
 ![Pantalla 3](assets/tut003.png)
 
@@ -198,7 +214,7 @@ Cuando compiles y ejecutes, no se verá muy bien, pero notarás que cuando pulse
 
 Los dos añadidos al código son `LABEL principio` y `GOTO principio`. El primer comando no es en realidad un comando, sino una etiqueta, que lo que hace es poner un marcador es ese punto con un identificador de nombre *principio*; y el segundo lo que hace es indicar al intérprete que salte hacia donde se encuentre la etiqueta *principio*.
 
-El resultado es que, al pulsar la tecla de validación con WAITKEY, se encuentra el `GOTO principio` y salta hacia donde está declarada la etiqueta *principio*, que al ser el comienzo, lo que hace es volver a ejecutar todos los comandos posteriores e imprimir el texto *Hola Mundo*, y esperar con WAITKEY de nuevo... En resumen, hemos hecho un bucle infinito.
+El resultado es que, al pulsar la tecla de validación con WAITKEY, se encuentra el `GOTO principio` y salta hacia donde está declarada la etiqueta *principio* que, al ser el comienzo, lo que hace es volver a ejecutar todos los comandos posteriores e imprimir el texto *Hola Mundo*, y esperar con WAITKEY de nuevo... En resumen, hemos hecho un bucle infinito.
 
 Sin embargo, podemos mejorar el ejemplo así:
 
@@ -258,8 +274,7 @@ Y si elegimos la segunda:
 
 ![Elegimos la segunda opción](assets/tut008.png)
 
-
-Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción seleccionable. El lugar donde esté el cursor en ese momento será el punto donde aparezca el icono de opción. Vamos a re-colocar un poco las opciones para ilustrar esto último:
+Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción seleccionable. El lugar donde esté el cursor en ese momento será el punto donde aparezca el icono de opción. Vamos a recolocar un poco las opciones para ilustrar esto último:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -431,7 +446,7 @@ Texto abajo
 
 ¿Qué ha pasado aquí? Si examinamos el código, vemos que antes de "Texto abajo", hay un salto de línea. Con lo que el cursor salta a la línea siguiente e imprime el "Texto abajo", pero después tenemos `AT 5,0`, que significa *mueve el cursor a la columna 5 y fila 0*, es decir, que vuelve a la fila anterior y 5 posiciones a la derecha desde el origen.
 
-Con esto ya podemos colocar textos donde queramos. Pero nos falta algo para controlar del todo la disposición del texto en pantalla, y es definir unos márgenes. Por defecto CYD imprime el texto a pantalla completa, pero puede interesarnos que sólo imprima en cierta zona para no "tapar" imágenes que queramos mostrar. Para ello disponemos del comando `MARGINS`, que nos permite indicar el "rectángulo" o area de impresión de los textos.
+Con esto ya podemos colocar textos donde queramos. Pero nos falta algo para controlar del todo la disposición del texto en pantalla, y es definir unos márgenes. Por defecto CYD imprime el texto a pantalla completa, pero puede interesarnos que sólo imprima en cierta zona para no "tapar" imágenes que queramos mostrar. Para ello disponemos del comando `MARGINS`, que nos permite indicar el "rectángulo" o área de impresión de los textos.
 
 El formato del comando es `MARGINS col_origen, fila_origen, ancho, alto`, donde los parámetros, son la columna y la fila origen del área de impresión y el correspondiente ancho y alto. Por defecto, el motor arranca como si se hubiese ejecutado el comando `MARGINS 0, 0, 32, 24`, es decir, el origen en lado izquierdo superior de la pantalla y el tamaño la pantalla completa.
 
@@ -538,7 +553,7 @@ Voy a mostrar la imagen.[[
 Hecho[[ WAITKEY: END ]]
 ```
 
-Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `ORIGIN1.SCR`, `000.SCR`, `001.SCR`, `000.CSC` y `001.CSC`. El guión `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
+Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `ORIGIN1.SCR`, `000.SCR`, `001.SCR`, `000.CSC` y `001.CSC`. El guion `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
 
 Ahora ya podemos lanzar el emulador. Lo primero que verás es esto:
 
@@ -552,13 +567,13 @@ Con esto tenemos la imagen cargada, pero para mostrarla , tenemos que usar el co
 
 ![Mostrando imagen](assets/tut019.png)
 
-Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen ó no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
+Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen o no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
 
 Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño, ya que al separar la carga, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comienza un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
 
 De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o mostrar una imagen sin cargarla antes.
 
-Al visualizar imágenes hay que tener en cuenta que siempre se sobreescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guion `MakeAdv.bat`:
+Al visualizar imágenes hay que tener en cuenta que siempre se sobrescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guion `MakeAdv.bat`:
 
 ```batch
 REM Number of lines used on SCR files at compressing
@@ -633,11 +648,11 @@ El funcionamiento es intencionadamente similar al de las imágenes. Los nombres 
 
 Los comandos que disponemos también son similares a los comandos de manejo de imágenes. Con el comando `TRACK`, cargamos desde disco en memoria un módulo de música, de tal manera que con `TRACK 0`, cargaríamos el módulo `000.PT3`, con `TRACK 1` cargaríamos `001.PT3`, etc.
 
-Una vez cargado el módulo, pasaríamos a reproducirlo con el comando `PLAY 1` cuando necesitemos hacerlo. El parámetro del comando `PLAY` es un número que si es es cero, para la música (si se estuviese ya reproduciendo), y si es distinto de cero, la reproduce desde el comienzo (si estuviese ya parada).
+Una vez cargado el módulo, pasaríamos a reproducirlo con el comando `PLAY 1` cuando necesitemos hacerlo. El parámetro del comando `PLAY` es un número que si es cero, para la música (si se estuviese ya reproduciendo), y si es distinto de cero, la reproduce desde el comienzo (si estuviese ya parada).
 
 Por último, con el comando `LOOP` indicamos si queremos que el módulo se reproduzca sólo una vez o queremos que se reproduzca indefinidamente. Si el valor de su parámetro es cero, sólo lo hará una vez, y si es distinto de cero, comenzará a reproducirse de nuevo cuando acabe.
 
-Un detalle a tener en cuenta es que el efecto del comando `LOOP` es propio del reproductor incorporado y sólo es válido cuando el módulo pueda acabar. El formato `.PT3` tiene comandos de repetición, haciendo que el módulo se reproduzca sin fin por sí mismo, con lo que es conveniente reproducir el mismo con un reproductor externo para ver si ésto es así.
+Un detalle a tener en cuenta es que el efecto del comando `LOOP` es propio del reproductor incorporado y sólo es válido cuando el módulo pueda acabar. El formato `.PT3` tiene comandos de repetición, haciendo que el módulo se reproduzca sin fin por sí mismo, con lo que es conveniente reproducir el mismo con un reproductor externo para ver si esto es así.
 
 ---
 
@@ -661,9 +676,9 @@ Este es el resultado:
 
 ![Variables](assets/tut024.png)
 
-Lo primero que vemos nuevo es ésto `SET 1 TO 5`, con ésto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
+Lo primero que vemos nuevo es esto `SET 1 TO 5`, con esto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
 
-Una cosa que habrás notado es que `PRINT` pone una arroba delante del número de variable. A eso le llamamos *indirección*. Para explicarlo mejor, quítale la arroba de tal manera que quede ésto:
+Una cosa que habrás notado es que `PRINT` pone una arroba delante del número de variable. A eso le llamamos *indirección*. Para explicarlo mejor, quítale la arroba de tal manera que quede esto:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -679,7 +694,7 @@ Este es el resultado si lo ejecutamos así:
 
 ![Indirección](assets/tut025.png)
 
-¡Vaya! Pues eso es lo que es la indirección, cuando pones una arroba delante, significa **coge el valor de la variable cuyo número indico detras**. Si has consultado el [manual](MANUAL_es.md), habrás visto que casi todos los  comandos tienen parámetros directos e indirectos, donde en el primer caso pones un valor específico y en el segundo indicas la variable donde debe coger su valor.
+¡Vaya! Pues eso es lo que es la indirección, cuando pones una arroba delante, significa **coge el valor de la variable cuyo número indico detrás**. Si has consultado el [manual](MANUAL_es.md), habrás visto que casi todos los  comandos tienen parámetros directos e indirectos, donde en el primer caso pones un valor específico y en el segundo indicas la variable donde debe coger su valor.
 
 Por eso, con `PRINT 1`, lo que estás indicando es "Imprime el valor 1", pero con `PRINT @1`, lo que se indica es "Imprime el contenido de la variable 1".
 
@@ -742,7 +757,7 @@ Nos presenta este menú:
 
 Si elegimos la primera opción, suma 1 a la variable 0, que hace el comando `SET 0 ADD 1`, y la segunda opción resta, y lo hace con `SET 0 SUB 1`.
 
-La primera cosa que puede llamar la atención es que si doy a restar cuando el valor es cero, no hace nada. Ésto es correcto, no se puede restar por debajo de cero ni se puede sumar por encima de 255 en las variables.
+La primera cosa que puede llamar la atención es que si doy a restar cuando el valor es cero, no hace nada. Esto es correcto, no se puede restar por debajo de cero ni se puede sumar por encima de 255 en las variables.
 
 Y la segunda, ¿dónde está la opción de salir? Vamos a coger gamusinos hasta que tengamos 10, como se nos indica:
 
@@ -815,7 +830,7 @@ Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pu
 
 Para ahorrar espacio en disco, el compilador realiza una compresión de los textos, buscando las subcadenas más comunes en el mismo y sustituyéndolas por "tokens" o abreviaturas.
 
-El guion `MakeAdv.bat` hará que el compilador busque las abreviaturas si no encuentra un fichero de nombre `tokens.json` en su carpeta, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra éste fichero, se lo pasará como parámetro al compilador para que utilice las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas de nuevo, simplemente con borrar el fichero `tokens.json` antes de ejecutarlo.
+El guion `MakeAdv.bat` hará que el compilador busque las abreviaturas si no encuentra un fichero de nombre `tokens.json` en su carpeta, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra este fichero, se lo pasará como parámetro al compilador para que utilice las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas de nuevo, simplemente con borrar el fichero `tokens.json` antes de ejecutarlo.
 
 El proceso de búsqueda de abreviaturas puede ser muy costoso conforme se incrementa la cantidad de texto en la aventura. Mi consejo es escribir el guion de la aventura *antes* de ponernos a programar y ponerlo todo en un fichero de texto que le pasaremos al compilador, para que nos genere un fichero de abreviaturas adecuado. Una vez lo tengamos, ya podemos ir añadiendo comandos a dicho texto para ir dando forma a la aventura.  Una vez que ya la tengas *casi* finalizada, puedes volver a generar abreviaturas para ver si se puede rascar algo más de espacio.
 
@@ -829,15 +844,15 @@ Mi primera recomendación es escribir **antes** el grueso de tu aventura, como y
 
 Puedes escribir tu aventura con tu editor de texto favorito, pero siempre **en texto plano**, ya que es lo que entiende el compilador.
 
-Un tema importante al trabajar con el editor es la codificación de los textos. Un fichero dentro del disco es una colección de bits ordenados con un nombre, el ordenador no "sabe" qué hacer con esos bits; son los programas quienes intepretan esos bits.
+Un tema importante al trabajar con el editor es la codificación de los textos. Un fichero dentro del disco es una colección de bits ordenados con un nombre, el ordenador no "sabe" qué hacer con esos bits; son los programas quienes interpretan esos bits.
 
-Un fichero de texto es un fichero cuyos bits representan caracteres. La forma de interpretar esos caracteres se le llama **codificación**. La codificación más famosa empleada desde comienzos de la Informática es **ASCII**, cuyo estándar soporta 128 caracteres, pensada para el idioma inglés y con ampliaciones a 256 para caracteres internacionales y especiales. A día de hoy, ASCII se ha quedado pequeño, y la codificación empleada de forma estándar por todos los editores de texto actuales por defecto es **UTF-8**.
+Un fichero de texto es un fichero cuyos bits representan caracteres. La forma de interpretar esos caracteres se le llama **codificación**. La codificación más famosa empleada desde comienzos de la Informática es **ASCII**, cuyo estándar soporta 128 caracteres, pensada para el idioma inglés y con ampliaciones a 256 para caracteres internacionales y especiales. Hoy en día, ASCII se ha quedado pequeño, y la codificación empleada de forma estándar por todos los editores de texto actuales por defecto es **UTF-8**.
 
 Todos los editores actuales soportan múltiples codificaciones, con lo que tendrás que investigar el funcionamiento de tu editor para seleccionar la codificación correcta.
 
 El compilador de **CYD** soporta textos en formato UTF-8, pero tienes que tener en cuenta una serie de limitaciones cuando escribas tu texto o lo copies desde otra fuente. El juego de caracteres por defecto del motor es el siguiente:
 
-![Juego de carácteres por defecto](assets/default_charset.png)
+![Juego de caracteres por defecto](assets/default_charset.png)
 
 Ésos son los caracteres de que dispones y UTF-8 dispone de *millones* de distintas grafías, y no estoy exagerando, con lo la mayor parte de ellos darán error con el compilador. En el manual detallo los únicos caracteres que se traducirán desde UTF-8 a la codificación empleada por el motor:
 
@@ -883,6 +898,6 @@ Otra técnica que he empleado es la de anular las pausas. Para ello me ayudo de 
 
 Por último, casi todos emuladores modernos ofrecen la posibilidad de acelerar la velocidad de ejecución. Podemos aprovechar esta ventaja para mostrar el texto más rápido de lo normal.
 
-Espero que estas técnicas te ayuden a crear tu aventura de la manera más cómoda posible. Programar es un proceso iterativo de escribir, compilar, ejecutar y probar, y puede resultar monótono pero también muy satisfactorio cuando obtenemos el resultado deseado.
+Espero que estas técnicas te ayuden a crear tu aventura de la manera más cómoda posible. Programar es un proceso iterativo de escribir, compilar, ejecutar y probar, y puede resultar monótono, pero también muy satisfactorio cuando obtenemos el resultado deseado.
 
 ---
