@@ -1006,18 +1006,15 @@ ADJUST_CHAR_POS:
     ; d = POS_Y, e = POS_X
 
 ADJUST_CHAR_POS_NO_ADVANCE:
-    ld a, (POS_X)
-    and 7
-    jr z, 1f
+    ld hl, (POS_X)
+    ld a, 7
+    and l
+    ret z              ;Already on 8x8 grid, do nothing
     ld c, a
     ld a, 8
     sub c
     jp UPDATE_POS       ;Advance to match 8x8 character
-1:  ld a, 0
-    jp UPDATE_POS
-    ; d = POS_Y, e = POS_X
-
-
+    ; h = POS_Y, l = POS_X
 
 ; hl character input
 ; d = POS_Y, e = POS_X
