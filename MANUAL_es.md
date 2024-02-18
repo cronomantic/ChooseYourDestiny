@@ -604,7 +604,7 @@ SET LOAD_SCR=%~dp0\IMAGES\000.scr
 ```
 
 - La variable `GAME` será el nombre del fichero txt que se compilará y el nombre del fichero DSK o TAP resultante.
-- La variable `TARGET` es el formato de salida, con estas posibles opciones:
+- La variable `TARGET` es el sistema y formato de salida, con estas posibles opciones:
   -- 48: Genera un fichero TAP para Spectrum 48K, sin soporte de música AY.
   -- 128: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
