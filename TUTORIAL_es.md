@@ -93,7 +93,9 @@ Al lanzar el fichero DSK resultante con un emulador, sale ésto:
 
 Vamos a analizar lo que sucede...
 
-Al cargar sale la pantalla que tenemos dentro de la carpeta IMAGES, que tiene el nombre `000.scr`. Si existe, ésta pantalla se carga automáticamente al iniciar el intérprete, por lo que la pantalla 0 se considera la pantalla de presentación.
+Al realizar la carga, sale la pantalla que tenemos dentro de la carpeta IMAGES, que tiene el nombre `000.scr`. Eso es porque en el guión `MakeAdv.bat`, en la cabecera donde hemos cambiado el nombre del juego, hay otra variable llamada `LOAD_SCR` donde se ha indicado la ruta a un fichero SCR de pantalla de Spectrum que se usará durante el proceso de carga. Puedes cambiarla a otra pantalla si te apetece modificando el guión.
+
+Otra variable importante es `TARGET`, la cual indica el modelo de Spectrum y el tipo de archivo de salida a emplear. De momento usaremos el valor `plus3` para este tutorial.
 
 Volviendo al código de la aventura, vemos que se pinta el texto *Hola Mundo* y después sale una especie de cursor. Si pulsamos la tecla `Enter` o `Space`, se reinicia el programa. Si volvemos al código:
 
@@ -133,7 +135,7 @@ Ahora hemos puesto un comando por delante del texto. Si compilamos y ejecutamos,
 
 ![Pantalla 3](assets/tut003.png)
 
-Con el comando CLEAR borramos la zona imprimible que, de momento, es la pantalla completa. Con esto, eliminamos la pantalla de carga y tenemos la pantalla limpia para imprimir desde el comienzo. Tienes una referencia completa de los comandos en el [manual](https://github.com/cronomantic/ChooseYourDestiny/blob/main/MANUAL_es.md).
+Con el comando CLEAR borramos la zona imprimible que, de momento, es la pantalla completa. Como la pantalla se borra automáticamente al iniciarse el intérprete, no veremos de momento nada, pero con este comando tendremos la pantalla limpia para imprimir desde el comienzo. Tienes una referencia completa de los comandos en el [manual](https://github.com/cronomantic/ChooseYourDestiny/blob/main/MANUAL_es.md).
 
 Ahora vamos a cambiar el color del texto. Para ello vamos a usar el comando INK n, donde n es un número del 0 al 7 que corresponde con los colores del Spectrum. Por defecto es blanco, así que vamos a ponerlo de color cian, que es el número 5, con lo que sería INK 5. Lo pondremos antes del CLEAR, tal que así:
 
@@ -569,9 +571,9 @@ Con esto tenemos la imagen cargada, pero para mostrarla , tenemos que usar el co
 
 Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen o no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
 
-Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño, ya que al separar la carga, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comienza un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
+Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño para las versión de disco, ya que al separar la carga en una operación diferente, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comience un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
 
-De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o mostrar una imagen sin cargarla antes.
+De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o en memoria, o al mostrar una imagen sin cargarla antes.
 
 Al visualizar imágenes hay que tener en cuenta que siempre se sobrescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar modificando el valor de la variable `IMGLINES` en el guion `MakeAdv.bat`:
 
@@ -581,8 +583,6 @@ SET IMGLINES=192
 ```
 
 Tras cargar la imagen, podemos ajustar el tamaño del área de impresión para que no se sobrescriba el dibujo usando `MARGINS`.
-
-Y por último, la imagen 0 es especial ya que se considera la pantalla de presentación. Al iniciarse la aventura se cargará y visualizará automáticamente la imagen del fichero `000.CSC`, si existiese éste en el disco.
 
 ---
 
