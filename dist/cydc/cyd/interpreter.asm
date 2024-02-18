@@ -647,8 +647,8 @@ OP_OPTION:
 OP_WAITKEY:
     push hl                          ;Save pointer
     call ADJUST_CHAR_POS_NO_ADVANCE  ;Advance to the best position for printing the choice
-    push de 
-    push de                     ;d = POS_Y, e = POS_X
+    push hl 
+    push hl                     ;d = POS_Y, e = POS_X
     ld a, WAIT_TO_KEY_BULLET 
     call GET_CHARACTER_POINTER  ;Get character pointer
     pop de
@@ -693,8 +693,8 @@ OP_PAUSE:
     push hl                     ;Save pointer
     ld (DOWN_COUNTER), de
     call ADJUST_CHAR_POS_NO_ADVANCE    ;Advance to the best position for printing the choice
-    push de 
-    push de                     ;d = POS_Y, e = POS_X
+    push hl 
+    push hl                     ;d = POS_Y, e = POS_X
     ld a, WAIT_TO_KEY_BULLET 
     call GET_CHARACTER_POINTER  ;Get character pointer
     pop de
