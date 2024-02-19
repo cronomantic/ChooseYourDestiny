@@ -1,6 +1,5 @@
-NAME:=test
-DISK_LABEL:=TEST
-TEXT_FILENAME:=test.txt
+NAME:=Tutorial
+TEXT_FILENAME:=$(NAME).txt
 
 .PHONY: clean clean_all disk test_disk tape test_tape all
 
