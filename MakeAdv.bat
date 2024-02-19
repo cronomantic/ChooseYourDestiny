@@ -41,7 +41,7 @@ IF NOT EXIST %~dp0\%GAME%.txt (
 REM  ---- PREPARE IMAGES ----
 ECHO ---------------------
 ECHO Preparing images (if any)...
-CD IMAGES
+CD %~dp0\IMAGES
 for /L %%i in (0, 1, 9) do (CALL :CHECK_IF_COMPRESS 00%%i.SCR 00%%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=00%%i.CSC 00%%i.SCR  > nul 2>&1))
 for /L %%i in (10, 1, 99) do (CALL :CHECK_IF_COMPRESS 0%%i.SCR 0%%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=0%%i.CSC 0%%i.SCR  > nul 2>&1))
 for /L %%i in (100, 1, 256) do (CALL :CHECK_IF_COMPRESS %%i.SCR %%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=%%i.CSC %%i.SCR  > nul 2>&1))
@@ -58,7 +58,7 @@ IF NOT EXIST %~dp0\tools\sjasmplus.exe (
   echo sjasmplus.exe file not found!
   GOTO ERROR
 )
-IF NOT exist .%~dp0\tokens.json (
+IF NOT exist %~dp0\tokens.json (
   rem Token file does not exists, create a new one
   IF EXIST %~dp0\SFX.ASM (
   %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -T %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
@@ -69,7 +69,7 @@ IF NOT exist .%~dp0\tokens.json (
   )
 ) else (
   rem Token file exists, use it...
-  IF EXIST %~dp0\SFX.BIN (
+  IF EXIST %~dp0\SFX.ASM (
   %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -t %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
   IF ERRORLEVEL 1 GOTO ERROR
   ) else (
@@ -88,4 +88,6 @@ PAUSE
 :END
 
 REM ----  CLEANING ---- 
-DEL .\SCRIPT.DAT > nul 2>&1
+DEL %~dp0\SCRIPT.DAT > nul 2>&1
+DEL %~dp0\DISK > nul 2>&1
+DEL %~dp0\CYD.BIN > nul 2>&1

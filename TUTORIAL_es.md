@@ -18,6 +18,7 @@
   - [Subrutinas](#subrutinas)
   - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
   - [Flujo de trabajo](#flujo-de-trabajo)
+  - [Versiones para los diferentes modelos de Zx Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)
 
 ---
 
@@ -571,7 +572,7 @@ Con esto tenemos la imagen cargada, pero para mostrarla , tenemos que usar el co
 
 Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen o no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con la indirección, que explicaré más adelante, para hacer que se muestre la imagen de forma condicional de acuerdo al valor de una variable.
 
-Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño para las versión de disco, ya que al separar la carga en una operación diferente, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comience un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
+Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño para la versión de disco, ya que al separar la carga en una operación diferente, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comience un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado.
 
 De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o en memoria, o al mostrar una imagen sin cargarla antes.
 
@@ -582,7 +583,54 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 ```
 
-Tras cargar la imagen, podemos ajustar el tamaño del área de impresión para que no se sobrescriba el dibujo usando `MARGINS`.
+Debido a las limitaciones de color del Spectrum, recomiendo que siempre sea un múltiplo de 8.
+
+Al usar imágenes, podemos ajustar el tamaño del área de impresión para que no se sobrescriba todo el dibujo usando `MARGINS`. Vamos a combinar dos ejemplos anteriores para verlo:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   PICTURE 1
+   DISPLAY 1
+   MARGINS 0, 10, 32, 14
+]]Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget pretium felis. Quisque tincidunt tortor eget libero fermentum, rutrum aliquet nisl semper. Pellentesque id eros non leo ullamcorper hendrerit. Fusce pretium bibendum lectus, vel dignissim velit interdum quis. Integer vel ipsum ac elit tincidunt vulputate. Mauris sagittis sapien in justo pretium cursus. Proin nec tincidunt purus, et tempus metus. Nunc dapibus vel ante eu dictum. Donec vestibulum scelerisque orci in tempus. Nunc quis velit id velit faucibus tempus vel id tellus.[[ WAITKEY: END ]]
+```
+
+Lo primero que hará será mostrar la imagen, que sobrescribirá la pantalla completa, y luego definiremos una zona inferior donde se dibujará el texto:
+
+![Mostrando imagen y texto](assets/tut030.png)
+
+Como el texto no cabe, al darle a continuar, se borrará el area de impresión definida con `MARGINS` y seguirá imprimiendo el resto:
+
+![Mostrando imagen y texto](assets/tut031.png)
+
+Para hacer el comportamiento un poco más coherente, vamos a poner un `CLEAR` justo después de `MARGINS`:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   PICTURE 1
+   DISPLAY 1
+   MARGINS 0, 10, 32, 14
+   CLEAR
+]]Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam eget pretium felis. Quisque tincidunt tortor eget libero fermentum, rutrum aliquet nisl semper. Pellentesque id eros non leo ullamcorper hendrerit. Fusce pretium bibendum lectus, vel dignissim velit interdum quis. Integer vel ipsum ac elit tincidunt vulputate. Mauris sagittis sapien in justo pretium cursus. Proin nec tincidunt purus, et tempus metus. Nunc dapibus vel ante eu dictum. Donec vestibulum scelerisque orci in tempus. Nunc quis velit id velit faucibus tempus vel id tellus.[[ WAITKEY: END ]]
+```
+
+Y con esto ya está mejor:
+
+![Mostrando imagen y texto](assets/tut032.png)
+
+Aquí hemos usado una imagen al azar, más concretamente, la pantalla de carga de la *Aventura Original*. Pero si vamos a hacer este tipo de recortes con todas las imágenes, podemos cambiar el valor de la variable `IMGLINES`, para que recorte las líneas que no queramos. Esto ahorrará espacio, y evitará que se sobrescriba la zona inferior de texto cuando carguemos una nueva imagen.
+
+Para la gestión de imágenes y teniendo en cuenta estas restricciones, es importante planificar de antemano cómo y cuándo las vamos a mostrar.
 
 ---
 
@@ -600,11 +648,11 @@ Ahora vamos a exportarlo a un fichero con el que podamos usarlos con el motor. P
 
 ![Exportar desde BeepFx](assets/tut022.png)
 
-Ahora viene lo importante, **tenemos que cambiar `Code Address` a 49152**, y dejar siempre marcadas la opción `Binary` e `Include player code`:
+Ahora viene lo importante, **tenemos que dejar siempre marcadas la opción `Assembly` e `Include player code`**:
 
 ![Opciones para BeepFx](assets/tut023.png)
 
-Le damos al botón `Compile` y nos sale un diálogo para guardar el fichero. **Lo tenemos que llamar `SFX.BIN`** y lo guardamos en la carpeta donde estemos desarrollando nuestra aventura. Cuando ejecutemos el guion `MakeAdv.bat`. Si éste encuentra en su mismo directorio el fichero `SFX.BIN`, lo incluirá automáticamente en la imagen de disco y lo podremos usar desde el motor.
+Le damos al botón `Compile` y nos sale un diálogo para guardar el fichero. **Lo tenemos que llamar `SFX.ASM`** y lo guardamos en la carpeta donde estemos desarrollando nuestra aventura. Cuando ejecutemos el guion `MakeAdv.bat`. Si éste encuentra en su mismo directorio el fichero `SFX.ASM`, lo incluirá automáticamente en el fichero resultante y lo podremos usar desde el motor.
 
 Vamos a poner un ejemplo, pon esto como código de la aventura:
 
@@ -636,8 +684,6 @@ Vamos a poner un ejemplo, pon esto como código de la aventura:
 Como se puede ver, con el comando `SFX`, podemos reproducir cualquiera de los efectos del fichero indicando su número como parámetro.
 
 Una peculiaridad del comando SFX es que, al contrario que las imágenes, si el fichero SFX.BIN no se encuentra en el disco, fallará silenciosamente sin dar error y el efecto de sonido simplemente no se reproducirá.
-
-Como detalle más técnico, indicar que el contenido del fichero SFX.BIN se alojará en el banco 1 de la memoria del Spectrum, y por lo tanto, tenemos un límite de tamaño de 16Kb.
 
 ---
 
@@ -901,3 +947,14 @@ Por último, casi todos emuladores modernos ofrecen la posibilidad de acelerar l
 Espero que estas técnicas te ayuden a crear tu aventura de la manera más cómoda posible. Programar es un proceso iterativo de escribir, compilar, ejecutar y probar, y puede resultar monótono, pero también muy satisfactorio cuando obtenemos el resultado deseado.
 
 ---
+
+## Versiones para los diferentes modelos de Zx Spectrum
+
+Hasta este momento, sólo hemos desarrollado aventuras para el Zx Spectrum +3, que disponía de una unidad de disco. La primera versión del intérprete estaba dirigida a este modelo, ya que tiene el mayor espacio disponible (180 kb) y permite cargar los textos e imágenes de forma dinámica, según se requieran en cada momento y con un tiempo de espera razonable.
+
+Sin embargo, el formato DSK es bastante poco común y poco usado el algunos ámbitos, con lo que se ha añadido soporte para ficheros TAP para usarlo con modelos 48k y 128k. Esto conlleva una serie de ventajas y limitaciones que hay que considerar.
+Las versiones para TAP cargarán todo (textos, imágenes) de una sola vez. Esto implica que el tiempo de acceso a éstos será inmediato en el momento de utilizarlos, pero incrementará el tiempo de carga desde la cinta de forma considerable (si no se usa algún tipo de aceleración), además de estar limitados a la memoria disponible en la máquina.
+
+El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del interprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 Kb disponibles en los modelos de 128K y unos 24 Kb en los modelos de 48K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
+
+(TBC)
