@@ -31,6 +31,7 @@ import gettext
 import argparse
 import json
 import re
+import copy
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -561,9 +562,11 @@ def main():
 
         fits = False
         while not fits:
-            index = tmp_index[:]
-            available_banks = tmp_blocks[:]
-            available_bank_size = tmp_available_bank_size[:]
+            index = copy.deepcopy(tmp_index)
+            available_banks = copy.deepcopy(tmp_blocks)
+            available_banks.extend([[] for x in range(num_banks-len(tmp_blocks))])
+            available_bank_size = copy.deepcopy(tmp_available_bank_size)
+            available_bank_size.extend([16*1024 for x in range(num_banks-len(tmp_available_bank_size))])
             fits = True
             for i, block in enumerate(blocks):
                 btype, bidx, bsize, bdata, bpath = block
@@ -592,11 +595,16 @@ def main():
                     available_banks[best_fit_index] += bdata
                     available_bank_size[best_fit_index] -= bsize
                 else:
+                    del(available_bank_size)
+                    del(available_banks)
+                    del(index)
                     num_banks += 1
                     fits = False
                     break
             if num_banks > max_banks:
                 sys.exit(_("ERROR: Not enough memory available"))
+
+        index = [(b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index]
 
         if verbose:
             print("\nBanks:\n-----------------")
