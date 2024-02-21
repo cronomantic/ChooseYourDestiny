@@ -37,7 +37,7 @@ BANK_VAR   EQU  $5b5c
 
 START_ADDRESS EQU 23755
 
-; INIT_ADDR must be passed as parameter on SJASMPLUS
+;INIT_ADDR must be passed as parameter on SJASMPLUS
 ;INIT_ADDR     EQU $8000
 
     ORG START_ADDRESS
@@ -50,6 +50,7 @@ LINEA0:
 LOAD_TABLE:
 @{BLOCK_LIST}
 
+    @DEFINE_IS_128
 
 START_LOADER:
     ; Clear screen
@@ -67,6 +68,10 @@ START_LOADER:
     LD C, 0
     CALL SETRAM
 
+    IFDEF IS_128
+    CALL TESTBANK128
+    ENDIF
+
     LD HL, LOAD_TABLE               ;Blocks table
 LOOP_TABLE:
     LD C, (HL)
@@ -82,11 +87,13 @@ LOOP_TABLE:
     INC HL                          ; Get size
     LD IX, 0
     ADD IX, BC                      ; IX = start address, DE = size
+    IFDEF IS_128
     LD C, (HL)                      ; Set Bank
     INC HL
     DI
     CALL SETRAM
     EI
+    ENDIF
     SCF                             ; Set Carry Flag -> CF=1 -> LOAD
     LD A, $FF                       ; A = 0xFF (cargar datos)
     PUSH HL
@@ -112,7 +119,7 @@ RUN:
 
 SETRAM:
     LD A,(23388)
-    AND %00010111
+    AND %00010000
     OR C
     LD BC,$7FFD
     OUT (C),A
@@ -132,6 +139,25 @@ MAINROM:
     OUT (C),A
     LD (23399),A
     RET
+
+    IFDEF IS_128
+TESTBANK128:
+    ld c, 0
+    call SETRAM
+    xor a
+    ld ($FFFF), a
+    ld c, 1
+    call SETRAM
+    ld a, $A5
+    ld ($FFFF), a
+    ld c, 0
+    call SETRAM
+    ld a, ($FFFF)
+    or a
+    ret z
+    jp RESET
+    ENDIF
+
 
 SIZE_LINE0 = $ - LINEA0
 LINEA10:

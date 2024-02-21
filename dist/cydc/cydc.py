@@ -606,12 +606,13 @@ def main():
 
         index = [(b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index]
 
+        print("\nRAM usage:\n-----------------")
+        for i, v in enumerate(available_banks):
+            print(
+                f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free:{available_bank_size[i]} bytes."
+            )
+        
         if verbose:
-            print("\nBanks:\n-----------------")
-            for i, v in enumerate(available_banks):
-                print(
-                    f"Bank [{spectrum_banks[i]}]: Size:{len(v)} - Free:{available_bank_size[i]}"
-                )
             print("\nIndex:\n-----------------")
             for i, v in enumerate(index):
                 print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
