@@ -297,6 +297,7 @@ def do_asm_128(
         TAP_NAME=tap_path,
         TAP_LABEL=tap_name,
         BLOCK_LIST=block_list,
+        DEFINE_IS_128="DEFINE IS_128",
     )
     t = get_asm_template("loadertape")
     asm = t.substitute(d)
@@ -369,10 +370,8 @@ def do_asm_48(
     if loading_scr is not None:
         block_list += f"    DEFW LD_SCR_ADDR\n"
         block_list += f"    DEFW LD_SCR_SIZE\n"
-        block_list += f"    DEFB $0\n"
     block_list += f"    DEFW $8000\n"
     block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
-    block_list += f"    DEFB $0\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
         if i == 0:
@@ -381,7 +380,6 @@ def do_asm_48(
             offset = 0xC000
         block_list += f"    DEFW ${offset:X}\n"
         block_list += f"    DEFW ${len(block):X}\n"
-        block_list += f"    DEFB ${bank:X}\n"
     block_list += "    DEFW $0\n"  # End mark
 
     d = dict(
@@ -390,6 +388,7 @@ def do_asm_48(
         TAP_NAME=tap_path,
         TAP_LABEL=tap_name,
         BLOCK_LIST=block_list,
+        DEFINE_IS_128="",
     )
     t = get_asm_template("loadertape")
     asm = t.substitute(d)
