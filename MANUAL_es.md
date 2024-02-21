@@ -215,6 +215,8 @@ En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al pun
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
+**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`.
+
 Además, hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
 
 Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado no es el valor a utilizar, sino que el valor lo obtiene de la variable indicada. Es decir:
@@ -255,7 +257,9 @@ Retorna al punto de llamada de una subrutina, ver `GOSUB`
 
 ### LABEL labelId
 
-Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán a partir de aquí.
+Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
+
+**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
 
 ### CENTER
 

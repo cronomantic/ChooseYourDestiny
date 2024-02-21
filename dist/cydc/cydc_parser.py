@@ -144,8 +144,12 @@ class CydcParser(object):
 
     def p_statement_open_error(self, p):
         "statement : ERROR_OPEN_CODE"
-        self.errors.append(f"Invalid opening code token in line {p.lineno}")
+        self.errors.append(f"Invalid opening code token in line {p[1]}")
         p[0] = None
+
+    def p_statement_short_label(self, p):
+        "statement : SHORT_LABEL"
+        p[0] = ("LABEL", p[1])
 
     def p_statement_end(self, p):
         "statement : END"

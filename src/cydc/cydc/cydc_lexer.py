@@ -108,7 +108,7 @@ class CydcLexer(object):
         "NEWLINE",
         "ERROR_TEXT",
     ]
-    tokens += ["DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
+    tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
     tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "LPAREN", "RPAREN"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += list(reserved.values())
@@ -132,6 +132,7 @@ class CydcLexer(object):
     def t_code_OPEN_CODE(self, t):
         r"\[\["
         t.type = "ERROR_OPEN_CODE"
+        t.value = t.lexer.lineno
         return t
 
     def t_code_CLOSE_CODE(self, t):
@@ -169,6 +170,12 @@ class CydcLexer(object):
     t_code_LPAREN = r"\("
     t_code_RPAREN = r"\)"
     t_code_COMMA = r","
+
+    def t_code_SHORT_LABEL(self, t):
+        r"\#[a-zA-Z_][a-zA-Z0-9_]*"
+        t.value = t.value[1:]
+        t.type = self.reserved.get(t.value.upper(), "SHORT_LABEL")  # Check for reserved words
+        return t
 
     def t_code_HEX_NUMBER(self, t):
         r"0[xX][0-9a-fA-F]+|$[0-9a-fA-F]+"
