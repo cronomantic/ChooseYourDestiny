@@ -81,7 +81,7 @@ def file_path(string):
 def main():
     """Main function"""
 
-    version = "0.4.0"
+    version = "0.5.0"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -198,7 +198,7 @@ def main():
     arg_parser.add_argument(
         "model",
         default="plus3",
-        choices=["48", "128", "plus3"],
+        choices=["48k", "128k", "plus3"],
         help=_("Model of spectrum to target"),
         type=str.lower,
     )
@@ -410,7 +410,7 @@ def main():
                     blocks.append(t)
 
     has_tracks = False
-    if args.pt3_tracks_path is not None and model != "48":
+    if args.pt3_tracks_path is not None and model != "48k":
         for i in range(256):
             fpath = os.path.join(args.pt3_tracks_path, f"{i:03d}.PT3")
             if os.path.isfile(fpath):
@@ -477,7 +477,7 @@ def main():
                 filename_script="SCRIPT.DAT",
                 loading_scr=loading_scr,
             )
-        elif model == "128":
+        elif model == "128k":
             if verbose:
                 print(_("Assembling interpreter for size..."))
             asm_size = get_asm_128_size(
@@ -531,7 +531,7 @@ def main():
         codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
         chunks = codegen.generate_code(code=code, slice_text=args.slice_texts)
 
-        if model == "128":
+        if model == "128k":
             spectrum_banks = [0, 1, 3, 4, 6, 7]
         else:
             spectrum_banks = [0]
@@ -564,9 +564,11 @@ def main():
         while not fits:
             index = copy.deepcopy(tmp_index)
             available_banks = copy.deepcopy(tmp_blocks)
-            available_banks.extend([[] for x in range(num_banks-len(tmp_blocks))])
+            available_banks.extend([[] for x in range(num_banks - len(tmp_blocks))])
             available_bank_size = copy.deepcopy(tmp_available_bank_size)
-            available_bank_size.extend([16*1024 for x in range(num_banks-len(tmp_available_bank_size))])
+            available_bank_size.extend(
+                [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
+            )
             fits = True
             for i, block in enumerate(blocks):
                 btype, bidx, bsize, bdata, bpath = block
@@ -595,30 +597,32 @@ def main():
                     available_banks[best_fit_index] += bdata
                     available_bank_size[best_fit_index] -= bsize
                 else:
-                    del(available_bank_size)
-                    del(available_banks)
-                    del(index)
+                    del available_bank_size
+                    del available_banks
+                    del index
                     num_banks += 1
                     fits = False
                     break
             if num_banks > max_banks:
                 sys.exit(_("ERROR: Not enough memory available"))
 
-        index = [(b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index]
+        index = [
+            (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
+        ]
 
         print("\nRAM usage:\n-----------------")
         for i, v in enumerate(available_banks):
             print(
                 f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free:{available_bank_size[i]} bytes."
             )
-        
+
         if verbose:
             print("\nIndex:\n-----------------")
             for i, v in enumerate(index):
                 print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
             print("\n")
         try:
-            if model == "128":
+            if model == "128k":
                 if verbose:
                     print(_("Assembling Spectrum 128k TAP..."))
                 do_asm_128(
