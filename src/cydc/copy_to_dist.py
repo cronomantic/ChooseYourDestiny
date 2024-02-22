@@ -43,6 +43,7 @@ SRC_FILES = [
     "cydc/cydc_utils.py",
     "cydc/ply/lex.py",
     "cydc/ply/yacc.py",
+    "cydc/cyd_font_conv.py",
     "cydc/cyd/bank_zx128.asm",
     "cydc/cyd/cyd_plus3.asm",
     "cydc/cyd/cyd_tape.asm",
