@@ -24,6 +24,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
     - [INKEY expression](#inkey-expression)
     - [CHAR expression](#char-expression)
+    - [REPCHAR expression, expression](#repchar-expression-expression)
     - [PRINT expression](#print-expression)
     - [PRINT @ flag\_no](#print--flag_no)
     - [TAB expression](#tab-expression)
@@ -289,6 +290,10 @@ Espera a la pulsación de la tecla con el código indicado.
 ### CHAR expression
 
 Imprime el carácter indicando con su número correspondiente.
+
+### REPCHAR expression, expression
+
+Imprime el carácter indicado en el primer parámetro tantas veces como número se indique en el segundo parámetro. Ambos valores tienen un tamaño de 1 byte, es decir, val del 0 al 255. Además, si el número de veces es cero, el carácter se repetirá 256 veces en lugar de ninguna.
 
 ### PRINT expression
 

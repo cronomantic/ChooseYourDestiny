@@ -98,6 +98,7 @@ class CydcCodegen(object):
         "PLAY_I": 0x41,
         "LOOP_D": 0x42,
         "LOOP_I": 0x43,
+        "REPCHAR": 0x44,
     }
 
     def __init__(self, gettext):
