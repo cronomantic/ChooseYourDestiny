@@ -190,7 +190,7 @@ class CydcFont(object):
     def getJson(self):
         charset = []
         for i in range(0, len(self.font_chars), 8):
-            char = {"Character": self.font_chars[i:i+8], "Width":self.font_sizes[int(i/8)]}
+            char = {"Id":int(i/8), "Character": self.font_chars[i:i+8], "Width":self.font_sizes[int(i/8)]}
             charset.append(char)
         return json.dumps(charset)
 
@@ -198,6 +198,7 @@ class CydcFont(object):
         chars = []
         sizes = []
         if charset is not None:
+            charset = sorted(charset, key=lambda character: character["Id"])
             for ch in charset:
                 chars = chars + ch["Character"]
                 sizes.append(ch["Width"])

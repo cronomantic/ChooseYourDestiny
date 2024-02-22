@@ -434,6 +434,13 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_repchar(self, p):
+        "statement : REPCHAR expression COMMA expression"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("REPCHAR", p[2], p[4])
+        else:
+            p[0] = None
+
     def p_statement_at(self, p):
         "statement : AT expression COMMA expression"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):

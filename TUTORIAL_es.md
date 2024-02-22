@@ -338,6 +338,28 @@ El contador funciona en base a los fotogramas del Spectrum, es decir, 1/50 de se
 
 Con esto ya tenemos las base para hacer un "Elije tu propia aventura" básico. Pero todavía tenemos muchas más posibilidades que explorar...
 
+**Novedad a partir la versión 0.5**: Para facilitar la escritura y la legibilidad del código, se ha includo una forma abreviada de declarar etiquetas. Simplemente anteponiendo un `#` al nombre de la etiqueta sirve para declararla. De tal forma, el código del anterior ejemplo quedaría así con esta modalidad:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+]][[ #Localidad1 ]]Estás en la localidad 1.
+¿Donde quieres ir?
+
+  [[ OPTION GOTO Localidad2 ]]Ir a la localidad 2
+
+  [[ OPTION GOTO Localidad3 ]]Ir a la localidad 3
+[[ CHOOSE IF WAIT 500 THEN GOTO Localidad3]]
+[[ #Localidad2 ]]¡¡¡Lo lograste!!!
+[[ GOTO Final ]]
+[[ #Localidad3 ]]¡¡¡Estas muerto!!!
+[[ GOTO Final]]
+[[ #Final : WAITKEY: END ]]
+```
+
 ---
 
 ## Pausas y esperas

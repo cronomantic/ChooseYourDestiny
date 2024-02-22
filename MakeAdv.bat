@@ -8,7 +8,7 @@ REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
 REM   - The name of the TAP file or +3 disk image
 
-REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
 SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
