@@ -1194,7 +1194,7 @@ CLEAR_WIN:
     ld (NUM_OPTIONS), a          ;Clear options.
     ret
 
-
+/*
 INKEY:
     ;push hl
     ;push de
@@ -1225,7 +1225,7 @@ INKEY:
     ;pop hl
     exx
     ret
-
+*/
 ;' scrolls the window defined by (row, col, width, height) 1 cell up
 ;WIN_SCROLL_UP:
 ;    ld bc, (MIN_X)

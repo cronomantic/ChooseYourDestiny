@@ -430,7 +430,44 @@ class CydcParser(object):
             and self._check_byte_value(p[6])
             and self._check_byte_value(p[8])
         ):
-            p[0] = ("MARGINS", p[2], p[4], p[6], p[8])
+            row = p[4]
+            col = p[2]
+            width = p[6]
+            height = p[8]
+            if row >= 24:
+                row = 23
+            if col >= 32:
+                col = 31
+            if row < 0:
+                row = 0
+            if col < 0:
+                col = 0
+            if width <= 0:
+                width = 1
+            if height <= 0:
+                height = 1
+            if (width + col) > 32:
+                width = 32 - col
+            if (height + row) > 24:
+                height = 24 - row
+            p[0] = ("MARGINS", col, row, width, height)
+        else:
+            p[0] = None
+
+    def p_statement_at(self, p):
+        "statement : AT expression COMMA expression"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            row = p[4]
+            col = p[2]
+            if row >= 24:
+                row = 23
+            if col >= 32:
+                col = 31
+            if row < 0:
+                row = 0
+            if col < 0:
+                col = 0
+            p[0] = ("AT", col, row)
         else:
             p[0] = None
 
@@ -438,13 +475,6 @@ class CydcParser(object):
         "statement : REPCHAR expression COMMA expression"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
             p[0] = ("REPCHAR", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_at(self, p):
-        "statement : AT expression COMMA expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("AT", p[2], p[4])
         else:
             p[0] = None
 
@@ -668,13 +698,13 @@ class CydcParser(object):
         print(s)
 
     def _check_byte_value(self, val):
-        if val > 255:
+        if val > 255 or val < 0:
             self.errors.append(f"Invalid byte value {val}")
             return False
         return True
 
     def _check_word_value(self, val):
-        if val > ((64 * 1024) - 1):
+        if val > ((64 * 1024) - 1) or val < 0:
             self.errors.append(f"Invalid word value {val}")
             return False
         return True

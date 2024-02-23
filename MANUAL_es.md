@@ -9,6 +9,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Choose Your Destiny](#choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
+  - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis](#sintaxis)
   - [Comandos](#comandos)
     - [END](#end)
@@ -165,6 +166,12 @@ Esto es una definición de los parámetros:
 - **\-h, --help**: Muestra la ayuda.
 
 El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco o la memoria, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.CSC`, la imagen número 1 `001.CSC`, y así hasta 255, como ya se ha indicado en la sección anterior.
+
+---
+
+## CYD Character Set Converter
+
+(TBC)
 
 ---
 
@@ -649,22 +656,25 @@ Los carácteres propios del castellano, corresponden a las siguientes posiciones
 | 'ü'      | 28       |
 | 'Ü'      | 29       |
 
-Los caracteres por encima del valor 126 son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
+Los caracteres por encima del valor 127 (empezando desde cero) son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
-- El carácter 126 es el carácter usado cuando una opción no está seleccionada en un menú.
-- Los caracteres del 127 al 134 forman el ciclo de animación de una opción seleccionada en un menú.
-- Los caracteres del 135 al 142 forman el ciclo de animación del indicador de espera.
+- El carácter 127 es el carácter usado cuando una opción no está seleccionada en un menú. (En rojo en la captura inferior)
+- Los caracteres del 128 al 135 forman el ciclo de animación de una opción seleccionada en un menú. (En verde en la captura inferior)
+- Los caracteres del 135 al 143 forman el ciclo de animación del indicador de espera. (En azul en la captura inferior)
+
+![Caracteres especiales](assets/special_characters.png)
 
 El compilador dispone de dos parámetros, `-c` para importar un juego de caracteres nuevo, y `-C` para exportar el juego de caracteres actualmente empleado, por si puede servir de plantilla o realizar personalizaciones.
 
 Este es el formato de importación/exportación del juego de caracteres:
 
 ```python
-{"Character": [255, 128, ...], "Width":[8, 6, ...]}
+[{"Id": 0, "Character": [255, 128, ...], "Width":8}, {"Id": 1, "Character": [0, 1, ...], "Width":6}, ...]
 ```
 
-Es un JSON con dos campos:
+Es un JSON con un array de registros de tres campos:
 
+- _Id_: número del carácter de 0 a 255, que no se puede repetir.
 - _Character_: un array de números que corresponde con el valor de los bytes del juego de caracteres, por tanto, no puede haber valores mayores de 255. Cada carácter son 8 bytes consecutivos, y cada byte corresponde con los pixels de cada línea del carácter.
 - _Width_: un array con el ancho en pixels de cada carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
 
