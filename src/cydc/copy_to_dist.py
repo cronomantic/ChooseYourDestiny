@@ -33,6 +33,7 @@ DST_PATH = "../../dist/"
 SRC_PATH = "./"
 SRC_FILES = [
     "cydc_cli.py",
+    "cyd_font_conv.py",
     "cydc/cydc.py",
     "cydc/cydc_codegen.py",
     "cydc/cydc_font.py",
@@ -43,7 +44,6 @@ SRC_FILES = [
     "cydc/cydc_utils.py",
     "cydc/ply/lex.py",
     "cydc/ply/yacc.py",
-    "cydc/cyd_font_conv.py",
     "cydc/cyd/bank_zx128.asm",
     "cydc/cyd/cyd_plus3.asm",
     "cydc/cyd/cyd_tape.asm",
@@ -59,6 +59,7 @@ SRC_FILES = [
     "cydc/cyd/screen_manager_tape.asm",
     "cydc/cyd/sysvars.asm",
     "cydc/cyd/text_manager.asm",
+    "cydc/cyd/inkey.asm",
     "cydc/cyd/vars.asm",
     "cydc/cyd/VTII10bG.asm",
     "cydc/cyd/VTII10bG_vars.asm",

@@ -79,6 +79,24 @@ IF NOT exist %~dp0\tokens.json (
 )
 ECHO ---------------------
 ECHO Success!
+
+if EXIST %~dp0\tools\zesarux\zesarux.exe (
+cd %~dp0\tools\zesarux
+if "%TARGET%"=="plus3" (
+zesarux --noconfigfile --quickexit --zoom 2 --machine P341 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.DSK"
+)
+
+if "%TARGET%"=="128k" (
+zesarux --noconfigfile --quickexit --zoom 2 --machine 128k --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.TAP"
+)
+
+if "%TARGET%"=="48k" (
+zesarux --noconfigfile --quickexit --zoom 2 --machine 48k --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.TAP"
+)
+
+CD ..\..
+)
+
 GOTO END
 
 :ERROR

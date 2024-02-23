@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 #
 # MIT License
 #
@@ -29,6 +31,8 @@ import sys
 import os
 import gettext
 import argparse
+
+sys.path.append(os.path.join(os.path.dirname(__file__), 'cydc'))
 
 from cydc_font import CydcFont
 
@@ -165,6 +169,10 @@ def main():
         font_file_chars += font.default_font[len(font_file_chars) :]
         font_file_widths += font.default_font_sizes[len(font_file_widths) :]
 
+    for i in range(127, 144):
+        if font_file_widths[i] != 8:
+            font_file_widths[i] = 8
+
     font.font = font_file_chars
     font.font_sizes = font_file_widths
 
@@ -175,7 +183,6 @@ def main():
         sys.exit(_("ERROR: creating output file ") + f"{err}")
 
     sys.exit(0)
-
 
 if __name__ == "__main__":
     main()

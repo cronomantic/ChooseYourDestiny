@@ -75,10 +75,11 @@ def get_asm_128(
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
     )
-    # SHOW_SIZE_INTERPRETER
 
-    t = get_asm_template("bank_zx128")
+    t = get_asm_template("inkey")
     includes = t.substitute(d)
+    t = get_asm_template("bank_zx128")
+    includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
     if has_tracks:
@@ -137,8 +138,10 @@ def get_asm_48(
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
     )
-    t = get_asm_template("bank_zx128")
+    t = get_asm_template("inkey")
     includes = t.substitute(d)
+    t = get_asm_template("bank_zx128")
+    includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
     t = get_asm_template("screen_manager_tape")
@@ -458,9 +461,10 @@ def do_asm_plus3(
         DEFINE_LOADING_SCREEN=loading_scr_def,
         LOADSCR_DAT=loading_scr,
     )
-
-    t = get_asm_template("bank_zx128")
+    t = get_asm_template("inkey")
     includes = t.substitute(d)
+    t = get_asm_template("bank_zx128")
+    includes += t.substitute(d)
     t = get_asm_template("plus3dos")
     includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
