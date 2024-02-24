@@ -33,7 +33,7 @@ DST_PATH = "../../dist/"
 SRC_PATH = "./"
 SRC_FILES = [
     "cydc_cli.py",
-    "cyd_font_conv.py",
+    "cyd_chr_conv.py",
     "cydc/cydc.py",
     "cydc/cydc_codegen.py",
     "cydc/cydc_font.py",
