@@ -251,7 +251,163 @@ OP_IF_MT_I:       ; p1 > p2
     cp c       ; p2 - p1
     jp c, OP_GOTO
     jr NO_GOTO_ON_CMP
+;-------------------------------------------------------
 
+OP_IF_EQ_D_GS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    cp c
+    jp z, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_NE_D_GS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    cp c
+    jp nz, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_LE_D_GS:    ; p1 <= p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    cp c             ; p2 - p1
+    jp nc, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_ME_D_GS:    ;  p1 >= p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jp nc, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_LT_D_GS:         ; p1 < p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld b, a
+    ld a, c
+    cp b          ; p1 - p2
+    jp c, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_MT_D_GS:       ; p1 > p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)    
+    cp c       ; p2 - p1
+    jp c, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_EQ_I_GS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld c, a
+    ld a, (bc)
+    cp c
+    jp z, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_NE_I_GS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld c, a
+    ld a, (bc)
+    cp c
+    jp nz, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_LE_I_GS:    ; p1 <= p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld c, a
+    ld a, (bc)
+    cp c             ; p2 - p1
+    jp nc, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_ME_I_GS:    ;  p1 >= p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (bc)
+    ld c, a
+    ld a, (de)
+    cp c             ; p1 - p2
+    jp nc, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_LT_I_GS:         ; p1 < p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (bc)
+    ld c, a
+    ld a, (de)
+    cp c          ; p1 - p2
+    jp c, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+OP_IF_MT_I_GS:       ; p1 > p2
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld c, a
+    ld a, (bc)
+    cp c       ; p2 - p1
+    jp c, OP_GOSUB
+    jp NO_GOTO_ON_CMP
+
+;-------------------------------------------------------
 OP_ADD_D:
     ld d, HIGH FLAGS
     ld e, (hl)
@@ -600,7 +756,7 @@ OP_WAIT:
 
 OP_OPTION:
     ld a, (NUM_OPTIONS)
-    cp MAXIMUM_OPTIONS    ;test if number of options is MAX
+    cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
     jr c,.option_ok
     ld a, 2
     jp SYS_ERROR
@@ -633,11 +789,13 @@ OP_OPTION:
     or a
     jr z, 2f              ;search the top of the address table
 .loop:
-    inc de                ;Advance 3 positions
+    inc de                ;Advance 4 positions
+    inc de
     inc de
     inc de
     djnz .loop
 2:  ldi                   ;Copy Address to address table
+    ldi
     ldi
     ldi
     inc a
@@ -797,12 +955,15 @@ OP_CHOOSE:
     jr 3b
 .selected:
     ld hl, OPTIONS_JMP_ADDR
+    ld c, (hl)
+    inc hl
     ld a, (SELECTED_OPTION)
     or a
     jr z, 2f
-1:  ld c, (hl)
+1:  inc hl
     inc hl
     inc hl
+    ld c, (hl)
     inc hl
     dec a
     jr nz, 1b
@@ -811,7 +972,10 @@ OP_CHOOSE:
 4:  call INKEY
     or a
     jr nz, 4b
-    jp OP_GOTO
+    ld a, c
+    or a
+    jp z, OP_GOTO
+    jp OP_GOSUB
 
 OP_CHOOSE_W:
 
@@ -822,19 +986,12 @@ OP_CHOOSE_W:
 
     push de            ;Save timeout
 
-    ld a, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld b, (hl)
-
-    ld hl, TIMEOUT_OPTION
-    ld (hl), a
-    inc hl
-    ld (hl), c
-    inc hl
-    ld (hl), b
-
+    ld de, TIMEOUT_OPTION
+    ldi
+    ldi
+    ldi
+    ldi
+ 
     pop de           ;Restore timeout
     
     xor a
@@ -906,12 +1063,15 @@ OP_CHOOSE_W:
     jr 3f
 .selected:
     ld a, (SELECTED_OPTION)
+3:  ld hl, OPTIONS_JMP_ADDR
+    ld c, (hl)               ;C= if is GOSUB
+    inc hl
     or a
     jr z, 2f
-3:  ld hl, OPTIONS_JMP_ADDR
-1:  ld c, (hl)
+1:  inc hl
     inc hl
     inc hl
+    ld c, (hl)               ;C= if is GOSUB
     inc hl
     dec a
     jr nz, 1b
@@ -920,7 +1080,10 @@ OP_CHOOSE_W:
 4:  call INKEY
     or a
     jr nz, 4b
-    jp OP_GOTO
+    ld a, c
+    or a
+    jp z, OP_GOTO
+    jp OP_GOSUB
 
 OP_TYPERATE:
     ld d, (hl)
@@ -947,6 +1110,21 @@ OP_CHAR:
     inc hl
     push hl
     call PUT_VAR_CHAR
+    pop hl
+    jp EXEC_LOOP
+
+OP_REPCHAR:
+    ld a, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    push hl
+1:  push bc
+    push af
+    call PUT_VAR_CHAR
+    pop af
+    pop bc
+    djnz 1b
     pop hl
     jp EXEC_LOOP
 
@@ -1180,6 +1358,19 @@ OPCODES:
     DW OP_PLAY_I
     DW OP_LOOP_D
     DW OP_LOOP_I
+    DW OP_IF_EQ_D_GS
+    DW OP_IF_NE_D_GS
+    DW OP_IF_LE_D_GS
+    DW OP_IF_ME_D_GS
+    DW OP_IF_LT_D_GS
+    DW OP_IF_MT_D_GS
+    DW OP_IF_EQ_I_GS
+    DW OP_IF_NE_I_GS
+    DW OP_IF_LE_I_GS
+    DW OP_IF_ME_I_GS
+    DW OP_IF_LT_I_GS
+    DW OP_IF_MT_I_GS
+    DW OP_REPCHAR
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR

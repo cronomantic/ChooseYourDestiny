@@ -1,4 +1,59 @@
+; 
+; MIT License
+; 
+; Copyright (c) 2024 Sergio Chico
+; 
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+; 
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+; 
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
 
+INKEY:
+    ;push hl
+    ;push de
+    ;push bc
+    exx
+
+    call KEY_SCAN
+    jp nz, .empty_inkey
+
+    call K_TEST
+    jp nc, .empty_inkey
+
+    dec d   ; D is expected to be FLAGS so set bit 3 $FF
+    ; 'L' Mode so no keywords.
+    ld e, a ; main key to A
+    ; C is MODE 0 'KLC' from above still.
+    call K_DECODE ; routine K-DECODE
+    ;Keycode on A
+    exx
+    ret
+    ;jr 1f
+
+.empty_inkey:
+    xor a
+1:
+    ;pop bc
+    ;pop de
+    ;pop hl
+    exx
+    ret
+
+
+    IFNDEF USE_ROM_KEYB
 ; THE 'KEYBOARD SCANNING' SUBROUTINE
 ; This very important subroutine is called by both the main keyboard subroutine (KEYBOARD) and the INKEY$ routine (S_INKEY).
 ; In all instances the E register is returned with a value in the range of +00 to +27, the value being different for each of the forty keys of the keyboard, or the value +FF, for no-key.
@@ -331,34 +386,5 @@ KEYTABLE_F:
     DEFB $A9    ;POINT
     DEFB $CF    ;CAT
 
-INKEY:
-    ;push hl
-    ;push de
-    ;push bc
-    exx
-
-    call KEY_SCAN
-    jp nz, .empty_inkey
-
-    call K_TEST
-    jp nc, .empty_inkey
-
-    dec d   ; D is expected to be FLAGS so set bit 3 $FF
-    ; 'L' Mode so no keywords.
-    ld e, a ; main key to A
-    ; C is MODE 0 'KLC' from above still.
-    call K_DECODE ; routine K-DECODE
-    ;Keycode on A
-    exx
-    ret
-    ;jr 1f
-
-.empty_inkey:
-    xor a
-1:
-    ;pop bc
-    ;pop de
-    ;pop hl
-    exx
-    ret
+    ENDIF
 
