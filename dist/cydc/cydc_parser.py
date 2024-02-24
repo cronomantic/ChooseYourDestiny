@@ -183,9 +183,13 @@ class CydcParser(object):
         "statement : GOSUB ID"
         p[0] = ("GOSUB", p[2], 0, 0)
 
-    def p_statement_option(self, p):
+    def p_statement_option_goto(self, p):
         "statement : OPTION GOTO ID"
-        p[0] = ("OPTION", p[3], 0, 0)
+        p[0] = ("OPTION", 0, p[3], 0, 0)
+
+    def p_statement_option_gosub(self, p):
+        "statement : OPTION GOSUB ID"
+        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
 
     def p_statement_label(self, p):
         "statement : LABEL ID"
@@ -632,10 +636,101 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_if_eq_gosub_ind(self, p):
+        "statement : IF expression EQUALS INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_EQ_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_eq_gosub_dir(self, p):
+        "statement : IF expression EQUALS expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_EQ_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_ne_gosub_ind(self, p):
+        "statement : IF expression NOT_EQUALS INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_NE_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_ne_gosub_dir(self, p):
+        "statement : IF expression NOT_EQUALS expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_NE_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_le_gosub_ind(self, p):
+        "statement : IF expression LESS_EQUALS INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_LE_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_le_gosub_dir(self, p):
+        "statement : IF expression LESS_EQUALS expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_LE_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_me_gosub_ind(self, p):
+        "statement : IF expression MORE_EQUALS INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_ME_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_me_gosub_dir(self, p):
+        "statement : IF expression MORE_EQUALS expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_ME_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_lt_gosub_ind(self, p):
+        "statement : IF expression LESS_THAN INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_LT_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_lt_gosub_dir(self, p):
+        "statement : IF expression LESS_THAN expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_LT_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_mt_gosub_ind(self, p):
+        "statement : IF expression MORE_THAN INDIRECTION expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
+            p[0] = ("IF_MT_I", p[2], p[5], p[8], 0, 0)
+        else:
+            p[0] = None
+
+    def p_statement_if_mt_gosub_dir(self, p):
+        "statement : IF expression MORE_THAN expression THEN GOSUB ID"
+        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            p[0] = ("IF_MT_D", p[2], p[4], p[7], 0, 0)
+        else:
+            p[0] = None
+
     def p_statement_choose_if(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
         if self._check_word_value(p[4]):
-            p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, p[7], 0, 0)
+            p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0, p[7], 0, 0)
+        else:
+            p[0] = None
+      
+    def p_statement_choose_if(self, p):
+        "statement : CHOOSE IF WAIT expression THEN GOSUB ID"
+        if self._check_word_value(p[4]):
+            p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0xFF, p[7], 0, 0)
         else:
             p[0] = None
 

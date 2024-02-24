@@ -514,7 +514,7 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
     except OSError:
         sys.exit("ERROR: Can't write temp file.")
     asm_path = os.path.abspath(asm_path)  # Get the absolute path of the executable
-    command_line = [asm_path, "--nologo"]
+    command_line = [asm_path, "--nologo", "-Wno-all"]
     if listing:
         command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
     command_line += [filename]
