@@ -21,6 +21,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [CENTER](#center)
     - [WAITKEY](#waitkey)
     - [OPTION GOTO labelId](#option-goto-labelid)
+    - [OPTION GOSUB labelId](#option-gosub-labelid)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
     - [INKEY expression](#inkey-expression)
@@ -75,6 +76,18 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [IF flag\_no \< @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
     - [IF flag\_no \> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
     - [IF flag\_no \> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
+    - [IF flag\_no = expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid)
+    - [IF flag\_no = @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid)
+    - [IF flag\_no \<\> expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-1)
+    - [IF flag\_no \<\> @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-1)
+    - [IF flag\_no \<= expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-2)
+    - [IF flag\_no \<= @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-2)
+    - [IF flag\_no \>= expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-3)
+    - [IF flag\_no \>= @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-3)
+    - [IF flag\_no \< expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-4)
+    - [IF flag\_no \< @ flag\_no THEN GOSUBlabelId](#if-flag_no---flag_no-then-gosublabelid)
+    - [IF flag\_no \> expression THEN GOSUBlabelId](#if-flag_no--expression-then-gosublabelid)
+    - [IF flag\_no \> @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-4)
     - [TRACK expression](#track-expression)
     - [TRACK @ flag\_no](#track--flag_no)
     - [PLAY expression](#play-expression)
@@ -171,7 +184,19 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 ## CYD Character Set Converter
 
-(TBC)
+Esta utilidad permite convertir juegos de caracteres en formato `.chr`, `.ch8`, `.ch6` y `.ch4` en un fichero utilizable por el compilador en formato JSON. Estos formatos son editables con ZxPaintbrush.
+
+```batch
+cyd_chr_conv.py [-h] [-w WITDH] [-V] charset.chr charset.json
+```
+Los parámetros que soporta:
+
+- **\-w, --width**: Ancho de los caracteres (1-8).
+- **\-h, --help**: Muestra la ayuda.
+- **charset.chr**: Huego de caracteres de entrada.
+- **charset.json**: Fichero con el juego de caracteres para el compilador.
+
+El ancho de los caracteres empleado depende de la extensión del fichero de entrada, 8 pixels para `.chr` y `.ch8`, 6 para `.ch6` y 4 para`.ch4`, pero se pueden forzar el ancho con el parámetro `-w`. Indicar que los caracteres del 127 al 143 son especiales para los cursores y siempre tendrán ancho 8, con lo que el tamaño de la fuente será ignorado en esos caracteres. Si se desea definir un ancho específico para cada caracter tendrás que editarlo en el fichero JSON de salida. Tienes más información en la sección [Juego de caracteres](#juego-de-caracteres).
 
 ---
 
@@ -281,9 +306,13 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
 
+### OPTION GOSUB labelId
+
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _labelId_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+
 ### CHOOSE
 
-Permite al jugador seleccionar una de las opciones que haya en este momento en pantalla.
+Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opciñon correspondiente.
 
 ### CHOOSE IF WAIT expression THEN GOTO labelId
 
@@ -520,6 +549,54 @@ Si el contenido del flag indicado por el primer parámetro es mayor que el segun
 
 Si el contenido del flag indicado por el primer parámetro es mayor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
 
+### IF flag_no = expression THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual al segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no = @ flag_no THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual al contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \<> expression THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro no es igual al segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \<> @ flag_no THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro no es igual al contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \<= expression THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual o menor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \<= @ flag_no THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual o menor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no >= expression THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual o mayor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no >= @ flag_no THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es igual o mayor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \< expression THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es menor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no \< @ flag_no THEN GOSUBlabelId
+
+Si el contenido del flag indicado por el primer parámetro es menor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no > expression THEN GOSUBlabelId
+
+Si el contenido del flag indicado por el primer parámetro es mayor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
+### IF flag_no > @ flag_no THEN GOSUB labelId
+
+Si el contenido del flag indicado por el primer parámetro es mayor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+
 ### TRACK expression
 
 Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobrescribirá.
@@ -609,7 +686,7 @@ REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
 REM   - The name of the TAP file or +3 disk image
 
-REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
 SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
@@ -627,12 +704,14 @@ SET LOAD_SCR=%~dp0\IMAGES\000.scr
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 
+(TBC)
+
 ---
 
 ## Juego de caracteres
 
 El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
-El juego de caracteres por defecto incluido tiene un tamaño 6x8, excepto los caracteres del 127 al 142, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
+El juego de caracteres por defecto incluido tiene un tamaño 6x8, excepto los caracteres del 127 al 143, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
@@ -675,8 +754,10 @@ Este es el formato de importación/exportación del juego de caracteres:
 Es un JSON con un array de registros de tres campos:
 
 - _Id_: número del carácter de 0 a 255, que no se puede repetir.
-- _Character_: un array de números que corresponde con el valor de los bytes del juego de caracteres, por tanto, no puede haber valores mayores de 255. Cada carácter son 8 bytes consecutivos, y cada byte corresponde con los pixels de cada línea del carácter.
-- _Width_: un array con el ancho en pixels de cada carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
+- _Character_: un array de 8 números que corresponde con el valor de los bytes del caracter y, por tanto, no puede haber valores mayores de 255. Cada byte corresponde con los pixels de cada línea del carácter.
+- _Width_: un array con el ancho en pixels del carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
+
+Para facilitar la tarea de creación de un juego de caracteres alternativo, se ha incluido la herramienta [CYD Character Set Converter](#cyd-character-set-converter) o cyd_chr_conv. Esta herramienta permite convertir fuentes en formato `.chr`, `.ch8`, `.ch6` y `.ch4` creadas con ZxPaintbrush en el formato JSON anteriormente mencionado. Además, en el directorio `assest` de la distribución podrás encontrar el fichero `default_charset.chr` con la fuente por defecto para que puedas editarla y personalizarla con dicho programa.
 
 ---
 
@@ -738,7 +819,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
-- XimoKom por su inestimable ayuda.
+- XimoKom y Fran Kapilla por su inestimable ayuda.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
@@ -748,7 +829,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ```
 
-Copyright (c) 2023 Sergio Chico
+Copyright (c) 2024 Sergio Chico
 
 Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
 

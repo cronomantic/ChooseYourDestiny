@@ -1194,38 +1194,6 @@ CLEAR_WIN:
     ld (NUM_OPTIONS), a          ;Clear options.
     ret
 
-/*
-INKEY:
-    ;push hl
-    ;push de
-    ;push bc
-    exx
-
-    call KEY_SCAN
-    jp nz, .empty_inkey
-
-    call KEY_TEST
-    jp nc, .empty_inkey
-
-    dec d	; D is expected to be FLAGS so set bit 3 $FF
-    ; 'L' Mode so no keywords.
-    ld e, a	; main key to A
-    ; C is MODE 0 'KLC' from above still.
-    call KEY_CODE ; routine K-DECODE
-    ;Keycode on A
-    exx
-    ret
-    ;jr 1f
-
-.empty_inkey:
-    xor a
-1:
-    ;pop bc
-    ;pop de
-    ;pop hl
-    exx
-    ret
-*/
 ;' scrolls the window defined by (row, col, width, height) 1 cell up
 ;WIN_SCROLL_UP:
 ;    ld bc, (MIN_X)

@@ -98,7 +98,19 @@ class CydcCodegen(object):
         "PLAY_I": 0x41,
         "LOOP_D": 0x42,
         "LOOP_I": 0x43,
-        "REPCHAR": 0x44,
+        "IF_EQ_D_GS": 0x44,
+        "IF_NE_D_GS": 0x45,
+        "IF_LE_D_GS": 0x46,
+        "IF_ME_D_GS": 0x47,
+        "IF_LT_D_GS": 0x48,
+        "IF_MT_D_GS": 0x49,
+        "IF_EQ_I_GS": 0x4A,
+        "IF_NE_I_GS": 0x4B,
+        "IF_LE_I_GS": 0x4C,
+        "IF_ME_I_GS": 0x4D,
+        "IF_LT_I_GS": 0x4E,
+        "IF_MT_I_GS": 0x4F,
+        "REPCHAR": 0x50,
     }
 
     def __init__(self, gettext):

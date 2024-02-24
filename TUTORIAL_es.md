@@ -45,7 +45,7 @@ REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
 REM   - The name of the TAP file or +3 disk image
 
-REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
 SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
@@ -68,7 +68,7 @@ REM This name will be used as:
 REM   - The file to compile will be test.txt with this example
 REM   - The name of the TAP file or +3 disk image
 
-REM Target for the compiler (48, 128 for TAP, plus3 for DSK)
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
 SET TARGET=plus3
 
 REM Number of lines used on SCR files at compressing
@@ -338,7 +338,7 @@ El contador funciona en base a los fotogramas del Spectrum, es decir, 1/50 de se
 
 Con esto ya tenemos las base para hacer un "Elije tu propia aventura" básico. Pero todavía tenemos muchas más posibilidades que explorar...
 
-**Novedad a partir la versión 0.5**: Para facilitar la escritura y la legibilidad del código, se ha includo una forma abreviada de declarar etiquetas. Simplemente anteponiendo un `#` al nombre de la etiqueta sirve para declararla. De tal forma, el código del anterior ejemplo quedaría así con esta modalidad:
+**Novedad en la versión 0.5 o superiores**: Para facilitar la escritura y la legibilidad del código, se ha includo una forma abreviada de declarar etiquetas. Simplemente anteponiendo un `#` al nombre de la etiqueta sirve para declararla. De tal forma, el código del anterior ejemplo quedaría así con esta modalidad:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -892,6 +892,8 @@ Una cosa que hay que fijarse es que la subrutina está al final, después de `EN
 
 Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pueden anidarse, es decir, se puede llamar a una subrutina dentro de otra. Se almacenarán en la pila las direcciones de retorno en orden inverso, pero **CUIDADO, la pila sólo soporta 16 direcciones como máximo**. Esto quiere decir que no puedes superar más de 16 niveles de anidamiento. Y como ya expliqué en el párrafo anterior, si se hace un `RETURN` sin un `GOSUB` previo, tendrás como mínimo un error, y como máximo, comportamiento erróneo.
 
+**Novedad en la versión 0.5 o superiores**: Por lo general, el momento idóneo para llamar a una subrutina es cuando se realiza una elección de un menú. Con lo que se ha incluido la variante `OPTION GOSUB Etiqueta`, que lo que hará si se elige esa opción es hacer una llamada a la correspondiente subrutina. Cuando llegue al `RETURN` (¡recuerda siempre acabar las subrutinas con él!), retomará la ejecución justo después del `CHOOSE` de dicha opción. Por coherencia, también se han añadido las correspondientes variantes `GOSUB` para los `IF`. Consulta el manual para más información.
+
 ---
 
 ## Compresión de textos y abreviaturas
@@ -977,6 +979,29 @@ Hasta este momento, sólo hemos desarrollado aventuras para el Zx Spectrum +3, q
 Sin embargo, el formato DSK es bastante poco común y poco usado el algunos ámbitos, con lo que se ha añadido soporte para ficheros TAP para usarlo con modelos 48k y 128k. Esto conlleva una serie de ventajas y limitaciones que hay que considerar.
 Las versiones para TAP cargarán todo (textos, imágenes) de una sola vez. Esto implica que el tiempo de acceso a éstos será inmediato en el momento de utilizarlos, pero incrementará el tiempo de carga desde la cinta de forma considerable (si no se usa algún tipo de aceleración), además de estar limitados a la memoria disponible en la máquina.
 
-El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del interprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 Kb disponibles en los modelos de 128K y unos 24 Kb en los modelos de 48K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
+El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del interprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 Kb disponibles en los modelos de 128K y unos 24 Kb en los modelos de 40K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
+
+Si usas el guión `MakeAdv.bat`, para cambiar el modelo, simplemente tienes que cambiar la variable `TARGET` por los valores `48k` o `128k` si quieres generar los TAPs para los modelos correspondientes. Por ejemplo, si queremos crear una versión de nuestro tutorial para Spectrum 128k:
+
+```batch
+@echo off  &SETLOCAL
+
+REM ---- Configuration variables 
+
+REM Name of the game
+SET GAME=Tutorial
+REM This name will be used as:
+REM   - The file to compile will be test.txt with this example
+REM   - The name of the TAP file or +3 disk image
+
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
+SET TARGET=128k
+
+REM Number of lines used on SCR files at compressing
+SET IMGLINES=192
+
+REM Loading screen
+SET LOAD_SCR=%~dp0\IMAGES\000.scr
+```
 
 (TBC)

@@ -24,7 +24,7 @@
 ;
     ;THIS IS A TEST
 
-    DEFINE RELEASE "0.4"
+    DEFINE RELEASE "0.5"
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -45,6 +45,9 @@ INT_STACK_ADDR EQU $8000
     ld i, a
     im 2
     ei
+
+    ;Disable CAPS_LOCK
+    res 3,(IY+$30)
 
     xor a
     call BORDER
