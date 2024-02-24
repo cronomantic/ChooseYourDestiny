@@ -50,8 +50,9 @@ SCR_SIZE            EQU SCR_ATT_SIZE + SCR_PXL_SIZE
 SCR_PXL             EQU $4000
 SCR_ATT             EQU SCR_PXL + SCR_PXL_SIZE
 SCR_ADDR            EQU SCR_PXL
-/*
-KEY_SCAN            EQU $028E
-KEY_TEST            EQU $031E
-KEY_CODE            EQU $0333
-*/
+
+    IFDEF USE_ROM_KEYB
+KEY_SCAN          EQU $028E
+K_TEST            EQU $031E
+K_DECODE          EQU $0333
+    ENDIF
