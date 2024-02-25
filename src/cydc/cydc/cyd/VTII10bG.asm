@@ -149,7 +149,7 @@ TP_2	LD A,H
 	LD A,L
 	LD (BC),A
 	DEC BC
-	SUB $F8*2
+	SUB low($F8*2)
 	JR NZ,TP_0
 
 	LD HL,VTR_VARS
@@ -209,9 +209,9 @@ L21	LD (Version),A
 	ADD HL,BC
 
 	LD A,(DE)
-	ADD A,T_
+	ADD A,low(T_)
 	LD C,A
-	ADC A,T_/256
+	ADC A,high(T_)
 	SUB C
 	LD B,A
 	PUSH BC
@@ -256,7 +256,7 @@ L3	DB $19	;AND A or NOP
 	POP DE
 
 	LD A,E
-	CP TCOLD_1
+	CP low(TCOLD_1)
 	JR NZ,CORR_1
 	LD A,$FD
 	LD (NT_+$2E),A
@@ -414,7 +414,7 @@ PD_LP2	LD A,(BC)
 	JR C,PD_ESAM
 	ADD A,A
 	LD E,A
-	LD HL,SPCCOMS+$FF20-$2000
+	LD HL,$FFFF & (SPCCOMS+$FF20-$2000)
 	ADD HL,DE
 	LD E,(HL)
 	INC HL
@@ -979,55 +979,56 @@ EMPTYSAMORN EQU $-1
 
 ;first 12 values of tone tables (packed)
 
-T_PACK	DB $06EC*2/256,$06EC*2
-	DB $0755-$06EC
-	DB $07C5-$0755
-	DB $083B-$07C5
-	DB $08B8-$083B
-	DB $093D-$08B8
-	DB $09CA-$093D
-	DB $0A5F-$09CA
-	DB $0AFC-$0A5F
-	DB $0BA4-$0AFC
-	DB $0C55-$0BA4
-	DB $0D10-$0C55
-	DB $066D*2/256,$066D*2
-	DB $06CF-$066D
-	DB $0737-$06CF
-	DB $07A4-$0737
-	DB $0819-$07A4
-	DB $0894-$0819
-	DB $0917-$0894
-	DB $09A1-$0917
-	DB $0A33-$09A1
-	DB $0ACF-$0A33
-	DB $0B73-$0ACF
-	DB $0C22-$0B73
-	DB $0CDA-$0C22
-	DB $0704*2/256,$0704*2
-	DB $076E-$0704
-	DB $07E0-$076E
-	DB $0858-$07E0
-	DB $08D6-$0858
-	DB $095C-$08D6
-	DB $09EC-$095C
-	DB $0A82-$09EC
-	DB $0B22-$0A82
-	DB $0BCC-$0B22
-	DB $0C80-$0BCC
-	DB $0D3E-$0C80
-	DB $07E0*2/256,$07E0*2
-	DB $0858-$07E0
-	DB $08E0-$0858
-	DB $0960-$08E0
-	DB $09F0-$0960
-	DB $0A88-$09F0
-	DB $0B28-$0A88
-	DB $0BD8-$0B28
-	DB $0C80-$0BD8
-	DB $0D60-$0C80
-	DB $0E10-$0D60
-	DB $0EF8-$0E10
+T_PACK:
+	DB high ($06EC*2), low ($06EC*2)
+	DB low ($0755-$06EC)
+	DB low ($07C5-$0755)
+	DB low ($083B-$07C5)
+	DB low ($08B8-$083B)
+	DB low ($093D-$08B8)
+	DB low ($09CA-$093D)
+	DB low ($0A5F-$09CA)
+	DB low ($0AFC-$0A5F)
+	DB low ($0BA4-$0AFC)
+	DB low ($0C55-$0BA4)
+	DB low ($0D10-$0C55)
+	DB high ($066D*2), low ($066D*2)
+	DB low ($06CF-$066D)
+	DB low ($0737-$06CF)
+	DB low ($07A4-$0737)
+	DB low ($0819-$07A4)
+	DB low ($0894-$0819)
+	DB low ($0917-$0894)
+	DB low ($09A1-$0917)
+	DB low ($0A33-$09A1)
+	DB low ($0ACF-$0A33)
+	DB low ($0B73-$0ACF)
+	DB low ($0C22-$0B73)
+	DB low ($0CDA-$0C22)
+	DB high ($0704*2), low ($0704*2)
+	DB low ($076E-$0704)
+	DB low ($07E0-$076E)
+	DB low ($0858-$07E0)
+	DB low ($08D6-$0858)
+	DB low ($095C-$08D6)
+	DB low ($09EC-$095C)
+	DB low ($0A82-$09EC)
+	DB low ($0B22-$0A82)
+	DB low ($0BCC-$0B22)
+	DB low ($0C80-$0BCC)
+	DB low ($0D3E-$0C80)
+	DB high ($07E0*2), low ($07E0*2)
+	DB low ($0858-$07E0)
+	DB low ($08E0-$0858)
+	DB low ($0960-$08E0)
+	DB low ($09F0-$0960)
+	DB low ($0A88-$09F0)
+	DB low ($0B28-$0A88)
+	DB low ($0BD8-$0B28)
+	DB low ($0C80-$0BD8)
+	DB low ($0D60-$0C80)
+	DB low ($0E10-$0D60)
+	DB low ($0EF8-$0E10)
 /*
 ;vars from here can be stripped
 ;you can move VARS to any other address

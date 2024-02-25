@@ -704,7 +704,7 @@ SET LOAD_SCR=%~dp0\IMAGES\000.scr
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 
-(TBC)
+El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
 
 ---
 
@@ -809,6 +809,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ## F.A.Q
 
+(TBC)
+
 ---
 
 ## Referencias y agradecimientos
@@ -829,7 +831,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ```
 
-Copyright (c) 2024 Sergio Chico
+Copyright (c) 2023 Sergio Chico
 
 Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
 
