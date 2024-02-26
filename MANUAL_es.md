@@ -671,9 +671,9 @@ Para añadir efectos de sonido, imágenes y melodías, consulta las secciones co
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.txt`, que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla.
+Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.txt`.
 
-Se incluye una imagen de prueba en el directorio `.\IMAGES`, que aparecerá al cargar el programa. El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro de ese directorio. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo.
+El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro del directorio `.\IMAGES`. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo. Además buscará de forma automática si existe un fichero de efectos de sonido llamado `SFX.ASM` que debe generarse con **BeepFX**, y si existiese un fichero JSON con el juego de caracteres llamado `charset.json`, también lo utilizará.
 
 El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
@@ -698,13 +698,15 @@ SET LOAD_SCR=%~dp0\IMAGES\000.scr
 
 - La variable `GAME` será el nombre del fichero txt que se compilará y el nombre del fichero DSK o TAP resultante.
 - La variable `TARGET` es el sistema y formato de salida, con estas posibles opciones:
-  -- 48: Genera un fichero TAP para Spectrum 48K, sin soporte de música AY.
-  -- 128: Genera un fichero TAP para Spectrum 128K.
+  -- 48k: Genera un fichero TAP para Spectrum 48K, sin soporte de música AY.
+  -- 128k: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 
 El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
+
+En la carpeta `examples\test` hay un ejemplo que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla. Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
 
 ---
 
