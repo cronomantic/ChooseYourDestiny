@@ -720,14 +720,14 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_choose_if(self, p):
+    def p_statement_choose_if_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
         if self._check_word_value(p[4]):
             p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0, p[7], 0, 0)
         else:
             p[0] = None
       
-    def p_statement_choose_if(self, p):
+    def p_statement_choose_if_gosub(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOSUB ID"
         if self._check_word_value(p[4]):
             p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0xFF, p[7], 0, 0)
