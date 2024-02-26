@@ -83,6 +83,225 @@ OP_RETURN:
 .same_CHUNK:
     jp EXEC_LOOP
 
+;-------------------------------------
+
+OP_IF_GOTO:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    or a
+    jp nz, OP_GOTO
+    ld de, 3
+    add hl, de
+    jp EXEC_LOOP
+
+OP_IF_GOSUB:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    or a
+    jp nz, OP_GOSUB
+    ld de, 3
+    add hl, de
+    jp EXEC_LOOP
+
+OP_IF_OPTION:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    or a
+    jp nz, OP_OPTION
+    ld de, 4
+    add hl, de
+    jp EXEC_LOOP
+
+OP_IF_RETURN:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    or a
+    jp nz, OP_RETURN
+    jp EXEC_LOOP
+
+;-------------------------------------
+OP_IF_NOT:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    xor 1
+    ld (de), a
+    jp EXEC_LOOP
+
+OP_IF_AND:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld c, a
+    ld a, (de)
+    and c
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
+
+OP_IF_OR:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld c, a
+    ld a, (de)
+    or c
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
+;-------------------------------------
+OP_CP_GET_D:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ret
+OP_CP_GET_I:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld b, d
+    ld c, (hl)
+    inc hl
+    ld a, (de)
+    ld c, a
+    ld a, (bc)
+    ret
+OP_CP_STORE_STACK:
+    ld de, (INT_STACK_PTR)
+    dec de
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
+
+OP_CP_EQ_D:
+    call OP_CP_GET_D
+    cp c
+    jr z, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK  
+
+OP_CP_EQ_I:
+    call OP_CP_GET_I
+    cp c
+    jr z, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK  
+
+OP_CP_NE_D:
+    call OP_CP_GET_D
+    cp c
+    jr nz, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK    
+
+OP_CP_NE_I:
+    call OP_CP_GET_I
+    cp c
+    jr nz, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK   
+
+OP_CP_LE_D:            ; p1 <= p2
+    call OP_CP_GET_D
+    cp c               ; p2 - p1
+    jr nc, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK    
+
+OP_CP_LE_I:            ; p1 <= p2
+    call OP_CP_GET_I
+    cp c               ; p2 - p1
+    jr nc, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK
+
+OP_CP_ME_D:            ; p1 >= p2
+    call OP_CP_GET_D
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr nc, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK    
+
+OP_CP_ME_I:            ; p1 >= p2
+    call OP_CP_GET_I
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr nc, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK
+
+OP_CP_LT_D:            ; p1 < p2
+    call OP_CP_GET_D
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr c, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK    
+
+OP_CP_LT_I:            ; p1 < p2
+    call OP_CP_GET_I
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr c, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK
+
+OP_CP_MT_D:            ; p1 > p2
+    call OP_CP_GET_D
+    cp c               ; p2 - p1
+    jr c, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK    
+
+OP_CP_MT_I:            ; p1 > p2
+    call OP_CP_GET_I
+    cp c               ; p2 - p1
+    jr c, 1f
+    xor a
+    jp OP_CP_STORE_STACK
+1:  ld a, 1
+    jp OP_CP_STORE_STACK
+
+
+;-------------------------------------------------------
+
 OP_SET_D:
     ld d, HIGH FLAGS
     ld e, (hl)
@@ -91,322 +310,6 @@ OP_SET_D:
     inc hl
     ld (de), a
     jp EXEC_LOOP
-
-OP_IF_EQ_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c
-    jp z, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_NE_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c
-    jp nz, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_LE_D:    ; p1 <= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c             ; p2 - p1
-    jp nc, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_ME_D:    ;  p1 >= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jp nc, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_LT_D:         ; p1 < p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld b, a
-    ld a, c
-    cp b          ; p1 - p2
-    jp c, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_MT_D:       ; p1 > p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)    
-    cp c       ; p2 - p1
-    jp c, OP_GOTO
-    ;jr NO_GOTO_ON_CMP
-
-NO_GOTO_ON_CMP:
-    inc hl
-    inc hl
-    inc hl
-    jp EXEC_LOOP
-
-OP_IF_EQ_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c
-    jp z, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_NE_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c
-    jp nz, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_LE_I:    ; p1 <= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c             ; p2 - p1
-    jp nc, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_ME_I:    ;  p1 >= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    cp c             ; p1 - p2
-    jp nc, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_LT_I:         ; p1 < p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    cp c          ; p1 - p2
-    jp c, OP_GOTO
-    jr NO_GOTO_ON_CMP
-
-OP_IF_MT_I:       ; p1 > p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c       ; p2 - p1
-    jp c, OP_GOTO
-    jr NO_GOTO_ON_CMP
-;-------------------------------------------------------
-
-OP_IF_EQ_D_GS:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c
-    jp z, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_NE_D_GS:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c
-    jp nz, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_LE_D_GS:    ; p1 <= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    cp c             ; p2 - p1
-    jp nc, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_ME_D_GS:    ;  p1 >= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jp nc, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_LT_D_GS:         ; p1 < p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld b, a
-    ld a, c
-    cp b          ; p1 - p2
-    jp c, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_MT_D_GS:       ; p1 > p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)    
-    cp c       ; p2 - p1
-    jp c, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_EQ_I_GS:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c
-    jp z, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_NE_I_GS:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c
-    jp nz, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_LE_I_GS:    ; p1 <= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c             ; p2 - p1
-    jp nc, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_ME_I_GS:    ;  p1 >= p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    cp c             ; p1 - p2
-    jp nc, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_LT_I_GS:         ; p1 < p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    cp c          ; p1 - p2
-    jp c, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
-OP_IF_MT_I_GS:       ; p1 > p2
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    cp c       ; p2 - p1
-    jp c, OP_GOSUB
-    jp NO_GOTO_ON_CMP
-
 ;-------------------------------------------------------
 OP_ADD_D:
     ld d, HIGH FLAGS
@@ -1299,12 +1202,12 @@ OPCODES:
     DW OP_CENTER
     DW OP_AT
     DW OP_SET_D
-    DW OP_IF_EQ_D
-    DW OP_IF_NE_D
-    DW OP_IF_LE_D
-    DW OP_IF_ME_D
-    DW OP_IF_LT_D
-    DW OP_IF_MT_D
+    DW OP_CP_EQ_D
+    DW OP_CP_NE_D
+    DW OP_CP_LE_D
+    DW OP_CP_ME_D
+    DW OP_CP_LT_D
+    DW OP_CP_MT_D
     DW OP_ADD_D
     DW OP_SUB_D
     DW OP_INK_D
@@ -1312,12 +1215,12 @@ OPCODES:
     DW OP_BORDER_D
     DW OP_PRINT_D
     DW OP_SET_I
-    DW OP_IF_EQ_I
-    DW OP_IF_NE_I
-    DW OP_IF_LE_I
-    DW OP_IF_ME_I
-    DW OP_IF_LT_I
-    DW OP_IF_MT_I
+    DW OP_CP_EQ_I
+    DW OP_CP_NE_I
+    DW OP_CP_LE_I
+    DW OP_CP_ME_I
+    DW OP_CP_LT_I
+    DW OP_CP_MT_I
     DW OP_ADD_I
     DW OP_SUB_I
     DW OP_INK_I
@@ -1358,18 +1261,13 @@ OPCODES:
     DW OP_PLAY_I
     DW OP_LOOP_D
     DW OP_LOOP_I
-    DW OP_IF_EQ_D_GS
-    DW OP_IF_NE_D_GS
-    DW OP_IF_LE_D_GS
-    DW OP_IF_ME_D_GS
-    DW OP_IF_LT_D_GS
-    DW OP_IF_MT_D_GS
-    DW OP_IF_EQ_I_GS
-    DW OP_IF_NE_I_GS
-    DW OP_IF_LE_I_GS
-    DW OP_IF_ME_I_GS
-    DW OP_IF_LT_I_GS
-    DW OP_IF_MT_I_GS
+    DW OP_IF_GOTO
+    DW OP_IF_GOSUB
+    DW OP_IF_OPTION
+    DW OP_IF_RETURN
+    DW OP_IF_NOT
+    DW OP_IF_AND
+    DW OP_IF_OR
     DW OP_REPCHAR
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
