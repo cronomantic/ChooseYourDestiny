@@ -639,84 +639,84 @@ class CydcParser(object):
     def p_statement_if_eq_gosub_ind(self, p):
         "statement : IF expression EQUALS INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_EQ_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_EQ_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_eq_gosub_dir(self, p):
         "statement : IF expression EQUALS expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_EQ_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_EQ_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_ne_gosub_ind(self, p):
         "statement : IF expression NOT_EQUALS INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_NE_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_NE_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_ne_gosub_dir(self, p):
         "statement : IF expression NOT_EQUALS expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_NE_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_NE_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_le_gosub_ind(self, p):
         "statement : IF expression LESS_EQUALS INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LE_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_LE_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_le_gosub_dir(self, p):
         "statement : IF expression LESS_EQUALS expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LE_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_LE_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_me_gosub_ind(self, p):
         "statement : IF expression MORE_EQUALS INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_ME_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_ME_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_me_gosub_dir(self, p):
         "statement : IF expression MORE_EQUALS expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_ME_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_ME_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_lt_gosub_ind(self, p):
         "statement : IF expression LESS_THAN INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LT_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_LT_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_lt_gosub_dir(self, p):
         "statement : IF expression LESS_THAN expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LT_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_LT_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_mt_gosub_ind(self, p):
         "statement : IF expression MORE_THAN INDIRECTION expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_MT_I", p[2], p[5], p[8], 0, 0)
+            p[0] = ("IF_MT_I_GS", p[2], p[5], p[8], 0, 0)
         else:
             p[0] = None
 
     def p_statement_if_mt_gosub_dir(self, p):
         "statement : IF expression MORE_THAN expression THEN GOSUB ID"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_MT_D", p[2], p[4], p[7], 0, 0)
+            p[0] = ("IF_MT_D_GS", p[2], p[4], p[7], 0, 0)
         else:
             p[0] = None
 
