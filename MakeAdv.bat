@@ -19,6 +19,7 @@ SET LOAD_SCR=%~dp0\IMAGES\000.scr
 
 REM ---------------------------------
 
+
 GOTO START
 REM ---- Check if the file to compress is already compressed or is newer ----
 :CHECK_IF_COMPRESS
@@ -58,53 +59,54 @@ IF NOT EXIST %~dp0\tools\sjasmplus.exe (
   echo sjasmplus.exe file not found!
   GOTO ERROR
 )
-IF NOT exist %~dp0\tokens.json (
-  rem Token file does not exists, create a new one
-  IF EXIST %~dp0\SFX.ASM (
-  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -T %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
-  IF ERRORLEVEL 1 GOTO ERROR
-  ) else (
-  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -T %~dp0\tokens.json -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
-  IF ERRORLEVEL 1 GOTO ERROR
-  )
+SET CYDCPARAMS=
+IF NOT EXIST %~dp0\tokens.json (
+  SET CYDCPARAMS=%CYDCPARAMS% -T %~dp0\tokens.json
 ) else (
-  rem Token file exists, use it...
-  IF EXIST %~dp0\SFX.ASM (
-  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -t %~dp0\tokens.json -sfx %~dp0\SFX.ASM -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
-  IF ERRORLEVEL 1 GOTO ERROR
-  ) else (
-  %~dp0\dist\python\python %~dp0\dist\cydc_cli.py -t %~dp0\tokens.json -scr %LOAD_SCR% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.
-  IF ERRORLEVEL 1 GOTO ERROR
-  )
+  SET CYDCPARAMS=%CYDCPARAMS% -t %~dp0\tokens.json
 )
+IF EXIST %~dp0\SFX.ASM (
+  SET CYDCPARAMS=%CYDCPARAMS% -sfx %~dp0\SFX.ASM
+)
+IF EXIST %LOAD_SCR% (
+  SET CYDCPARAMS=%CYDCPARAMS% -scr %LOAD_SCR%
+)
+IF EXIST %~dp0\charset.json (
+  SET CYDCPARAMS=%CYDCPARAMS% -c %~dp0\charset.json
+)
+SET CYDCPARAMS=%CYDCPARAMS% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS
+%~dp0\dist\python\python %~dp0\dist\cydc_cli.py %CYDCPARAMS% %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
+IF ERRORLEVEL 1 GOTO ERROR
+SET CYDCPARAMS= 
 ECHO ---------------------
 ECHO Success!
 
+
 if EXIST %~dp0\tools\zesarux\zesarux.exe (
 cd %~dp0\tools\zesarux
+SET ZESARUXPARAMS=--noconfigfile --quickexit --zoom 2 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100
 if "%TARGET%"=="plus3" (
-zesarux --noconfigfile --quickexit --zoom 2 --machine P341 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.DSK"
+zesarux %ZESARUXPARAMS% --machine P341 ..\..\%GAME%.DSK
 )
 
 if "%TARGET%"=="128k" (
-zesarux --noconfigfile --quickexit --zoom 2 --machine 128k --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.TAP"
+zesarux %ZESARUXPARAMS% --machine 128k ..\..\%GAME%.TAP
 )
 
 if "%TARGET%"=="48k" (
-zesarux --noconfigfile --quickexit --zoom 2 --machine 48k --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes  --nowelcomemessage  --cpuspeed 100 "..\..\TEST.TAP"
+zesarux %ZESARUXPARAMS% --machine 48k ..\..\%GAME%.TAP
 )
-
+SET ZESARUXPARAMS=
 CD ..\..
 )
-
 GOTO END
 
 :ERROR
+SET CYDCPARAMS=
 ECHO ---------------------
 ECHO Compile error, please check
 PAUSE
 :END
-
 REM ----  CLEANING ---- 
 DEL %~dp0\SCRIPT.DAT > nul 2>&1
 DEL %~dp0\DISK > nul 2>&1

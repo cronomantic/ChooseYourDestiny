@@ -557,7 +557,7 @@ Para darle más vistosidad a la aventura, es posible añadir imágenes en format
 
 En el manual se encuentra explicado cómo funciona `CSC`, por si quieres hacerlo manualmente. Pero el guion `MakeAdv` busca y comprime automáticamente los ficheros SCR que haya en el directorio `\IMAGES`, con lo que simplemente tendrás que depositar los ficheros allí.
 
-Vamos a usar una imagen que tenemos de ejemplo, llamada `ORIGIN1.SCR`, dentro del directorio `\IMAGES`. Cópiala y renómbrala como `001.SCR`. Y pon el siguiente código en `tutorial.txt`:
+Vamos a usar una imagen que tenemos de ejemplo, llamada `ORIGIN1.SCR`, dentro del directorio `\examples\test\IMAGES`. Cópiala y renómbrala como `001.SCR`. Y pon el siguiente código en `tutorial.txt`:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -578,7 +578,7 @@ Voy a mostrar la imagen.[[
 Hecho[[ WAITKEY: END ]]
 ```
 
-Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `ORIGIN1.SCR`, `000.SCR`, `001.SCR`, `000.CSC` y `001.CSC`. El guion `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
+Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `001.SCR` y `001.CSC`. El guion `MakeAdv` lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime con `CSC`, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes.
 
 Ahora ya podemos lanzar el emulador. Lo primero que verás es esto:
 
