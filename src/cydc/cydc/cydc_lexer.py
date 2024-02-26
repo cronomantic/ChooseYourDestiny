@@ -97,6 +97,8 @@ class CydcLexer(object):
         "PLAY": "PLAY",
         "LOOP": "LOOP",
         "REPCHAR": "REPCHAR",
+        "DECLARE": "DECLARE",
+        "AS": "AS",
     }
 
     # token_list

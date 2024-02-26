@@ -39,12 +39,12 @@ class CydcCodegen(object):
         "CENTER": 0x06,
         "AT": 0x07,
         "SET_D": 0x08,
-        "IF_EQ_D": 0x09,
-        "IF_NE_D": 0x0A,
-        "IF_LE_D": 0x0B,
-        "IF_ME_D": 0x0C,
-        "IF_LT_D": 0x0D,
-        "IF_MT_D": 0x0E,
+        "CP_EQ_D": 0x09,
+        "CP_NE_D": 0x0A,
+        "CP_LE_D": 0x0B,
+        "CP_ME_D": 0x0C,
+        "CP_LT_D": 0x0D,
+        "CP_MT_D": 0x0E,
         "ADD_D": 0x0F,
         "SUB_D": 0x10,
         "INK_D": 0x11,
@@ -52,12 +52,12 @@ class CydcCodegen(object):
         "BORDER_D": 0x13,
         "PRINT_D": 0x14,
         "SET_I": 0x15,
-        "IF_EQ_I": 0x16,
-        "IF_NE_I": 0x17,
-        "IF_LE_I": 0x18,
-        "IF_ME_I": 0x19,
-        "IF_LT_I": 0x1A,
-        "IF_MT_I": 0x1B,
+        "CP_EQ_I": 0x16,
+        "CP_NE_I": 0x17,
+        "CP_LE_I": 0x18,
+        "CP_ME_I": 0x19,
+        "CP_LT_I": 0x1A,
+        "CP_MT_I": 0x1B,
         "ADD_I": 0x1C,
         "SUB_I": 0x1D,
         "INK_I": 0x1E,
@@ -98,24 +98,20 @@ class CydcCodegen(object):
         "PLAY_I": 0x41,
         "LOOP_D": 0x42,
         "LOOP_I": 0x43,
-        "IF_EQ_D_GS": 0x44,
-        "IF_NE_D_GS": 0x45,
-        "IF_LE_D_GS": 0x46,
-        "IF_ME_D_GS": 0x47,
-        "IF_LT_D_GS": 0x48,
-        "IF_MT_D_GS": 0x49,
-        "IF_EQ_I_GS": 0x4A,
-        "IF_NE_I_GS": 0x4B,
-        "IF_LE_I_GS": 0x4C,
-        "IF_ME_I_GS": 0x4D,
-        "IF_LT_I_GS": 0x4E,
-        "IF_MT_I_GS": 0x4F,
-        "REPCHAR": 0x50,
+        "IF_GOTO": 0x44,
+        "IF_GOSUB": 0x45,
+        "IF_OPTION": 0x46,
+        "IF_RETURN": 0x47,
+        "IF_NOT": 0x48,
+        "IF_AND": 0x49,
+        "IF_OR": 0x4A,
+        "REPCHAR": 0x4B,
     }
 
     def __init__(self, gettext):
         self._ = gettext.gettext
         self.symbols = {}
+        self.variables = {}
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
@@ -132,16 +128,28 @@ class CydcCodegen(object):
         code_banks = []
         code_tmp = []
         labels = {}
+        variables = {}
         offset = 0
         bank = 0
         for t in code:
             opcode = t[0]  # get opcode type
             if opcode == "LABEL":
                 q = t[1]  # get symbol
-                if labels.get(q) is None:
+                if variables.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Label {q} is already declared as variable"))
+                elif labels.get(q) is None:
                     labels[q] = (bank, offset)  # Add to symbol table
                 else:
                     sys.exit(self._(f"ERROR: Label {q} declared two times!"))
+            elif opcode == "DECLARE":
+                p = t[1] # get variable number
+                q = t[2] # get symbol
+                if labels.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Variable {q} is already declared as label"))
+                elif variables.get(q) is None:
+                    variables[q] = p
+                else:
+                    sys.exit(self._(f"ERROR: Variable {q} declared two times!"))
             else:
                 # transform to byte representation
                 q = self.opcodes.get(opcode)
@@ -196,9 +204,9 @@ class CydcCodegen(object):
                     offset += len(t)  # Add new length
         if len(code_tmp) > 0:
             code_banks.append(code_tmp)
-        return (code_banks, labels)
+        return (code_banks, labels, variables)
 
-    def symbol_replacement(self, code, symbols):
+    def symbol_replacement(self, code, symbols, variables):
         code_tmp = []
         queue = []
         for c in code:
@@ -207,7 +215,11 @@ class CydcCodegen(object):
             elif isinstance(c, str):
                 t = symbols.get(c)
                 if t is None:
-                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
+                    t = variables.get(c)
+                    if t is None:
+                        sys.exit(self._(f"ERROR: Symbol {c} does not exists!"))
+                    else:
+                        c = t
                 else:  # label found
                     c = t[0]  # Extract bank
                     queue = self._convert_address(
@@ -250,8 +262,8 @@ class CydcCodegen(object):
     def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
-        (code, self.symbols) = self.code_translate(code, slice_text)
-        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
+        (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
+        self.code = [self.symbol_replacement(c, self.symbols, self.variables) for c in code]
         index = []
         sizes = []
         code = []
@@ -291,6 +303,6 @@ class CydcCodegen(object):
         return header + code
 
     def generate_code(self, code, slice_text=False):
-        (code, self.symbols) = self.code_translate(code, slice_text)
-        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
+        (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
+        self.code = [self.symbol_replacement(c, self.symbols, self.variables) for c in code]
         return self.code
