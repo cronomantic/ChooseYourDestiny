@@ -34,8 +34,12 @@ class CydcParser(object):
         self.errors = []
 
     precedence = (
+        ("nonassoc", "NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"), 
         ("left", "PLUS", "MINUS"),
         ("left", "TIMES", "DIVIDE"),
+        ("left", "OR_B"),
+        ("left", "AND_B"),
+        ("right", "UNOT_B"),
     )
 
     def p_script(self, p):
@@ -143,7 +147,7 @@ class CydcParser(object):
             if not p[0]:
                 p[0] = []
             if p[3]:
-                if isinstance(p[1], list):
+                if isinstance(p[3], list):
                     p[0] += p[3]
                 else:
                     p[0].append(p[3])
@@ -221,13 +225,16 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_set_random_expression(self, p):
+        "statement : SET variableID TO RANDOM LPAREN expression RPAREN"
+        if self._check_byte_value(p[6]):
+            p[0] = ("RANDOM", p[2], p[6])
+        else:
+            p[0] = None
+
     def p_statement_set_random(self, p):
         "statement : SET variableID TO RANDOM"
-        p[0] = ("SET_RANDOM", p[2])  
-
-    def p_statement_not(self, p):
-        "statement : SET NOT variableID"
-        p[0] = ("NOT", p[3])
+        p[0] = ("RANDOM", p[2], 0)  
 
     def p_statement_print_ind(self, p):
         "statement : PRINT INDIRECTION variableID"
@@ -449,60 +456,13 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_set_ind(self, p):
-        "statement : SET variableID TO INDIRECTION variableID"
-        p[0] = ("SET_I", p[2], p[5])
-
     def p_statement_set_dir(self, p):
-        "statement : SET variableID TO expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("SET_D", p[2], p[4])
+        "statement : SET variableID TO numexpression"
+        if isinstance(p[4], list):
+            p[0] = p[4]
         else:
-            p[0] = None
-
-    def p_statement_add_ind(self, p):
-        "statement : SET variableID ADD INDIRECTION variableID"
-        p[0] = ("ADD_I", p[2], p[5])
-
-    def p_statement_add_dir(self, p):
-        "statement : SET variableID ADD expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("ADD_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_sub_ind(self, p):
-        "statement : SET variableID SUB INDIRECTION variableID"
-        p[0] = ("SUB_I", p[2], p[5])
-
-    def p_statement_sub_dir(self, p):
-        "statement : SET variableID SUB expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("SUB_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_and_ind(self, p):
-        "statement : SET variableID AND INDIRECTION variableID"
-        p[0] = ("AND_I", p[2], p[5])
-
-    def p_statement_and_dir(self, p):
-        "statement : SET variableID AND expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("AND_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_or_ind(self, p):
-        "statement : SET variableID OR INDIRECTION variableID"
-        p[0] = ("OR_I", p[2], p[5])
-
-    def p_statement_or_dir(self, p):
-        "statement : SET variableID OR expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("OR_D", p[2], p[4])
-        else:
-            p[0] = None
+            p[0] = [p[4]]
+        p[0].append(("POP_SET", p[2]))
 
     def p_statement_choose_if_wait_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
@@ -542,7 +502,7 @@ class CydcParser(object):
         else:
             p[0] = [p[2], ("IF_GOSUB", p[5], 0, 0)]
 
-    def p_statement_option_goto(self, p):
+    def p_statement_if_option_goto(self, p):
         "statement : IF boolexpression OPTION GOTO ID"
         if isinstance(p[2], list):
             p[0] = p[2]
@@ -550,13 +510,21 @@ class CydcParser(object):
         else:
             p[0] = [p[2], ("IF_OPTION", 0, p[3], 0, 0)]
 
-    def p_statement_option_gosub(self, p):
+    def p_statement_if_option_gosub(self, p):
         "statement : IF boolexpression OPTION GOSUB ID"
         if isinstance(p[2], list):
             p[0] = p[2]
             p[0].append(("IF_OPTION", 0xFF, p[3], 0, 0))
         else:
             p[0] = [p[2], ("IF_OPTION", 0xFF, p[3], 0, 0)]
+            
+    def p_statement_option_goto(self, p):
+        "statement : OPTION GOTO ID"
+        p[0] = ("OPTION", 0, p[3], 0, 0)
+
+    def p_statement_option_gosub(self, p):
+        "statement : OPTION GOSUB ID"
+        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
 
     def p_boolexpression_binop(self, p):
         """
@@ -574,9 +542,9 @@ class CydcParser(object):
             p[0].append(p[3])
 
         if p[2].upper() == "AND":
-            p[0].append(("IF_AND",))
+            p[0].append(("AND",))
         elif p[2].upper() == "OR":
-            p[0].append(("IF_OR",))
+            p[0].append(("OR",))
         else:
             p[0] = None
 
@@ -584,62 +552,93 @@ class CydcParser(object):
         "boolexpression : NOT boolexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
-            p[0].append(("IF_NOT",))
+            p[0].append(("NOT",))
         else:
-            p[0] = [p[2], ("IF_NOT",)]
+            p[0] = [p[2], ("NOT",)]
 
     def p_boolexpression_group(self, p):
         "boolexpression : LPAREN boolexpression RPAREN"
-        p[0] = p[2]
+        p[0] = p[2]    
+    
+    def p_boolexpression_cmp_op(self, p):
+        """
+        boolexpression : numexpression NOT_EQUALS numexpression
+                  | numexpression LESS_EQUALS numexpression
+                  | numexpression MORE_EQUALS numexpression
+                  | numexpression EQUALS numexpression
+                  | numexpression LESS_THAN numexpression
+                  | numexpression MORE_THAN numexpression
+        """
+        if isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
 
-    def p_boolexpression_comp_op_indir(self, p):
-        """
-        boolexpression : variableID NOT_EQUALS INDIRECTION variableID
-                  | variableID LESS_EQUALS INDIRECTION variableID
-                  | variableID MORE_EQUALS INDIRECTION variableID
-                  | variableID EQUALS INDIRECTION variableID
-                  | variableID LESS_THAN INDIRECTION variableID
-                  | variableID MORE_THAN INDIRECTION variableID
-        """
+        if isinstance(p[3], list):
+            p[0] += p[3]
+        else:
+            p[0].append(p[3])
+        
         if p[2] == "<>":
-            p[0] = ("CP_NE_I", p[1], p[4])
+            p[0].append(("CP_NE",))
         elif p[2] == "<=":
-            p[0] = ("CP_LE_I", p[1], p[4])
+            p[0].append(("CP_LE",))
         elif p[2] == ">=":
-            p[0] = ("CP_ME_I", p[1], p[4])
+            p[0].append(("CP_ME",))
         elif p[2] == "=":
-            p[0] = ("CP_EQ_I", p[1], p[4])
+            p[0].append(("CP_EQ",))
         elif p[2] == "<":
-            p[0] = ("CP_LT_I", p[1], p[4])
+            p[0].append(("CP_LT",))
         elif p[2] == ">":
-            p[0] = ("CP_MT_I", p[1], p[4])
-
-
-    def p_boolexpression_comp_op_dir(self, p):
+            p[0].append(("CP_MT",))
+    
+    def p_numexpression_binop(self, p):
         """
-        boolexpression : variableID NOT_EQUALS expression
-                    | variableID LESS_EQUALS expression
-                    | variableID MORE_EQUALS expression
-                    | variableID EQUALS expression
-                    | variableID LESS_THAN expression
-                    | variableID MORE_THAN expression
+        numexpression : numexpression PLUS numexpression
+                  | numexpression MINUS numexpression
+                  | numexpression AND_B numexpression
+                  | numexpression OR_B numexpression
         """
-        if self._check_byte_value(p[3]):
-            if p[2] == "<>":
-                p[0] = ("CP_NE_D", p[1], p[3])
-            elif p[2] == "<=":
-                p[0] = ("CP_LE_D", p[1], p[3])
-            elif p[2] == ">=":
-                p[0] = ("CP_ME_D", p[1], p[3])
-            elif p[2] == "=":
-                p[0] = ("CP_EQ_D", p[1], p[3])
-            elif p[2] == "<":
-                p[0] = ("CP_LT_D", p[1], p[3])
-            elif p[2] == ">":
-                p[0] = ("CP_MT_D", p[1], p[3])
+        if isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
+
+        if isinstance(p[3], list):
+            p[0] += p[3]
+        else:
+            p[0].append(p[3])
+    
+        if p[2] == "+":
+            p[0].append(("ADD",))
+        elif p[2] == "-":
+            p[0].append(("SUB",))
+        elif p[2] == "&":
+            p[0].append(("AND",)) 
+        elif p[2] == "|":
+            p[0].append(("OR",))
+    
+    def p_numexpression_unop(self, p):
+        "numexpression : NOT_B expression %prec UNOT_B"
+        if isinstance(p[2], list):
+            p[0] = p[2].append(("NOT_B",))          
+        else:
+            p[0] = [p[2], ("NOT_B",)]
+            
+    def p_numexpression_group(self, p):
+        "numexpression : LPAREN numexpression RPAREN"
+        p[0] = p[2]      
+        
+    def p_numexpression_variable(self, p):
+        "numexpression : INDIRECTION variableID"
+        p[0] = ("PUSH_I", p[2])
+
+    def p_numexpression_expression(self, p):
+        "numexpression : expression"
+        if self._check_byte_value(p[1]):
+            p[0] = ("PUSH_D", p[1])
         else:
             p[0] = None
-                     
 
     def p_variable_ID(self, p):
         """
@@ -652,9 +651,7 @@ class CydcParser(object):
             else:
                 p[0] = None
         else:
-            p[0] = p[1]
-
-            
+            p[0] = p[1]          
 
     def p_expression_binop(self, p):
         """
