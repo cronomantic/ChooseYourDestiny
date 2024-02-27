@@ -11,17 +11,25 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis](#sintaxis)
+  - [Flags](#flags)
+  - [Condicionales](#condicionales)
   - [Comandos](#comandos)
+    - [LABEL labelId](#label-labelid)
+    - [DECLARE flag\_no AS VarId](#declare-flag_no-as-varid)
     - [END](#end)
     - [CLEAR](#clear)
     - [GOTO labelId](#goto-labelid)
     - [GOSUB labelId](#gosub-labelid)
     - [RETURN](#return)
-    - [LABEL labelId](#label-labelid)
+    - [IF cond THEN GOTO labelId](#if-cond-then-goto-labelid)
+    - [IF cond THEN GOSUB labelId](#if-cond-then-gosub-labelid)
+    - [IF cond THEN RETURN](#if-cond-then-return)
     - [CENTER](#center)
     - [WAITKEY](#waitkey)
     - [OPTION GOTO labelId](#option-goto-labelid)
     - [OPTION GOSUB labelId](#option-gosub-labelid)
+    - [IF cond OPTION GOTO labelId](#if-cond-option-goto-labelid)
+    - [IF cond OPTION GOSUB labelId](#if-cond-option-gosub-labelid)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
     - [INKEY expression](#inkey-expression)
@@ -52,42 +60,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [AT expression, expression](#at-expression-expression)
+    - [SET flag\_no TO RANDOM(expression)](#set-flag_no-to-randomexpression)
     - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
-    - [SET NOT flag\_no](#set-not-flag_no)
-    - [SET flag\_no TO expression](#set-flag_no-to-expression)
-    - [SET flag\_no TO @ flag\_no](#set-flag_no-to--flag_no)
-    - [SET flag\_no ADD expression](#set-flag_no-add-expression)
-    - [SET flag\_no ADD @ flag\_no](#set-flag_no-add--flag_no)
-    - [SET flag\_no SUB expression](#set-flag_no-sub-expression)
-    - [SET flag\_no SUB @ flag\_no](#set-flag_no-sub--flag_no)
-    - [SET flag\_no AND expression](#set-flag_no-and-expression)
-    - [SET flag\_no AND @ flag\_no](#set-flag_no-and--flag_no)
-    - [SET flag\_no OR expression](#set-flag_no-or-expression)
-    - [SET flag\_no OR @ flag\_no](#set-flag_no-or--flag_no)
-    - [IF flag\_no = expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid)
-    - [IF flag\_no = @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid)
-    - [IF flag\_no \<\> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-1)
-    - [IF flag\_no \<\> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-1)
-    - [IF flag\_no \<= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-2)
-    - [IF flag\_no \<= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-2)
-    - [IF flag\_no \>= expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-3)
-    - [IF flag\_no \>= @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-3)
-    - [IF flag\_no \< expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-4)
-    - [IF flag\_no \< @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-4)
-    - [IF flag\_no \> expression THEN GOTO labelId](#if-flag_no--expression-then-goto-labelid-5)
-    - [IF flag\_no \> @ flag\_no THEN GOTO labelId](#if-flag_no---flag_no-then-goto-labelid-5)
-    - [IF flag\_no = expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid)
-    - [IF flag\_no = @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid)
-    - [IF flag\_no \<\> expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-1)
-    - [IF flag\_no \<\> @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-1)
-    - [IF flag\_no \<= expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-2)
-    - [IF flag\_no \<= @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-2)
-    - [IF flag\_no \>= expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-3)
-    - [IF flag\_no \>= @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-3)
-    - [IF flag\_no \< expression THEN GOSUB labelId](#if-flag_no--expression-then-gosub-labelid-4)
-    - [IF flag\_no \< @ flag\_no THEN GOSUBlabelId](#if-flag_no---flag_no-then-gosublabelid)
-    - [IF flag\_no \> expression THEN GOSUBlabelId](#if-flag_no--expression-then-gosublabelid)
-    - [IF flag\_no \> @ flag\_no THEN GOSUB labelId](#if-flag_no---flag_no-then-gosub-labelid-4)
     - [TRACK expression](#track-expression)
     - [TRACK @ flag\_no](#track--flag_no)
     - [PLAY expression](#play-expression)
@@ -224,11 +198,11 @@ Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que
 De nuevo, éste es un ejemplo autoexplicativo:
 
 ```
-[[ /* Pone colores de pantalla y la borra */
-   PAPER 0
-   INK   7
-   BORDER 0
-   CLEAR
+[[ /* Comandos que ponen colores de pantalla y la borra */
+   PAPER 0   /* Color de fondo a cero (negro)*/
+   INK   7   /* Color de la tinta (blanco) */
+   BORDER 0  /* Color del borde (negro) */
+   CLEAR     /* Borrar el área de texto (pantalla completa) */
    LABEL Localidad1]]Estás en la localidad 1. ¿Donde quieres ir?
 [[OPTION GOTO Localidad2]]Ir a la localidad 2
 [[OPTION GOTO Localidad3]]Ir a la localidad 3
@@ -248,24 +222,111 @@ En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al pun
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
-**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`.
+**A partir de la versión 0.5** se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`.
 
-Además, hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores y realizar operaciones con ellos o realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
+Los comandos disponibles están descritos en su [sección](#comandos) correspondiente.
 
-Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado no es el valor a utilizar, sino que el valor lo obtiene de la variable indicada. Es decir:
+---
+
+## Flags
+
+Hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores, realizar operaciones con ellos y realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
+
+Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado en el parámetro no es el valor a utilizar, sino que el valor lo obtiene del flag indicado. Es decir:
 
 ```
+[[
 INK 7
 INK @7
+]]
 ```
 
 El primer comando pondrá el color del texto en blanco (color 7), mientras que el segundo pondrá el color del texto con el valor contenido en la variable número 7.
 
-En la siguiente sección se encuentran descritos todos los comandos disponibles.
+**Desde la versión 0.6** es posible dar un nombre significativo a las variables usando el comando `DECLARE`:
+
+```
+[[
+DECLARE 7 AS ColorTinta
+INK @ColorTinta
+]]
+```
+
+Hay que indicar que no se puede declarar una variable dos veces, ni puede haber etiquetas y variables con los mismos nombres, pero se permiten sinónimos de la siguiente forma:
+
+```
+[[
+DECLARE 10 AS UnNombre
+DECLARE 10 AS OtroNombre
+]]
+```
+
+Así, tanto *UnNombre* como *OtroNombre* servirán para identificar el flag 10. Ten en cuenta de a persar de tener distinto nombre, son la misma variable.
+
+Para asignar valores a un flag, usamos el comando `SET ... TO`, de la siguiente manera:
+
+```
+[[
+  SET 0 TO 1                      /* Ponemos el flag cero a 1 */
+  SET variable TO 2               /* Ponemos el flag llamado variable a 2 */
+  SET variable2 TO @variable + 2  /* Ponemos el flag llamado variable2 al dos sumado al valor del flag llamado variable */
+  SET variable2 TO @variable2 - (@variable + 2)  /* Permite paréntesis */
+]]
+
+```
+
+Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática o lógica compuesta por números y variables. Las variables en el lado derecho **siempre deben estar precedidas del símbolo de indirección (@)**. Los operandos disponibles son:
+
+- Suma: `SET variable TO @variable + 2`
+- Resta: `SET variable TO @variable - 2`
+- "AND" binario: `SET variable TO @variable & 2`
+- "OR" binario: `SET variable TO @variable | 2`
+- "NOT binario: `SET variable TO !@variable`
+
+Los números que se pasen no pueden ser mayores de 255 (1 byte) ni menores que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que de un resultado inferior a cero, se quedará en cero.
+
+---
+
+## Condicionales
+
+Muchos comandos son condicionales, es decir, que se ejecutan dependiendo de si se cumple una condición. Son todos los comandos que empiezan por `IF`, por ejemplo:
+
+```
+[[IF @variable = 0 THEN GOTO salto]]
+```
+
+La condición para que se ejecute el salto es siempre una comparación entre dos elementos, que pueden ser números o variables, precedidas éstas últimas por el correspondiente indicador de indirección. Las operaciones de comparación son las siguientes:
+
+- Igual que: `IF @variable = 0 THEN GOTO salto`
+- Mayor que: `IF @variable > 0 THEN GOTO salto`
+- Menor que: `IF @variable2 < @variable THEN GOTO salto`
+- Distinto que: `IF @variable <> 0 THEN GOTO salto`
+- Mayor o igual que: `IF @variable <= 0 THEN GOTO salto`
+- Menor o igual que: `IF @variable >= 0 THEN GOTO salto`
+
+Además, las condiciones se pueden combinar formando expresiones lógicas:
+
+```
+[[IF (@variable = 0 AND @variable2 = 1) AND NOT @variable3 = 1 THEN GOTO salto]]
+```
+
+- Cond1 AND Cond2: Cierto si se cumple tanto como Cond1 como Cond2.
+- Cond1 OR Cond2: Cierto si se cumple Cond1 o Cond2.
+- NOT Cond1: Cierto si la condición Cond1 es falsa.
 
 ---
 
 ## Comandos
+
+### LABEL labelId
+
+Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
+
+**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
+
+### DECLARE flag_no AS VarId
+
+**Novedad**: A partir de la versión 0.6, lo que hacer es declarar el identificador VarId como un símbolo que representa al flag flag_id en su lugar.
 
 ### END
 
@@ -288,11 +349,17 @@ Se permiten hasta 8 niveles de anidamiento.
 
 Retorna al punto de llamada de una subrutina, ver `GOSUB`
 
-### LABEL labelId
+### IF cond THEN GOTO labelId
 
-Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
+Si se cumple la condición *cond*, se ejecuta el `GOTO` posterior.
 
-**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
+### IF cond THEN GOSUB labelId
+
+Si se cumple la condición *cond*, se ejecuta el `GOSUB` posterior.
+
+### IF cond THEN RETURN
+
+Si se cumple la condición *cond*, se ejecuta el `RETURN` posterior.
 
 ### CENTER
 
@@ -309,6 +376,14 @@ Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si con
 ### OPTION GOSUB labelId
 
 Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _labelId_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+
+### IF cond OPTION GOTO labelId
+
+Si se cumple la condición *cond*, crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+
+### IF cond OPTION GOSUB labelId
+
+Si se cumple la condición *cond*, crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _labelId_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
 
 ### CHOOSE
 
@@ -449,153 +524,13 @@ Los parámetros, por órden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
+### SET flag_no TO RANDOM(expression)
+
+Almacena en el flag indicado un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+
 ### SET flag_no TO RANDOM
 
-Almacena en el flag indicado un número aleatorio entre 0 y 255.
-
-### SET NOT flag_no
-
-Complementa los bits contenidos en el flag indicado.
-
-### SET flag_no TO expression
-
-Almacena en el flag indicado el valor del segundo parámetro (Sólo puede ser de un byte).
-
-### SET flag_no TO @ flag_no
-
-Almacena en el flag indicado en el primer parámetro el valor del segundo flag.
-
-### SET flag_no ADD expression
-
-Almacena en el flag indicado la suma de su contenido con el valor del segundo parámetro.  
-Si la suma supera 255, entonces queda como 255.
-
-### SET flag_no ADD @ flag_no
-
-Almacena en el flag indicado la suma de su contenido con el contenido del flag del segundo parámetro.  
-Si la suma supera 255, entonces queda como 255.
-
-### SET flag_no SUB expression
-
-Almacena en el flag indicado la resta de su contenido con el valor del segundo parámetro.  
-Si la resta resulta menor que cero, queda almacenado cero.
-
-### SET flag_no SUB @ flag_no
-
-Almacena en el flag indicado la resta de su contenido con el contenido del flag del segundo parámetro.  
-Si la resta resulta menor que cero, queda almacenado cero.
-
-### SET flag_no AND expression
-
-Almacena en el flag indicado la "Y" lógica de su contenido con el valor del segundo parámetro.
-
-### SET flag_no AND @ flag_no
-
-Almacena en el flag indicado la "Y" lógica de su contenido con el contenido del flag del segundo parámetro.
-
-### SET flag_no OR expression
-
-Almacena en el flag indicado la "O" lógica de su contenido con el valor del segundo parámetro.
-
-### SET flag_no OR @ flag_no
-
-Almacena en el flag indicado la "O" lógica de su contenido con el contenido del flag del segundo parámetro.
-
-### IF flag_no = expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual al segundo, salta a la etiqueta indicada.
-
-### IF flag_no = @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual al contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no \<> expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro no es igual al segundo, salta a la etiqueta indicada.
-
-### IF flag_no \<> @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro no es igual al contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no \<= expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o menor que el segundo, salta a la etiqueta indicada.
-
-### IF flag_no \<= @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o menor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no >= expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o mayor que el segundo, salta a la etiqueta indicada.
-
-### IF flag_no >= @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o mayor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no \< expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es menor que el segundo, salta a la etiqueta indicada.
-
-### IF flag_no \< @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es menor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no > expression THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es mayor que el segundo, salta a la etiqueta indicada.
-
-### IF flag_no > @ flag_no THEN GOTO labelId
-
-Si el contenido del flag indicado por el primer parámetro es mayor que el contenido del flag indicado por el segundo, salta a la etiqueta indicada.
-
-### IF flag_no = expression THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual al segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no = @ flag_no THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual al contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \<> expression THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro no es igual al segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \<> @ flag_no THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro no es igual al contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \<= expression THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o menor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \<= @ flag_no THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o menor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no >= expression THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o mayor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no >= @ flag_no THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es igual o mayor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \< expression THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es menor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no \< @ flag_no THEN GOSUBlabelId
-
-Si el contenido del flag indicado por el primer parámetro es menor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no > expression THEN GOSUBlabelId
-
-Si el contenido del flag indicado por el primer parámetro es mayor que el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
-
-### IF flag_no > @ flag_no THEN GOSUB labelId
-
-Si el contenido del flag indicado por el primer parámetro es mayor que el contenido del flag indicado por el segundo, hace un salto de subrutina a la etiqueta indicada (ver `GOSUB`).
+Almacena en el flag indicado un número aleatorio entre 0 y 255. (Es el equivalente al comando anterior poniendo 0)
 
 ### TRACK expression
 

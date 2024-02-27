@@ -127,180 +127,39 @@ OP_IF_RETURN:
     jp nz, OP_RETURN
     jp EXEC_LOOP
 
-;-------------------------------------
-OP_IF_NOT:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    xor 1
-    ld (de), a
-    jp EXEC_LOOP
 
-OP_IF_AND:
+;-------------------------------------------------------
+
+OP_POP_SET:
     ld de, (INT_STACK_PTR)
     ld a, (de)
     inc de
-    ld c, a
-    ld a, (de)
-    and c
-    ld (de), a
     ld (INT_STACK_PTR), de
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld (de), a
     jp EXEC_LOOP
 
-OP_IF_OR:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld c, a
-    ld a, (de)
-    or c
-    ld (de), a
-    ld (INT_STACK_PTR), de
-    jp EXEC_LOOP
-;-------------------------------------
-OP_CP_GET_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
+OP_PUSH_D:
+    ld a, (hl)
     inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ret
-OP_CP_GET_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    ld c, a
-    ld a, (bc)
-    ret
-OP_CP_STORE_STACK:
     ld de, (INT_STACK_PTR)
     dec de
     ld (de), a
     ld (INT_STACK_PTR), de
     jp EXEC_LOOP
 
-OP_CP_EQ_D:
-    call OP_CP_GET_D
-    cp c
-    jr z, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK  
-
-OP_CP_EQ_I:
-    call OP_CP_GET_I
-    cp c
-    jr z, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK  
-
-OP_CP_NE_D:
-    call OP_CP_GET_D
-    cp c
-    jr nz, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK    
-
-OP_CP_NE_I:
-    call OP_CP_GET_I
-    cp c
-    jr nz, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK   
-
-OP_CP_LE_D:            ; p1 <= p2
-    call OP_CP_GET_D
-    cp c               ; p2 - p1
-    jr nc, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK    
-
-OP_CP_LE_I:            ; p1 <= p2
-    call OP_CP_GET_I
-    cp c               ; p2 - p1
-    jr nc, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK
-
-OP_CP_ME_D:            ; p1 >= p2
-    call OP_CP_GET_D
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jr nc, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK    
-
-OP_CP_ME_I:            ; p1 >= p2
-    call OP_CP_GET_I
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jr nc, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK
-
-OP_CP_LT_D:            ; p1 < p2
-    call OP_CP_GET_D
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jr c, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK    
-
-OP_CP_LT_I:            ; p1 < p2
-    call OP_CP_GET_I
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
-    jr c, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK
-
-OP_CP_MT_D:            ; p1 > p2
-    call OP_CP_GET_D
-    cp c               ; p2 - p1
-    jr c, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK    
-
-OP_CP_MT_I:            ; p1 > p2
-    call OP_CP_GET_I
-    cp c               ; p2 - p1
-    jr c, 1f
-    xor a
-    jp OP_CP_STORE_STACK
-1:  ld a, 1
-    jp OP_CP_STORE_STACK
-
-
-;-------------------------------------------------------
+OP_PUSH_I:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (de)
+    ld de, (INT_STACK_PTR)
+    dec de
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
 
 OP_SET_D:
     ld d, HIGH FLAGS
@@ -310,64 +169,132 @@ OP_SET_D:
     inc hl
     ld (de), a
     jp EXEC_LOOP
+
+OP_SET_I:
+    ld c, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (de)
+    ld e, c
+    ld (de), a
+    jp EXEC_LOOP
+;-------------------------------------
+    MACRO OP_2PARAM_GET_STACK
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld c, a
+    ld a, (de)
+    ENDM
+    
+    MACRO OP_2PARAM_STORE_STACK
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
+    ENDM
+
+OP_NOT:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    xor 1
+    ld (de), a
+    jp EXEC_LOOP
+
+OP_NOT_B:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    cpl
+    ld (de), a
+    jp EXEC_LOOP
+
+OP_AND:
+    OP_2PARAM_GET_STACK
+    and c
+    OP_2PARAM_STORE_STACK
+
+OP_OR:
+    OP_2PARAM_GET_STACK
+    or c
+    OP_2PARAM_STORE_STACK
+
+OP_CP_EQ:
+    OP_2PARAM_GET_STACK
+    cp c
+    jr z, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK
+
+OP_CP_NE:
+    OP_2PARAM_GET_STACK
+    cp c
+    jr nz, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK  
+
+OP_CP_LE:            ; p1 <= p2
+    OP_2PARAM_GET_STACK
+    cp c               ; p2 - p1
+    jr nc, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK     
+
+OP_CP_MT:            ; p1 > p2
+    OP_2PARAM_GET_STACK
+    cp c               ; p2 - p1
+    jr c, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK  
+
+OP_CP_ME:            ; p1 >= p2
+    OP_2PARAM_GET_STACK
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr nc, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK    
+
+OP_CP_LT:            ; p1 < p2
+    OP_2PARAM_GET_STACK
+    ld b, a
+    ld a, c
+    cp b             ; p1 - p2
+    jr c, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK  
+
 ;-------------------------------------------------------
-OP_ADD_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
+
+OP_ADD:
+    OP_2PARAM_GET_STACK
     add a, c
     jr nc, 1f
     ld a, $FF
-1:  ld (de), a
-    jp EXEC_LOOP
+1:  OP_2PARAM_STORE_STACK 
 
-OP_SUB_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
+OP_SUB:
+    OP_2PARAM_GET_STACK
     sub c
     jr nc, 1f
     xor a
-1:  ld (de), a 
-    jp EXEC_LOOP
+1:  OP_2PARAM_STORE_STACK 
 
-OP_ADD_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    add a, c
-    jr nc, 1f
-    ld a, $FF
-1:  ld (de), a
-    jp EXEC_LOOP
 
-OP_SUB_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    sub c
-    jr nc, 1f
-    xor a
-1:  ld (de), a 
-    jp EXEC_LOOP
+;============================================
 
 OP_INK_D:
     ld de, EXEC_LOOP
@@ -415,16 +342,7 @@ OP_PRINT_D:
     pop hl
     jp EXEC_LOOP
 
-OP_SET_I:
-    ld c, (hl)
-    inc hl
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld a, (de)
-    ld e, c
-    ld (de), a
-    jp EXEC_LOOP
+
 
 OP_INK_I:
     ld de, EXEC_LOOP
@@ -559,7 +477,7 @@ OP_DISPLAY_I:
     pop hl
     jp EXEC_LOOP
 
-OP_SET_RANDOM:
+OP_RANDOM:
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -571,68 +489,21 @@ OP_SET_RANDOM:
     ld a, l
     jr 2f
 1:  ld a, h
-2:  ld (de), a
-    pop hl
-    jp EXEC_LOOP
-
-OP_AND_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    and c
-    ld (de), a
-    jp EXEC_LOOP
-
-OP_OR_D:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld c, (hl)
-    inc hl
-    ld a, (de)
-    or c
-    ld (de), a
-    jp EXEC_LOOP
-
-OP_AND_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
+2:  pop hl
     ld c, a
-    ld a, (de)
-    and c
-    ld (de), a
-    jp EXEC_LOOP
-
-OP_OR_I:
-    ld d, HIGH FLAGS
-    ld e, (hl)
+    ld b, (hl)
     inc hl
-    ld b, d
-    ld c, (hl)
-    inc hl
-    ld a, (bc)
-    ld c, a
-    ld a, (de)
-    or c
-    ld (de), a
+    ld a, b
+    or a
+    ld a, c
+    jr nz, 3f
+    ld a, c
+4:  ld (de), a   
     jp EXEC_LOOP
-
-OP_NOT:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    ld a, (de)
-    cpl                   ;This is not a NOT
-    ld (de), a
-    jp EXEC_LOOP
+3:  cp b           ; a - b
+    jr c, 4b
+    sub b
+    jr 3b
 
 OP_INKEY:
     ld d, HIGH FLAGS
@@ -1202,27 +1073,30 @@ OPCODES:
     DW OP_CENTER
     DW OP_AT
     DW OP_SET_D
-    DW OP_CP_EQ_D
-    DW OP_CP_NE_D
-    DW OP_CP_LE_D
-    DW OP_CP_ME_D
-    DW OP_CP_LT_D
-    DW OP_CP_MT_D
-    DW OP_ADD_D
-    DW OP_SUB_D
+    DW OP_SET_I
+    DW OP_POP_SET
+    DW OP_PUSH_D
+    DW OP_PUSH_I
+    DW OP_IF_GOTO
+    DW OP_IF_GOSUB
+    DW OP_IF_OPTION
+    DW OP_IF_RETURN
+    DW OP_NOT
+    DW OP_NOT_B
+    DW OP_AND
+    DW OP_OR
+    DW OP_ADD
+    DW OP_SUB
+    DW OP_CP_EQ
+    DW OP_CP_NE
+    DW OP_CP_LE
+    DW OP_CP_ME
+    DW OP_CP_LT
+    DW OP_CP_MT
     DW OP_INK_D
     DW OP_PAPER_D
     DW OP_BORDER_D
     DW OP_PRINT_D
-    DW OP_SET_I
-    DW OP_CP_EQ_I
-    DW OP_CP_NE_I
-    DW OP_CP_LE_I
-    DW OP_CP_ME_I
-    DW OP_CP_LT_I
-    DW OP_CP_MT_I
-    DW OP_ADD_I
-    DW OP_SUB_I
     DW OP_INK_I
     DW OP_PAPER_I
     DW OP_BORDER_I
@@ -1235,12 +1109,7 @@ OPCODES:
     DW OP_DISPLAY_D
     DW OP_PICTURE_I
     DW OP_DISPLAY_I
-    DW OP_SET_RANDOM
-    DW OP_AND_D
-    DW OP_OR_D
-    DW OP_AND_I
-    DW OP_OR_I
-    DW OP_NOT
+    DW OP_RANDOM
     DW OP_OPTION
     DW OP_WAITKEY
     DW OP_INKEY
@@ -1253,6 +1122,7 @@ OPCODES:
     DW OP_PAGEPAUSE
     DW OP_CHAR
     DW OP_TAB
+    DW OP_REPCHAR
     DW OP_SFX_D
     DW OP_SFX_I
     DW OP_TRACK_D
@@ -1261,14 +1131,7 @@ OPCODES:
     DW OP_PLAY_I
     DW OP_LOOP_D
     DW OP_LOOP_I
-    DW OP_IF_GOTO
-    DW OP_IF_GOSUB
-    DW OP_IF_OPTION
-    DW OP_IF_RETURN
-    DW OP_IF_NOT
-    DW OP_IF_AND
-    DW OP_IF_OR
-    DW OP_REPCHAR
+
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
