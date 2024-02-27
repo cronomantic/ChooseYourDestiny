@@ -30,82 +30,73 @@ class CydcCodegen(object):
     BANK_SIZE = 16 * 1024
 
     opcodes = {
-        "END": 0x00,
-        "TEXT": 0x01,
-        "GOTO": 0x02,
-        "GOSUB": 0x03,
-        "RETURN": 0x04,
-        "MARGINS": 0x05,
-        "CENTER": 0x06,
-        "AT": 0x07,
-        "SET_D": 0x08,
-        "CP_EQ_D": 0x09,
-        "CP_NE_D": 0x0A,
-        "CP_LE_D": 0x0B,
-        "CP_ME_D": 0x0C,
-        "CP_LT_D": 0x0D,
-        "CP_MT_D": 0x0E,
-        "ADD_D": 0x0F,
-        "SUB_D": 0x10,
-        "INK_D": 0x11,
-        "PAPER_D": 0x12,
-        "BORDER_D": 0x13,
-        "PRINT_D": 0x14,
-        "SET_I": 0x15,
-        "CP_EQ_I": 0x16,
-        "CP_NE_I": 0x17,
-        "CP_LE_I": 0x18,
-        "CP_ME_I": 0x19,
-        "CP_LT_I": 0x1A,
-        "CP_MT_I": 0x1B,
-        "ADD_I": 0x1C,
-        "SUB_I": 0x1D,
-        "INK_I": 0x1E,
-        "PAPER_I": 0x1F,
-        "BORDER_I": 0x20,
-        "PRINT_I": 0x21,
-        "BRIGHT_D": 0x22,
-        "FLASH_D": 0x23,
-        "BRIGHT_I": 0x24,
-        "FLASH_I": 0x25,
-        "PICTURE_D": 0x26,
-        "DISPLAY_D": 0x27,
-        "PICTURE_I": 0x28,
-        "DISPLAY_I": 0x29,
-        "RANDOM": 0x2A,
-        "AND_D": 0x2B,
-        "OR_D": 0x2C,
-        "AND_I": 0x2D,
-        "OR_I": 0x2E,
-        "NOT": 0x2F,
-        "OPTION": 0x30,
-        "WAITKEY": 0x31,
-        "INKEY": 0x32,
-        "WAIT": 0x33,
-        "PAUSE": 0x34,
-        "CHOOSE": 0x35,
-        "CHOOSE_W": 0x36,
-        "TYPERATE": 0x37,
-        "CLEAR": 0x38,
-        "PAGEPAUSE": 0x39,
-        "CHAR": 0x3A,
-        "TAB": 0x3B,
-        "SFX_D": 0x3C,
-        "SFX_I": 0x3D,
-        "TRACK_D": 0x3E,
-        "TRACK_I": 0x3F,
-        "PLAY_D": 0x40,
-        "PLAY_I": 0x41,
-        "LOOP_D": 0x42,
-        "LOOP_I": 0x43,
-        "IF_GOTO": 0x44,
-        "IF_GOSUB": 0x45,
-        "IF_OPTION": 0x46,
-        "IF_RETURN": 0x47,
-        "IF_NOT": 0x48,
-        "IF_AND": 0x49,
-        "IF_OR": 0x4A,
-        "REPCHAR": 0x4B,
+        "END": 0x0,
+        "TEXT": 0x1,
+        "GOTO": 0x2,
+        "GOSUB": 0x3,
+        "RETURN": 0x4,
+        "MARGINS": 0x5,
+        "CENTER": 0x6,
+        "AT": 0x7,
+        "SET_D": 0x8,
+        "SET_I": 0x9,
+        "POP_SET": 0xA,
+        "PUSH_D": 0xB,
+        "PUSH_I": 0xC,
+        "IF_GOTO": 0xD,
+        "IF_GOSUB": 0xE,
+        "IF_OPTION": 0xF,
+        "IF_RETURN": 0x10,
+        "NOT": 0x11,
+        "NOT_B": 0x12,
+        "AND": 0x13,
+        "OR": 0x14,
+        "ADD": 0x15,
+        "SUB": 0x16,
+        "CP_EQ": 0x17,
+        "CP_NE": 0x18,
+        "CP_LE": 0x19,
+        "CP_ME": 0x1A,
+        "CP_LT": 0x1B,
+        "CP_MT": 0x1C,
+        "INK_D": 0x1D,
+        "PAPER_D": 0x1E,
+        "BORDER_D": 0x1F,
+        "PRINT_D": 0x20,
+        "INK_I": 0x21,
+        "PAPER_I": 0x22,
+        "BORDER_I": 0x23,
+        "PRINT_I": 0x24,
+        "BRIGHT_D": 0x25,
+        "FLASH_D": 0x26,
+        "BRIGHT_I": 0x27,
+        "FLASH_I": 0x28,
+        "PICTURE_D": 0x29,
+        "DISPLAY_D": 0x2A,
+        "PICTURE_I": 0x2B,
+        "DISPLAY_I": 0x2C,
+        "RANDOM": 0x2D,
+        "OPTION": 0x2E,
+        "WAITKEY": 0x2F,
+        "INKEY": 0x30,
+        "WAIT": 0x31,
+        "PAUSE": 0x32,
+        "CHOOSE": 0x33,
+        "CHOOSE_W": 0x34,
+        "TYPERATE": 0x35,
+        "CLEAR": 0x36,
+        "PAGEPAUSE": 0x37,
+        "CHAR": 0x38,
+        "TAB": 0x39,
+        "REPCHAR": 0x3A,
+        "SFX_D": 0x3B,
+        "SFX_I": 0x3C,
+        "TRACK_D": 0x3D,
+        "TRACK_I": 0x3E,
+        "PLAY_D": 0x3F,
+        "PLAY_I": 0x40,
+        "LOOP_D": 0x41,
+        "LOOP_I": 0x42,
     }
 
     def __init__(self, gettext):
@@ -124,6 +115,30 @@ class CydcCodegen(object):
         if size_list is not None:
             self.bank_size_list = size_list
 
+    def code_simple_optimize(self, code):
+        code_tmp = []
+        skip = False
+        for i, c in enumerate(code):
+            if skip:
+                skip = False
+            elif (i+1) < len(code):
+                next = code[i+1]
+                if next[0] == "POP_SET":
+                    if c[0] == "PUSH_D":
+                        c = ("SET_D", next[1], c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("SET_I", next[1], c[1])
+                        skip = True
+                    code_tmp.append(c)
+                else:
+                    code_tmp.append(c)
+            else:
+                code_tmp.append(c)
+        #print(code)
+        #print(code_tmp)
+        return code_tmp
+
     def code_translate(self, code, slice_text=False):
         code_banks = []
         code_tmp = []
@@ -136,16 +151,20 @@ class CydcCodegen(object):
             if opcode == "LABEL":
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Label {q} is already declared as variable"))
+                    sys.exit(
+                        self._(f"ERROR: Label {q} is already declared as variable")
+                    )
                 elif labels.get(q) is None:
                     labels[q] = (bank, offset)  # Add to symbol table
                 else:
                     sys.exit(self._(f"ERROR: Label {q} declared two times!"))
             elif opcode == "DECLARE":
-                p = t[1] # get variable number
-                q = t[2] # get symbol
+                p = t[1]  # get variable number
+                q = t[2]  # get symbol
                 if labels.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Variable {q} is already declared as label"))
+                    sys.exit(
+                        self._(f"ERROR: Variable {q} is already declared as label")
+                    )
                 elif variables.get(q) is None:
                     variables[q] = p
                 else:
@@ -262,8 +281,11 @@ class CydcCodegen(object):
     def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
         if font is None:
             font = CydcFont()
+        code = self.code_simple_optimize(code)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
-        self.code = [self.symbol_replacement(c, self.symbols, self.variables) for c in code]
+        self.code = [
+            self.symbol_replacement(c, self.symbols, self.variables) for c in code
+        ]
         index = []
         sizes = []
         code = []
@@ -303,6 +325,9 @@ class CydcCodegen(object):
         return header + code
 
     def generate_code(self, code, slice_text=False):
+        code = self.code_simple_optimize(code)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
-        self.code = [self.symbol_replacement(c, self.symbols, self.variables) for c in code]
+        self.code = [
+            self.symbol_replacement(c, self.symbols, self.variables) for c in code
+        ]
         return self.code
