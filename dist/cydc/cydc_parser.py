@@ -34,8 +34,12 @@ class CydcParser(object):
         self.errors = []
 
     precedence = (
+        ("nonassoc", "NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"), 
         ("left", "PLUS", "MINUS"),
         ("left", "TIMES", "DIVIDE"),
+        ("left", "OR_B"),
+        ("left", "AND_B"),
+        ("right", "UNOT_B"),
     )
 
     def p_script(self, p):
@@ -134,13 +138,19 @@ class CydcParser(object):
         """
         if (len(p) == 2) and p[1]:
             p[0] = []
-            p[0].append(p[1])
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
         elif len(p) == 4:
             p[0] = p[1]
             if not p[0]:
                 p[0] = []
             if p[3]:
-                p[0].append(p[3])
+                if isinstance(p[3], list):
+                    p[0] += p[3]
+                else:
+                    p[0].append(p[3])
 
     def p_statement_open_error(self, p):
         "statement : ERROR_OPEN_CODE"
@@ -174,6 +184,10 @@ class CydcParser(object):
     def p_statement_clear(self, p):
         "statement : CLEAR"
         p[0] = ("CLEAR",)
+        
+    def p_statement_randomize(self, p):
+        "statement : RANDOMIZE"
+        p[0] = ("RANDOMIZE",)
 
     def p_statement_goto(self, p):
         "statement : GOTO ID"
@@ -183,24 +197,9 @@ class CydcParser(object):
         "statement : GOSUB ID"
         p[0] = ("GOSUB", p[2], 0, 0)
 
-    def p_statement_option_goto(self, p):
-        "statement : OPTION GOTO ID"
-        p[0] = ("OPTION", 0, p[3], 0, 0)
-
-    def p_statement_option_gosub(self, p):
-        "statement : OPTION GOSUB ID"
-        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
-
     def p_statement_label(self, p):
         "statement : LABEL ID"
         p[0] = ("LABEL", p[2])
-
-    def p_statement_inkey(self, p):
-        "statement : INKEY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("INKEY", p[2])
-        else:
-            p[0] = None
 
     def p_statement_char(self, p):
         "statement : CHAR expression"
@@ -223,26 +222,24 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_set_random(self, p):
-        "statement : SET expression TO RANDOM"
-        if self._check_byte_value(p[2]):
-            p[0] = ("SET_RANDOM", p[2])
+    def p_statement_set_random_expression(self, p):
+        "statement : SET variableID TO RANDOM LPAREN expression RPAREN"
+        if self._check_byte_value(p[6]):
+            p[0] = ("RANDOM", p[2], p[6])
         else:
             p[0] = None
 
-    def p_statement_not(self, p):
-        "statement : SET NOT expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("NOT", p[3])
-        else:
-            p[0] = None
+    def p_statement_set_random(self, p):
+        "statement : SET variableID TO RANDOM"
+        p[0] = ("RANDOM", p[2], 0)
+        
+    def p_statement_set_inkey(self, p):
+        "statement : SET variableID TO INKEY"
+        p[0] = ("INKEY", p[2])   
 
     def p_statement_print_ind(self, p):
-        "statement : PRINT INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PRINT_I", p[3])
-        else:
-            p[0] = None
+        "statement : PRINT INDIRECTION variableID"
+        p[0] = ("PRINT_I", p[3])
 
     def p_statement_print_dir(self, p):
         "statement : PRINT expression"
@@ -252,11 +249,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_ink_ind(self, p):
-        "statement : INK INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("INK_I", p[3])
-        else:
-            p[0] = None
+        "statement : INK INDIRECTION variableID"
+        p[0] = ("INK_I", p[3])
 
     def p_statement_ink_dir(self, p):
         "statement : INK expression"
@@ -266,11 +260,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_paper_ind(self, p):
-        "statement : PAPER INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PAPER_I", p[3])
-        else:
-            p[0] = None
+        "statement : PAPER INDIRECTION variableID"
+        p[0] = ("PAPER_I", p[3])
 
     def p_statement_paper_dir(self, p):
         "statement : PAPER expression"
@@ -280,11 +271,9 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_border_ind(self, p):
-        "statement : BORDER INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("BORDER_I", p[3])
-        else:
-            p[0] = None
+        "statement : BORDER INDIRECTION variableID"
+        p[0] = ("BORDER_I", p[3])
+
 
     def p_statement_border_dir(self, p):
         "statement : BORDER expression"
@@ -294,11 +283,9 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_bright_ind(self, p):
-        "statement : BRIGHT INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("BRIGHT_I", p[3])
-        else:
-            p[0] = None
+        "statement : BRIGHT INDIRECTION variableID"
+        p[0] = ("BRIGHT_I", p[3])
+
 
     def p_statement_bright_dir(self, p):
         "statement : BRIGHT expression"
@@ -308,11 +295,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_flash_ind(self, p):
-        "statement : FLASH INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("FLASH_I", p[3])
-        else:
-            p[0] = None
+        "statement : FLASH INDIRECTION variableID"
+        p[0] = ("FLASH_I", p[3])
 
     def p_statement_flash_dir(self, p):
         "statement : FLASH expression"
@@ -321,6 +305,10 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_sfx_ind(self, p):
+        "statement : SFX INDIRECTION variableID"
+        p[0] = ("SFX_I", p[3])
+
     def p_statement_sfx_dir(self, p):
         "statement : SFX expression"
         if self._check_byte_value(p[2]):
@@ -328,19 +316,10 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_sfx_ind(self, p):
-        "statement : SFX INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("SFX_I", p[3])
-        else:
-            p[0] = None
-
     def p_statement_display_ind(self, p):
-        "statement : DISPLAY INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("DISPLAY_I", p[3])
-        else:
-            p[0] = None
+        "statement : DISPLAY INDIRECTION variableID"
+        p[0] = ("DISPLAY_I", p[3])
+
 
     def p_statement_display_dir(self, p):
         "statement : DISPLAY expression"
@@ -350,11 +329,9 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_picture_ind(self, p):
-        "statement : PICTURE INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PICTURE_I", p[3])
-        else:
-            p[0] = None
+        "statement : PICTURE INDIRECTION variableID"
+        p[0] = ("PICTURE_I", p[3])
+
 
     def p_statement_picture_dir(self, p):
         "statement : PICTURE expression"
@@ -385,11 +362,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_track_ind(self, p):
-        "statement : TRACK INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("TRACK_I", p[3])
-        else:
-            p[0] = None
+        "statement : TRACK INDIRECTION variableID"
+        p[0] = ("TRACK_I", p[3])
 
     def p_statement_track_dir(self, p):
         "statement : TRACK expression"
@@ -399,11 +373,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_play_ind(self, p):
-        "statement : PLAY INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PLAY_I", p[3])
-        else:
-            p[0] = None
+        "statement : PLAY INDIRECTION variableID"
+        p[0] = ("PLAY_I", p[3])
 
     def p_statement_play_dir(self, p):
         "statement : PLAY expression"
@@ -413,11 +384,8 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_loop_ind(self, p):
-        "statement : LOOP INDIRECTION expression"
-        if self._check_byte_value(p[3]):
-            p[0] = ("LOOP_I", p[3])
-        else:
-            p[0] = None
+        "statement : LOOP INDIRECTION variableID"
+        p[0] = ("LOOP_I", p[3])
 
     def p_statement_loop_dir(self, p):
         "statement : LOOP expression"
@@ -482,243 +450,20 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_set_ind(self, p):
-        "statement : SET expression TO INDIRECTION expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("SET_I", p[2], p[5])
+    def p_statement_declare(self, p):
+        "statement : DECLARE expression AS ID"
+        if self._check_byte_value(p[2]):
+            p[0] = ("DECLARE", p[2], p[4])
         else:
             p[0] = None
 
     def p_statement_set_dir(self, p):
-        "statement : SET expression TO expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("SET_D", p[2], p[4])
+        "statement : SET variableID TO numexpression"
+        if isinstance(p[4], list):
+            p[0] = p[4]
         else:
-            p[0] = None
-
-    def p_statement_add_ind(self, p):
-        "statement : SET expression ADD INDIRECTION expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("ADD_I", p[2], p[5])
-        else:
-            p[0] = None
-
-    def p_statement_add_dir(self, p):
-        "statement : SET expression ADD expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("ADD_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_sub_ind(self, p):
-        "statement : SET expression SUB INDIRECTION expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("SUB_I", p[2], p[5])
-        else:
-            p[0] = None
-
-    def p_statement_sub_dir(self, p):
-        "statement : SET expression SUB expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("SUB_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_and_ind(self, p):
-        "statement : SET expression AND INDIRECTION expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("AND_I", p[2], p[5])
-        else:
-            p[0] = None
-
-    def p_statement_and_dir(self, p):
-        "statement : SET expression AND expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("AND_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_or_ind(self, p):
-        "statement : SET expression OR INDIRECTION expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("OR_I", p[2], p[5])
-        else:
-            p[0] = None
-
-    def p_statement_or_dir(self, p):
-        "statement : SET expression OR expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("OR_D", p[2], p[4])
-        else:
-            p[0] = None
-
-    def p_statement_if_eq_goto_ind(self, p):
-        "statement : IF expression EQUALS INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_EQ_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_eq_goto_dir(self, p):
-        "statement : IF expression EQUALS expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_EQ_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_ne_goto_ind(self, p):
-        "statement : IF expression NOT_EQUALS INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_NE_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_ne_goto_dir(self, p):
-        "statement : IF expression NOT_EQUALS expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_NE_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_le_goto_ind(self, p):
-        "statement : IF expression LESS_EQUALS INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LE_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_le_goto_dir(self, p):
-        "statement : IF expression LESS_EQUALS expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LE_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_me_goto_ind(self, p):
-        "statement : IF expression MORE_EQUALS INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_ME_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_me_goto_dir(self, p):
-        "statement : IF expression MORE_EQUALS expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_ME_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_lt_goto_ind(self, p):
-        "statement : IF expression LESS_THAN INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LT_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_lt_goto_dir(self, p):
-        "statement : IF expression LESS_THAN expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LT_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_mt_goto_ind(self, p):
-        "statement : IF expression MORE_THAN INDIRECTION expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_MT_I", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_mt_goto_dir(self, p):
-        "statement : IF expression MORE_THAN expression THEN GOTO ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_MT_D", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_eq_gosub_ind(self, p):
-        "statement : IF expression EQUALS INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_EQ_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_eq_gosub_dir(self, p):
-        "statement : IF expression EQUALS expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_EQ_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_ne_gosub_ind(self, p):
-        "statement : IF expression NOT_EQUALS INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_NE_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_ne_gosub_dir(self, p):
-        "statement : IF expression NOT_EQUALS expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_NE_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_le_gosub_ind(self, p):
-        "statement : IF expression LESS_EQUALS INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LE_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_le_gosub_dir(self, p):
-        "statement : IF expression LESS_EQUALS expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LE_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_me_gosub_ind(self, p):
-        "statement : IF expression MORE_EQUALS INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_ME_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_me_gosub_dir(self, p):
-        "statement : IF expression MORE_EQUALS expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_ME_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_lt_gosub_ind(self, p):
-        "statement : IF expression LESS_THAN INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_LT_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_lt_gosub_dir(self, p):
-        "statement : IF expression LESS_THAN expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_LT_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_mt_gosub_ind(self, p):
-        "statement : IF expression MORE_THAN INDIRECTION expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[5]):
-            p[0] = ("IF_MT_I_GS", p[2], p[5], p[8], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_if_mt_gosub_dir(self, p):
-        "statement : IF expression MORE_THAN expression THEN GOSUB ID"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            p[0] = ("IF_MT_D_GS", p[2], p[4], p[7], 0, 0)
-        else:
-            p[0] = None
+            p[0] = [p[4]]
+        p[0].append(("POP_SET", p[2]))
 
     def p_statement_choose_if_wait_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
@@ -733,6 +478,181 @@ class CydcParser(object):
             p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0xFF, p[7], 0, 0)
         else:
             p[0] = None
+ 
+    def p_statement_if_return(self, p):
+        "statement : IF boolexpression THEN RETURN"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("IF_RETURN",))
+        else:
+            p[0] = [p[2], ("IF_RETURN",)]
+
+    def p_statement_if_goto(self, p):
+        "statement : IF boolexpression THEN GOTO ID"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("IF_GOTO", p[5], 0, 0))
+        else:
+            p[0] = [p[2], ("IF_GOTO", p[5], 0, 0)]
+
+    def p_statement_if_gosub(self, p):
+        "statement : IF boolexpression THEN GOSUB ID"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("IF_GOSUB", p[5], 0, 0))
+        else:
+            p[0] = [p[2], ("IF_GOSUB", p[5], 0, 0)]
+
+    def p_statement_if_option_goto(self, p):
+        "statement : IF boolexpression OPTION GOTO ID"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("IF_OPTION", 0, p[3], 0, 0))
+        else:
+            p[0] = [p[2], ("IF_OPTION", 0, p[3], 0, 0)]
+
+    def p_statement_if_option_gosub(self, p):
+        "statement : IF boolexpression OPTION GOSUB ID"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("IF_OPTION", 0xFF, p[3], 0, 0))
+        else:
+            p[0] = [p[2], ("IF_OPTION", 0xFF, p[3], 0, 0)]
+            
+    def p_statement_option_goto(self, p):
+        "statement : OPTION GOTO ID"
+        p[0] = ("OPTION", 0, p[3], 0, 0)
+
+    def p_statement_option_gosub(self, p):
+        "statement : OPTION GOSUB ID"
+        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+
+    def p_boolexpression_binop(self, p):
+        """
+        boolexpression  : boolexpression AND boolexpression
+                        | boolexpression OR boolexpression
+        """
+        if isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
+
+        if isinstance(p[3], list):
+            p[0] += p[3]
+        else:
+            p[0].append(p[3])
+
+        if p[2].upper() == "AND":
+            p[0].append(("AND",))
+        elif p[2].upper() == "OR":
+            p[0].append(("OR",))
+        else:
+            p[0] = None
+
+    def p_boolexpression_unop(self, p):
+        "boolexpression : NOT boolexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+            p[0].append(("NOT",))
+        else:
+            p[0] = [p[2], ("NOT",)]
+
+    def p_boolexpression_group(self, p):
+        "boolexpression : LPAREN boolexpression RPAREN"
+        p[0] = p[2]    
+    
+    def p_boolexpression_cmp_op(self, p):
+        """
+        boolexpression : numexpression NOT_EQUALS numexpression
+                  | numexpression LESS_EQUALS numexpression
+                  | numexpression MORE_EQUALS numexpression
+                  | numexpression EQUALS numexpression
+                  | numexpression LESS_THAN numexpression
+                  | numexpression MORE_THAN numexpression
+        """
+        if isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
+
+        if isinstance(p[3], list):
+            p[0] += p[3]
+        else:
+            p[0].append(p[3])
+        
+        if p[2] == "<>":
+            p[0].append(("CP_NE",))
+        elif p[2] == "<=":
+            p[0].append(("CP_LE",))
+        elif p[2] == ">=":
+            p[0].append(("CP_ME",))
+        elif p[2] == "=":
+            p[0].append(("CP_EQ",))
+        elif p[2] == "<":
+            p[0].append(("CP_LT",))
+        elif p[2] == ">":
+            p[0].append(("CP_MT",))
+    
+    def p_numexpression_binop(self, p):
+        """
+        numexpression : numexpression PLUS numexpression
+                  | numexpression MINUS numexpression
+                  | numexpression AND_B numexpression
+                  | numexpression OR_B numexpression
+        """
+        if isinstance(p[1], list):
+            p[0] = p[1]
+        else:
+            p[0] = [p[1]]
+
+        if isinstance(p[3], list):
+            p[0] += p[3]
+        else:
+            p[0].append(p[3])
+    
+        if p[2] == "+":
+            p[0].append(("ADD",))
+        elif p[2] == "-":
+            p[0].append(("SUB",))
+        elif p[2] == "&":
+            p[0].append(("AND",)) 
+        elif p[2] == "|":
+            p[0].append(("OR",))
+    
+    def p_numexpression_unop(self, p):
+        "numexpression : NOT_B expression %prec UNOT_B"
+        if isinstance(p[2], list):
+            p[0] = p[2].append(("NOT_B",))          
+        else:
+            p[0] = [p[2], ("NOT_B",)]
+            
+    def p_numexpression_group(self, p):
+        "numexpression : LPAREN numexpression RPAREN"
+        p[0] = p[2]      
+        
+    def p_numexpression_variable(self, p):
+        "numexpression : INDIRECTION variableID"
+        p[0] = ("PUSH_I", p[2])
+
+    def p_numexpression_expression(self, p):
+        "numexpression : expression"
+        if self._check_byte_value(p[1]):
+            p[0] = ("PUSH_D", p[1])
+        else:
+            p[0] = None
+
+    def p_variable_ID(self, p):
+        """
+        variableID  : expression
+                    | ID
+        """
+        if isinstance(p[1], int):
+            if self._check_byte_value(p[1]):
+                p[0] = p[1]
+            else:
+                p[0] = None
+        else:
+            p[0] = p[1]          
 
     def p_expression_binop(self, p):
         """
