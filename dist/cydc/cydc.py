@@ -204,7 +204,7 @@ def main():
     )
     arg_parser.add_argument(
         "input",
-        metavar=_("input.txt"),
+        metavar=_("input.cyd"),
         type=file_path,
         help=_("input filename, the script for the adventure"),
     )
@@ -343,13 +343,11 @@ def main():
 
     parser = CydcParser()
     parser.build()
-    # parser.lexer.test(text)
     code = parser.parse(text)
     if len(parser.errors) > 0:
         for e in parser.errors:
             print("ERROR:" + e)
         sys.exit(1)
-
     ######################################################################
 
     if verbose:
@@ -513,6 +511,7 @@ def main():
 
     ######################################################################
     if model != "plus3":
+    
         if verbose:
             print(_("Memory organization for tape version..."))
 
