@@ -5,7 +5,7 @@ REM ---- Configuration variables
 REM Name of the game
 SET GAME=test
 REM This name will be used as:
-REM   - The file to compile will be test.txt with this example
+REM   - The file to compile will be test.cyd with this example
 REM   - The name of the TAP file or +3 disk image
 
 REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
@@ -33,9 +33,9 @@ REM ---- Check if the file to compress is already compressed or is newer ----
   exit /b 0
 :START
 
-IF NOT EXIST %~dp0\%GAME%.txt (
+IF NOT EXIST %~dp0\%GAME%.cyd (
   ECHO.
-  echo %GAME%.txt file not found!
+  echo %GAME%.cyd file not found!
   GOTO ERROR
 )
 
@@ -75,7 +75,7 @@ IF EXIST %~dp0\charset.json (
   SET CYDCPARAMS=%CYDCPARAMS% -c %~dp0\charset.json
 )
 SET CYDCPARAMS=%CYDCPARAMS% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS
-%~dp0\dist\python\python %~dp0\dist\cydc_cli.py %CYDCPARAMS% %TARGET% %~dp0\%GAME%.txt %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
+%~dp0\dist\python\python %~dp0\dist\cydc_cli.py %CYDCPARAMS% %TARGET% %~dp0\%GAME%.cyd %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
 IF ERRORLEVEL 1 GOTO ERROR
 SET CYDCPARAMS= 
 ECHO ---------------------

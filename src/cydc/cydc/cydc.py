@@ -204,7 +204,7 @@ def main():
     )
     arg_parser.add_argument(
         "input",
-        metavar=_("input.txt"),
+        metavar=_("input.cyd"),
         type=file_path,
         help=_("input filename, the script for the adventure"),
     )

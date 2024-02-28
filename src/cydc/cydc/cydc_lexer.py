@@ -76,6 +76,7 @@ class CydcLexer(object):
         "PICTURE": "PICTURE",
         "DISPLAY": "DISPLAY",
         "RANDOM": "RANDOM",
+        "RANDOMIZE": "RANDOMIZE",
         "CENTER": "CENTER",
         "OPTION": "OPTION",
         "WAITKEY": "WAITKEY",
