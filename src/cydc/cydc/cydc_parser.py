@@ -184,6 +184,10 @@ class CydcParser(object):
     def p_statement_clear(self, p):
         "statement : CLEAR"
         p[0] = ("CLEAR",)
+        
+    def p_statement_randomize(self, p):
+        "statement : RANDOMIZE"
+        p[0] = ("RANDOMIZE",)
 
     def p_statement_goto(self, p):
         "statement : GOTO ID"
@@ -196,13 +200,6 @@ class CydcParser(object):
     def p_statement_label(self, p):
         "statement : LABEL ID"
         p[0] = ("LABEL", p[2])
-
-    def p_statement_inkey(self, p):
-        "statement : INKEY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("INKEY", p[2])
-        else:
-            p[0] = None
 
     def p_statement_char(self, p):
         "statement : CHAR expression"
@@ -234,7 +231,11 @@ class CydcParser(object):
 
     def p_statement_set_random(self, p):
         "statement : SET variableID TO RANDOM"
-        p[0] = ("RANDOM", p[2], 0)  
+        p[0] = ("RANDOM", p[2], 0)
+        
+    def p_statement_set_inkey(self, p):
+        "statement : SET variableID TO INKEY"
+        p[0] = ("INKEY", p[2])   
 
     def p_statement_print_ind(self, p):
         "statement : PRINT INDIRECTION variableID"

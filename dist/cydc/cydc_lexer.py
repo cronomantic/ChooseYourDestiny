@@ -64,8 +64,6 @@ class CydcLexer(object):
         "THEN": "THEN",
         "SET": "SET",
         "TO": "TO",
-        "ADD": "ADD",
-        "SUB": "SUB",
         "AND": "AND",
         "OR": "OR",
         "NOT": "NOT",
@@ -78,6 +76,7 @@ class CydcLexer(object):
         "PICTURE": "PICTURE",
         "DISPLAY": "DISPLAY",
         "RANDOM": "RANDOM",
+        "RANDOMIZE": "RANDOMIZE",
         "CENTER": "CENTER",
         "OPTION": "OPTION",
         "WAITKEY": "WAITKEY",
@@ -97,6 +96,8 @@ class CydcLexer(object):
         "PLAY": "PLAY",
         "LOOP": "LOOP",
         "REPCHAR": "REPCHAR",
+        "DECLARE": "DECLARE",
+        "AS": "AS",
     }
 
     # token_list
@@ -112,6 +113,7 @@ class CydcLexer(object):
     tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
     tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "LPAREN", "RPAREN"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
+    tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += list(reserved.values())
 
     def t_INITIAL_OPEN_CODE(self, t):
@@ -163,6 +165,9 @@ class CydcLexer(object):
     t_code_MORE_EQUALS = r">="
     t_code_LESS_THAN = r"<"
     t_code_MORE_THAN = r">"
+    t_code_NOT_B = r"!"
+    t_code_AND_B = r"&"
+    t_code_OR_B = r"\|"
     t_code_PLUS = r"\+"
     t_code_MINUS = r"-"
     t_code_TIMES = r"\*"
@@ -171,6 +176,7 @@ class CydcLexer(object):
     t_code_LPAREN = r"\("
     t_code_RPAREN = r"\)"
     t_code_COMMA = r","
+    
 
     def t_code_SHORT_LABEL(self, t):
         r"\#[a-zA-Z_][a-zA-Z0-9_]*"

@@ -23,7 +23,7 @@
 ; SOFTWARE.
 ;
 
-    DEFINE RELEASE "0.5"
+    DEFINE RELEASE "0.6"
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -75,9 +75,12 @@ MDLADDR 		EQU $C000
     call INIT_WIN
     call CLS_BUFFER
 
+    call SET_RND_SEED
+
     jp START_LOADING
 
-
+RND_SEED:
+    DW 0
 DOWN_COUNTER:
     DW 0
 UPDATE_SCR_FLAG:
@@ -425,8 +428,12 @@ LOAD_CHUNK:
     jp nc, DISK_ERROR          ; Error 1 if NC
     ret
 
-RANDOM:
+SET_RND_SEED:
     ld hl,(FRAMES) ;get data from frames
+    jr RANDOM_2
+RANDOM:
+    ld hl,(RND_SEED)
+RANDOM_2:
     ld a, r
     and %11
     inc a
@@ -447,6 +454,7 @@ RANDOM:
     xor h
     ld h,a
     djnz .loop
+    ld (RND_SEED), hl
     ret
 
 ;----------------------------------------------------
