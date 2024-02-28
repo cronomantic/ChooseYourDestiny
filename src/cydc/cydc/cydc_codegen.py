@@ -97,6 +97,7 @@ class CydcCodegen(object):
         "PLAY_I": 0x40,
         "LOOP_D": 0x41,
         "LOOP_I": 0x42,
+        "RANDOMIZE": 0x43,
     }
 
     def __init__(self, gettext):

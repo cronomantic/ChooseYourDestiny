@@ -15,7 +15,9 @@
   - [Efectos de sonido (Beeper)](#efectos-de-sonido-beeper)
   - [Música (AY)](#música-ay)
   - [Variables e indirecciones](#variables-e-indirecciones)
+  - [Declaración de variables](#declaración-de-variables)
   - [Subrutinas](#subrutinas)
+  - [Declaración de etiquetas abreviada](#declaración-de-etiquetas-abreviada)
   - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
   - [Flujo de trabajo](#flujo-de-trabajo)
   - [Versiones para los diferentes modelos de Zx Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)
@@ -811,10 +813,10 @@ Necesitas 10 gamusinos para poder salir...
    LABEL Escoger  
    CHOOSE
    LABEL Suma1
-   SET 0 ADD 1
+   SET 0 TO @0 + 1
    GOTO Inicio
    LABEL Resta1
-   SET 0 SUB 1
+   SET 0 TO @0 - 1
    GOTO Inicio
    LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
 ```
@@ -823,7 +825,7 @@ Nos presenta este menú:
 
 ![Sumar y restar](assets/tut027.png)
 
-Si elegimos la primera opción, suma 1 a la variable 0, que hace el comando `SET 0 ADD 1`, y la segunda opción resta, y lo hace con `SET 0 SUB 1`.
+Si elegimos la primera opción, suma 1 a la variable 0, que hace el comando `SET 0 TO @0 + 1`, y la segunda opción resta, y lo hace con `SET 0 TO @0 - 1`.
 
 La primera cosa que puede llamar la atención es que si doy a restar cuando el valor es cero, no hace nada. Esto es correcto, no se puede restar por debajo de cero ni se puede sumar por encima de 255 en las variables.
 
@@ -834,6 +836,83 @@ Y la segunda, ¿dónde está la opción de salir? Vamos a coger gamusinos hasta 
 ¡Ahora ya podemos salir! El secreto está en los condicionales. Si miramos en la opción de salir, vemos que antes hay `IF 0 <> 10 THEN GOTO Escoger`, lo que significa "Si la variable cero no es igual a 10, saltar a la etiqueta 'Escoger'", lo cual hace que se salte la opción de "Salir" y no se refleje en el menú hasta que el valor de la variable 0 sea 10.
 
 Es decir, con las variables y las condiciones, tenemos las herramientas necesarias para hacer menús de opciones o textos que varíen dependiendo de ciertas condiciones y hacer nuestra aventura más dinámica.
+
+---
+
+## Declaración de variables
+
+Viendo este programa, puede resultar bastante críptico:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   SET 0 TO 0
+   LABEL Inicio
+   CLEAR
+]]Tienes [[PRINT @0]] gamusinos.
+Necesitas 10 gamusinos para poder salir...
+¿Qué haces?
+
+[[OPTION GOTO Suma1]]Cojo 1 gamusino.
+[[OPTION GOTO Resta1]]Dejo 1 gamusino.
+[[ 
+   IF 0 <> 10 THEN GOTO Escoger
+   OPTION GOTO Final]]Salir.
+[[
+   LABEL Escoger  
+   CHOOSE
+   LABEL Suma1
+   SET 0 TO @0 + 1
+   GOTO Inicio
+   LABEL Resta1
+   SET 0 TO @0 - 1
+   GOTO Inicio
+   LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
+```
+
+Lo primero que vamos a hacer es declarar una variable, es decir, darle un nombre o alias a uno de los flags para referirnos por su nombre. Vamos a verlo:
+
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   DECLARE 0 AS NumGamusinos
+   SET NumGamusinos TO 0
+   LABEL Inicio
+   CLEAR
+]]Tienes [[PRINT @NumGamusinos]] gamusinos.
+Necesitas 10 gamusinos para poder salir...
+¿Qué haces?
+
+[[OPTION GOTO Suma1]]Cojo 1 gamusino.
+[[OPTION GOTO Resta1]]Dejo 1 gamusino.
+[[ 
+   IF 0 <> 10 THEN GOTO Escoger
+   OPTION GOTO Final]]Salir.
+[[
+   LABEL Escoger  
+   CHOOSE
+   LABEL Suma1
+   SET NumGamusinos TO @NumGamusinos + 1
+   GOTO Inicio
+   LABEL Resta1
+   SET NumGamusinos TO @NumGamusinos - 1
+   GOTO Inicio
+   LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
+```
+
+Esto está mucho mejor, con `DECLARE 0 AS NumGamusinos` lo que le estamos indicando al compilador que, a partir de este momento, la variable 0 se llamará NumGamusinos, y podremos usar ese nombre en su lugar. Con esto podemos dar un nombre significativo a los flags. Ten en cuenta además lo siguiente:
+
+- Podemos seguir refiriéndonos a la variable por su número.
+- No podemos declarar una variable y una etiqueta con el mismo nombre.
+- No podemos declarar dos variables distintas con el mismo nombre.
+- Podemos dar dos nombres distintos a la misma variable.
 
 ---
 
@@ -849,7 +928,8 @@ Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
    BORDER 0   /* Borde de color negro  */
    INK   7    /* Color de texto blanco */
    PAGEPAUSE 1
-   SET 0 TO 0
+   DECLARE 0 AS NumGamusinos
+   SET NumGamusinos TO 0
    LABEL Inicio
    CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
 ¿Qué haces?
@@ -861,20 +941,20 @@ Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
    LABEL Escoger  
    CHOOSE
    LABEL Suma1
-   SET 0 ADD 1
+   SET NumGamusinos TO @NumGamusinos + 1
    GOTO Inicio
    LABEL Resta1
-   SET 0 SUB 1
+   SET NumGamusinos TO @NumGamusinos - 1
    GOTO Inicio
    LABEL Final]]¡Gracias por jugar!
 Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
    WAITKEY
    END
    /* Subrutina de impresión de gamusinos*/
-   LABEL ImprimirGamusimos : PRINT @0]] gamusinos[[RETURN]]
+   LABEL ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
 ```
 
-El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del número de Gamusinos dos veces, cuando elegimos una opción y al final del todo. 
+El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del número de Gamusinos dos veces, cuando elegimos una opción y al final del todo.
 
 ![Subrutinas](assets/tut029.png)
 
@@ -892,7 +972,76 @@ Una cosa que hay que fijarse es que la subrutina está al final, después de `EN
 
 Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pueden anidarse, es decir, se puede llamar a una subrutina dentro de otra. Se almacenarán en la pila las direcciones de retorno en orden inverso, pero **CUIDADO, la pila sólo soporta 16 direcciones como máximo**. Esto quiere decir que no puedes superar más de 16 niveles de anidamiento. Y como ya expliqué en el párrafo anterior, si se hace un `RETURN` sin un `GOSUB` previo, tendrás como mínimo un error, y como máximo, comportamiento erróneo.
 
-**Novedad en la versión 0.5 o superiores**: Por lo general, el momento idóneo para llamar a una subrutina es cuando se realiza una elección de un menú. Con lo que se ha incluido la variante `OPTION GOSUB Etiqueta`, que lo que hará si se elige esa opción es hacer una llamada a la correspondiente subrutina. Cuando llegue al `RETURN` (¡recuerda siempre acabar las subrutinas con él!), retomará la ejecución justo después del `CHOOSE` de dicha opción. Por coherencia, también se han añadido las correspondientes variantes `GOSUB` para los `IF`. Consulta el manual para más información.
+Por lo general, el momento idóneo para llamar a una subrutina es cuando se realiza una elección de un menú. Con lo que se ha incluido la variante `OPTION GOSUB Etiqueta`, que lo que hará si se elige esa opción es hacer una llamada a la correspondiente subrutina. Cuando llegue al `RETURN` (¡recuerda siempre acabar las subrutinas con él!), retomará la ejecución justo después del `CHOOSE` de dicha opción. Por coherencia, también se han añadido las correspondientes variantes `GOSUB` para los `IF`. Consulta el manual para más información. Con nuestro nuevo conocimiento, vamos a ajustar nuestro código:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   DECLARE 0 AS NumGamusinos
+   SET NumGamusinos TO 0
+   LABEL Inicio
+   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+¿Qué haces?
+
+[[OPTION GOSUB Suma1]]Cojo 1 gamusino.
+[[OPTION GOSUB Resta1]]Dejo 1 gamusino.
+[[OPTION GOTO Final]]Salir.
+[[
+   CHOOSE
+   GOTO Inicio
+   LABEL Final]]¡Gracias por jugar!
+Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+   WAITKEY
+   END
+   /* Subrutina de impresión de gamusinos*/
+   LABEL ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   /* Subrutina de suma*/
+   LABEL Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
+   /* Subrutina de resta */
+   LABEL Resta1 : SET NumGamusinos TO @NumGamusinos - 1 : RETURN
+   ]]
+```
+---
+
+## Declaración de etiquetas abreviada
+
+Nuestro código va a depender de **muchas** etiquetas, y declararlas poniendo `LABEL` continuamente puede ser tedioso. Desde la versión 0.5 se permiten declarar etiquetas de forma abreviada. Para ello, en vez de usar `LABEL Etiqueta`, se puede usar `#Etiqueta`, es decir, prefijar con `#` el nombre de la etiqueta a declarar. Con ello, el código de nuestro ejemplo lo podemos dejar así:
+
+```
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   BORDER 0   /* Borde de color negro  */
+   INK   7    /* Color de texto blanco */
+   PAGEPAUSE 1
+   DECLARE 0 AS NumGamusinos
+   SET NumGamusinos TO 0
+   #Inicio
+   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+¿Qué haces?
+
+[[OPTION GOSUB Suma1]]Cojo 1 gamusino.
+[[OPTION GOSUB Resta1]]Dejo 1 gamusino.
+[[OPTION GOTO Final]]Salir.
+[[
+   CHOOSE
+   GOTO Inicio
+   #Final]]¡Gracias por jugar!
+Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+   WAITKEY
+   END
+   /* Subrutina de impresión de gamusinos*/
+   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   /* Subrutina de suma*/
+   #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
+   /* Subrutina de resta */
+   #Resta1 : SET NumGamusinos TO @NumGamusinos - 1 : RETURN
+   ]]
+```
+
+Que resulta bastante más legible.
 
 ---
 

@@ -32,7 +32,6 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [IF cond OPTION GOSUB labelId](#if-cond-option-gosub-labelid)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
-    - [INKEY expression](#inkey-expression)
     - [CHAR expression](#char-expression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [PRINT expression](#print-expression)
@@ -62,6 +61,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [AT expression, expression](#at-expression-expression)
     - [SET flag\_no TO RANDOM(expression)](#set-flag_no-to-randomexpression)
     - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
+    - [SET flag\_no TO INKEY](#set-flag_no-to-inkey)
+    - [RANDOMIZE](#randomize)
     - [TRACK expression](#track-expression)
     - [TRACK @ flag\_no](#track--flag_no)
     - [PLAY expression](#play-expression)
@@ -394,10 +395,6 @@ Detiene la ejecución y permite al jugador seleccionar una de las opciones que h
 Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.  
 El timeout tiene como máximo 65535 (16 bits).
 
-### INKEY expression
-
-Espera a la pulsación de la tecla con el código indicado.
-
 ### CHAR expression
 
 Imprime el carácter indicando con su número correspondiente.
@@ -530,7 +527,15 @@ Almacena en el flag indicado un número aleatorio entre 0 y el valor indicado en
 
 ### SET flag_no TO RANDOM
 
-Almacena en el flag indicado un número aleatorio entre 0 y 255. (Es el equivalente al comando anterior poniendo 0)
+Almacena en el flag indicado un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
+
+### SET flag_no TO INKEY
+
+Se espera hasta que se pulse una tecla y almancena en el flag indicado el código de la tecla pulsada.
+
+### RANDOMIZE
+
+Inicializa el generador de números aleatorios. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Lo que hace este comando es inicializar el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad.
 
 ### TRACK expression
 
@@ -775,5 +780,3 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
 ```
-
-

@@ -293,7 +293,52 @@ OP_SUB:
     xor a
 1:  OP_2PARAM_STORE_STACK 
 
+OP_INKEY:
+    ld e, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    push hl
+1:  call INKEY
+    or a
+    jr z, 1b
+    pop hl
+    ld (de), a
+    jp EXEC_LOOP
 
+
+OP_RANDOM:
+    ld e, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    push hl
+    call RANDOM
+    ld a, r
+    rrca
+    jr c, 1f
+    ld a, l
+    jr 2f
+1:  ld a, h
+2:  pop hl
+    ld c, a
+    ld b, (hl)
+    inc hl
+    ld a, b
+    or a
+    ld a, c
+    jr nz, 3f
+    ld a, c
+4:  ld (de), a   
+    jp EXEC_LOOP
+3:  cp b           ; a - b
+    jr c, 4b
+    sub b
+    jr 3b
+
+OP_RANDOMIZE:
+    push hl
+    call SET_RND_SEED
+    pop hl
+    jp EXEC_LOOP
 ;============================================
 
 OP_INK_D:
@@ -477,43 +522,6 @@ OP_DISPLAY_I:
     pop hl
     jp EXEC_LOOP
 
-OP_RANDOM:
-    ld e, (hl)
-    inc hl
-    ld d, HIGH FLAGS
-    push hl
-    call RANDOM
-    ld a, r
-    rrca
-    jr c, 1f
-    ld a, l
-    jr 2f
-1:  ld a, h
-2:  pop hl
-    ld c, a
-    ld b, (hl)
-    inc hl
-    ld a, b
-    or a
-    ld a, c
-    jr nz, 3f
-    ld a, c
-4:  ld (de), a   
-    jp EXEC_LOOP
-3:  cp b           ; a - b
-    jr c, 4b
-    sub b
-    jr 3b
-
-OP_INKEY:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-1:  call INKEY
-    or a
-    jr z, 1b
-    ld (de), a
-    jp EXEC_LOOP
 
 OP_WAIT:
     ld e, (hl)
@@ -1131,7 +1139,7 @@ OPCODES:
     DW OP_PLAY_I
     DW OP_LOOP_D
     DW OP_LOOP_I
-
+    DW OP_RANDOMIZE
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
