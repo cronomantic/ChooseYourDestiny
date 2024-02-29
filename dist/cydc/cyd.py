@@ -160,6 +160,9 @@ def get_asm_48(
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)
 
+    #Use the ROM KEYB routines to save memory...
+    asm = "    DEFINE USE_ROM_KEYB\n" + asm
+
     return asm
 
 

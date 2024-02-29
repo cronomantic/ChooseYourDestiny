@@ -471,11 +471,12 @@ OP_AT:
     ld a, (hl)
     inc hl
     push hl
-    push af
-    push bc  
+    push af         ;Rows on A
+    push bc         ;Cols on B
     call SET_CURSOR
     pop hl
     jp EXEC_LOOP
+
 
 OP_CENTER:
     ld de, EXEC_LOOP
@@ -895,9 +896,14 @@ OP_CHAR:
     pop hl
     jp EXEC_LOOP
 
+OP_TAB:
+    ld a, 32 
+    jr OP_TAB2
+
 OP_REPCHAR:
     ld a, (hl)
     inc hl
+OP_TAB2:
     ld b, (hl)
     inc hl
     push hl
@@ -907,21 +913,6 @@ OP_REPCHAR:
     pop af
     pop bc
     djnz 1b
-    pop hl
-    jp EXEC_LOOP
-
-OP_TAB:
-    ld a, (hl)
-    inc hl
-    push hl
-    ld bc, (POS_X)
-    add a, c
-    ld c, b
-    ld b, a
-    ld a, c
-    push af
-    push bc  
-    call SET_CURSOR
     pop hl
     jp EXEC_LOOP
 
