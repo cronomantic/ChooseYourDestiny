@@ -34,7 +34,14 @@ class CydcParser(object):
         self.errors = []
 
     precedence = (
-        ("nonassoc", "NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"), 
+        (
+            "nonassoc",
+            "NOT_EQUALS",
+            "LESS_EQUALS",
+            "MORE_EQUALS",
+            "LESS_THAN",
+            "MORE_THAN",
+        ),
         ("left", "PLUS", "MINUS"),
         ("left", "TIMES", "DIVIDE"),
         ("left", "OR_B"),
@@ -184,7 +191,7 @@ class CydcParser(object):
     def p_statement_clear(self, p):
         "statement : CLEAR"
         p[0] = ("CLEAR",)
-        
+
     def p_statement_randomize(self, p):
         "statement : RANDOMIZE"
         p[0] = ("RANDOMIZE",)
@@ -229,13 +236,31 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_set_random_expression_limit(self, p):
+        "statement : SET variableID TO RANDOM LPAREN expression COMMA expression RPAREN"
+        if self._check_byte_value(p[6]) and self._check_byte_value(p[8]):
+            limit = p[8] - p[6]
+            if limit <= 0 or limit > 255:
+                self.errors.append(f"Invalid values on RANDOM({p[6]}, {p[8]})")
+                p[0] = None
+            else:
+                p[0] = [
+                    ("RANDOM", p[2], limit),
+                    ("PUSH_I", p[2]),
+                    ("PUSH_D", p[6]),
+                    ("ADD",),
+                    ("POP_SET", p[2]),
+                ]
+        else:
+            p[0] = None
+
     def p_statement_set_random(self, p):
         "statement : SET variableID TO RANDOM"
         p[0] = ("RANDOM", p[2], 0)
-        
+
     def p_statement_set_inkey(self, p):
         "statement : SET variableID TO INKEY"
-        p[0] = ("INKEY", p[2])   
+        p[0] = ("INKEY", p[2])
 
     def p_statement_print_ind(self, p):
         "statement : PRINT INDIRECTION variableID"
@@ -274,7 +299,6 @@ class CydcParser(object):
         "statement : BORDER INDIRECTION variableID"
         p[0] = ("BORDER_I", p[3])
 
-
     def p_statement_border_dir(self, p):
         "statement : BORDER expression"
         if self._check_byte_value(p[2]):
@@ -285,7 +309,6 @@ class CydcParser(object):
     def p_statement_bright_ind(self, p):
         "statement : BRIGHT INDIRECTION variableID"
         p[0] = ("BRIGHT_I", p[3])
-
 
     def p_statement_bright_dir(self, p):
         "statement : BRIGHT expression"
@@ -320,7 +343,6 @@ class CydcParser(object):
         "statement : DISPLAY INDIRECTION variableID"
         p[0] = ("DISPLAY_I", p[3])
 
-
     def p_statement_display_dir(self, p):
         "statement : DISPLAY expression"
         if self._check_byte_value(p[2]):
@@ -331,7 +353,6 @@ class CydcParser(object):
     def p_statement_picture_ind(self, p):
         "statement : PICTURE INDIRECTION variableID"
         p[0] = ("PICTURE_I", p[3])
-
 
     def p_statement_picture_dir(self, p):
         "statement : PICTURE expression"
@@ -471,14 +492,14 @@ class CydcParser(object):
             p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0, p[7], 0, 0)
         else:
             p[0] = None
-      
+
     def p_statement_choose_if_wait_gosub(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOSUB ID"
         if self._check_word_value(p[4]):
             p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0xFF, p[7], 0, 0)
         else:
             p[0] = None
- 
+
     def p_statement_if_return(self, p):
         "statement : IF boolexpression THEN RETURN"
         if isinstance(p[2], list):
@@ -518,7 +539,7 @@ class CydcParser(object):
             p[0].append(("IF_OPTION", 0xFF, p[3], 0, 0))
         else:
             p[0] = [p[2], ("IF_OPTION", 0xFF, p[3], 0, 0)]
-            
+
     def p_statement_option_goto(self, p):
         "statement : OPTION GOTO ID"
         p[0] = ("OPTION", 0, p[3], 0, 0)
@@ -559,8 +580,8 @@ class CydcParser(object):
 
     def p_boolexpression_group(self, p):
         "boolexpression : LPAREN boolexpression RPAREN"
-        p[0] = p[2]    
-    
+        p[0] = p[2]
+
     def p_boolexpression_cmp_op(self, p):
         """
         boolexpression : numexpression NOT_EQUALS numexpression
@@ -579,7 +600,7 @@ class CydcParser(object):
             p[0] += p[3]
         else:
             p[0].append(p[3])
-        
+
         if p[2] == "<>":
             p[0].append(("CP_NE",))
         elif p[2] == "<=":
@@ -592,7 +613,7 @@ class CydcParser(object):
             p[0].append(("CP_LT",))
         elif p[2] == ">":
             p[0].append(("CP_MT",))
-    
+
     def p_numexpression_binop(self, p):
         """
         numexpression : numexpression PLUS numexpression
@@ -609,27 +630,27 @@ class CydcParser(object):
             p[0] += p[3]
         else:
             p[0].append(p[3])
-    
+
         if p[2] == "+":
             p[0].append(("ADD",))
         elif p[2] == "-":
             p[0].append(("SUB",))
         elif p[2] == "&":
-            p[0].append(("AND",)) 
+            p[0].append(("AND",))
         elif p[2] == "|":
             p[0].append(("OR",))
-    
+
     def p_numexpression_unop(self, p):
         "numexpression : NOT_B expression %prec UNOT_B"
         if isinstance(p[2], list):
-            p[0] = p[2].append(("NOT_B",))          
+            p[0] = p[2].append(("NOT_B",))
         else:
             p[0] = [p[2], ("NOT_B",)]
-            
+
     def p_numexpression_group(self, p):
         "numexpression : LPAREN numexpression RPAREN"
-        p[0] = p[2]      
-        
+        p[0] = p[2]
+
     def p_numexpression_variable(self, p):
         "numexpression : INDIRECTION variableID"
         p[0] = ("PUSH_I", p[2])
@@ -652,7 +673,7 @@ class CydcParser(object):
             else:
                 p[0] = None
         else:
-            p[0] = p[1]          
+            p[0] = p[1]
 
     def p_expression_binop(self, p):
         """
