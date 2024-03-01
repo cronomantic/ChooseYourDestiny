@@ -1,4 +1,4 @@
-# Choose Your Destiny
+# Manual de Choose Your Destiny
 
 El programa es un intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones, para el Spectrum 48, 128, +2 y +3.
 
@@ -6,7 +6,7 @@ Consiste una máquina virtual que va interpretando "tokens" que se encuentra dur
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
-- [Choose Your Destiny](#choose-your-destiny)
+- [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
@@ -34,9 +34,9 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
     - [CHAR expression](#char-expression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
+    - [TAB expression](#tab-expression)
     - [PRINT expression](#print-expression)
     - [PRINT @ flag\_no](#print--flag_no)
-    - [TAB expression](#tab-expression)
     - [PAGEPAUSE expression](#pagepause-expression)
     - [INK expression](#ink-expression)
     - [INK @ flag\_no](#ink--flag_no)
@@ -61,6 +61,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [AT expression, expression](#at-expression-expression)
     - [SET flag\_no TO RANDOM(expression)](#set-flag_no-to-randomexpression)
     - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
+    - [SET flag\_no TO RANDOM(expression, expression)](#set-flag_no-to-randomexpression-expression)
     - [SET flag\_no TO INKEY](#set-flag_no-to-inkey)
     - [RANDOMIZE](#randomize)
     - [TRACK expression](#track-expression)
@@ -403,6 +404,10 @@ Imprime el carácter indicando con su número correspondiente.
 
 Imprime el carácter indicado en el primer parámetro tantas veces como número se indique en el segundo parámetro. Ambos valores tienen un tamaño de 1 byte, es decir, val del 0 al 255. Además, si el número de veces es cero, el carácter se repetirá 256 veces en lugar de ninguna.
 
+### TAB expression
+
+Imprime tantos espacios como los indicados en el parámetro. Es el equivalente a `REPCHAR 32, expression`, pero ocupa menos memoria.
+
 ### PRINT expression
 
 Imprime el valor indicado (máximo 16 bits).
@@ -410,10 +415,6 @@ Imprime el valor indicado (máximo 16 bits).
 ### PRINT @ flag_no
 
 Imprime el valor del flag indicado.
-
-### TAB expression
-
-Desplaza el cursor a la derecha tantas posiciones como indicadas en el parámetro.
 
 ### PAGEPAUSE expression
 
@@ -528,6 +529,10 @@ Almacena en el flag indicado un número aleatorio entre 0 y el valor indicado en
 ### SET flag_no TO RANDOM
 
 Almacena en el flag indicado un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
+
+### SET flag_no TO RANDOM(expression, expression)
+
+Almacena en el flag indicado un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
 
 ### SET flag_no TO INKEY
 
@@ -763,7 +768,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
-- XimoKom y Fran Kapilla por su inestimable ayuda.
+- XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
@@ -771,7 +776,6 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 ## Licencia
 
-```
 
 Copyright (c) 2023 Sergio Chico
 
@@ -779,4 +783,4 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
-```
+
