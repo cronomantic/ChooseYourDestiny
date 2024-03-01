@@ -44,9 +44,9 @@
 [[OPTION GOTO Final]]Fin.
 [[  CHOOSE
     LABEL Suma1
-    SET 0 ADD 1
+    SET 0 TO @0 + 1
     GOTO SumaOResta
     LABEL Resta1
-    SET 0 SUB 1
+    SET 0 TO @0 - 1
     GOTO SumaOResta
     LABEL Final]]¡Gracias por jugar![[WAITKEY : END]]
