@@ -33,7 +33,7 @@ REM ---- Check if the file to compress is already compressed or is newer ----
   exit /b 0
 :START
 
-IF NOT EXIST %~dp0\%GAME%.cyd (
+IF NOT EXIST "%~dp0\%GAME%.cyd" (
   ECHO.
   echo %GAME%.cyd file not found!
   GOTO ERROR
@@ -42,7 +42,7 @@ IF NOT EXIST %~dp0\%GAME%.cyd (
 REM  ---- PREPARE IMAGES ----
 ECHO ---------------------
 ECHO Preparing images (if any)...
-CD %~dp0\IMAGES
+CD "%~dp0\IMAGES"
 for /L %%i in (0, 1, 9) do (CALL :CHECK_IF_COMPRESS 00%%i.SCR 00%%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=00%%i.CSC 00%%i.SCR  > nul 2>&1))
 for /L %%i in (10, 1, 99) do (CALL :CHECK_IF_COMPRESS 0%%i.SCR 0%%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=0%%i.CSC 0%%i.SCR  > nul 2>&1))
 for /L %%i in (100, 1, 256) do (CALL :CHECK_IF_COMPRESS %%i.SCR %%i.CSC && (..\DIST\CSC -l=%IMGLINES% -f -o=%%i.CSC %%i.SCR  > nul 2>&1))
@@ -51,27 +51,27 @@ CD ..
 REM  ---- COMPILING ADVENTURE ----
 ECHO ---------------------
 ECHO Compiling the script...
-IF NOT EXIST %~dp0\tools\mkp3fs.exe (
+IF NOT EXIST "%~dp0\tools\mkp3fs.exe" (
   echo mkp3fs.exe file not found!
   GOTO ERROR
 )
-IF NOT EXIST %~dp0\tools\sjasmplus.exe (
+IF NOT EXIST "%~dp0\tools\sjasmplus.exe" (
   echo sjasmplus.exe file not found!
   GOTO ERROR
 )
 SET CYDCPARAMS=
-IF NOT EXIST %~dp0\tokens.json (
+IF NOT EXIST "%~dp0\tokens.json" (
   SET CYDCPARAMS=%CYDCPARAMS% -T %~dp0\tokens.json
 ) else (
   SET CYDCPARAMS=%CYDCPARAMS% -t %~dp0\tokens.json
 )
-IF EXIST %~dp0\SFX.ASM (
+IF EXIST "%~dp0\SFX.ASM" (
   SET CYDCPARAMS=%CYDCPARAMS% -sfx %~dp0\SFX.ASM
 )
-IF EXIST %LOAD_SCR% (
+IF EXIST "%LOAD_SCR%" (
   SET CYDCPARAMS=%CYDCPARAMS% -scr %LOAD_SCR%
 )
-IF EXIST %~dp0\charset.json (
+IF EXIST "%~dp0\charset.json" (
   SET CYDCPARAMS=%CYDCPARAMS% -c %~dp0\charset.json
 )
 SET CYDCPARAMS=%CYDCPARAMS% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS
