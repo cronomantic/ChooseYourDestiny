@@ -339,6 +339,28 @@ OP_RANDOMIZE:
     call SET_RND_SEED
     pop hl
     jp EXEC_LOOP
+
+
+OP_POP_AT:
+    ld de, (INT_STACK_PTR)
+    inc de
+    ld a, (de)          ;Get Rows
+    cp 24
+    jr c, 1f
+    ld a, 23
+1:  ld b, a
+    ld a, (de)          ;Get Cols
+    inc de
+    ld (INT_STACK_PTR), de
+    cp 32
+    jr c, 2f
+    ld a, 31
+2:  push hl
+    push bc         ;Rows on B
+    push af         ;Cols on A
+    call SET_CURSOR
+    pop hl
+    jp EXEC_LOOP
 ;============================================
 
 OP_INK_D:
@@ -1131,6 +1153,7 @@ OPCODES:
     DW OP_LOOP_D
     DW OP_LOOP_I
     DW OP_RANDOMIZE
+    DW OP_POP_AT
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
