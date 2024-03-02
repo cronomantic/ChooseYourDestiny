@@ -448,21 +448,32 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_at(self, p):
-        "statement : AT expression COMMA expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
-            row = p[4]
-            col = p[2]
-            if row >= 24:
-                row = 23
-            if col >= 32:
-                col = 31
-            if row < 0:
-                row = 0
-            if col < 0:
-                col = 0
-            p[0] = ("AT", col, row)
+        "statement : AT numexpression COMMA numexpression"
+        if not isinstance(p[2], list) and not isinstance(p[4], list):
+            if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+                row = p[4]
+                col = p[2]
+                if row >= 24:
+                    row = 23
+                if col >= 32:
+                    col = 31
+                if row < 0:
+                    row = 0
+                if col < 0:
+                    col = 0
+                p[0] = ("AT", col, row)
+            else:
+                p[0] = None
         else:
-            p[0] = None
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [("PUSH_D", p[2])]
+            if isinstance(p[4], list):
+                p[0] += p[4]
+            else:
+                p[0].append(("PUSH_D", p[4]))
+            p[0].append(("POP_AT",))
 
     def p_statement_repchar(self, p):
         "statement : REPCHAR expression COMMA expression"
