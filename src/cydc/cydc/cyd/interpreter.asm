@@ -343,8 +343,8 @@ OP_RANDOMIZE:
 
 OP_POP_AT:
     ld de, (INT_STACK_PTR)
-    inc de
     ld a, (de)          ;Get Rows
+    inc de
     cp 24
     jr c, 1f
     ld a, 23
