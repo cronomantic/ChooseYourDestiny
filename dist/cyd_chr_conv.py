@@ -81,7 +81,7 @@ def check_width(value):
 
 
 def main():
-    version = "0.1.0"
+    version = "0.1.1"
     program = "Choose Your Destiny Font Conversion " + version
     exec = "cyd_font_conv"
 
