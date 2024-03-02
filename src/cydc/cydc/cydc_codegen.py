@@ -98,6 +98,7 @@ class CydcCodegen(object):
         "LOOP_D": 0x41,
         "LOOP_I": 0x42,
         "RANDOMIZE": 0x43,
+        "POP_AT": 0x44,
     }
 
     def __init__(self, gettext):
