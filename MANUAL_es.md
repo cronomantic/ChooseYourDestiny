@@ -58,7 +58,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
-    - [AT expression, expression](#at-expression-expression)
+    - [AT numexpression, numexpression](#at-numexpression-numexpression)
     - [SET flag\_no TO RANDOM(expression)](#set-flag_no-to-randomexpression)
     - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
     - [SET flag\_no TO RANDOM(expression, expression)](#set-flag_no-to-randomexpression-expression)
@@ -512,7 +512,7 @@ Define el área de pantalla donde se escribirá el texto. Los parámetros, por �
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
-### AT expression, expression
+### AT numexpression, numexpression
 
 Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
 Los parámetros, por órden, son:
