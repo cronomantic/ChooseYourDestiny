@@ -32,7 +32,7 @@ import os
 import gettext
 import argparse
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'cydc'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "cydc"))
 
 from cydc_font import CydcFont
 
@@ -85,6 +85,9 @@ def main():
     program = "Choose Your Destiny Font Conversion " + version
     exec = "cyd_font_conv"
 
+    if sys.version_info[0] < 3:  # Python 2
+        sys.exit(_("ERROR: Invalid python version"))
+
     gettext.bindtextdomain(
         exec, os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
     )
@@ -110,6 +113,13 @@ def main():
     )
 
     arg_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help=_("Verbose mode"),
+    )
+
+    arg_parser.add_argument(
         "input",
         metavar=_("input.chr"),
         type=file_path,
@@ -132,8 +142,7 @@ def main():
 
     font = CydcFont()
 
-    if sys.version_info[0] < 3:  # Python 2
-        sys.exit(_("ERROR: Invalid python version"))
+    verbose = args.verbose
 
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
@@ -146,6 +155,9 @@ def main():
         sys.exit(_("ERROR: Invalid input file size"))
 
     num_chars = int(len(font_file_chars) / 8)
+
+    if verbose:
+        print(f"Num. chars {num_chars}")
 
     if num_chars == 0 or num_chars > 256:
         sys.exit(_("ERROR: Invalid input file size"))
@@ -161,7 +173,12 @@ def main():
     else:
         chars_width = args.width
 
+    if verbose:
+        print(f"Chars. Width {chars_width}")
+
     font_file_widths = [chars_width for x in range(num_chars)]
+
+    print(len(font_file_widths))
 
     if len(font_file_chars) < len(font.default_font) and len(font_file_widths) < len(
         font.default_font_sizes
@@ -173,8 +190,7 @@ def main():
         if font_file_widths[i] != 8:
             font_file_widths[i] = 8
 
-    font.font = font_file_chars
-    font.font_sizes = font_file_widths
+    font = CydcFont(font_chars=font_file_chars, font_sizes=font_file_widths)
 
     try:
         with open(args.output, "w") as f:
@@ -183,6 +199,7 @@ def main():
         sys.exit(_("ERROR: creating output file ") + f"{err}")
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
