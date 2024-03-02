@@ -237,41 +237,41 @@ OP_CP_NE:
 1:  ld a, 1
 2:  OP_2PARAM_STORE_STACK  
 
-OP_CP_LE:            ; p1 <= p2
-    OP_2PARAM_GET_STACK
-    cp c               ; p2 - p1
-    jr nc, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK     
-
-OP_CP_MT:            ; p1 > p2
-    OP_2PARAM_GET_STACK
-    cp c               ; p2 - p1
+OP_CP_LT:                ; p1 < p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
+    cp c                 ; p1 - p2 -> p1 < p2
     jr c, 1f
     xor a
     jr 2f
 1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK  
+2:  OP_2PARAM_STORE_STACK
 
-OP_CP_ME:            ; p1 >= p2
-    OP_2PARAM_GET_STACK
-    ld b, a
-    ld a, c
-    cp b             ; p1 - p2
+OP_CP_ME:               ; p1 >= p2
+    OP_2PARAM_GET_STACK ; p2 = C, p1 = A
+    cp c                ; p1 - p2
     jr nc, 1f
     xor a
     jr 2f
 1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK    
+2:  OP_2PARAM_STORE_STACK   
 
-OP_CP_LT:            ; p1 < p2
-    OP_2PARAM_GET_STACK
+OP_CP_MT:                ; p1 > p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
     ld b, a
-    ld a, c
-    cp b             ; p1 - p2
+    ld a, c              ; p2 = A, p1 = B
+    cp b                 ; p2 - p1 -> p2 < p1
     jr c, 1f
+    xor a
+    jr 2f
+1:  ld a, 1
+2:  OP_2PARAM_STORE_STACK
+
+OP_CP_LE:                ; p1 <= p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
+    ld b, a
+    ld a, c              ; p2 = A, p1 = B
+    cp b                 ; p2 - p1 -> p2 < p1
+    jr nc, 1f
     xor a
     jr 2f
 1:  ld a, 1
