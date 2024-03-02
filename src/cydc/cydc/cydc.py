@@ -308,7 +308,7 @@ def main():
                     sys.exit(
                         _("ERROR: The charset import file has not a valid format.")
                     )
-                if set(c.keys()) != set(["Character", "Width"]):
+                if set(c.keys()) != set(["Character", "Width", "Id"]):
                     sys.exit(
                         _("ERROR: The charset import file has not a valid format.")
                     )
@@ -332,6 +332,15 @@ def main():
                         _("ERROR: The charset import file has not a valid format.")
                     )
                 if w < 1 or w > 8:
+                    sys.exit(
+                        _("ERROR: The charset import file has not a valid format.")
+                    )
+                i = c["Id"]
+                if not isinstance(w, int):
+                    sys.exit(
+                        _("ERROR: The charset import file has not a valid format.")
+                    )
+                if w < 0 or w > 255:
                     sys.exit(
                         _("ERROR: The charset import file has not a valid format.")
                     )
