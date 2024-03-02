@@ -81,7 +81,7 @@ def file_path(string):
 def main():
     """Main function"""
 
-    version = "0.5.0"
+    version = "0.6.1"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
