@@ -1,0 +1,328 @@
+#!/usr/bin/python3
+
+#
+# MIT License
+#
+# Copyright (c) 2024 Sergio Chico
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+from __future__ import print_function
+from operator import itemgetter, attrgetter
+
+import sys
+import os
+import gettext
+import argparse
+import subprocess
+
+
+def run_exec(exec_path, parameter_list=[], capture_output=False):
+    """_summary_
+
+    Args:
+        zx0_path (_type_): _description_
+        chunk (_type_): _description_
+    """
+    exec_path = os.path.abspath(exec_path)  # Get the absolute path of the executable
+    command_line = [exec_path] + parameter_list
+    try:
+        stdout = None
+        # stdout = subprocess.DEVNULL
+        # stdout = subprocess.STDOUT
+        stderr = None
+        # stderr=subprocess.DEVNULL
+        result = subprocess.run(
+            args=command_line,
+            check=False,
+            stdout=stdout,
+            stderr=stderr,
+            text=capture_output,
+            capture_output=capture_output,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise OSError from exc
+    if result.returncode != 0:
+        raise OSError(result.stderr)
+    return result
+
+
+def dir_path(string):
+    """_summary_
+
+    Args:
+        string (_type_): _description_
+
+    Raises:
+        NotADirectoryError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
+
+
+def file_path(string):
+    """_summary_
+
+    Args:
+        string (_type_): _description_
+
+    Raises:
+        FileNotFoundError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if os.path.isfile(string):
+        return string
+    else:
+        raise FileNotFoundError(string)
+
+
+def main():
+    version = "0.1.0"
+    program = "Make Adventure " + version
+    exec = "make_adventure"
+
+    if sys.version_info[0] < 3:  # Python 2
+        sys.exit(_("ERROR: Invalid python version"))
+
+    gettext.bindtextdomain(
+        exec, os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
+    )
+    gettext.textdomain(exec)
+    _ = gettext.gettext
+
+    # setting paths
+    curr_path = os.path.abspath(os.path.dirname(__file__))
+    dist_path = os.path.join(curr_path, "dist")
+    tools_path = os.path.join(curr_path, "tools")
+    if os.name == "nt":
+        csc_path = os.path.join(dist_path, "csc.exe")
+        python_path = os.path.join(dist_path, "python")
+        python_path = os.path.join(python_path, "python.exe")
+        sjasmplus_path = os.path.join(tools_path, "sjasmplus.exe")
+        mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
+    else:
+        csc_path = os.path.join(dist_path, "csc")
+        python_path = "python"
+        sjasmplus_path = os.path.join(tools_path, "sjasmplus")
+        mkp3fs_path = os.path.join(tools_path, "mkp3fs")
+    cydc_path = os.path.join(dist_path, "cydc_cli.py")
+
+    #########################################################
+
+    arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
+
+    arg_parser.add_argument(
+        "-n",
+        "--name",
+        metavar=_("NAME"),
+        help=_("Name of the adventure"),
+        default="test",
+    )
+    arg_parser.add_argument(
+        "-o",
+        "--output-path",
+        type=dir_path,
+        metavar=_("OUTPUT_PATH"),
+        help=_("Output path to files"),
+        default=curr_path,
+    )
+    arg_parser.add_argument(
+        "-csc",
+        "--csc-images-path",
+        type=dir_path,
+        help=_("path to the directory with the SCR files"),
+        default=os.path.join(curr_path, "IMAGES"),
+    )
+    arg_parser.add_argument(
+        "-pt3",
+        "--pt3-tracks-path",
+        type=dir_path,
+        help=_("path to the directory with the PT3 tracks"),
+        default=os.path.join(curr_path, "TRACKS"),
+    )
+    arg_parser.add_argument(
+        "-sfx",
+        "--sfx-asm-file",
+        help=_("path to the asm file generated by beepfx"),
+        default=os.path.join(curr_path, "SFX.ASM"),
+    )
+    arg_parser.add_argument(
+        "-scr",
+        "--load-scr-file",
+        help=_("path to the SCR file used as Loading screen"),
+        default=os.path.join(curr_path, "IMAGES/000.SCR"),
+    )
+    arg_parser.add_argument(
+        "-tok",
+        "--tokens-file",
+        help=_("path to the token json file"),
+        default=os.path.join(curr_path, "tokens.json"),
+    )
+    arg_parser.add_argument(
+        "-chr",
+        "--charset-file",
+        help=_("path to the charset json file"),
+        default=os.path.join(curr_path, "charset.json"),
+    )
+    ###
+    arg_parser.add_argument(
+        "-l",
+        "--image-lines",
+        metavar=_("NUM_IMAGE_LINES"),
+        type=int,
+        help=_("Number of lines of the image to use (default: %(default)d)"),
+        default=192,
+    )
+    ###
+    arg_parser.add_argument(
+        "-v", "--verbose", action="store_true", help=_("show additional information")
+    )
+    arg_parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=program,
+        help=_("show program's version number and exit"),
+    )
+    ##
+    arg_parser.add_argument(
+        "model",
+        choices=["48k", "128k", "plus3"],
+        help=_("Model of spectrum to target"),
+        type=str.lower,
+        default="plus3",
+    )
+    arg_parser.add_argument(
+        "csc_path",
+        type=file_path,
+        nargs="?",
+        metavar=_("CSC_PATH"),
+        help=_("path to csc executable"),
+        default=csc_path,
+    )
+    arg_parser.add_argument(
+        "sjasmplus_path",
+        nargs="?",
+        metavar=_("SJASMPLUS_PATH"),
+        type=file_path,
+        help=_("path to sjasmplus executable"),
+        default=sjasmplus_path,
+    )
+    arg_parser.add_argument(
+        "mkp3fs_path",
+        type=file_path,
+        nargs="?",
+        metavar=_("MKP3FS_PATH"),
+        help=_("path to mkp3fs executable"),
+        default=mkp3fs_path,
+    )
+
+    try:
+        args = arg_parser.parse_args()
+    except FileNotFoundError as f1:
+        sys.exit(_("ERROR: File not found:") + f"{f1}")
+    except NotADirectoryError as f2:
+        sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
+
+    input_file = os.path.join(curr_path, f"{args.name}.cyd")
+    if not os.path.isfile(input_file):
+        sys.exit(_("ERROR: Input file does not exists."))
+
+    # Setting parameters
+    cydc_params = ["-csc", f"{args.csc_images_path}", "-pt3", f"{args.pt3_tracks_path}"]
+
+    if not os.path.isfile(args.tokens_file):
+        cydc_params = ["-T", f"{args.tokens_file}"] + cydc_params
+    else:
+        cydc_params = ["-t", f"{args.tokens_file}"] + cydc_params
+
+    if os.path.isfile(args.charset_file):
+        cydc_params = ["-c", f"{args.charset_file}"] + cydc_params
+
+    if os.path.isfile(args.sfx_asm_file):
+        cydc_params = ["-sfx", f"{args.sfx_asm_file}"] + cydc_params
+
+    if os.path.isfile(args.load_scr_file):
+        cydc_params = ["-scr", f"{args.load_scr_file}"] + cydc_params
+
+    if args.verbose:
+        cydc_params = ["-v"] + cydc_params
+
+    cydc_params = [cydc_path] + cydc_params
+    cydc_params += [
+        args.model,
+        input_file,
+        args.sjasmplus_path,
+        args.mkp3fs_path,
+        args.output_path,
+    ]
+
+    # Compressing CSC files
+    print("Preparing images (if any)...")
+    for f in range(256):
+        scr_file_path = os.path.join(args.csc_images_path, f"{f:03d}.SCR")
+        csc_file_path = os.path.join(args.csc_images_path, f"{f:03d}.CSC")
+        do_csc = False
+        if os.path.isfile(scr_file_path):
+            if os.path.isfile(csc_file_path):
+                if os.path.getmtime(scr_file_path) >= os.path.getmtime(csc_file_path):
+                    do_csc = True
+            else:
+                do_csc = True
+        if do_csc:
+            try:
+                run_exec(
+                    csc_path,
+                    [
+                        f"-l={args.image_lines}",
+                        f"-f",
+                        f"-o={csc_file_path}",
+                        scr_file_path,
+                    ],
+                )
+            except OSError as os1:
+                sys.exit(_("ERROR: Error running CSC."), os1)
+
+    try:
+        print("Compiling the script...")
+        run_exec(python_path, cydc_params)
+    except OSError as os1:
+        sys.exit(_("ERROR: Error running CYDC."), os1)
+
+    if args.model == "plus3":
+        print("Cleaning...")
+        files_to_clean = ["SCRIPT.DAT", "DISK", "CYD.BIN"]
+        for f in files_to_clean:
+            p = os.path.join(args.output_path, f)
+            if os.path.isfile(p):
+                os.remove(p)
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
