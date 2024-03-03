@@ -15,7 +15,7 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 
 REM Loading screen
-SET LOAD_SCR=%~dp0\IMAGES\000.scr
+SET LOAD_SCR="LOAD.scr"
 
 REM ---------------------------------
 
