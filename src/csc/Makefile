@@ -3,8 +3,13 @@ CC = gcc
 CFLAGS  = -O3 -Wall -DNDEBUG -s
 RM = rm -f 
 FILENAME = csc
-EXTENSION = .exe
-TARGET = ../../dist/$(FILENAME)$(EXTENSION)
+
+UNAME := $(shell uname)
+ifeq ($(UNAME), Linux)
+TARGET = ../../dist/$(FILENAME)
+else
+TARGET = ../../dist/$(FILENAME).exe
+endif
 
 all: $(TARGET)
 

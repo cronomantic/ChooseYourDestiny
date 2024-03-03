@@ -27,10 +27,10 @@
 import shutil
 import os
 
-cPath= os.path.dirname(__file__)
+currentPath = os.path.dirname(__file__)
 
-DST_PATH = "../../dist/"
-SRC_PATH = "./"
+DST_PATH = "dist/"
+SRC_PATH = "src/cydc"
 SRC_FILES = [
     "cydc_cli.py",
     "cyd_chr_conv.py",
@@ -66,7 +66,8 @@ SRC_FILES = [
 ]
 
 for file in SRC_FILES:
-    srcPath = os.path.join(cPath, SRC_PATH, file)
-    dstPath = os.path.join(cPath, DST_PATH, file)
+    srcurrentPath = os.path.join(currentPath, SRC_PATH, file)
+    dstPath = os.path.join(currentPath, DST_PATH, file)
     os.makedirs(os.path.dirname(dstPath), exist_ok=True)
-    shutil.copy(srcPath, dstPath)
+    shutil.copy(srcurrentPath, dstPath)
+    
