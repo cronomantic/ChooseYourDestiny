@@ -120,8 +120,7 @@ def main():
     tools_path = os.path.join(curr_path, "tools")
     if os.name == "nt":
         csc_path = os.path.join(dist_path, "csc.exe")
-        python_path = os.path.join(dist_path, "python")
-        python_path = os.path.join(python_path, "python.exe")
+        python_path = os.path.join(dist_path, "python", "python.exe")
         sjasmplus_path = os.path.join(tools_path, "sjasmplus.exe")
         mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
     else:

@@ -26,6 +26,7 @@
 
 import shutil
 import os
+import zipfile
 
 currentPath = os.path.dirname(__file__)
 
@@ -66,8 +67,68 @@ SRC_FILES = [
 ]
 
 for file in SRC_FILES:
-    srcurrentPath = os.path.join(currentPath, SRC_PATH, file)
+    srcPath = os.path.join(currentPath, SRC_PATH, file)
     dstPath = os.path.join(currentPath, DST_PATH, file)
     os.makedirs(os.path.dirname(dstPath), exist_ok=True)
-    shutil.copy(srcurrentPath, dstPath)
-    
+    shutil.copy(srcPath, dstPath)
+
+
+DIST_DIRS = ["assets", "IMAGES", "TRACKS", "examples", "dist/cydc"]
+DIST_DIRS_WIN32 = ["dist/python"] + DIST_DIRS
+DIST_DIRS_LINUX = [] + DIST_DIRS
+
+DIST_FILES = [
+    "make_adventure.py",
+    "LICENSE",
+    "test.cyd",
+    "MANUAL_es.md",
+    "README.md",
+    "dist/cyd_chr_conv.py",
+    "dist/cydc_cli.py",
+]
+DIST_FILES_WIN32 = [
+    "MakeAdv.bat",  # This will be deprecated
+    "make_adv.cmd",
+    "tools/mkp3fs.exe",
+    "tools/sjasmplus.exe",
+    "tools/zx0.exe",
+    "dist/csc.exe",
+    "dist/cyd_chr_conv.cmd",
+    "dist/cydc.cmd",
+] + DIST_FILES
+DIST_FILES_LINUX = [
+    "make_adv.sh",
+    "dist/csc",
+] + DIST_FILES
+
+for d in DIST_DIRS_WIN32:
+    result = [os.path.join(x[0], t) for x in os.walk(os.path.normpath(d)) for t in x[2]]
+    result = [x for x in result if "__pycache__" not in x]
+    DIST_FILES_WIN32 += result
+
+for d in DIST_DIRS_LINUX:
+    result = [os.path.join(x[0], t) for x in os.walk(os.path.normpath(d)) for t in x[2]]
+    result = [x for x in result if "__pycache__" not in x]
+    DIST_FILES_LINUX += result
+
+with zipfile.ZipFile(
+    os.path.join(currentPath, "ChooseYourDestiny_Win_x64.zip"),
+    mode="w",
+    compression=zipfile.ZIP_DEFLATED,
+    compresslevel=9,
+) as zFile:
+    for f in DIST_FILES_WIN32:
+        f_path = os.path.join(currentPath, os.path.normpath(f))
+        zFile.write(f_path, arcname=f)
+    zFile.close()
+
+with zipfile.ZipFile(
+    os.path.join(currentPath, "ChooseYourDestiny_Linux_x64.zip"),
+    mode="w",
+    compression=zipfile.ZIP_DEFLATED,
+    compresslevel=9,
+) as zFile:
+    for f in DIST_FILES_LINUX:
+        f_path = os.path.join(currentPath, os.path.normpath(f))
+        zFile.write(f_path, arcname=f)
+    zFile.close()
