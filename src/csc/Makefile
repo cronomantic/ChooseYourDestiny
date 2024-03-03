@@ -1,6 +1,6 @@
 #CC = x86_64-w64-mingw32-gcc
 CC = gcc
-CFLAGS  = -O3 -Wall -DNDEBUG -s
+CFLAGS  = -O3 -Wall -DNDEBUG -s -static
 RM = rm -f 
 FILENAME = csc
 
