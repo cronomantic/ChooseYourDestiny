@@ -44,9 +44,9 @@ class CydcCodegen(object):
         "PUSH_D": 0xB,
         "PUSH_I": 0xC,
         "IF_GOTO": 0xD,
-        "IF_GOSUB": 0xE,
-        "IF_OPTION": 0xF,
-        "IF_RETURN": 0x10,
+        "IF_N_GOTO": 0x0E,
+        "PUSH_INKEY": 0x0F,
+        "PUSH_RANDOM": 0x10,
         "NOT": 0x11,
         "NOT_B": 0x12,
         "AND": 0x13,
@@ -99,6 +99,7 @@ class CydcCodegen(object):
         "LOOP_I": 0x42,
         "RANDOMIZE": 0x43,
         "POP_AT": 0x44,
+        "NEWLINE": 0x45,
     }
 
     def __init__(self, gettext):
@@ -123,8 +124,8 @@ class CydcCodegen(object):
         for i, c in enumerate(code):
             if skip:
                 skip = False
-            elif (i+1) < len(code):
-                next = code[i+1]
+            elif (i + 1) < len(code):
+                next = code[i + 1]
                 if next[0] == "POP_SET":
                     if c[0] == "PUSH_D":
                         c = ("SET_D", next[1], c[1])
@@ -132,13 +133,24 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("SET_I", next[1], c[1])
                         skip = True
+                    elif c[0] == "PUSH_RANDOM":
+                        c = ("RANDOM", next[1], c[1])
+                        skip = True
+                    elif c[0] == "PUSH_INKEY":
+                        c = ("INKEY", next[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "IF_N_GOTO":
+                    if c[0] == "NOT":
+                        c = ("IF_GOTO", next[1], next[2], next[3])
+                        skip = True
                     code_tmp.append(c)
                 else:
                     code_tmp.append(c)
             else:
                 code_tmp.append(c)
-        #print(code)
-        #print(code_tmp)
+        # print(code)
+        # print(code_tmp)
         return code_tmp
 
     def code_translate(self, code, slice_text=False):
@@ -280,10 +292,14 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
+    def generate_code_dsk(
+        self, code, tokens, font=None, slice_text=False, show_debug=False
+    ):
         if font is None:
             font = CydcFont()
         code = self.code_simple_optimize(code)
+        if show_debug:
+            print(code)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code
@@ -326,8 +342,10 @@ class CydcCodegen(object):
         header = self._word_to_list(len(header)) + header
         return header + code
 
-    def generate_code(self, code, slice_text=False):
+    def generate_code(self, code, slice_text=False, show_debug=False):
         code = self.code_simple_optimize(code)
+        if show_debug:
+            print(code)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code

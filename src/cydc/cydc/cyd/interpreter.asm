@@ -96,38 +96,16 @@ OP_IF_GOTO:
     add hl, de
     jp EXEC_LOOP
 
-OP_IF_GOSUB:
+OP_IF_N_GOTO:
     ld de, (INT_STACK_PTR)
     ld a, (de)
     inc de
     ld (INT_STACK_PTR), de
     or a
-    jp nz, OP_GOSUB
+    jp z, OP_GOTO
     ld de, 3
     add hl, de
     jp EXEC_LOOP
-
-OP_IF_OPTION:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
-    or a
-    jp nz, OP_OPTION
-    ld de, 4
-    add hl, de
-    jp EXEC_LOOP
-
-OP_IF_RETURN:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
-    or a
-    jp nz, OP_RETURN
-    jp EXEC_LOOP
-
-
 ;-------------------------------------------------------
 
 OP_POP_SET:
@@ -305,6 +283,18 @@ OP_INKEY:
     ld (de), a
     jp EXEC_LOOP
 
+OP_PUSH_INKEY:
+    push hl
+1:  call INKEY
+    or a
+    jr z, 1b
+    ld de, (INT_STACK_PTR)
+    dec de
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    pop hl
+    jp EXEC_LOOP
+
 
 OP_RANDOM:
     ld e, (hl)
@@ -328,6 +318,34 @@ OP_RANDOM:
     jr nz, 3f
     ld a, c
 4:  ld (de), a   
+    jp EXEC_LOOP
+3:  cp b           ; a - b
+    jr c, 4b
+    sub b
+    jr 3b
+
+OP_PUSH_RANDOM:
+    push hl
+    call RANDOM
+    ld a, r
+    rrca
+    jr c, 1f
+    ld a, l
+    jr 2f
+1:  ld a, h
+2:  pop hl
+    ld c, a
+    ld b, (hl)
+    inc hl
+    ld a, b
+    or a
+    ld a, c
+    jr nz, 3f
+    ld a, c
+4:  ld de, (INT_STACK_PTR)
+    dec de
+    ld (de), a
+    ld (INT_STACK_PTR), de 
     jp EXEC_LOOP
 3:  cp b           ; a - b
     jr c, 4b
@@ -910,6 +928,12 @@ OP_PAGEPAUSE:
     ld (WAIT_NEW_SCREEN), a
     jp EXEC_LOOP
 
+OP_NEWLINE:
+    push hl
+    call CRLF
+    pop hl
+    jp EXEC_LOOP
+
 OP_CHAR:
     ld a, (hl)
     inc hl
@@ -1099,9 +1123,11 @@ OPCODES:
     DW OP_PUSH_D
     DW OP_PUSH_I
     DW OP_IF_GOTO
-    DW OP_IF_GOSUB
-    DW OP_IF_OPTION
-    DW OP_IF_RETURN
+    DW OP_IF_N_GOTO
+    DW OP_PUSH_INKEY
+    DW OP_PUSH_RANDOM
+    ;DW OP_IF_OPTION
+    ;DW OP_IF_RETURN
     DW OP_NOT
     DW OP_NOT_B
     DW OP_AND
@@ -1154,6 +1180,7 @@ OPCODES:
     DW OP_LOOP_I
     DW OP_RANDOMIZE
     DW OP_POP_AT
+    DW OP_NEWLINE
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
