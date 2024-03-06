@@ -50,7 +50,7 @@ class CydcLexer(object):
         ]
 
     states = (
-        ("code", "exclusive"),
+        ("text", "exclusive"),
         #        ("comment", "exclusive"),
     )
 
@@ -62,6 +62,8 @@ class CydcLexer(object):
         "LABEL": "LABEL",
         "IF": "IF",
         "THEN": "THEN",
+        "ELSE": "ELSE",
+        "ENDIF": "ENDIF",
         "SET": "SET",
         "TO": "TO",
         "AND": "AND",
@@ -98,16 +100,15 @@ class CydcLexer(object):
         "REPCHAR": "REPCHAR",
         "DECLARE": "DECLARE",
         "AS": "AS",
+        "NEWLINE": "NEWLINE",
     }
 
     # token_list
     tokens = [
-        "OPEN_CODE",
-        "CLOSE_CODE",
         "TEXT",
         "COLON",
-        "ERROR_OPEN_CODE",
-        "NEWLINE",
+        "ERROR_CLOSE_TEXT",
+        "NEWLINE_CHAR",
         "ERROR_TEXT",
     ]
     tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
@@ -116,75 +117,77 @@ class CydcLexer(object):
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += list(reserved.values())
 
-    def t_INITIAL_OPEN_CODE(self, t):
+    def t_open_text(self, t):
         r"\[\["
+        self.txt_pos = t.lexer.lexpos
+        t.lexer.begin("text")
+        return None
+
+    def t_ERROR_CLOSE_TEXT(self, t):
+        r"\]\]"
+        t.type = "ERROR_CLOSE_TEXT"
+        t.value = t.lexer.lineno
+        return t
+
+    def t_text_TEXT(self, t):
+        r"\]\]"
+        # t.lexer.lineno += t.value.count("\n")
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos - 2]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
-            t.lexer.begin("code")  # Enter 'ccode' state
+            t.lexer.begin("INITIAL")  # Enter 'ccode' state
             return t
         else:
-            t.lexer.begin("code")
+            t.lexer.begin("INITIAL")
             return None
 
-    def t_code_comment(self, t):
+    def t_comment(self, t):
         r"/\*(.|\n|\r|\r\n)*?\*/"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
-    def t_code_OPEN_CODE(self, t):
-        r"\[\["
-        t.type = "ERROR_OPEN_CODE"
-        t.value = t.lexer.lineno
-        return t
-
-    def t_code_CLOSE_CODE(self, t):
-        r"\]\]"
-        # t.lexer.lineno += t.value.count("\n")
-        self.txt_pos = t.lexer.lexpos
-        t.lexer.begin("INITIAL")
-        return t
-
     # Ignored characters
-    t_code_ignore = " \t"
+    t_ignore = " \t"
+    t_text_ignore = ""
 
-    def t_code_NEWLINE(self, t):
-        r"(\n|\r|\r\n)+"
-        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
-        return t
-
-    def t_INITIAL_NEWLINE(self, t):
+    def t_text_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
-    t_code_COLON = r":"
-    t_code_INDIRECTION = r"@"
-    t_code_NOT_EQUALS = r"<>"
-    t_code_LESS_EQUALS = r"<="
-    t_code_MORE_EQUALS = r">="
-    t_code_LESS_THAN = r"<"
-    t_code_MORE_THAN = r">"
-    t_code_NOT_B = r"!"
-    t_code_AND_B = r"&"
-    t_code_OR_B = r"\|"
-    t_code_PLUS = r"\+"
-    t_code_MINUS = r"-"
-    t_code_TIMES = r"\*"
-    t_code_DIVIDE = r"/"
-    t_code_EQUALS = r"="
-    t_code_LPAREN = r"\("
-    t_code_RPAREN = r"\)"
-    t_code_COMMA = r","
-    
-
-    def t_code_SHORT_LABEL(self, t):
-        r"\#[a-zA-Z_][a-zA-Z0-9_]*"
-        t.value = t.value[1:]
-        t.type = self.reserved.get(t.value.upper(), "SHORT_LABEL")  # Check for reserved words
+    def t_NEWLINE_CHAR(self, t):
+        r"(\n|\r|\r\n)+"
+        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return t
 
-    def t_code_HEX_NUMBER(self, t):
+    t_COLON = r":"
+    t_INDIRECTION = r"@"
+    t_NOT_EQUALS = r"<>"
+    t_LESS_EQUALS = r"<="
+    t_MORE_EQUALS = r">="
+    t_LESS_THAN = r"<"
+    t_MORE_THAN = r">"
+    t_NOT_B = r"!"
+    t_AND_B = r"&"
+    t_OR_B = r"\|"
+    t_PLUS = r"\+"
+    t_MINUS = r"-"
+    t_TIMES = r"\*"
+    t_DIVIDE = r"/"
+    t_EQUALS = r"="
+    t_LPAREN = r"\("
+    t_RPAREN = r"\)"
+    t_COMMA = r","
+
+    def t_SHORT_LABEL(self, t):
+        r"\#[a-zA-Z_][a-zA-Z0-9_]*"
+        t.value = t.value[1:]
+        t.type = self.reserved.get(
+            t.value.upper(), "SHORT_LABEL"
+        )  # Check for reserved words
+        return t
+
+    def t_HEX_NUMBER(self, t):
         r"0[xX][0-9a-fA-F]+|$[0-9a-fA-F]+"
         try:
             t.value = int(t.value, 0)
@@ -193,7 +196,7 @@ class CydcLexer(object):
             t.value = 0
         return t
 
-    def t_code_DEC_NUMBER(self, t):
+    def t_DEC_NUMBER(self, t):
         r"\d+"
         try:
             t.value = int(t.value)
@@ -202,17 +205,20 @@ class CydcLexer(object):
             t.value = 0
         return t
 
-    def t_code_ID(self, t):
+    def t_ID(self, t):
         r"[a-zA-Z_][a-zA-Z0-9_]*"
         t.type = self.reserved.get(t.value.upper(), "ID")  # Check for reserved words
         return t
 
-    def t_code_error(self, t):
+    def t_text_error(self, t):
+        t.lexer.skip(1)
+        
+    def t_INITIAL_error(self, t):
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
 
     # EOF handling rule
-    def t_INITIAL_eof(self, t):
+    def t_text_eof(self, t):
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
@@ -221,7 +227,7 @@ class CydcLexer(object):
         else:
             return None
 
-    def t_INITIAL_error(self, t):
+    def t_error(self, t):
         t.lexer.skip(1)  # just skip chars
 
     # Build the lexer
@@ -237,7 +243,9 @@ class CydcLexer(object):
         return self.lexer.token()
 
     def get_tokens(self):
-        return [i for i in self.tokens if i not in ("OPEN_CODE", "COMMENT")]
+        return [
+            i for i in self.tokens if i not in ("OPEN_TEXT", "COMMENT", "CLOSE_TEXT")
+        ]
 
     def test(self, data):
         # Test it output
