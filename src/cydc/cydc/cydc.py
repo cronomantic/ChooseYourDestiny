@@ -188,6 +188,12 @@ def main():
         "-v", "--verbose", action="store_true", help=_("show additional information")
     )
     arg_parser.add_argument(
+        "-code",
+        "--show_code",
+        action="store_true",
+        help=_("show additional information"),
+    )
+    arg_parser.add_argument(
         "-V",
         "--version",
         action="version",
@@ -449,7 +455,11 @@ def main():
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
         code_dsk = codegen.generate_code_dsk(
-            code=code, tokens=tokenBytes, font=font, slice_text=args.slice_texts
+            code=code,
+            tokens=tokenBytes,
+            font=font,
+            slice_text=args.slice_texts,
+            show_debug=args.show_code,
         )
         for p, i in enumerate(code_dsk):
             if i > 255:
@@ -520,14 +530,16 @@ def main():
 
     ######################################################################
     if model != "plus3":
-    
+
         if verbose:
             print(_("Memory organization for tape version..."))
 
         # We do this to get an rounded-up approximation of the number of blocks
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
-        chunks = codegen.generate_code(code=code, slice_text=args.slice_texts)
+        chunks = codegen.generate_code(
+            code=code, slice_text=args.slice_texts, show_debug=False
+        )
 
         # To calculate the offset
         num_blocks = len(blocks) + len(chunks)
@@ -537,7 +549,9 @@ def main():
         # generate block again
         codegen.set_bank_offset_list([bank0_offset, 0xC000])
         codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
-        chunks = codegen.generate_code(code=code, slice_text=args.slice_texts)
+        chunks = codegen.generate_code(
+            code=code, slice_text=args.slice_texts, show_debug=args.show_code
+        )
 
         if model == "128k":
             spectrum_banks = [0, 1, 3, 4, 6, 7]
