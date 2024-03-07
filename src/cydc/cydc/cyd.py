@@ -37,6 +37,14 @@ class AsmTemplate(Template):
     delimiter = "@"
 
 
+def get_unused_opcodes_defines(unused_opcodes=None):
+    asm = "\n"
+    if unused_opcodes is None:
+        return asm
+    for c in unused_opcodes:
+        asm += f"    DEFINE UNUSED_OP_{c}\n"
+    return asm
+
 def get_asm_template(filename):
     filepath = os.path.join(os.path.dirname(__file__), "cyd", filename + ".asm")
     filepath = os.path.abspath(filepath)
@@ -56,6 +64,7 @@ def get_asm_128(
     sfx_asm,
     has_tracks=False,
     tap_path="",
+    unused_opcodes=None,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -105,6 +114,9 @@ def get_asm_128(
     asm += t.substitute(d)
     if has_tracks:
         asm += "    DEFINE USE_VORTEX\n\n"
+        
+    asm += get_unused_opcodes_defines(unused_opcodes)
+
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)
 
@@ -119,6 +131,7 @@ def get_asm_48(
     charw,
     sfx_asm,
     tap_path="",
+    unused_opcodes=None,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -157,6 +170,9 @@ def get_asm_48(
     asm = t.substitute(d)
     t = get_asm_template("vars")
     asm += t.substitute(d)
+    
+    asm += get_unused_opcodes_defines(unused_opcodes)
+
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)
 
@@ -175,6 +191,7 @@ def get_asm_128_size(
     charw,
     sfx_asm,
     has_tracks=False,
+    unused_opcodes=None,
 ):
     asm = get_asm_128(
         index="",
@@ -185,6 +202,7 @@ def get_asm_128_size(
         sfx_asm=sfx_asm,
         has_tracks=has_tracks,
         tap_path="",
+        unused_opcodes=unused_opcodes,
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
     res = run_assembler(
@@ -213,6 +231,7 @@ def get_asm_48_size(
     chars,
     charw,
     sfx_asm,
+    unused_opcodes=None,
 ):
     asm = get_asm_48(
         index="",
@@ -222,6 +241,7 @@ def get_asm_48_size(
         charw=charw,
         sfx_asm=sfx_asm,
         tap_path="",
+        unused_opcodes=unused_opcodes,
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
     res = run_assembler(
@@ -258,6 +278,7 @@ def do_asm_128(
     sfx_asm,
     loading_scr=None,
     has_tracks=False,
+    unused_opcodes=None,
 ):
 
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -276,6 +297,7 @@ def do_asm_128(
         sfx_asm=sfx_asm,
         has_tracks=has_tracks,
         tap_path=tap_path,
+        unused_opcodes=unused_opcodes,
     )
 
     block_list = ""
@@ -354,6 +376,7 @@ def do_asm_48(
     charw,
     sfx_asm,
     loading_scr=None,
+    unused_opcodes=None,
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
@@ -370,6 +393,7 @@ def do_asm_48(
         charw=charw,
         sfx_asm=sfx_asm,
         tap_path=tap_path,
+        unused_opcodes=unused_opcodes,
     )
 
     block_list = ""
@@ -437,6 +461,7 @@ def do_asm_plus3(
     sfx_asm,
     filename_script="SCRIPT.DAT",
     loading_scr=None,
+    unused_opcodes=None,
 ):
 
     if sfx_asm is None:
@@ -491,6 +516,9 @@ def do_asm_plus3(
     asm = t.substitute(d)
     t = get_asm_template("vars")
     asm += t.substitute(d)
+
+    asm += get_unused_opcodes_defines(unused_opcodes)
+    
     t = get_asm_template("cyd_plus3")
     asm += t.substitute(d)
     t = get_asm_template("loaderplus3")
