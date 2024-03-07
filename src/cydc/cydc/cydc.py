@@ -448,6 +448,9 @@ def main():
     l_tokens = []
     l_chars = []
     l_charw = []
+    
+    # TODO: experimental for now...
+    unused_opcodes = codegen.get_unused_opcodes(code)
 
     if model == "plus3":
         if verbose:
@@ -493,6 +496,7 @@ def main():
                 sfx_asm=sfx,
                 filename_script="SCRIPT.DAT",
                 loading_scr=loading_scr,
+                unused_opcodes=unused_opcodes,
             )
         elif model == "128k":
             if verbose:
@@ -506,6 +510,7 @@ def main():
                 chars=l_chars,
                 charw=l_charw,
                 has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
             )
         else:
             if verbose:
@@ -518,6 +523,7 @@ def main():
                 tokens=l_tokens,
                 chars=l_chars,
                 charw=l_charw,
+                unused_opcodes=unused_opcodes,
             )
 
     except ValueError as e1:
@@ -663,6 +669,7 @@ def main():
                     charw=l_charw,
                     loading_scr=loading_scr,
                     has_tracks=has_tracks,
+                    unused_opcodes=unused_opcodes,
                 )
             else:
                 if verbose:
@@ -682,6 +689,7 @@ def main():
                     chars=l_chars,
                     charw=l_charw,
                     loading_scr=loading_scr,
+                    unused_opcodes=unused_opcodes,
                 )
         except ValueError as e1:
             sys.exit(_("ERROR: Error assembling TAP."), e1)
