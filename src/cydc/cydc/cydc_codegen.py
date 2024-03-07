@@ -486,9 +486,18 @@ class CydcCodegen(object):
         return self.code
 
     def get_unused_opcodes(self, code):
+        excluded_ops = [
+            "DECLARE",
+            "LABEL",
+            "TEXT",
+            "GOSUB",
+            "GOTO",
+            "IF_GOTO",
+            "IF_N_GOTO",
+            "RETURN",
+            "END",
+        ]
         code = self.code_simple_optimize(code)
-        used_opcodes = {c[0] for c in code if c[0] not in ["DECLARE", "LABEL", "TEXT"]}
-        all_opcodes = {
-            c for c in self.opcodes.keys() if c not in ["DECLARE", "LABEL", "TEXT"]
-        }
+        used_opcodes = {c[0] for c in code if c[0] not in excluded_ops}
+        all_opcodes = {c for c in self.opcodes.keys() if c not in excluded_ops}
         return all_opcodes - used_opcodes
