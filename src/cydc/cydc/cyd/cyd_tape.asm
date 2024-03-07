@@ -24,7 +24,7 @@
 ;
     ;THIS IS A TEST
 
-    DEFINE RELEASE "0.6"
+    DEFINE RELEASE "0.7"
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -291,8 +291,8 @@ ISR_TABLE:
     DEFS 257, HIGH ISR
 
 START_LOADING:
-    ld hl, INT_STACK_ADDR
-    ld (INT_STACK_PTR), hl    ;Set Stack
+    ld ix, INT_STACK_ADDR     ;Set internal Stack
+
     xor a
     call LOAD_CHUNK         ;Loads first CHUNK
     ;ld hl, (CHUNK_ADDR)       ;Start the CHUNK
