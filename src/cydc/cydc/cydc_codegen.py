@@ -30,20 +30,20 @@ class CydcCodegen(object):
     BANK_SIZE = 16 * 1024
 
     opcodes = {
-        "END": 0x0,
-        "TEXT": 0x1,
-        "GOTO": 0x2,
-        "GOSUB": 0x3,
-        "RETURN": 0x4,
-        "MARGINS": 0x5,
-        "CENTER": 0x6,
-        "AT": 0x7,
-        "SET_D": 0x8,
-        "SET_I": 0x9,
-        "POP_SET": 0xA,
-        "PUSH_D": 0xB,
-        "PUSH_I": 0xC,
-        "IF_GOTO": 0xD,
+        "END": 0x00,
+        "TEXT": 0x01,
+        "GOTO": 0x02,
+        "GOSUB": 0x03,
+        "RETURN": 0x04,
+        "MARGINS": 0x05,
+        "CENTER": 0x06,
+        "AT": 0x07,
+        "SET_D": 0x08,
+        "SET_I": 0x09,
+        "POP_SET": 0x0A,
+        "PUSH_D": 0x0B,
+        "PUSH_I": 0x0C,
+        "IF_GOTO": 0x0D,
         "IF_N_GOTO": 0x0E,
         "PUSH_INKEY": 0x0F,
         "PUSH_RANDOM": 0x10,
@@ -86,7 +86,7 @@ class CydcCodegen(object):
         "TYPERATE": 0x35,
         "CLEAR": 0x36,
         "PAGEPAUSE": 0x37,
-        "CHAR": 0x38,
+        "CHAR_D": 0x38,
         "TAB": 0x39,
         "REPCHAR": 0x3A,
         "SFX_D": 0x3B,
@@ -100,6 +100,24 @@ class CydcCodegen(object):
         "RANDOMIZE": 0x43,
         "POP_AT": 0x44,
         "NEWLINE": 0x45,
+        "SET_DI": 0x46,
+        "POP_SET_DI": 0x47,
+        "PUSH_DI": 0x48,
+        "POP_INK": 0x49,
+        "POP_PAPER": 0x4A,
+        "POP_BORDER": 0x4B,
+        "POP_BRIGHT": 0x4C,
+        "POP_FLASH": 0x4D,
+        "POP_PRINT": 0x4E,
+        "CHAR_I": 0x4F,
+        "POP_CHAR": 0x50,
+        "POP_PICTURE": 0x51,
+        "POP_DISPLAY": 0x52,
+        "POP_SFX": 0x53,
+        "POP_TRACK": 0x54,
+        "POP_PLAY": 0x55,
+        "POP_LOOP": 0x56,
+        "POP_PUSH_DI": 0x57,
     }
 
     def __init__(self, gettext):
@@ -138,6 +156,121 @@ class CydcCodegen(object):
                         skip = True
                     elif c[0] == "PUSH_INKEY":
                         c = ("INKEY", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_DI":
+                        c = ("SET_DI", next[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PUSH_DI":
+                    if c[0] == "PUSH_D":
+                        c = ("PUSH_DI", next[1], c[1])
+                        skip = True
+                elif next[0] == "POP_SET_DI":
+                    if c[0] == "PUSH_D":
+                        c = ("SET_DI", next[1], c[1])
+                        skip = True
+                elif next[0] == "POP_INK":
+                    if c[0] == "PUSH_D":
+                        c = ("INK_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("INK_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PAPER":
+                    if c[0] == "PUSH_D":
+                        c = ("PAPER_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PAPER_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_BORDER":
+                    if c[0] == "BORDER_D":
+                        c = ("INK_D", c[1])
+                        skip = True
+                    elif c[0] == "BORDER_I":
+                        c = ("INK_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_BRIGHT":
+                    if c[0] == "PUSH_D":
+                        c = ("BRIGHT_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("BRIGHT_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_FLASH":
+                    if c[0] == "PUSH_D":
+                        c = ("FLASH_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("FLASH_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PRINT":
+                    if c[0] == "PUSH_D":
+                        c = ("PRINT_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PRINT_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_CHAR":
+                    if c[0] == "PUSH_D":
+                        c = ("CHAR_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("CHAR_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PICTURE":
+                    if c[0] == "PUSH_D":
+                        c = ("PICTURE_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PICTURE_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_DISPLAY":
+                    if c[0] == "PUSH_D":
+                        c = ("DISPLAY_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("DISPLAY_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_SFX":
+                    if c[0] == "PUSH_D":
+                        c = ("SFX_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("SFX_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_TRACK":
+                    if c[0] == "PUSH_D":
+                        c = ("TRACK_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("TRACK_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PLAY":
+                    if c[0] == "PUSH_D":
+                        c = ("PLAY_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PLAY_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_LOOP":
+                    if c[0] == "PUSH_D":
+                        c = ("LOOP_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("LOOP_I", c[1])
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "IF_N_GOTO":
@@ -351,3 +484,11 @@ class CydcCodegen(object):
             self.symbol_replacement(c, self.symbols, self.variables) for c in code
         ]
         return self.code
+
+    def get_unused_opcodes(self, code):
+        code = self.code_simple_optimize(code)
+        used_opcodes = {c[0] for c in code if c[0] not in ["DECLARE", "LABEL", "TEXT"]}
+        all_opcodes = {
+            c for c in self.opcodes.keys() if c not in ["DECLARE", "LABEL", "TEXT"]
+        }
+        return all_opcodes - used_opcodes

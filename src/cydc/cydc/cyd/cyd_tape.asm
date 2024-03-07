@@ -342,6 +342,7 @@ LOAD_CHUNK:
 ;Output: B = Bank, HL = Offset
 ;Uses: AF, AF', IX, DE, HL, BC
 FIND_IN_INDEX:
+    push ix
     ld hl, @SIZE_INDEX
     ld ix, INDEX
     ld de, @SIZE_INDEX_ENTRY
@@ -366,6 +367,7 @@ FIND_IN_INDEX:
     ld a, (ix+2)
     ld l, (ix+3)
     ld h, (ix+4)
+    pop ix
     ret
 
 SET_RND_SEED:
