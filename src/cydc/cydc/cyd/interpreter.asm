@@ -109,6 +109,7 @@ OP_IF_N_GOTO:
 ;-------------------------------------------------------
 
 OP_POP_SET:
+    ; [param] <- Stack
     ld de, (INT_STACK_PTR)
     ld a, (de)
     inc de
@@ -119,7 +120,24 @@ OP_POP_SET:
     ld (de), a
     jp EXEC_LOOP
 
+OP_POP_SET_DI:
+    ; [[param]] <- Stack
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    push hl
+    ex de, hl
+    ld l, (hl)
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    ld (hl), a
+    inc de
+    ld (INT_STACK_PTR), de
+    pop hl
+    jp EXEC_LOOP
+
 OP_PUSH_D:
+    ; Stack <- Param
     ld a, (hl)
     inc hl
     ld de, (INT_STACK_PTR)
@@ -129,6 +147,7 @@ OP_PUSH_D:
     jp EXEC_LOOP
 
 OP_PUSH_I:
+    ; Stack <- [Param]
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
@@ -139,7 +158,35 @@ OP_PUSH_I:
     ld (INT_STACK_PTR), de
     jp EXEC_LOOP
 
+OP_PUSH_DI:
+    ; Stack <- [[Param]]
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (de)
+    ld e, a
+    ld a, (de)
+    ld de, (INT_STACK_PTR)
+    dec de
+    ld (de), a
+    ld (INT_STACK_PTR), de
+    jp EXEC_LOOP
+
+OP_POP_PUSH_DI:
+    ; Stack <- [[Stack]]
+    push hl
+    ld hl, (INT_STACK_PTR)
+    ld e, (hl)
+    ld d, HIGH FLAGS
+    ld a, (de)
+    ld e, a
+    ld a, (de)
+    ld (hl), a
+    pop hl
+    jp EXEC_LOOP
+
 OP_SET_D:
+    ;[Param1] <- Param2
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
@@ -149,11 +196,26 @@ OP_SET_D:
     jp EXEC_LOOP
 
 OP_SET_I:
+    ;[Param1] <- [Param2]
     ld c, (hl)
     inc hl
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
+    ld a, (de)
+    ld e, c
+    ld (de), a
+    jp EXEC_LOOP
+
+OP_SET_DI:
+    ;[[Param1]] <- Param2
+    ld c, (hl)
+    inc hl
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (de)
+    ld e, a
     ld a, (de)
     ld e, c
     ld (de), a
@@ -403,7 +465,6 @@ OP_BRIGHT_D:
     pop hl
     jp EXEC_LOOP
 
-
 OP_FLASH_D:
     ld a, (hl)
     inc hl
@@ -426,8 +487,6 @@ OP_PRINT_D:
     call PRINT_A_BYTE
     pop hl
     jp EXEC_LOOP
-
-
 
 OP_INK_I:
     ld de, EXEC_LOOP
@@ -481,6 +540,64 @@ OP_PRINT_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    push hl
+    call PRINT_A_BYTE
+    pop hl
+    jp EXEC_LOOP
+
+
+OP_POP_INK:
+    ld de, EXEC_LOOP
+    push de
+    ld de, (INT_STACK_PTR)
+    ld a, (de)          ;Get Rows
+    inc de
+    ld (INT_STACK_PTR), de
+    jp INK
+
+OP_POP_PAPER:
+    ld de, EXEC_LOOP
+    push de
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    jp PAPER
+
+OP_POP_BRIGHT:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    push hl
+    call BRIGHT
+    pop hl
+    jp EXEC_LOOP
+
+OP_POP_FLASH:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    push hl
+    call FLASH
+    pop hl
+    jp EXEC_LOOP
+
+OP_POP_BORDER:
+    ld de, EXEC_LOOP
+    push de
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    jp BORDER
+
+OP_POP_PRINT:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
     push hl
     call PRINT_A_BYTE
     pop hl
@@ -563,6 +680,27 @@ OP_DISPLAY_I:
     pop hl
     jp EXEC_LOOP
 
+OP_POP_PICTURE:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    push hl
+    call IMG_LOAD
+    pop hl
+    jp EXEC_LOOP
+
+OP_POP_DISPLAY:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    or a
+    jp z, EXEC_LOOP
+    push hl
+    call COPY_SCREEN
+    pop hl
+    jp EXEC_LOOP
 
 OP_WAIT:
     ld e, (hl)
@@ -934,9 +1072,29 @@ OP_NEWLINE:
     pop hl
     jp EXEC_LOOP
 
-OP_CHAR:
+OP_CHAR_D:
     ld a, (hl)
     inc hl
+    push hl
+    call PUT_VAR_CHAR
+    pop hl
+    jp EXEC_LOOP
+
+OP_CHAR_I:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (de)
+    push hl
+    call PUT_VAR_CHAR
+    pop hl
+    jp EXEC_LOOP
+
+OP_POP_CHAR:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
     push hl
     call PUT_VAR_CHAR
     pop hl
@@ -995,6 +1153,21 @@ OP_SFX_I:
     jp EXEC_LOOP
 
 
+OP_POP_SFX:
+    push hl
+    ld hl, (INT_STACK_PTR)
+    ld a, (hl)
+    inc hl
+    ld (INT_STACK_PTR), hl
+    ld a, BEEPFX_AVAILABLE
+    or a
+    jr z, 1f
+    ld (SFX_ID), a
+    call BEEPFX
+1:  pop hl
+    jp EXEC_LOOP
+
+
 OP_TRACK_D:
     ld a, (hl)
     inc hl
@@ -1012,6 +1185,20 @@ OP_TRACK_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    IFDEF USE_VORTEX
+    di
+    push hl
+    call LOAD_MUSIC
+    pop hl
+    ei
+    ENDIF
+    jp EXEC_LOOP
+
+OP_POP_TRACK:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
     IFDEF USE_VORTEX
     di
     push hl
@@ -1045,6 +1232,27 @@ OP_PLAY_I:
     inc hl
     ld d, HIGH FLAGS
     ld a, (de)
+    IFDEF USE_VORTEX
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    res 2, (hl)
+    jr 1f
+2:  set 2, (hl)
+1:  pop hl
+    ENDIF
+    jp EXEC_LOOP
+
+OP_POP_PLAY:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
     IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
@@ -1100,6 +1308,27 @@ OP_LOOP_I:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+
+OP_POP_LOOP:
+    ld de, (INT_STACK_PTR)
+    ld a, (de)
+    inc de
+    ld (INT_STACK_PTR), de
+    IFDEF USE_VORTEX
+    push hl
+    ld hl, VTR_STAT
+    bit 1, (hl)
+    jr nz, 3f
+    ld a, 5
+    jp SYS_ERROR
+3:  or a
+    jr nz, 2f
+    set 0, (hl)
+    jr 1f
+2:  res 0, (hl)
+1:  pop hl
+    ENDIF
+    jp EXEC_LOOP
 ;------------------------
 ERROR_NOP:
     ld a, 6
@@ -1126,8 +1355,6 @@ OPCODES:
     DW OP_IF_N_GOTO
     DW OP_PUSH_INKEY
     DW OP_PUSH_RANDOM
-    ;DW OP_IF_OPTION
-    ;DW OP_IF_RETURN
     DW OP_NOT
     DW OP_NOT_B
     DW OP_AND
@@ -1167,7 +1394,7 @@ OPCODES:
     DW OP_TYPERATE
     DW OP_CLEAR
     DW OP_PAGEPAUSE
-    DW OP_CHAR
+    DW OP_CHAR_D
     DW OP_TAB
     DW OP_REPCHAR
     DW OP_SFX_D
@@ -1181,6 +1408,25 @@ OPCODES:
     DW OP_RANDOMIZE
     DW OP_POP_AT
     DW OP_NEWLINE
+    DW OP_SET_DI
+    DW OP_POP_SET_DI
+    DW OP_PUSH_DI
+    DW OP_POP_INK
+    DW OP_POP_PAPER
+    DW OP_POP_BORDER
+    DW OP_POP_BRIGHT
+    DW OP_POP_FLASH
+    DW OP_POP_PRINT
+    DW OP_CHAR_I
+    DW OP_POP_CHAR
+    DW OP_POP_PICTURE
+    DW OP_POP_DISPLAY
+    DW OP_POP_SFX
+    DW OP_POP_TRACK
+    DW OP_POP_PLAY
+    DW OP_POP_LOOP
+    DW OP_POP_PUSH_DI
+
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR

@@ -105,14 +105,14 @@ class CydcParser(object):
                     p[0] += p[3]
                 else:
                     p[0].append(p[3])
-                    
+
     # def p_loop_statement(self, p):
     #     """
     #     loop_statement : WHILE boolexpression DO loop_statement LOOP
     #     loop_statement : WHILE boolexpression DO loop_subprogram LOOP
     #     """
     #     pass
-    # 
+    #
     # def p_loop_subprogram(self, p):
     #     """
     #     """
@@ -285,13 +285,6 @@ class CydcParser(object):
         "statement : LABEL ID"
         p[0] = ("LABEL", p[2])
 
-    def p_statement_char(self, p):
-        "statement : CHAR expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("CHAR", p[2])
-        else:
-            p[0] = None
-
     def p_statement_tab(self, p):
         "statement : TAB expression"
         if self._check_byte_value(p[2]):
@@ -306,104 +299,109 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_print_ind(self, p):
-        "statement : PRINT INDIRECTION variableID"
-        p[0] = ("PRINT_I", p[3])
-
-    def p_statement_print_dir(self, p):
-        "statement : PRINT expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PRINT_D", p[2])
+    def p_statement_char(self, p):
+        "statement : CHAR numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_CHAR",))
 
-    def p_statement_ink_ind(self, p):
-        "statement : INK INDIRECTION variableID"
-        p[0] = ("INK_I", p[3])
-
-    def p_statement_ink_dir(self, p):
-        "statement : INK expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("INK_D", p[2])
+    def p_statement_print(self, p):
+        "statement : PRINT numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_PRINT",))
 
-    def p_statement_paper_ind(self, p):
-        "statement : PAPER INDIRECTION variableID"
-        p[0] = ("PAPER_I", p[3])
-
-    def p_statement_paper_dir(self, p):
-        "statement : PAPER expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PAPER_D", p[2])
+    def p_statement_ink(self, p):
+        "statement : INK numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_INK",))
 
-    def p_statement_border_ind(self, p):
-        "statement : BORDER INDIRECTION variableID"
-        p[0] = ("BORDER_I", p[3])
-
-    def p_statement_border_dir(self, p):
-        "statement : BORDER expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("BORDER_D", p[2])
+    def p_statement_paper(self, p):
+        "statement : PAPER numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_PAPER",))
 
-    def p_statement_bright_ind(self, p):
-        "statement : BRIGHT INDIRECTION variableID"
-        p[0] = ("BRIGHT_I", p[3])
-
-    def p_statement_bright_dir(self, p):
-        "statement : BRIGHT expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("BRIGHT_D", p[2])
+    def p_statement_border(self, p):
+        "statement : BORDER numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_BORDER",))
 
-    def p_statement_flash_ind(self, p):
-        "statement : FLASH INDIRECTION variableID"
-        p[0] = ("FLASH_I", p[3])
-
-    def p_statement_flash_dir(self, p):
-        "statement : FLASH expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("FLASH_D", p[2])
+    def p_statement_bright(self, p):
+        "statement : BRIGHT numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_BRIGHT",))
 
-    def p_statement_sfx_ind(self, p):
-        "statement : SFX INDIRECTION variableID"
-        p[0] = ("SFX_I", p[3])
-
-    def p_statement_sfx_dir(self, p):
-        "statement : SFX expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("SFX_D", p[2])
+    def p_statement_flash(self, p):
+        "statement : FLASH numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_FLASH",))
 
-    def p_statement_display_ind(self, p):
-        "statement : DISPLAY INDIRECTION variableID"
-        p[0] = ("DISPLAY_I", p[3])
-
-    def p_statement_display_dir(self, p):
-        "statement : DISPLAY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("DISPLAY_D", p[2])
+    def p_statement_sfx(self, p):
+        "statement : SFX numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_SFX",))
 
-    def p_statement_picture_ind(self, p):
-        "statement : PICTURE INDIRECTION variableID"
-        p[0] = ("PICTURE_I", p[3])
-
-    def p_statement_picture_dir(self, p):
-        "statement : PICTURE expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PICTURE_D", p[2])
+    def p_statement_display(self, p):
+        "statement : DISPLAY numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_DISPLAY",))
+
+    def p_statement_picture(self, p):
+        "statement : PICTURE numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_PICTURE",))
+
+    def p_statement_track(self, p):
+        "statement : TRACK numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_TRACK",))
+
+    def p_statement_play(self, p):
+        "statement : PLAY numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_PLAY",))
+
+    def p_statement_loop(self, p):
+        "statement : LOOP numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_LOOP",))
 
     def p_statement_wait(self, p):
         "statement : WAIT expression"
@@ -423,39 +421,6 @@ class CydcParser(object):
         "statement : TYPERATE expression"
         if self._check_word_value(p[2]):
             p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
-        else:
-            p[0] = None
-
-    def p_statement_track_ind(self, p):
-        "statement : TRACK INDIRECTION variableID"
-        p[0] = ("TRACK_I", p[3])
-
-    def p_statement_track_dir(self, p):
-        "statement : TRACK expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("TRACK_D", p[2])
-        else:
-            p[0] = None
-
-    def p_statement_play_ind(self, p):
-        "statement : PLAY INDIRECTION variableID"
-        p[0] = ("PLAY_I", p[3])
-
-    def p_statement_play_dir(self, p):
-        "statement : PLAY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PLAY_D", p[2])
-        else:
-            p[0] = None
-
-    def p_statement_loop_ind(self, p):
-        "statement : LOOP INDIRECTION variableID"
-        p[0] = ("LOOP_I", p[3])
-
-    def p_statement_loop_dir(self, p):
-        "statement : LOOP expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("LOOP_D", p[2])
         else:
             p[0] = None
 
@@ -531,11 +496,19 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_declare(self, p):
-        "statement : DECLARE ID AS expression"
-        if self._check_byte_value(p[4]):
-            p[0] = ("DECLARE", p[4], p[2])
+        "statement : DECLARE expression AS ID"
+        if self._check_byte_value(p[2]):
+            p[0] = ("DECLARE", p[2], p[4])
         else:
             p[0] = None
+
+    def p_statement_set_ind(self, p):
+        "statement : SET LCARET variableID RCARET TO numexpression"
+        if isinstance(p[4], list):
+            p[0] = p[4]
+        else:
+            p[0] = [p[4]]
+        p[0].append(("POP_SET_DI", p[2]))
 
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
@@ -660,7 +633,7 @@ class CydcParser(object):
             p[0].append(("OR",))
 
     def p_numexpression_unop(self, p):
-        "numexpression : NOT_B expression %prec UNOT_B"
+        "numexpression : NOT_B numexpression %prec UNOT_B"
         if isinstance(p[2], list):
             p[0] = p[2].append(("NOT_B",))
         else:
@@ -670,7 +643,11 @@ class CydcParser(object):
         "numexpression : LPAREN numexpression RPAREN"
         p[0] = p[2]
 
-    def p_numexpression_variable(self, p):
+    def p_numexpression_variable_ind_ind(self, p):
+        "numexpression : LCARET numexpression RCARET"
+        p[0] = ("POP_PUSH_DI", p[2])
+
+    def p_numexpression_variable_ind(self, p):
         "numexpression : INDIRECTION variableID"
         p[0] = ("PUSH_I", p[2])
 
