@@ -49,30 +49,21 @@ OP_GOSUB:
     push hl
     ld de, 3
     add hl, de
-    ex de, hl
-    ld hl, (INT_STACK_PTR)
-    dec hl
-    ld (hl), e
-    dec hl
-    ld (hl), d
-    dec hl
     ld a, (CHUNK)
-    ld (hl), a
-    ld (INT_STACK_PTR), hl
+    ld (ix-1), l
+    ld (ix-2), h
+    ld (ix-3), a
+    ld de, 65536-3    ; ix-3
+    add ix, de
     pop hl
     jp OP_GOTO
 
 OP_RETURN:
-    ex de, hl
-    ld hl, (INT_STACK_PTR)
-    ld c, (hl)
-    inc hl
-    ld d, (hl)
-    inc hl
-    ld e, (hl)
-    inc hl
-    ld (INT_STACK_PTR), hl
-    ex de, hl
+    ld c, (ix+0)
+    ld h, (ix+1)
+    ld l, (ix+2)
+    ld de, 3
+    add ix, de
     ld a, (CHUNK)
     cp c       ; If the CHUNK is the same...
     jr z, .same_CHUNK:
@@ -85,11 +76,18 @@ OP_RETURN:
 
 ;-------------------------------------
 
+    MACRO POP_INT_STACK
+    ld a, (ix+0)
+    inc ix
+    ENDM
+
+    MACRO PUSH_INT_STACK
+    dec ix
+    ld (ix+0), a
+    ENDM
+
 OP_IF_GOTO:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     or a
     jp nz, OP_GOTO
     ld de, 3
@@ -97,67 +95,59 @@ OP_IF_GOTO:
     jp EXEC_LOOP
 
 OP_IF_N_GOTO:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     or a
     jp z, OP_GOTO
     ld de, 3
     add hl, de
     jp EXEC_LOOP
 ;-------------------------------------------------------
-
+    IFNDEF UNUSED_OP_POP_SET:
 OP_POP_SET:
     ; [param] <- Stack
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
     ld (de), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_SET_DI
 OP_POP_SET_DI:
     ; [[param]] <- Stack
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
-    push hl
     ex de, hl
+    POP_INT_STACK
     ld l, (hl)
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
     ld (hl), a
-    inc de
-    ld (INT_STACK_PTR), de
-    pop hl
+    ex de, hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_D
 OP_PUSH_D:
     ; Stack <- Param
     ld a, (hl)
     inc hl
-    ld de, (INT_STACK_PTR)
-    dec de
-    ld (de), a
-    ld (INT_STACK_PTR), de
+    PUSH_INT_STACK
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_I
 OP_PUSH_I:
     ; Stack <- [Param]
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
     ld a, (de)
-    ld de, (INT_STACK_PTR)
-    dec de
-    ld (de), a
-    ld (INT_STACK_PTR), de
+    PUSH_INT_STACK
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_DI
 OP_PUSH_DI:
     ; Stack <- [[Param]]
     ld d, HIGH FLAGS
@@ -166,25 +156,23 @@ OP_PUSH_DI:
     ld a, (de)
     ld e, a
     ld a, (de)
-    ld de, (INT_STACK_PTR)
-    dec de
-    ld (de), a
-    ld (INT_STACK_PTR), de
+    PUSH_INT_STACK
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_PUSH_DI
 OP_POP_PUSH_DI:
     ; Stack <- [[Stack]]
-    push hl
-    ld hl, (INT_STACK_PTR)
-    ld e, (hl)
+    ld e, (ix+0)
     ld d, HIGH FLAGS
     ld a, (de)
     ld e, a
     ld a, (de)
-    ld (hl), a
-    pop hl
+    ld (ix+0), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_SET_D
 OP_SET_D:
     ;[Param1] <- Param2
     ld d, HIGH FLAGS
@@ -194,7 +182,9 @@ OP_SET_D:
     inc hl
     ld (de), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_SET_I
 OP_SET_I:
     ;[Param1] <- [Param2]
     ld c, (hl)
@@ -206,7 +196,9 @@ OP_SET_I:
     ld e, c
     ld (de), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_SET_DI
 OP_SET_DI:
     ;[[Param1]] <- Param2
     ld c, (hl)
@@ -220,45 +212,50 @@ OP_SET_DI:
     ld e, c
     ld (de), a
     jp EXEC_LOOP
+    ENDIF
 ;-------------------------------------
     MACRO OP_2PARAM_GET_STACK
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld c, a
-    ld a, (de)
+    ld c, (ix+0)
+    ld a, (ix+1)
     ENDM
     
     MACRO OP_2PARAM_STORE_STACK
-    ld (de), a
-    ld (INT_STACK_PTR), de
+    inc ix
+    ld (ix+0), a
     jp EXEC_LOOP
     ENDM
 
+    IFNDEF UNUSED_OP_NOT
 OP_NOT:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
+    ld a, (ix+0)
     xor 1
-    ld (de), a
+    ld (ix+0), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_NOT_B
 OP_NOT_B:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
+    ld a, (ix+0)
     cpl
-    ld (de), a
+    ld (ix+0), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_AND
 OP_AND:
     OP_2PARAM_GET_STACK
     and c
     OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_OR
 OP_OR:
     OP_2PARAM_GET_STACK
     or c
     OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_EQ
 OP_CP_EQ:
     OP_2PARAM_GET_STACK
     cp c
@@ -267,7 +264,9 @@ OP_CP_EQ:
     jr 2f
 1:  ld a, 1
 2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_NE
 OP_CP_NE:
     OP_2PARAM_GET_STACK
     cp c
@@ -275,8 +274,10 @@ OP_CP_NE:
     xor a
     jr 2f
 1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK  
+2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_LT
 OP_CP_LT:                ; p1 < p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
     cp c                 ; p1 - p2 -> p1 < p2
@@ -285,7 +286,9 @@ OP_CP_LT:                ; p1 < p2
     jr 2f
 1:  ld a, 1
 2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_ME
 OP_CP_ME:               ; p1 >= p2
     OP_2PARAM_GET_STACK ; p2 = C, p1 = A
     cp c                ; p1 - p2
@@ -293,8 +296,10 @@ OP_CP_ME:               ; p1 >= p2
     xor a
     jr 2f
 1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK   
+2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_MT
 OP_CP_MT:                ; p1 > p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
     ld b, a
@@ -305,7 +310,9 @@ OP_CP_MT:                ; p1 > p2
     jr 2f
 1:  ld a, 1
 2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_CP_LE
 OP_CP_LE:                ; p1 <= p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
     ld b, a
@@ -315,24 +322,30 @@ OP_CP_LE:                ; p1 <= p2
     xor a
     jr 2f
 1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK  
+2:  OP_2PARAM_STORE_STACK
+    ENDIF
 
 ;-------------------------------------------------------
 
+    IFNDEF UNUSED_OP_ADD
 OP_ADD:
     OP_2PARAM_GET_STACK
     add a, c
     jr nc, 1f
     ld a, $FF
-1:  OP_2PARAM_STORE_STACK 
+1:  OP_2PARAM_STORE_STACK
+    ENDIF
 
+    IFNDEF UNUSED_OP_SUB
 OP_SUB:
     OP_2PARAM_GET_STACK
     sub c
     jr nc, 1f
     xor a
 1:  OP_2PARAM_STORE_STACK 
+    ENDIF
 
+    IFNDEF UNUSED_OP_INKEY
 OP_INKEY:
     ld e, (hl)
     inc hl
@@ -344,20 +357,20 @@ OP_INKEY:
     pop hl
     ld (de), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_INKEY
 OP_PUSH_INKEY:
     push hl
 1:  call INKEY
     or a
     jr z, 1b
-    ld de, (INT_STACK_PTR)
-    dec de
-    ld (de), a
-    ld (INT_STACK_PTR), de
+    PUSH_INT_STACK
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_RANDOM
 OP_RANDOM:
     ld e, (hl)
     inc hl
@@ -385,7 +398,9 @@ OP_RANDOM:
     jr c, 4b
     sub b
     jr 3b
+    ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_RANDOM
 OP_PUSH_RANDOM:
     push hl
     call RANDOM
@@ -404,34 +419,33 @@ OP_PUSH_RANDOM:
     ld a, c
     jr nz, 3f
     ld a, c
-4:  ld de, (INT_STACK_PTR)
-    dec de
-    ld (de), a
-    ld (INT_STACK_PTR), de 
+4:  ;Stack
+    PUSH_INT_STACK
     jp EXEC_LOOP
 3:  cp b           ; a - b
     jr c, 4b
     sub b
     jr 3b
+    ENDIF
 
+    IFNDEF UNUSED_OP_RANDOMIZE
 OP_RANDOMIZE:
     push hl
     call SET_RND_SEED
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_AT
 OP_POP_AT:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)          ;Get Rows
-    inc de
+    ;Get Rows
+    POP_INT_STACK   
     cp 24
     jr c, 1f
     ld a, 23
 1:  ld b, a
-    ld a, (de)          ;Get Cols
-    inc de
-    ld (INT_STACK_PTR), de
+    ;Get Cols
+    POP_INT_STACK
     cp 32
     jr c, 2f
     ld a, 31
@@ -441,22 +455,28 @@ OP_POP_AT:
     call SET_CURSOR
     pop hl
     jp EXEC_LOOP
+    ENDIF
 ;============================================
 
+    IFNDEF UNUSED_OP_INK_D
 OP_INK_D:
     ld de, EXEC_LOOP
     push de
     ld a, (hl)
     inc hl
     jp INK
+    ENDIF
 
+    IFNDEF UNUSED_OP_PAPER_D
 OP_PAPER_D:
     ld de, EXEC_LOOP
     push de
     ld a, (hl)
     inc hl
     jp PAPER
+    ENDIF
 
+    IFNDEF UNUSED_OP_BRIGHT_D
 OP_BRIGHT_D:
     ld a, (hl)
     inc hl
@@ -464,7 +484,9 @@ OP_BRIGHT_D:
     call BRIGHT
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_FLASH_D
 OP_FLASH_D:
     ld a, (hl)
     inc hl
@@ -472,14 +494,18 @@ OP_FLASH_D:
     call FLASH
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_BORDER_D
 OP_BORDER_D:
     ld de, EXEC_LOOP
     push de
     ld a, (hl)
     inc hl
     jp BORDER
+    ENDIF
 
+    IFNDEF UNUSED_OP_PRINT_D
 OP_PRINT_D:
     ld a, (hl)
     inc hl
@@ -487,7 +513,9 @@ OP_PRINT_D:
     call PRINT_A_BYTE
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_INK_I
 OP_INK_I:
     ld de, EXEC_LOOP
     push de
@@ -496,7 +524,9 @@ OP_INK_I:
     ld d, HIGH FLAGS
     ld a, (de)
     jp INK
+    ENDIF
 
+    IFNDEF UNUSED_OP_PAPER_I
 OP_PAPER_I:
     ld de, EXEC_LOOP
     push de
@@ -505,7 +535,9 @@ OP_PAPER_I:
     ld d, HIGH FLAGS
     ld a, (de)
     jp PAPER
+    ENDIF
 
+    IFNDEF UNUSED_OP_BRIGHT_I
 OP_BRIGHT_I:
     ld e, (hl)
     inc hl
@@ -515,7 +547,9 @@ OP_BRIGHT_I:
     call BRIGHT
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_FLASH_I
 OP_FLASH_I:
     ld e, (hl)
     inc hl
@@ -525,7 +559,9 @@ OP_FLASH_I:
     call FLASH
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_BORDER_I
 OP_BORDER_I:
     ld de, EXEC_LOOP
     push de
@@ -534,7 +570,9 @@ OP_BORDER_I:
     ld d, HIGH FLAGS
     ld a, (de)
     jp BORDER
+    ENDIF
 
+    IFNDEF UNUSED_OP_PRINT_I
 OP_PRINT_I:
     ld e, (hl)
     inc hl
@@ -544,65 +582,60 @@ OP_PRINT_I:
     call PRINT_A_BYTE
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_POP_INK
 OP_POP_INK:
     ld de, EXEC_LOOP
     push de
-    ld de, (INT_STACK_PTR)
-    ld a, (de)          ;Get Rows
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     jp INK
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_PAPER
 OP_POP_PAPER:
     ld de, EXEC_LOOP
     push de
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     jp PAPER
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_BRIGHT
 OP_POP_BRIGHT:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     push hl
     call BRIGHT
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_FLASH
 OP_POP_FLASH:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     push hl
     call FLASH
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_BORDER
 OP_POP_BORDER:
     ld de, EXEC_LOOP
     push de
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     jp BORDER
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_PRINT
 OP_POP_PRINT:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     push hl
     call PRINT_A_BYTE
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_MARGINS
 OP_MARGINS:
     ld c, (hl)
     inc hl
@@ -621,7 +654,9 @@ OP_MARGINS:
     call SET_MARGINS
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_AT
 OP_AT:
     ld b, (hl)
     inc hl
@@ -633,13 +668,16 @@ OP_AT:
     call SET_CURSOR
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_CENTER
 OP_CENTER:
     ld de, EXEC_LOOP
     push de
     jp CENTER
+    ENDIF
 
+    IFNDEF UNUSED_OP_PICTURE_D
 OP_PICTURE_D:
     ld a, (hl)
     inc hl
@@ -647,7 +685,9 @@ OP_PICTURE_D:
     call IMG_LOAD
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_DISPLAY_D
 OP_DISPLAY_D:
     ld a, (hl)
     inc hl
@@ -657,7 +697,9 @@ OP_DISPLAY_D:
     call COPY_SCREEN
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PICTURE_I
 OP_PICTURE_I:
     ld e, (hl)
     inc hl
@@ -667,7 +709,9 @@ OP_PICTURE_I:
     call IMG_LOAD
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_DISPLAY_I
 OP_DISPLAY_I:
     ld e, (hl)
     inc hl
@@ -679,29 +723,29 @@ OP_DISPLAY_I:
     call COPY_SCREEN
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_PICTURE
 OP_POP_PICTURE:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     push hl
     call IMG_LOAD
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_DISPLAY
 OP_POP_DISPLAY:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     or a
     jp z, EXEC_LOOP
     push hl
     call COPY_SCREEN
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_WAIT
 OP_WAIT:
     ld e, (hl)
     inc hl
@@ -714,7 +758,9 @@ OP_WAIT:
     or e
     jr nz, .wait
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_OPTION
 OP_OPTION:
     ld a, (NUM_OPTIONS)
     cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
@@ -762,7 +808,9 @@ OP_OPTION:
     inc a
     ld (NUM_OPTIONS), a   ;Increment options
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_WAITKEY
 OP_WAITKEY:
     push hl                          ;Save pointer
     call ADJUST_CHAR_POS_NO_ADVANCE  ;Advance to the best position for printing the choice
@@ -803,7 +851,9 @@ OP_WAITKEY:
     jr nz, 2b
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PAUSE
 OP_PAUSE:
     ld e, (hl)
     inc hl
@@ -853,7 +903,9 @@ OP_PAUSE:
     jr nz, 2b
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
     xor a
     ld (SELECTED_OPTION), a
@@ -937,7 +989,9 @@ OP_CHOOSE:
     or a
     jp z, OP_GOTO
     jp OP_GOSUB
+    ENDIF
 
+    IFNDEF UNUSED_OP_CHOOSE_W
 OP_CHOOSE_W:
 
     ld e, (hl)
@@ -1045,7 +1099,9 @@ OP_CHOOSE_W:
     or a
     jp z, OP_GOTO
     jp OP_GOSUB
+    ENDIF
 
+    IFNDEF UNUSED_OP_TYPERATE
 OP_TYPERATE:
     ld d, (hl)
     inc hl
@@ -1053,25 +1109,33 @@ OP_TYPERATE:
     inc hl
     ld (PRT_INTERVAL), de
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_CLEAR
 OP_CLEAR:
     push hl
     call CLEAR_WIN
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PAGEPAUSE
 OP_PAGEPAUSE:
     ld a, (hl)
     inc hl
     ld (WAIT_NEW_SCREEN), a
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_NEWLINE
 OP_NEWLINE:
     push hl
     call CRLF
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_CHAR_D
 OP_CHAR_D:
     ld a, (hl)
     inc hl
@@ -1079,7 +1143,9 @@ OP_CHAR_D:
     call PUT_VAR_CHAR
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_CHAR_I
 OP_CHAR_I:
     ld d, HIGH FLAGS
     ld e, (hl)
@@ -1089,21 +1155,25 @@ OP_CHAR_I:
     call PUT_VAR_CHAR
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_CHAR
 OP_POP_CHAR:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     push hl
     call PUT_VAR_CHAR
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_TAB
+    UNDEFINE UNUSED_OP_REPCHAR
 OP_TAB:
     ld a, 32 
     jr OP_TAB2
+    ENDIF
 
+    IFNDEF UNUSED_OP_REPCHAR
 OP_REPCHAR:
     ld a, (hl)
     inc hl
@@ -1119,8 +1189,9 @@ OP_TAB2:
     djnz 1b
     pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_SFX_D
 OP_SFX_D:
     ld e, (hl)
     inc hl
@@ -1135,7 +1206,9 @@ OP_SFX_D:
 
 1:  pop hl
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_SFX_I
 OP_SFX_I:
     ld e, (hl)
     inc hl
@@ -1151,14 +1224,12 @@ OP_SFX_I:
 
 1:  pop hl
     jp EXEC_LOOP
+    ENDIF
 
-
+    IFNDEF UNUSED_OP_POP_SFX
 OP_POP_SFX:
     push hl
-    ld hl, (INT_STACK_PTR)
-    ld a, (hl)
-    inc hl
-    ld (INT_STACK_PTR), hl
+    POP_INT_STACK
     ld a, BEEPFX_AVAILABLE
     or a
     jr z, 1f
@@ -1166,8 +1237,10 @@ OP_POP_SFX:
     call BEEPFX
 1:  pop hl
     jp EXEC_LOOP
+    ENDIF
+    
 
-
+    IFNDEF UNUSED_OP_TRACK_D
 OP_TRACK_D:
     ld a, (hl)
     inc hl
@@ -1179,7 +1252,9 @@ OP_TRACK_D:
     ei
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_TRACK_I
 OP_TRACK_I:
     ld e, (hl)
     inc hl
@@ -1193,12 +1268,11 @@ OP_TRACK_I:
     ei
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_TRACK
 OP_POP_TRACK:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     IFDEF USE_VORTEX
     di
     push hl
@@ -1207,7 +1281,9 @@ OP_POP_TRACK:
     ei
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PLAY_D
 OP_PLAY_D:
     ld a, (hl)
     inc hl
@@ -1226,7 +1302,9 @@ OP_PLAY_D:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_PLAY_I
 OP_PLAY_I:
     ld e, (hl)
     inc hl
@@ -1247,12 +1325,11 @@ OP_PLAY_I:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_PLAY
 OP_POP_PLAY:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
@@ -1268,7 +1345,9 @@ OP_POP_PLAY:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_LOOP_D
 OP_LOOP_D:
     ld a, (hl)
     inc hl
@@ -1287,7 +1366,9 @@ OP_LOOP_D:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_LOOP_I
 OP_LOOP_I:
     ld e, (hl)
     inc hl
@@ -1308,12 +1389,11 @@ OP_LOOP_I:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
 
+    IFNDEF UNUSED_OP_POP_LOOP
 OP_POP_LOOP:
-    ld de, (INT_STACK_PTR)
-    ld a, (de)
-    inc de
-    ld (INT_STACK_PTR), de
+    POP_INT_STACK
     IFDEF USE_VORTEX
     push hl
     ld hl, VTR_STAT
@@ -1329,11 +1409,12 @@ OP_POP_LOOP:
 1:  pop hl
     ENDIF
     jp EXEC_LOOP
+    ENDIF
+
 ;------------------------
 ERROR_NOP:
     ld a, 6
     jp SYS_ERROR
-
 
 
     ALIGN 256
@@ -1343,89 +1424,495 @@ OPCODES:
     DW OP_GOTO
     DW OP_GOSUB
     DW OP_RETURN
+    IFNDEF UNUSED_OP_MARGINS
     DW OP_MARGINS
+    ENDIF
+    IFDEF UNUSED_OP_MARGINS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CENTER
     DW OP_CENTER
+    ENDIF
+    IFDEF UNUSED_OP_CENTER
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_AT
     DW OP_AT
+    ENDIF
+    IFDEF UNUSED_OP_AT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SET_D
     DW OP_SET_D
+    ENDIF
+    IFDEF UNUSED_OP_SET_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SET_I
     DW OP_SET_I
+    ENDIF
+    IFDEF UNUSED_OP_SET_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_SET
     DW OP_POP_SET
+    ENDIF
+    IFDEF UNUSED_OP_POP_SET
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_D
     DW OP_PUSH_D
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_I
     DW OP_PUSH_I
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_I
+    DW ERROR_NOP
+    ENDIF
     DW OP_IF_GOTO
     DW OP_IF_N_GOTO
+    IFNDEF UNUSED_OP_PUSH_INKEY
     DW OP_PUSH_INKEY
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_INKEY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_RANDOM
     DW OP_PUSH_RANDOM
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_RANDOM
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_NOT
     DW OP_NOT
+    ENDIF
+    IFDEF UNUSED_OP_NOT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_NOT_B
     DW OP_NOT_B
+    ENDIF
+    IFDEF UNUSED_OP_NOT_B
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_AND
     DW OP_AND
+    ENDIF
+    IFDEF UNUSED_OP_AND
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_OR
     DW OP_OR
+    ENDIF
+    IFDEF UNUSED_OP_OR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_ADD
     DW OP_ADD
+    ENDIF
+    IFDEF UNUSED_OP_ADD
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SUB
     DW OP_SUB
+    ENDIF
+    IFDEF UNUSED_OP_SUB
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_EQ
     DW OP_CP_EQ
+    ENDIF
+    IFDEF UNUSED_OP_CP_EQ
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_NE
     DW OP_CP_NE
+    ENDIF
+    IFDEF UNUSED_OP_CP_NE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_LE
     DW OP_CP_LE
+    ENDIF
+    IFDEF UNUSED_OP_CP_LE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_ME
     DW OP_CP_ME
+    ENDIF
+    IFDEF UNUSED_OP_CP_ME
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_LT
     DW OP_CP_LT
+    ENDIF
+    IFDEF UNUSED_OP_CP_LT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CP_MT
     DW OP_CP_MT
+    ENDIF
+    IFDEF UNUSED_OP_CP_MT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_INK_D
     DW OP_INK_D
+    ENDIF
+    IFDEF UNUSED_OP_INK_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PAPER_D
     DW OP_PAPER_D
+    ENDIF
+    IFDEF UNUSED_OP_PAPER_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_BORDER_D
     DW OP_BORDER_D
+    ENDIF
+    IFDEF UNUSED_OP_BORDER_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PRINT_D
     DW OP_PRINT_D
+    ENDIF
+    IFDEF UNUSED_OP_PRINT_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_INK_I
     DW OP_INK_I
+    ENDIF
+    IFDEF UNUSED_OP_INK_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PAPER_I
     DW OP_PAPER_I
+    ENDIF
+    IFDEF UNUSED_OP_PAPER_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_BORDER_I
     DW OP_BORDER_I
+    ENDIF
+    IFDEF UNUSED_OP_BORDER_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PRINT_I
     DW OP_PRINT_I
+    ENDIF
+    IFDEF UNUSED_OP_PRINT_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_BRIGHT_D
     DW OP_BRIGHT_D
+    ENDIF
+    IFDEF UNUSED_OP_BRIGHT_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_FLASH_D
     DW OP_FLASH_D
+    ENDIF
+    IFDEF UNUSED_OP_FLASH_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_BRIGHT_I
     DW OP_BRIGHT_I
+    ENDIF
+    IFDEF UNUSED_OP_BRIGHT_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_FLASH_I
     DW OP_FLASH_I
+    ENDIF
+    IFDEF UNUSED_OP_FLASH_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PICTURE_D
     DW OP_PICTURE_D
+    ENDIF
+    IFDEF UNUSED_OP_PICTURE_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_DISPLAY_D
     DW OP_DISPLAY_D
+    ENDIF
+    IFDEF UNUSED_OP_DISPLAY_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PICTURE_I
     DW OP_PICTURE_I
+    ENDIF
+    IFDEF UNUSED_OP_PICTURE_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_DISPLAY_I
     DW OP_DISPLAY_I
+    ENDIF
+    IFDEF UNUSED_OP_DISPLAY_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_RANDOM
     DW OP_RANDOM
+    ENDIF
+    IFDEF UNUSED_OP_RANDOM
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_OPTION
     DW OP_OPTION
+    ENDIF
+    IFDEF UNUSED_OP_OPTION
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_WAITKEY
     DW OP_WAITKEY
+    ENDIF
+    IFDEF UNUSED_OP_WAITKEY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_INKEY
     DW OP_INKEY
+    ENDIF
+    IFDEF UNUSED_OP_INKEY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_WAIT
     DW OP_WAIT
+    ENDIF
+    IFDEF UNUSED_OP_WAIT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PAUSE
     DW OP_PAUSE
+    ENDIF
+    IFDEF UNUSED_OP_PAUSE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHOOSE
     DW OP_CHOOSE
+    ENDIF
+    IFDEF UNUSED_OP_CHOOSE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHOOSE_W
     DW OP_CHOOSE_W
+    ENDIF
+    IFDEF UNUSED_OP_CHOOSE_W
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_TYPERATE
     DW OP_TYPERATE
+    ENDIF
+    IFDEF UNUSED_OP_TYPERATE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CLEAR
     DW OP_CLEAR
+    ENDIF
+    IFDEF UNUSED_OP_CLEAR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PAGEPAUSE
     DW OP_PAGEPAUSE
+    ENDIF
+    IFDEF UNUSED_OP_PAGEPAUSE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHAR_D
     DW OP_CHAR_D
+    ENDIF
+    IFDEF UNUSED_OP_CHAR_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_TAB
     DW OP_TAB
+    ENDIF
+    IFDEF UNUSED_OP_TAB
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_REPCHAR
     DW OP_REPCHAR
+    ENDIF
+    IFDEF UNUSED_OP_REPCHAR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SFX_D
     DW OP_SFX_D
+    ENDIF
+    IFDEF UNUSED_OP_SFX_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SFX_I
     DW OP_SFX_I
+    ENDIF
+    IFDEF UNUSED_OP_SFX_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_TRACK_D
     DW OP_TRACK_D
+    ENDIF
+    IFDEF UNUSED_OP_TRACK_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_TRACK_I
     DW OP_TRACK_I
+    ENDIF
+    IFDEF UNUSED_OP_TRACK_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PLAY_D
     DW OP_PLAY_D
+    ENDIF
+    IFDEF UNUSED_OP_PLAY_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PLAY_I
     DW OP_PLAY_I
+    ENDIF
+    IFDEF UNUSED_OP_PLAY_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_LOOP_D
     DW OP_LOOP_D
+    ENDIF
+    IFDEF UNUSED_OP_LOOP_D
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_LOOP_I
     DW OP_LOOP_I
+    ENDIF
+    IFDEF UNUSED_OP_LOOP_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_RANDOMIZE
     DW OP_RANDOMIZE
+    ENDIF
+    IFDEF UNUSED_OP_RANDOMIZE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_AT
     DW OP_POP_AT
+    ENDIF
+    IFDEF UNUSED_OP_POP_AT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_NEWLINE
     DW OP_NEWLINE
+    ENDIF
+    IFDEF UNUSED_OP_NEWLINE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SET_DI
     DW OP_SET_DI
+    ENDIF
+    IFDEF UNUSED_OP_SET_DI
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_SET_DI
     DW OP_POP_SET_DI
+    ENDIF
+    IFDEF UNUSED_OP_POP_SET_DI
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_DI
     DW OP_PUSH_DI
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_DI
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_INK
     DW OP_POP_INK
+    ENDIF
+    IFDEF UNUSED_OP_POP_INK
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PAPER
     DW OP_POP_PAPER
+    ENDIF
+    IFDEF UNUSED_OP_POP_PAPER
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_BORDER
     DW OP_POP_BORDER
+    ENDIF
+    IFDEF UNUSED_OP_POP_BORDER
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_BRIGHT
     DW OP_POP_BRIGHT
+    ENDIF
+    IFDEF UNUSED_OP_POP_BRIGHT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_FLASH
     DW OP_POP_FLASH
+    ENDIF
+    IFDEF UNUSED_OP_POP_FLASH
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PRINT
     DW OP_POP_PRINT
+    ENDIF
+    IFDEF UNUSED_OP_POP_PRINT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHAR_I
     DW OP_CHAR_I
+    ENDIF
+    IFDEF UNUSED_OP_CHAR_I
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_CHAR
     DW OP_POP_CHAR
+    ENDIF
+    IFDEF UNUSED_OP_POP_CHAR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PICTURE
     DW OP_POP_PICTURE
+    ENDIF
+    IFDEF UNUSED_OP_POP_PICTURE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_DISPLAY
     DW OP_POP_DISPLAY
+    ENDIF
+    IFDEF UNUSED_OP_POP_DISPLAY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_SFX
     DW OP_POP_SFX
+    ENDIF
+    IFDEF UNUSED_OP_POP_SFX
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_TRACK
     DW OP_POP_TRACK
+    ENDIF
+    IFDEF UNUSED_OP_POP_TRACK
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PLAY
     DW OP_POP_PLAY
+    ENDIF
+    IFDEF UNUSED_OP_POP_PLAY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_LOOP
     DW OP_POP_LOOP
+    ENDIF
+    IFDEF UNUSED_OP_POP_LOOP
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PUSH_DI
     DW OP_POP_PUSH_DI
+    ENDIF
+    IFDEF UNUSED_OP_POP_PUSH_DI
+    DW ERROR_NOP
+    ENDIF
+
 
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
