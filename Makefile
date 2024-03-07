@@ -7,11 +7,11 @@ TAP_TARGET:=48k
 
 BEEPFX_ASM_FILENAME = SFX.asm
 
-CYDC_PATH := ./ChooseYourDestiny/src/cydc/cydc
-CSC_PATH := ./ChooseYourDestiny/dist
+CYDC_PATH := ./src/cydc/cydc
+CSC_PATH := ./dist
 
-ASM := ./ChooseYourDestiny/tools/sjasmplus.exe
-MKP3FS := ./ChooseYourDestiny/tools/mkp3fs.exe
+ASM := ./tools/sjasmplus.exe
+MKP3FS := ./tools/mkp3fs.exe
 
 SCR_LIST := $(shell find ./IMAGES -type f -iregex '\.\/IMAGES\/[0-9][0-9][0-9].scr')
 CSC_LIST := $(SCR_LIST:%.scr=%.csc)
@@ -19,11 +19,14 @@ PT3_LIST := $(shell find ./TRACKS -type f -iregex '\.\/TRACKS\/[0-9][0-9][0-9].p
 
 FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) $(BEEPFX_ASM_FILENAME)
 
+EXTRA_PARAM = -v -code
 
 ifneq (,$(wildcard ./charset.json))
-CHARSET_PARAM = -c ./charset.json
-else
-CHARSET_PARAM =
+EXTRA_PARAM += -c ./charset.json
+endif
+
+ifneq (,$(wildcard ./IMAGES/LOAD.SCR))
+EXTRA_PARAM += -scr ./IMAGES/LOAD.SCR
 endif
 
 disk: $(NAME).DSK
@@ -39,16 +42,16 @@ $(NAME).DSK: $(FILELIST)
 ifeq (,$(wildcard ./tokens.json))
 # Token file does not exists, create a new one
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
-	python $(CYDC_PATH)/cydc.py -v -T tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -v -T tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 endif
 else
 # Token file exists, use it...
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
-	python $(CYDC_PATH)/cydc.py -v -t tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -v -t tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) plus3 $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) plus3 $(ASM) $(MKP3FS) .
 endif
 endif
 
@@ -56,16 +59,16 @@ $(NAME).TAP: $(FILELIST)
 ifeq (,$(wildcard ./tokens.json))
 # Token file does not exists, create a new one
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
-	python $(CYDC_PATH)/cydc.py -v -T tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -v -T tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS $(TAP_TARGET) $(CYD_FILENAME) $(ASM)  $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(TAP_TARGET) $(CYD_FILENAME) $(ASM)  $(MKP3FS) .
 endif
 else
 # Token file exists, use it...
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
-	python $(CYDC_PATH)/cydc.py -v -t tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -v -t tokens.json $(CHARSET_PARAM) -scr ./IMAGES/LOAD.SCR -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) $(TAP_TARGET) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) $(TAP_TARGET) $(ASM) $(MKP3FS) .
 endif
 endif
 
