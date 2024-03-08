@@ -49,6 +49,50 @@ class CydcLexer(object):
             )
         ]
 
+        subtitute_chars_keys = [
+            c.decode("iso-8859-15")
+            for c in (
+                b"\xC1",
+                b"\xC9",
+                b"\xCD",
+                b"\xD3",
+                b"\xDA",
+                b"\xAB",
+                b"\xBB",
+            )
+        ]
+        subtitute_chars_values = [
+            c.decode("iso-8859-15")
+            for c in (
+                b"\x41",
+                b"\x45",
+                b"\x49",
+                b"\x4F",
+                b"\x55",
+                b"\x22",
+                b"\x22",
+            )
+        ]
+        self.subtitute_chars = {
+            k: v for (k, v) in zip(subtitute_chars_keys, subtitute_chars_values)
+        }
+        subtitute_chars_keys = [8212, 8216, 8217, 0x02F5, 0x02F6, 0x030B, 0x030F]
+        subtitute_chars_values = [
+            c.decode("iso-8859-15")
+            for c in (
+                b"\x2D",
+                b"\x27",
+                b"\x27",
+                b"\x22",
+                b"\x22",
+                b"\x22",
+                b"\x22",
+            )
+        ]
+        self.unicode_subtitute_chars = {
+            k: v for (k, v) in zip(subtitute_chars_keys, subtitute_chars_values)
+        }
+
     states = (
         ("text", "exclusive"),
         #        ("comment", "exclusive"),
@@ -101,6 +145,8 @@ class CydcLexer(object):
         "DECLARE": "DECLARE",
         "AS": "AS",
         "NEWLINE": "NEWLINE",
+        "WHILE": "WHILE",
+        "WEND": "WEND",
     }
 
     # token_list
@@ -269,7 +315,13 @@ class CydcLexer(object):
                 try:
                     char = self.special_chars.index(char) + 16
                 except ValueError:
-                    char = ord(char)
+                    if char in self.subtitute_chars:
+                        char = self.subtitute_chars[char]
+                    elif ord(char) in self.unicode_subtitute_chars:
+                        char = self.unicode_subtitute_chars[ord(char)]
+                    else:
+                        char = ord(char)
+
             elif char == "\n":
                 char = ord("\r")
             else:
