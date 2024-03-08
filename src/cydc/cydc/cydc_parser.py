@@ -85,9 +85,11 @@ class CydcParser(object):
 
     def p_statements(self, p):
         """
-        statements  : statements COLON statement
-                    | statements COLON if_statement
+        statements  : statements COLON if_statement
+                    | statements COLON loop_statement
+                    | statements COLON statement
                     | if_statement
+                    | loop_statement
                     | statement
         """
         if (len(p) == 2) and p[1]:
@@ -106,17 +108,51 @@ class CydcParser(object):
                 else:
                     p[0].append(p[3])
 
-    # def p_loop_statement(self, p):
-    #     """
-    #     loop_statement : WHILE boolexpression DO loop_statement LOOP
-    #     loop_statement : WHILE boolexpression DO loop_subprogram LOOP
-    #     """
-    #     pass
-    #
-    # def p_loop_subprogram(self, p):
-    #     """
-    #     """
-    #     pass
+    def p_loop_statement(self, p):
+        """
+        loop_statement : WHILE LPAREN boolexpression RPAREN loop_statement WEND
+        loop_statement : WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
+        """
+        if len(p) == 7 and p[3] and p[5]:
+            label_loop = self._get_hidden_label()
+            label_end = self._get_hidden_label()
+
+            p[0] = [("LABEL", label_loop)]
+            if isinstance(p[3], list):
+                p[0] += p[3]
+                p[0] += [("IF_N_GOTO", label_end, 0, 0)]
+            else:
+                p[0] += [p[3], ("IF_N_GOTO", label_end, 0, 0)]
+
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0].append(p[5])
+
+            p[0] += [("GOTO", label_loop, 0, 0), ("LABEL", label_end)]
+
+    def p_loop_subprogram(self, p):
+        """
+        loop_subprogram : loop_subprogram statements_nl
+                        | loop_subprogram statements
+                        | statements_nl
+                        | statements
+        """
+        if len(p) == 2 and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
 
     def p_if_statement(self, p):
         """
@@ -168,10 +204,10 @@ class CydcParser(object):
 
     def p_if_subprogram(self, p):
         """
-        if_subprogram : if_subprogram if_substatements_nl
-                       | if_subprogram if_substatements
-                       | if_substatements_nl
-                       | if_substatements
+        if_subprogram : if_subprogram statements_nl
+                        | if_subprogram statements
+                        | statements_nl
+                        | statements
         """
         if len(p) == 2 and p[1]:
             p[0] = []
@@ -188,37 +224,6 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
-
-    def p_if_substatements_nl(self, p):
-        """
-        if_substatements_nl : if_substatements NEWLINE_CHAR
-                             | NEWLINE_CHAR
-        """
-        if len(p) == 2:
-            p[0] = None
-        elif len(p) == 3 and p[1]:
-            p[0] = p[1]
-
-    def p_if_substatements(self, p):
-        """
-        if_substatements  : if_substatements COLON statement
-                          | statement
-        """
-        if (len(p) == 2) and p[1]:
-            p[0] = []
-            if isinstance(p[1], list):
-                p[0] += p[1]
-            else:
-                p[0].append(p[1])
-        elif len(p) == 4:
-            p[0] = p[1]
-            if not p[0]:
-                p[0] = []
-            if p[3]:
-                if isinstance(p[3], list):
-                    p[0] += p[3]
-                else:
-                    p[0].append(p[3])
 
     def p_statement_close_error(self, p):
         "statement : ERROR_CLOSE_TEXT"
@@ -503,10 +508,10 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_set_ind_array(self, p):
-        "statement : SET LCARET variableID RCARET TO TO LCURLY numexpressions_list RCURLY"
-        if isinstance(p[5], list):
+        "statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY"
+        if len(p) == 9 and isinstance(p[7], list):
             p[0] = []
-            for i, c in enumerate(p[5]):
+            for i, c in enumerate(p[7]):
                 if isinstance(c, list):
                     p[0] += c
                     p[0].append(("POP_SET_DI", (p[2], i)))
@@ -518,7 +523,7 @@ class CydcParser(object):
 
     def p_statement_set_dir_array(self, p):
         "statement : SET variableID TO LCURLY numexpressions_list RCURLY"
-        if isinstance(p[5], list):
+        if len(p) == 7 and isinstance(p[5], list):
             p[0] = []
             for i, c in enumerate(p[5]):
                 if isinstance(c, list):
@@ -532,19 +537,21 @@ class CydcParser(object):
 
     def p_statement_set_ind(self, p):
         "statement : SET LCARET variableID RCARET TO numexpression"
-        if isinstance(p[4], list):
-            p[0] = p[4]
-        else:
-            p[0] = [p[4]]
-        p[0].append(("POP_SET_DI", (p[2], 0)))
+        if len(p) == 7:
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0].append(("POP_SET_DI", (p[2], 0)))
 
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
-        if isinstance(p[4], list):
-            p[0] = p[4]
-        else:
-            p[0] = [p[4]]
-        p[0].append(("POP_SET", (p[2], 0)))
+        if len(p) == 5:
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0].append(("POP_SET", (p[2], 0)))
 
     def p_statement_choose_if_wait_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
@@ -823,13 +830,13 @@ class CydcParser(object):
         print(s)
 
     def _check_byte_value(self, val):
-        if val > 255 or val < 0:
+        if val not in range(256):
             self.errors.append(f"Invalid byte value {val}")
             return False
         return True
 
     def _check_word_value(self, val):
-        if val > ((64 * 1024) - 1) or val < 0:
+        if val not in range(64 * 1024):
             self.errors.append(f"Invalid word value {val}")
             return False
         return True
