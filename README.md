@@ -20,6 +20,6 @@ Consiste una máquina virtual que va intepretando "tokens" que se encuentra dura
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
-Más información en el [Manual (Español)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es.md) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es.md) para aprender. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
+Más información en el [Manual (Español)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es) para aprender. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
 
 Mejoras y aportaciones son bienvenidas.
