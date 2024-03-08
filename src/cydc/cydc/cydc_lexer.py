@@ -111,10 +111,10 @@ class CydcLexer(object):
         "NEWLINE_CHAR",
         "ERROR_TEXT",
     ]
-    tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "INDIRECTION", "COMMA"]
+    tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "AT_CHAR", "COMMA"]
     tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
-    tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET"]
+    tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += list(reserved.values())
 
@@ -162,7 +162,7 @@ class CydcLexer(object):
         return t
 
     t_COLON = r":"
-    t_INDIRECTION = r"@"
+    t_AT_CHAR = r"@"
     t_NOT_EQUALS = r"<>"
     t_LESS_EQUALS = r"<="
     t_MORE_EQUALS = r">="
@@ -181,6 +181,8 @@ class CydcLexer(object):
     t_COMMA = r","
     t_LCARET = r"\["
     t_RCARET = r"\]"
+    t_LCURLY = r"\{"
+    t_RCURLY = r"\}"
 
     def t_SHORT_LABEL(self, t):
         r"\#[a-zA-Z_][a-zA-Z0-9_]*"
