@@ -502,13 +502,41 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_set_ind_array(self, p):
+        "statement : SET LCARET variableID RCARET TO TO LCURLY numexpressions_list RCURLY"
+        if isinstance(p[5], list):
+            p[0] = []
+            for i, c in enumerate(p[5]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET_DI", (p[2], i)))
+                else:
+                    p[0] = None
+                    break
+        else:
+            p[0] = None
+
+    def p_statement_set_dir_array(self, p):
+        "statement : SET variableID TO LCURLY numexpressions_list RCURLY"
+        if isinstance(p[5], list):
+            p[0] = []
+            for i, c in enumerate(p[5]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET", (p[2], i)))
+                else:
+                    p[0] = None
+                    break
+        else:
+            p[0] = None
+
     def p_statement_set_ind(self, p):
         "statement : SET LCARET variableID RCARET TO numexpression"
         if isinstance(p[4], list):
             p[0] = p[4]
         else:
             p[0] = [p[4]]
-        p[0].append(("POP_SET_DI", p[2]))
+        p[0].append(("POP_SET_DI", (p[2], 0)))
 
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
@@ -516,7 +544,7 @@ class CydcParser(object):
             p[0] = p[4]
         else:
             p[0] = [p[4]]
-        p[0].append(("POP_SET", p[2]))
+        p[0].append(("POP_SET", (p[2], 0)))
 
     def p_statement_choose_if_wait_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
@@ -539,6 +567,27 @@ class CydcParser(object):
     def p_statement_option_gosub(self, p):
         "statement : OPTION GOSUB ID"
         p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+
+    def p_numexpressions_list(self, p):
+        """
+        numexpressions_list : numexpressions_list COMMA numexpression
+                            | numexpression
+        """
+        if len(p) == 2 and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0].append(p[1])
+            else:
+                p[0].append([p[1]])
+        elif len(p) == 4:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[3]:
+                if isinstance(p[3], list):
+                    p[0].append(p[3])
+                else:
+                    p[0].append([p[3]])
 
     def p_boolexpression_binop(self, p):
         """
@@ -643,13 +692,17 @@ class CydcParser(object):
         "numexpression : LPAREN numexpression RPAREN"
         p[0] = p[2]
 
-    def p_numexpression_variable_ind_ind(self, p):
+    def p_numexpression_variable_ind(self, p):
         "numexpression : LCARET numexpression RCARET"
         p[0] = ("POP_PUSH_DI", p[2])
 
-    def p_numexpression_variable_ind(self, p):
-        "numexpression : INDIRECTION variableID"
-        p[0] = ("PUSH_I", p[2])
+    def p_numexpression_variable_addr(self, p):
+        "numexpression : AT_CHAR AT_CHAR variableID"
+        p[0] = ("PUSH_D", (p[3], 0))
+
+    def p_numexpression_variable(self, p):
+        "numexpression : AT_CHAR variableID"
+        p[0] = ("PUSH_I", (p[2], 0))
 
     def p_statement_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
