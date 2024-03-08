@@ -161,13 +161,13 @@ class CydcCodegen(object):
                         c = ("SET_DI", next[1])
                         skip = True
                     code_tmp.append(c)
-                elif next[0] == "POP_PUSH_DI":
-                    if c[0] == "PUSH_D":
-                        c = ("PUSH_DI", next[1], c[1])
-                        skip = True
                 elif next[0] == "POP_SET_DI":
                     if c[0] == "PUSH_D":
                         c = ("SET_DI", next[1], c[1])
+                        skip = True
+                elif next[0] == "POP_PUSH_DI":
+                    if c[0] == "PUSH_D":
+                        c = ("PUSH_DI", next[1], c[1])
                         skip = True
                 elif next[0] == "POP_INK":
                     if c[0] == "PUSH_D":
@@ -275,7 +275,7 @@ class CydcCodegen(object):
                     code_tmp.append(c)
                 elif next[0] == "IF_N_GOTO":
                     if c[0] == "NOT":
-                        c = ("IF_GOTO", next[1], next[2], next[3])
+                        c = ("IF_GOTO", next[1], next[3])
                         skip = True
                     code_tmp.append(c)
                 else:
@@ -378,14 +378,26 @@ class CydcCodegen(object):
         for c in code:
             if len(queue) > 0 and c == 0:
                 c = queue.pop()
+            elif isinstance(c, tuple):  # Variable with displacement
+                if len(c) != 2:
+                    sys.exit(self._(f"ERROR: Invalid opcode translation!"))
+                disp = c[1]
+                c = c[0]
+                if isinstance(c, str):
+                    t = variables.get(c)
+                    if t is None:
+                        print(variables)
+                        sys.exit(self._(f"ERROR: Variable {c} does not exists!"))
+                    elif (t + disp) not in range(256):
+                        sys.exit(self._(f"ERROR: Array {c} out of bounds!"))
+                    else:
+                        c = t + disp  # Adds displacement
+                else:
+                    c = c + disp
             elif isinstance(c, str):
                 t = symbols.get(c)
                 if t is None:
-                    t = variables.get(c)
-                    if t is None:
-                        sys.exit(self._(f"ERROR: Symbol {c} does not exists!"))
-                    else:
-                        c = t
+                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
                 else:  # label found
                     c = t[0]  # Extract bank
                     queue = self._convert_address(
