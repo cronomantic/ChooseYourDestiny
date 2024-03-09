@@ -1,79 +1,82 @@
 # Manual de Choose Your Destiny
 
-El programa es un intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones, para el Spectrum 48, 128, +2 y +3.
+El programa es un compilador y intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y librojuegos, para el Spectrum 48, 128, +2 y +3.
 
-Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje mas "humano" con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
+Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
+  - [Requerimientos e Instalación](#requerimientos-e-instalación)
+    - [Windows](#windows)
+    - [Linux, BSDs y compatibles](#linux-bsds-y-compatibles)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
-  - [Sintaxis](#sintaxis)
-  - [Flags](#flags)
-  - [Condicionales](#condicionales)
-  - [Comandos](#comandos)
-    - [LABEL labelId](#label-labelid)
-    - [DECLARE flag\_no AS VarId](#declare-flag_no-as-varid)
+  - [Sintaxis Básica](#sintaxis-básica)
+  - [Flags y expresiones numéricas](#flags-y-expresiones-numéricas)
+  - [Control de flujo y expresiones condicionales](#control-de-flujo-y-expresiones-condicionales)
+  - [Asignaciones e indirección](#asignaciones-e-indirección)
+  - [Listado de comandos](#listado-de-comandos)
+    - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v07)
+    - [LABEL ID](#label-id)
+    - [#ID](#id)
+    - [DECLARE expression AS ID](#declare-expression-as-id)
+    - [GOTO ID](#goto-id)
+    - [GOSUB ID](#gosub-id)
+    - [RETURN](#return)
+    - [IF condexpression THEN ... ENDIF](#if-condexpression-then--endif)
+    - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
+    - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
+    - [SET varID TO numexpression](#set-varid-to-numexpression)
+    - [SET \[varID\] TO numexpression](#set-varid-to-numexpression-1)
+    - [SET varID TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2)
+    - [SET \[varID\] TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2-1)
     - [END](#end)
     - [CLEAR](#clear)
-    - [GOTO labelId](#goto-labelid)
-    - [GOSUB labelId](#gosub-labelid)
-    - [RETURN](#return)
-    - [IF cond THEN GOTO labelId](#if-cond-then-goto-labelid)
-    - [IF cond THEN GOSUB labelId](#if-cond-then-gosub-labelid)
-    - [IF cond THEN RETURN](#if-cond-then-return)
     - [CENTER](#center)
     - [WAITKEY](#waitkey)
-    - [OPTION GOTO labelId](#option-goto-labelid)
-    - [OPTION GOSUB labelId](#option-gosub-labelid)
-    - [IF cond OPTION GOTO labelId](#if-cond-option-goto-labelid)
-    - [IF cond OPTION GOSUB labelId](#if-cond-option-gosub-labelid)
+    - [OPTION GOTO ID](#option-goto-id)
+    - [OPTION GOSUB ID](#option-gosub-id)
     - [CHOOSE](#choose)
-    - [CHOOSE IF WAIT expression THEN GOTO labelId](#choose-if-wait-expression-then-goto-labelid)
-    - [CHAR expression](#char-expression)
+    - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
+    - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
-    - [PRINT expression](#print-expression)
-    - [PRINT @ flag\_no](#print--flag_no)
+    - [PRINT numexpression](#print-numexpression)
     - [PAGEPAUSE expression](#pagepause-expression)
-    - [INK expression](#ink-expression)
-    - [INK @ flag\_no](#ink--flag_no)
-    - [PAPER expression](#paper-expression)
-    - [PAPER @ flag\_no](#paper--flag_no)
-    - [BORDER expression](#border-expression)
-    - [BORDER @ flag\_no](#border--flag_no)
-    - [BRIGHT expression](#bright-expression)
-    - [BRIGHT @ flag\_no](#bright--flag_no)
-    - [FLASH expression](#flash-expression)
-    - [FLASH @ flag\_no](#flash--flag_no)
-    - [SFX expression](#sfx-expression)
-    - [SFX @ flag\_no](#sfx--flag_no)
-    - [PICTURE expression](#picture-expression)
-    - [PICTURE @ flag\_no](#picture--flag_no)
-    - [DISPLAY expression](#display-expression)
-    - [DISPLAY @ flag\_no](#display--flag_no)
+    - [INK numexpression](#ink-numexpression)
+    - [PAPER numexpression](#paper-numexpression)
+    - [BORDER numexpression](#border-numexpression)
+    - [BRIGHT numexpression](#bright-numexpression)
+    - [FLASH numexpression](#flash-numexpression)
+    - [SFX numexpression](#sfx-numexpression)
+    - [PICTURE numexpression](#picture-numexpression)
+    - [DISPLAY numexpression](#display-numexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
-    - [SET flag\_no TO RANDOM(expression)](#set-flag_no-to-randomexpression)
-    - [SET flag\_no TO RANDOM](#set-flag_no-to-random)
-    - [SET flag\_no TO RANDOM(expression, expression)](#set-flag_no-to-randomexpression-expression)
-    - [SET flag\_no TO INKEY](#set-flag_no-to-inkey)
+    - [RANDOM(expression)](#randomexpression)
+    - [RANDOM()](#random)
+    - [RANDOM(expression, expression)](#randomexpression-expression)
+    - [INKEY](#inkey)
+  - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
+  - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
+    - [POSY()](#posy)
+    - [POSX()](#posx)
     - [RANDOMIZE](#randomize)
-    - [TRACK expression](#track-expression)
-    - [TRACK @ flag\_no](#track--flag_no)
-    - [PLAY expression](#play-expression)
-    - [PLAY @ flag\_no](#play--flag_no)
-    - [LOOP expression](#loop-expression)
-    - [LOOP @ flag\_no](#loop--flag_no)
+    - [TRACK numexpression](#track-numexpression)
+    - [PLAY numexpression](#play-numexpression)
+    - [LOOP numexpression](#loop-numexpression)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
   - [Melodías](#melodías)
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
+    - [Windows](#windows-1)
+    - [Linux, BSDs,...](#linux-bsds)
+  - [Ejemplos](#ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
   - [F.A.Q](#faq)
@@ -81,6 +84,65 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Licencia](#licencia)
 
 ---
+
+## Requerimientos e Instalación
+
+Estos son los requerimientos externos de la herramienta:
+
+* [Python 3.11 o superior](https://www.python.org/)
+* [SjAsmPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
+* [TAPTOOLS 1.0.8 o superior](http://www.seasip.info/ZX/unix.html), para ser más exactos la utilidad `mkp3fs`.
+* Descompresor de ficheros ZIP
+
+La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio.
+Si se actualiza una versión más antigua, es recomendable NO sobreescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guión `make_adv` para cada caso.
+
+Estas son las instrucciones más detalladas para cada sistema operativo:
+
+### Windows
+
+En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
+
+### Linux, BSDs y compatibles
+
+Para estos sistemas, los requerimientos son:
+
+* GNU/Linux / Unix / macOS / BSD con shell compatible con BASH.
+* Python 3.11 o superior
+* Todos los programas comunes del sistema (grep, cat, etc...).
+* Todos los programas requeridos para compilar programas C en el sistema (libc, libstdc++, g++, GNU make, etc...).
+* Autotools (autoconf, automake, aclocals...).
+* wget
+* git
+  
+Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`, que son requeridos por la herramienta. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. El script `make_adventure.py` requiere que ambas utilidades estén en la variable `PATH`.
+
+Debido a la heterodoxa naturaleza de las diferentes ditribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
+
+Una vez que se tengan los requerimientos, se puede proceder a instalar **SjASMPlus** con los siguientes comandos:
+
+```bash
+git clone --recursive https://github.com/z00m128/sjasmplus.git
+cd sjasmplus/
+make clean
+make
+sudo make install
+```
+
+El último comando realiza la instalación en el sistema, con lo que debe hacerse con permisos de administrador. En el caso del ejemplo, se usa `sudo`. Si no existe sudo, doas o herramienta similar, entoces tendrás que hacerlo con el usuario *root* mediante `su -` y luego `make install`.
+
+Para instalar **TAPTOOLS**, realizamos la siquiente secuencia de comandos:
+
+```bash
+wget http://www.seasip.info/ZX/taptools-1.0.8.tar.gz
+tar -xf taptools-1.0.8.tar.gz
+cd taptools-1.0.8
+./configure
+make
+sudo make install
+```
+De nuevo, cambiar el último comando con el adecuado para tu sistema.
+
 
 ## CYDC (Compilador)
 
@@ -176,7 +238,7 @@ El ancho de los caracteres empleado depende de la extensión del fichero de entr
 
 ---
 
-## Sintaxis
+## Sintaxis Básica
 
 Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 
@@ -224,28 +286,35 @@ En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al pun
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
-**A partir de la versión 0.5** se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`.
+También se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
+
+```
+[[ /* Comandos que ponen colores de pantalla y la borra */
+   PAPER 0   /* Color de fondo a cero (negro)*/
+   INK   7   /* Color de la tinta (blanco) */
+   BORDER 0  /* Color del borde (negro) */
+   CLEAR     /* Borrar el área de texto (pantalla completa) */
+   LABEL Localidad1]]Estás en la localidad 1. ¿Donde quieres ir?
+[[OPTION GOTO Localidad2]]Ir a la localidad 2
+[[OPTION GOTO Localidad3]]Ir a la localidad 3
+[[CHOOSE]]
+[[ #Localidad2 ]]¡¡¡Lo lograste!!!
+[[ GOTO Final ]]
+[[ #Localidad3 ]]¡¡¡Estas muerto!!!
+[[ GOTO Final]]
+[[ #Final : WAITKEY: END ]]
+```
+
 
 Los comandos disponibles están descritos en su [sección](#comandos) correspondiente.
 
 ---
 
-## Flags
+## Flags y expresiones numéricas
 
-Hay a disposición del programador 256 variables o 'flags' de un byte (de 0 a 255) para almacenar valores, realizar operaciones con ellos y realizar saltos de acuerdo a comparaciones con los valores contenidos en ellos.
+Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "flags" indistintamente a lo largo de este documento.
 
-Algunos comandos pueden hacer uso de indirección, indicada por `@`, es decir que el valor indicado en el parámetro no es el valor a utilizar, sino que el valor lo obtiene del flag indicado. Es decir:
-
-```
-[[
-INK 7
-INK @7
-]]
-```
-
-El primer comando pondrá el color del texto en blanco (color 7), mientras que el segundo pondrá el color del texto con el valor contenido en la variable número 7.
-
-**Desde la versión 0.6** es posible dar un nombre significativo a las variables usando el comando `DECLARE`:
+Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el caracter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
 
 ```
 [[
@@ -265,7 +334,7 @@ DECLARE 10 AS OtroNombre
 
 Así, tanto *UnNombre* como *OtroNombre* servirán para identificar el flag 10. Ten en cuenta de a persar de tener distinto nombre, son la misma variable.
 
-Para asignar valores a un flag, usamos el comando `SET ... TO`, de la siguiente manera:
+Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, de la siguiente manera:
 
 ```
 [[
@@ -277,91 +346,247 @@ Para asignar valores a un flag, usamos el comando `SET ... TO`, de la siguiente 
 
 ```
 
-Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática o lógica compuesta por números y variables. Las variables en el lado derecho **siempre deben estar precedidas del símbolo de indirección (@)**. Los operandos disponibles son:
+Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del caracter `@`**.
+
+Los operandos disponibles son:
 
 - Suma: `SET variable TO @variable + 2`
 - Resta: `SET variable TO @variable - 2`
 - "AND" binario: `SET variable TO @variable & 2`
 - "OR" binario: `SET variable TO @variable | 2`
-- "NOT binario: `SET variable TO !@variable`
+- "NOT binario o complemento de bits: `SET variable TO !@variable`
 
-Los números que se pasen no pueden ser mayores de 255 (1 byte) ni menores que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que de un resultado inferior a cero, se quedará en cero.
+El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
+
+Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarions realizan las correspondientes operaciones sobre los bits del flag.
+
+La mayor parte de los comandos aceptan expresiones numéricas en sus parámetros, por ejemplo:
+
+```
+[[
+INK 7
+INK @7
+]]
+```
+
+El primer comando pondrá el color del texto en blanco (color 7), mientras que el segundo pondrá el color del texto con el valor contenido en la variable número 7. Combinando con todo lo anteriormente descrito, se podría hacer:
+
+```
+[[
+INK 3+4
+INK @Var-1
+]]
+```
+
+Consulta la referencia de [comandos](#comandos) para saber cuáles de ellos los aceptan.
+
+Por último, hay una serie de comandos especiales llamados **funciones**. Estos comandos no pueden usarse por sí solos, sino que deben usarse dentro de una expresión numérica, ya que devuelven un valor a emplear dentro de ella.
+
+* **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+* **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
+* **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
+* **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
+* **MIN(numexpression,numexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+* **MAX(numexpression,numexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+* **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
+* **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
+
+Así que, por ejemplo `SET flag_no TO RANDOM(6)`, asigna a la variable *flag_no* un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET flag_no TO RANDOM(6) + @var + 1` 
 
 ---
 
-## Condicionales
+## Control de flujo y expresiones condicionales
 
-Muchos comandos son condicionales, es decir, que se ejecutan dependiendo de si se cumple una condición. Son todos los comandos que empiezan por `IF`, por ejemplo:
+Para controlar el flujo de ejecución, tenemos diferentes comandos, que describiré ahora:
+
+* **GOTO ID**
+
+Salta a la etiqueta *ID*.
+
+* **GOSUB ID**
+
+Salto de subrutina, hace un salto a la etiqueta *ID*, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+
+* **RETURN**
+
+Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
+
+* **IF condexpression THEN ... ENDIF**
+
+Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
+
+* **IF condexpression THEN ... ELSE ... ENDIF**
+
+Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+
+* **WHILE (condexpression) ... WEND**
+
+Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición *condexpression* evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+
+Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
 
 ```
-[[IF @variable = 0 THEN GOTO salto]]
+[[IF @var = 0 THEN GOTO salto ENDIF]]
 ```
 
-La condición para que se ejecute el salto es siempre una comparación entre dos elementos, que pueden ser números o variables, precedidas éstas últimas por el correspondiente indicador de indirección. Las operaciones de comparación son las siguientes:
+Para que se ejecute el salto, tiene que cumplirse que la variable *var* sea igual a cero. Esto es una expresión condicional.
 
-- Igual que: `IF @variable = 0 THEN GOTO salto`
-- Mayor que: `IF @variable > 0 THEN GOTO salto`
-- Menor que: `IF @variable2 < @variable THEN GOTO salto`
-- Distinto que: `IF @variable <> 0 THEN GOTO salto`
-- Mayor o igual que: `IF @variable <= 0 THEN GOTO salto`
-- Menor o igual que: `IF @variable >= 0 THEN GOTO salto`
+Una condición es siempre una comparación entre dos expresiones numéricas:
 
-Además, las condiciones se pueden combinar formando expresiones lógicas:
+- Igual que: `IF @variable = 0 THEN GOTO salto ENDIF`
+- Mayor que: `IF @variable > 0 THEN GOTO salto ENDIF`
+- Menor que: `IF @variable2 < @variable THEN GOTO salto ENDIF`
+- Distinto que: `IF @variable <> 0 THEN GOTO salto ENDIF`
+- Mayor o igual que: `IF @variable <= 0 THEN GOTO salto ENDIF`
+- Menor o igual que: `IF @variable >= 0 THEN GOTO salto ENDIF`
+
+Además, las condiciones se pueden combinar formando expresiones condicionales mediante operaciones lógicas. Por ejemplo:
 
 ```
-[[IF (@variable = 0 AND @variable2 = 1) AND NOT @variable3 = 1 THEN GOTO salto]]
+[[IF (@variable = 0 AND @variable2 = 1) AND NOT @variable3 = 1 THEN GOTO salto ENDIF]]
 ```
 
 - Cond1 AND Cond2: Cierto si se cumple tanto como Cond1 como Cond2.
 - Cond1 OR Cond2: Cierto si se cumple Cond1 o Cond2.
 - NOT Cond1: Cierto si la condición Cond1 es falsa.
 
+Recuerdo de nuevo que los operadores lógicos de las expresiones condicionales **no son los mismos que los operadores binarios**. Además para aquellos que tengan nociones avanzadas de programación, las condiciones no son "cortocircuitantes", es decir, se evalúan todas las operaciones lógicas y comparaciones hasta el final.
+
 ---
 
-## Comandos
+## Asignaciones e indirección
 
-### LABEL labelId
+Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#flags-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte. 
+
+La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir al flag o variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
+
+- `SET var to [2+2]`: indica que vamos a asignar a *var* el contenido del flag 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
+- `SET var TO [@indice]`: aquí es donde se muestra realmente la utilidad, ya que estamos indicando que guardamos en *var* el contenido de la variable cuyo número corresponde con el contenido de la variable *indice*. Es decir, podemos cambiar de forma dinámica la variable a la cual hacemos la asignación.
+- `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en *var* el contenido de la variable corresponda con el contenido de *indice* mas dos.
+- `SET [var] TO 0`: La indirección también puede usarse en el lado derecho, y en este caso, no se soportan expresiones numéricas, sólo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable *var*.
+- `INK [@var]`: La indirección también es soportada por aquellos comandos que admitan expresiones numéricas.
+- `SET [@@var] TO 0`: Por completitud, ya que operamos con punteros, usando `@@` tenemos la operación complementaria a la indirección, es decir, devuelve el número de índice de una variable dada, con lo que en el ejemplo, la operación sería equivalente a `SET var TO 0`. 
+ 
+Si usamos los indicadores numéricos con las variables (p.ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos: 
+
+```
+[[
+DECLARE 20 AS var : DECLARE 10 AS index: SET index AS @@var : SET [index] AS 0
+]]
+```
+
+Vemos que ésto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
+  
+La indirección constituye una herramienta poderosa que nos permite implementar arrays en los flags, pero ¡ojo, que sólo tenemos 256!
+
+Por último, y relacionado con los arrays, podemos realizar asignaciones múltiples mediante la siguiente construcción:
+
+```
+[[
+DECLARE var AS 10
+SET var AS {0, 1, 2, 3}
+]]
+```
+
+Esto sería equivalente a:
+
+```
+[[
+SET 10 AS 0
+SET 11 AS 2
+SET 12 AS 2
+SET 13 AS 3
+]]
+```
+
+Es decir, podemos asignar de forma consecutiva una secuencia de valores a una secuencia de variables, comenzando por la variable indicada en el lado izquierdo. Lo cual permite asignar valores para arrays, o asignar múltiples valores de forma consecutiva. 
+
+---
+
+## Listado de comandos
+
+Antes de describir los comandos, vamos a hablar resumidamente de la leyenda utilizada:
+
+- **ID** es un identificador y es una cadena de cifras, letras o subrayado. No se admiten letras acentuadas ni la ñ.
+- **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
+- **numexpression**, expresión numérica tal y como es descrita en su [sección](#flags-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
+- **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
+- **varID**, identificador de variable, puede ser una *expression* si usamos su índice numérico o un *ID* si lo hemos declarado así con `DECLARE`.
+
+### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**
+
+Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
+
+| Comando obsoleto                       | Sustituir por...                              |
+|----------------------------------------|-----------------------------------------------|
+| `IF condexpression THEN GOTO ID`       | `IF condexpression THEN GOTO ID ENDIF`        |
+| `IF condexpression THEN GOSUB ID`      | `IF condexpression THEN GOSUB ID ENDIF`       |
+| `IF condexpression OPTION GOTO ID`     | `IF condexpression OPTION GOTO ID ENDIF`      |
+| `IF condexpression OPTION GOSUB ID`    | `IF condexpression OPTION GOSUB ID ENDIF`     |
+
+---
+
+Este es listado completo de comandos:
+
+### LABEL ID
 
 Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
 
-**Novedad**: A partir de la versión 0.5, se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
+### #ID
 
-### DECLARE flag_no AS VarId
+Versión resumida para declarar la etiqueta *ID*, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
 
-**Novedad**: A partir de la versión 0.6, lo que hacer es declarar el identificador VarId como un símbolo que representa al flag flag_id en su lugar.
+### DECLARE expression AS ID
+
+Declara el identificador *ID* como un símbolo que representa al flag *expression* en su lugar.
+
+### GOTO ID
+
+Salta a la etiqueta *ID*.
+
+### GOSUB ID
+
+Salto de subrutina, hace un salto a la etiqueta *ID*, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+
+### RETURN
+
+Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
+
+### IF condexpression THEN ... ENDIF
+
+Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
+
+### IF condexpression THEN ... ELSE ... ENDIF
+
+Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+
+### WHILE (condexpression) ... WEND
+
+Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición *condexpression* evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+
+### SET varID TO numexpression
+
+Asigna el valor de *numexpression* a la variable *varID*.
+
+### SET [varID] TO numexpression
+
+Asigna el valor de *numexpression* a la variable cuyo índice corresponde con el contenido de *varID*.
+
+### SET varID TO {numexpression1, numexpression2,...}
+
+Asigna el valor de *numexpression1* a la variable *varID*,  *numexpression2* a la variable *varID*+1, y así.
+
+### SET [varID] TO {numexpression1, numexpression2,...}
+
+Asigna el valor de *numexpression1* a la variable cuyo índice corresponde con el contenido de *varID*, *numexpression2* a la variable cuyo índice corresponde con el contenido de *varID*+1, y así.
 
 ### END
 
-Finaliza la aventura y reinicia el Spectrum.
+Finaliza la aventura y reinicia el ordenador.
 
 ### CLEAR
 
 Borra el área de texto definida.
-
-### GOTO labelId
-
-Salta a la etiqueta labelId.
-
-### GOSUB labelId
-
-Salto de subrutina, hace un salto a la etiqueta labelId, pero vuelve a este punto en cuanto encuentra un comando `RETURN`.  
-Se permiten hasta 8 niveles de anidamiento.
-
-### RETURN
-
-Retorna al punto de llamada de una subrutina, ver `GOSUB`
-
-### IF cond THEN GOTO labelId
-
-Si se cumple la condición *cond*, se ejecuta el `GOTO` posterior.
-
-### IF cond THEN GOSUB labelId
-
-Si se cumple la condición *cond*, se ejecuta el `GOSUB` posterior.
-
-### IF cond THEN RETURN
-
-Si se cumple la condición *cond*, se ejecuta el `RETURN` posterior.
 
 ### CENTER
 
@@ -371,32 +596,24 @@ Pone el cursor de impresión en el centro de la línea.
 
 Espera la pulsación de la tecla de aceptación para continuar, presentando un icono animado de espera. Ideal para separar párrafos o pantallas.
 
-### OPTION GOTO labelId
+### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta *ID*. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
 
-### OPTION GOSUB labelId
+### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _labelId_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
-
-### IF cond OPTION GOTO labelId
-
-Si se cumple la condición *cond*, crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _labelId_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
-
-### IF cond OPTION GOSUB labelId
-
-Si se cumple la condición *cond*, crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _labelId_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta *ID*, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
 
 ### CHOOSE
 
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opciñon correspondiente.
 
-### CHOOSE IF WAIT expression THEN GOTO labelId
+### CHOOSE IF WAIT expression THEN GOTO ID
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _LabelId_.  
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta *ID*.  
 El timeout tiene como máximo 65535 (16 bits).
 
-### CHAR expression
+### CHAR numexpression
 
 Imprime el carácter indicando con su número correspondiente.
 
@@ -408,86 +625,49 @@ Imprime el carácter indicado en el primer parámetro tantas veces como número 
 
 Imprime tantos espacios como los indicados en el parámetro. Es el equivalente a `REPCHAR 32, expression`, pero ocupa menos memoria.
 
-### PRINT expression
+### PRINT numexpression
 
-Imprime el valor indicado (máximo 16 bits).
-
-### PRINT @ flag_no
-
-Imprime el valor del flag indicado.
+Imprime el valor numérico indicado.
 
 ### PAGEPAUSE expression
 
 Controla si al rellenar el área de texto actual, debe solicitar continuar al jugador, presentando un icono animado de espera (parámetro \<> 0) ó hace un borrado de pantalla y sigue imprimiendo (parámetro = 0).
 
-### INK expression
+### INK numexpression
 
 Define el valor del color de los caracteres (tinta). Valores de 0-7, correspondientes a los colores del Spectrum.
 
-### INK @ flag_no
-
-Igual que ´INK´ pero usando indirección con un flag cuyo contenido será el color a emplear.
-
-### PAPER expression
+### PAPER numexpression
 
 Define el valor del color del fondo (papel). Valores de 0-7, correspondientes a los colores del Spectrum.
 
-### PAPER @ flag_no
-
-Igual que ´PAPER´ pero usando indirección con un flag cuyo contenido será el color a emplear.
-
-### BORDER expression
+### BORDER numexpression
 
 Define el color del borde, valores 0-7.
 
-### BORDER @ flag_no
-
-Igual que ´BORDER´ pero usando indirección con un flag cuyo contenido será el color a emplear.
-
-### BRIGHT expression
+### BRIGHT numexpression
 
 Activa o desactiva el brillo (0 desactivado, 1 activado).
 
-### BRIGHT @ flag_no
-
-Igual que ´BRIGHT´ pero usando indirección con un flag dado.
-
-### FLASH expression
+### FLASH numexpression
 
 Activa o desactiva el parpadeo (0 desactivado, 1 activado).
 
-### FLASH @ flag_no
-
-Igual que ´BRIGHT´ pero usando indirección con un flag dado.
-
-### SFX expression
+### SFX numexpression
 
 Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
-### SFX @ flag_no
-
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado en el flag correspondiente.  
-Si no se ha cargado dicho fichero, el comando es ignorado.
-
-### PICTURE expression
+### PICTURE numexpression
 
 Carga en el buffer la imagen indicada como parámetro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
-### PICTURE @ flag_no
-
-Igual que `PICTURE`, pero usando el contenido de una variable como parámetro.
-
-### DISPLAY expression
+### DISPLAY numexpression
 
 Muestra el contenido actual del buffer en pantalla.  
-El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. En este caso, esta funcionalidad no es útil, pero sí lo es en su versión indirecta.  
+El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. 
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
-
-### DISPLAY @ flag_no
-
-Igual que `DISPLAY`, pero el parámetro que indica si se muestra o no lo toma de una variable.
 
 ### WAIT expression
 
@@ -522,49 +702,53 @@ Los parámetros, por órden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
-### SET flag_no TO RANDOM(expression)
+### RANDOM(expression)
 
-Almacena en el flag indicado un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+*Función* que devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
 
-### SET flag_no TO RANDOM
+### RANDOM()
 
-Almacena en el flag indicado un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
+*Función* que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
 
-### SET flag_no TO RANDOM(expression, expression)
+### RANDOM(expression, expression)
 
-Almacena en el flag indicado un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
+*Función* que devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
 
-### SET flag_no TO INKEY
+### INKEY
 
-Se espera hasta que se pulse una tecla y almancena en el flag indicado el código de la tecla pulsada.
+*Función* que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
+
+## MIN(numexpression,numexpression)
+
+*Función* que acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+
+## MAX(numexpression,numexpression)
+
+*Función* que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+
+### POSY()
+
+Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
+
+### POSX()
+
+Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
 ### RANDOMIZE
 
 Inicializa el generador de números aleatorios. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Lo que hace este comando es inicializar el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad.
 
-### TRACK expression
+### TRACK numexpression
 
 Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobrescribirá.
 
-### TRACK @ flag_no
-
-Igual que `TRACK`, pero el fichero a cargar viene del contenido de la variable del parámetro.
-
-### PLAY expression
+### PLAY numexpression
 
 Si el parámetro es distinto de cero y la música está desactivada, reproduce la pista musical cargada. Si está en ese momento reproduciendo, y se pasa 0 como parámetro, para la reproducción.
 
-### PLAY @ flag_no
-
-Igual que `PLAY`, pero con el contenido del flag indicado.
-
-### LOOP expression
+### LOOP numexpression
 
 Establece si al acabar la pista musical cargada en ese momento, se repite de nuevo o no. Un valor 0 significa falso y distinto de cero, verdadero.
-
-### LOOP @ flag_no
-
-Igual que `LOOP`, pero toma el parámetro del contenido de la variable indicada.
 
 ---
 
@@ -577,7 +761,7 @@ Se puede configurar el número de líneas horizontales de la imagen a mostrar us
 
 Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un buffer la imagen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
 
-Para mostar una imagen cargada en el buffer, usamos `DISPLAY n` ó `DISPLAY @n`, donde n en el primer caso, o el contenido del flag n en el segundo, tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
+Para mostar una imagen cargada en el buffer, usamos `DISPLAY n`, donde n tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
 
 ---
 
@@ -616,19 +800,25 @@ Para añadir efectos de sonido, imágenes y melodías, consulta las secciones co
 
 El proceso es bastante simple, pero tiene algunos pasos dependientes, con lo que se recomienda usar ficheros BAT (Windows) o guiones de shell (Linux, Unix) o la utilidad Make (o similar) para acelerar el desarrollo.
 
-Como ejemplo y para Windows 10 (versión 64 bits) o superiores, se ha incluido el fichero `MakeAdv.bat` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.txt`.
+Para facilitar las cosas, se incluye un programa llamado `make_adventure.py` que realizará todas estas tareas por nosotros, además de los correspondientes scripts `make_adv.cmd` para Windows y `make_adv.sh` para UNIX para ejecutarlo.
 
-El script buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro del directorio `.\IMAGES`. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo. Además buscará de forma automática si existe un fichero de efectos de sonido llamado `SFX.ASM` que debe generarse con **BeepFX**, y si existiese un fichero JSON con el juego de caracteres llamado `charset.json`, también lo utilizará.
+El programa `make_adventure.py` buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro del directorio `.\IMAGES`. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas, simplemente borrándolo hará que el script indique al compilador que lo genere de nuevo. Además buscará de forma automática si existe un fichero de efectos de sonido llamado `SFX.ASM` que debe generarse con **BeepFX**, y si existiese un fichero JSON con el juego de caracteres llamado `charset.json`, también lo utilizará.
 
-El script necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
+Este programa necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Ahora se detallan las peculiaridades en cada sistema operativo:
+
+### Windows
+
+Como ejemplo se ha incluido el fichero `make_adv.cmd` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.cyd`.
+
+Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
 
 ```batch
-REM ---- Configuration variables 
+REM ---- Configuration variables ----------
 
 REM Name of the game
 SET GAME=test
 REM This name will be used as:
-REM   - The file to compile will be test.txt with this example
+REM   - The file to compile will be test.cyd with this example
 REM   - The name of the TAP file or +3 disk image
 
 REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
@@ -638,7 +828,12 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 
 REM Loading screen
-SET LOAD_SCR=LOAD.scr
+SET LOAD_SCR="LOAD.scr"
+
+REM Parameters for compiler
+SET CYDC_EXTRA_PARAMS=
+
+REM --------------------------------------
 ```
 
 - La variable `GAME` será el nombre del fichero txt que se compilará y el nombre del fichero DSK o TAP resultante.
@@ -651,7 +846,49 @@ SET LOAD_SCR=LOAD.scr
 
 El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
 
-En la carpeta `examples\test` hay un ejemplo que corresponde con el ejemplo indicado en la sección de [Sintaxis](#sintaxis), y creará el fichero `test.DSK`, que se puede ejecutar con un emulador para poder probarla. Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
+### Linux, BSDs,...
+
+Como ejemplo se ha incluido el fichero `make_adv.sh` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.cyd`.
+
+Puedes usarlo como base para crear tu propia aventura de forma sencilla. Se puede personalizar el comportamiento modificando en la cabecera del script algunas variables:
+
+```bash
+# ---- Configuration variables ----------
+# Name of the game
+GAME="test"
+# This name will be used as:
+#   - The file to compile will be test.cyd with this example
+#   - The name of the TAP file or +3 disk image
+#
+# Target for the compiler (48k, 128k for TAP, plus3 for DSK)
+TARGET="plus3"
+#
+# Number of lines used on SCR files at compressing
+IMGLINES="192"
+#
+# Loading screen
+LOAD_SCR="./LOAD.scr"
+#
+# Parameters for compiler
+CYDC_EXTRA_PARAMS=
+# --------------------------------------
+```
+
+- La variable `GAME` será el nombre del fichero txt que se compilará y el nombre del fichero DSK o TAP resultante.
+- La variable `TARGET` es el sistema y formato de salida, con estas posibles opciones:
+  -- 48k: Genera un fichero TAP para Spectrum 48K, sin soporte de música AY.
+  -- 128k: Genera un fichero TAP para Spectrum 128K.
+  -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
+- La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
+- La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
+
+## Ejemplos
+
+Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos:
+
+En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
+
+En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
 
 ---
 
