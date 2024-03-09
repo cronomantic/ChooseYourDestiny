@@ -113,7 +113,7 @@ class CydcParser(object):
         loop_statement : WHILE LPAREN boolexpression RPAREN loop_statement WEND
         loop_statement : WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
         """
-        if len(p) == 7 and p[3] and p[5]:
+        if len(p) == 7 and p[3]:
             label_loop = self._get_hidden_label()
             label_end = self._get_hidden_label()
 
@@ -124,10 +124,11 @@ class CydcParser(object):
             else:
                 p[0] += [p[3], ("IF_N_GOTO", label_end, 0, 0)]
 
-            if isinstance(p[5], list):
-                p[0] += p[5]
-            else:
-                p[0].append(p[5])
+            if p[5]:
+                if isinstance(p[5], list):
+                    p[0] += p[5]
+                else:
+                    p[0].append(p[5])
 
             p[0] += [("GOTO", label_loop, 0, 0), ("LABEL", label_end)]
 
@@ -137,13 +138,15 @@ class CydcParser(object):
                         | loop_subprogram statements
                         | statements_nl
                         | statements
+                        | loop_empty
         """
-        if len(p) == 2 and p[1]:
+        if len(p) == 2:
             p[0] = []
-            if isinstance(p[1], list):
-                p[0] += p[1]
-            else:
-                p[0].append(p[1])
+            if p[1]:
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
         elif len(p) == 3:
             p[0] = p[1]
             if not p[0]:
@@ -153,6 +156,13 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
+
+    def p_loop_empty(self, p):
+        """
+        loop_empty : loop_empty NEWLINE_CHAR
+                    | empty
+        """
+        pass
 
     def p_if_statement(self, p):
         """
