@@ -117,7 +117,7 @@ class CydcCodegen(object):
         "POP_TRACK": 0x54,
         "POP_PLAY": 0x55,
         "POP_LOOP": 0x56,
-        "POP_PUSH_DI": 0x57,
+        "POP_PUSH_I": 0x57,
         "SET_XPOS": 0x58,
         "SET_YPOS": 0x59,
         "PUSH_XPOS": 0x5A,
@@ -133,6 +133,7 @@ class CydcCodegen(object):
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
+        self.optimize = True
 
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
@@ -173,14 +174,14 @@ class CydcCodegen(object):
                         c = ("SET_DI", next[1])
                         skip = True
                     code_tmp.append(c)
-                elif next[0] == "POP_SET_DI":
-                    if c[0] == "PUSH_D":
-                        c = ("SET_DI", next[1], c[1])
+                elif next[0] == "POP_PUSH_I":
+                    if c[0] == "PUSH_I":
+                        c = ("PUSH_DI", c[1])
                         skip = True
-                elif next[0] == "POP_PUSH_DI":
-                    if c[0] == "PUSH_D":
-                        c = ("PUSH_DI", next[1], c[1])
+                    elif c[0] == "PUSH_D":
+                        c = ("PUSH_I", c[1])
                         skip = True
+                    code_tmp.append(c)
                 elif next[0] == "POP_INK":
                     if c[0] == "PUSH_D":
                         c = ("INK_D", c[1])
@@ -198,11 +199,11 @@ class CydcCodegen(object):
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BORDER":
-                    if c[0] == "BORDER_D":
-                        c = ("INK_D", c[1])
+                    if c[0] == "PUSH_D":
+                        c = ("BORDER_D", c[1])
                         skip = True
-                    elif c[0] == "BORDER_I":
-                        c = ("INK_I", c[1])
+                    elif c[0] == "PUSH_I":
+                        c = ("BORDER_I", c[1])
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BRIGHT":
@@ -294,8 +295,12 @@ class CydcCodegen(object):
                     code_tmp.append(c)
             else:
                 code_tmp.append(c)
+        # for c in code:
+        #    print(c)
         # print(code)
-        # print(code_tmp)
+        # print()
+        # for c in code_tmp:
+        #    print(c)
         return code_tmp
 
     def code_translate(self, code, slice_text=False):
@@ -398,7 +403,7 @@ class CydcCodegen(object):
                 if isinstance(c, str):
                     t = variables.get(c)
                     if t is None:
-                        print(variables)
+                        # print(variables)
                         sys.exit(self._(f"ERROR: Variable {c} does not exists!"))
                     elif (t + disp) not in range(256):
                         sys.exit(self._(f"ERROR: Array {c} out of bounds!"))
@@ -454,9 +459,11 @@ class CydcCodegen(object):
     ):
         if font is None:
             font = CydcFont()
-        code = self.code_simple_optimize(code)
+        if self.optimize:
+            code = self.code_simple_optimize(code)
         if show_debug:
-            print(code)
+            for c in code:
+                print(c)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code
@@ -500,9 +507,11 @@ class CydcCodegen(object):
         return header + code
 
     def generate_code(self, code, slice_text=False, show_debug=False):
-        code = self.code_simple_optimize(code)
+        if self.optimize:
+            code = self.code_simple_optimize(code)
         if show_debug:
-            print(code)
+            for c in code:
+                print(c)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code

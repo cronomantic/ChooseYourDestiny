@@ -143,6 +143,7 @@ class CydcParser(object):
         if len(p) == 2:
             p[0] = []
             if p[1]:
+                print(p[1])
                 if isinstance(p[1], list):
                     p[0] += p[1]
                 else:
@@ -519,12 +520,12 @@ class CydcParser(object):
 
     def p_statement_set_ind_array(self, p):
         "statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY"
-        if len(p) == 9 and isinstance(p[7], list):
+        if len(p) == 9 and p[3] and isinstance(p[7], list):
             p[0] = []
             for i, c in enumerate(p[7]):
                 if isinstance(c, list):
                     p[0] += c
-                    p[0].append(("POP_SET_DI", (p[2], i)))
+                    p[0].append(("POP_SET_DI", (p[3], i)))
                 else:
                     p[0] = None
                     break
@@ -547,12 +548,12 @@ class CydcParser(object):
 
     def p_statement_set_ind(self, p):
         "statement : SET LCARET variableID RCARET TO numexpression"
-        if len(p) == 7:
-            if isinstance(p[4], list):
-                p[0] = p[4]
+        if len(p) == 7 and p[3]:
+            if isinstance(p[6], list):
+                p[0] = p[6]
             else:
-                p[0] = [p[4]]
-            p[0].append(("POP_SET_DI", (p[2], 0)))
+                p[0] = [p[6]]
+            p[0].append(("POP_SET_DI", (p[3], 0)))
 
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
@@ -749,7 +750,12 @@ class CydcParser(object):
 
     def p_numexpression_variable_ind(self, p):
         "numexpression : LCARET numexpression RCARET"
-        p[0] = ("POP_PUSH_DI", p[2])
+        if len(p) == 4 and p[2]:
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [p[2]]
+            p[0].append(("POP_PUSH_I",))
 
     def p_numexpression_variable_addr(self, p):
         "numexpression : AT_CHAR AT_CHAR variableID"
