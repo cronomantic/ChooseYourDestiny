@@ -354,8 +354,13 @@ OP_INKEY:
 1:  call INKEY
     or a
     jr z, 1b
-    pop hl
+    push af
+2:  call INKEY
+    or a
+    jr nz, 2b    
+    pop af
     ld (de), a
+    pop hl
     jp EXEC_LOOP
     ENDIF
 
@@ -365,6 +370,11 @@ OP_PUSH_INKEY:
 1:  call INKEY
     or a
     jr z, 1b
+    push af
+2:  call INKEY
+    or a
+    jr nz, 2b    
+    pop af
     PUSH_INT_STACK
     pop hl
     jp EXEC_LOOP
