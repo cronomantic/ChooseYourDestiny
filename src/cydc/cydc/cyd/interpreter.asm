@@ -160,13 +160,11 @@ OP_PUSH_DI:
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_POP_PUSH_DI
-OP_POP_PUSH_DI:
-    ; Stack <- [[Stack]]
+    IFNDEF UNUSED_OP_POP_PUSH_I
+OP_POP_PUSH_I:
+    ; Stack <- [Stack]
     ld e, (ix+0)
     ld d, HIGH FLAGS
-    ld a, (de)
-    ld e, a
     ld a, (de)
     ld (ix+0), a
     jp EXEC_LOOP
@@ -200,7 +198,7 @@ OP_SET_I:
 
     IFNDEF UNUSED_OP_SET_DI
 OP_SET_DI:
-    ;[[Param1]] <- Param2
+    ;[Param1] <- [[Param2]]
     ld c, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -1978,10 +1976,10 @@ OPCODES:
     IFDEF UNUSED_OP_POP_LOOP
     DW ERROR_NOP
     ENDIF
-    IFNDEF UNUSED_OP_POP_PUSH_DI
-    DW OP_POP_PUSH_DI
+    IFNDEF UNUSED_OP_POP_PUSH_I
+    DW OP_POP_PUSH_I
     ENDIF
-    IFDEF UNUSED_OP_POP_PUSH_DI
+    IFDEF UNUSED_OP_POP_PUSH_I
     DW ERROR_NOP
     ENDIF
     IFNDEF UNUSED_OP_SET_XPOS
