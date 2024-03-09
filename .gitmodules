@@ -1,3 +1,6 @@
 [submodule "external/chooseyourdestiny-highlighter"]
 	path = external/chooseyourdestiny-highlighter
 	url = https://github.com/cronomantic/chooseyourdestiny-highlighter.git
+[submodule "external/sjasmplus"]
+	path = external/sjasmplus
+	url = https://github.com/z00m128/sjasmplus

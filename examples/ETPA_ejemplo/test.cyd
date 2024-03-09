@@ -1,0 +1,167 @@
+[[ PICTURE 0 : DISPLAY 1 : AT 31,23 : WAITKEY      /* muestra la pantalla de presentacion y esoera */
+ 
+   DECLARE 0 AS graficos : SET graficos TO 1       /* 0= solo texto 1=con imagenes*/
+   DECLARE 1 AS ColorTexto : SET ColorTexto TO 7   /* color texto */ 
+   DECLARE 2 AS ColorOpcion : SET ColorOpcion TO 6 /*color opciones */ 
+   DECLARE 3 AS Modo : SET Modo TO 0               /* 0= texto 1= imagen izquierda 2= Imagen superior */ 
+   DECLARE 4 AS Imagen : SET Imagen TO 0           /* Numero de imagen, 0= sin imagen */  
+
+   PAGEPAUSE 1
+   BORDER 0 
+   INK @ColorTexto
+   BRIGHT 1
+   FLASH 0
+   PAPER 0
+   CLEAR    ]]
+
+[[ LABEL TITULO ]][[ SET Modo TO 0 : GOSUB Pantalla ]]
+*****************************************
+*                                       *
+*                  ETPA                 *
+*                                       *
+* por R.H. Montgomery y Edward Packard  *
+*                                       *
+*****************************************
+
+   Elige tu propia aventura Volumen 00
+              versión 0.1
+
+[[INK 6]]      Conversión para ZX Spectrum
+
+       por Anónimo
+
+
+[[INK 5]]      Creado con ChooseYourDestiny
+
+      de Sergio Chico "cronomantic"[[INK 7]] [[ WAITKEY ]][[ CLEAR ]]
+[[INK 5]]¡TU ERES EL PROTAGONISTA DE LA AVENTURA![[INK 7]]
+
+ Te has perdido en una extraña cueva, tenuemente iluminada. Gradualmente empiezas a distinguir dos túneles. Uno de ellos, el de la derecha, forma una curva hacia abajo. El otro sube en pendiente hacia la izquierda.
+
+ ¿Qué sucede a continuación? Todo depende de tu elección. ¿Cómo finaliza la aventura? ¡Sólo tú puedes averiguarlo! Y lo mejor es que puedes seguir leyendo y vivir no una, sino muchas aventuras increíbles.
+
+[[ INK @ColorOpcion ]] Q [[ INK @ColorTexto ]] / [[ INK @ColorOpcion ]] A [[ INK @ColorTexto ]] para seleccionar las opciones.
+
+[[ INK @ColorOpcion ]] SPACE [[ INK @ColorTexto ]] / [[ INK @ColorOpcion ]] ENTER [[ INK @ColorTexto ]] para elegir una opción.
+[[WAITKEY ]]
+[[ LABEL s1 ]][[ SET Modo TO 0 : GOSUB Pantalla ]]
+  Ya habías pasado en anteriores ocasiones por el Cañón de la Serpiente, cuando ibas en bicicleta a visitar a tu tío Howard en el rancho Red Creek, pero nunca te habías fijado en la entrada de la cueva. Parece como si un desprendimiento de rocas la hubiese dejado al descubierto recientemente.
+
+  El sol de la tarde ilumina la entrada de la cueva, pero su interior permanece en la más absoluta oscuridad. Das unos pasos hacia dentro para hacerte una idea de su tamaño. A medida que te vas acostumbrando a la oscuridad, empiezas a vislumbrar una especie de túnel iluminado débilmente por algún tipo de material fosforescente incrustado en las rocas.
+[[ WAITKEY : CLEAR ]]
+  Las paredes del túnel tienen una forma suave, como si hubiesen sido modeladas por el curso del agua. Cinco o seis metros más adelante, el túnel describe una curva. Te preguntas a dónde conduce. Das unos pasos más. Te pone nervioso estar solo en un lugar tan extraño. Das la vuelta y sales corriendo al exterior.
+
+  A juzgar por la oscuridad que reina en el exterior, está a punto de desencadenarse una tormenta. De pronto, te das cuenta que el sol ya se ha puesto y que la única iluminación procede de la pálida luna llena. Quizás has debido quedarte dormido un par de horas. Entonces recuerdas algo que todavía te resulta mucho más extraño: la noche anterior, la luna apenas estaba empezando su cuarto creciente. [[ WAITKEY ]]
+
+[[ LABEL s2 ]][[ SET Imagen TO 2 : SET Modo TO 1 : GOSUB Pantalla ]]
+  Empiezas a dudar del tiempo que has pasado dentro de la cueva. No tienes hambre, ni te parece que hayas podido quedarte dormido. No sabes si intentar volver a casa guiado por la luz de la luna o si esperar a que amanezca para no correr el riesgo de resbalar en el escarpado sendero.
+
+[[ INK @ColorOpcion : OPTION GOTO s4 ]]Decides volver a casa.
+
+[[ OPTION GOTO s5 ]]Decides esperar.
+[[ INK @ColorTexto : CHOOSE ]]
+
+[[ LABEL s4 ]][[ SET Modo TO 0 : GOSUB Pantalla ]]
+  A medida que avanzas hacia el rancho, tienes la sensación de que el sendero no es el que tú recuerdas, aunque desde luego la luz de la luna puede darle un aspecto diferente. De pronto, te das cuenta que no estás caminando por un sendero, sino por algo que se asemeja al cauce seco de un río. Vuelves corriendo a la entrada de la cueva. Miras a tu alrededor y descubres que todo el paisaje ha cambiado. Parece como si una lluvia torrencial hubiese borrado todo el rastro del camino durante el rato que has estado dentro de la cueva, a pesar de que no logras ver un solo charco. Tiemblas, hace frío, mucho más del que corresponde a esta época del año. Te pones la chaqueta que llevabas en la mochila, pero sigues sintiendo un frío terrible.
+[[ WAITKEY : CLEAR ]]
+  Por fin, el paisaje empieza a aclararse. Por el este asoma un poco de luz. Pronto saldrá el sol. Echas un vistazo a tu reloj y descubres que se ha parado, a pesar de que sólo hace unas horas que le has dado cuerda. Parece que nada funcione correctamente.
+
+  Sabes que debes volver al rancho lo antes posible, pero de algún modo, sientes que la única forma de hacer que las cosas vuelvan a ser como antes es retornar al interior de la cueva.
+
+[[ INK @ColorOpcion : OPTION GOTO s8 ]]Sigues hacia el rancho.
+
+[[ OPTION GOTO s5]]Decides esperar a que amanezca.
+[[ INK @ColorTexto : CHOOSE ]]
+
+[[ LABEL s5 ]][[ SET Imagen TO 2 : SET Modo TO 1 : GOSUB Pantalla ]][[/* IMAGEN REPETIDA 2*/]]
+  Esperas hasta la mañana siguiente, pero a medida que los rosados jirones del amanecer iluminan el cielo por el este, empieza a soplar un viento helado y amenazador.
+
+[[ INK @ColorOpcion : OPTION GOTO s6 ]]Buscas refugio.
+
+[[ OPTION GOTO s8 ]]Decides soportar el viento y caminar un poco mas.
+[[ INK @ColorTexto : CHOOSE ]]
+
+[[ LABEL s6 ]][[ SET Imagen TO 6 : SET Modo TO 1 : GOSUB Pantalla ]]
+  Buscas refugio en un hueco entre las rocas para protegerte de las terribles ráfagas de viento y te recuestas en su fondo. De repente, la roca se desmorona y resbalas por una pendiente fangosa hasta un estanque.
+
+  Cuando logras levantarte, calado hasta los huesos, y llegar hasta la hierba que cubre la orilla, el sol brilla con todo su esplendor. Miras hacia las rocas que se elevan por detrás del estanque, pero no logras descubrir por dónde has podido caer.
+
+  Tratas de hacerte una idea de tu situación, cuando de pronto aparece un caballo montado por un caballero con armadura, como los de los libros de historia. La visión te resulta tan inusitada que te dan ganas de echarte a reír.
+
+  El caballero levanta su casco e irrumpe en sonoras carcajadas. -¡Menudo sitio para tomar un baño! -grita-. De todos modos, opino que ha valido la pena, ¡Has quedado tan limpio como un cerdo!
+[[ IF @graficos = 1 THEN GOSUB WaitkeyClear ]]
+  Está a punto de caerse del caballo a causa de las fuertes carcajadas. -Anda, sigueme y te llevaré de vuelta al castillo -dice-. 
+  
+  Parece feliz de tener un nuevo siervo.
+[[ WAITKEY : GOTO Fin ]]
+
+[[ LABEL s8 ]][[ SET Imagen TO 8 : SET Modo TO 2 : GOSUB Pantalla ]]
+  A medida que aclara el día te das cuenta que no estás en el buen camino. El cañón parece menos profundo y el cauce del río está sembrado de cantos rodados que nunca habías visto. El viento es helado a pesar de estar en pleno verano. Al subir a un terreno más elevado descubres manchas de nieve. Desde un risco, divisas una llanura árida con lagos helados y, a lo lejos, una cadena montañosa con picos cubiertos por la nieve. Empiezas a pensar que no se trata simplemente de que te hayas perdido; te has perdido en el tiempo y, por alguna extraña razón, has sido transportado varios millones de años atrás a la Edad del Hielo.
+[[ WAITKEY : CLEAR ]]
+  Te diriges a una de las colinas que bordean el cañón, buscando un lugar para resguardarte del viento y descubres la entrada de otra cueva.
+  [[ IF @graficos = 1 THEN GOSUB WaitkeyClear ]]
+  Sientes la tentación de penetrar en ella aunque piensas que deberías seguir andando para ver si de algún modo logras llegar a un sitio conocido.
+
+[[ INK @ColorOpcion : OPTION GOTO s10 ]]Entras en la cueva.
+
+[[ OPTION GOTO s4 ]]Sigues andando.
+[[ INK @ColorTexto : CHOOSE ]]
+
+[[ LABEL s10 ]][[ SET Modo TO 0 : GOSUB Pantalla ]]
+  Entras en la extraña cueva y te detienes hasta que logras acostumbrarte a la tenue luz ambarina que ilumina su interior. Gradualmente empiezas a distinguir un túnel y se te ocurre que puede llevarte a casa.
+
+[[ INK @ColorOpcion : OPTION GOTO s11 ]]Sigue el tunel y te hundes en la oscuridad.
+
+[[ OPTION GOTO s8 ]]Vuelves a salir de la cueva.
+[[ INK @ColorTexto : CHOOSE ]]
+
+[[ LABEL s11 ]][[ SET Modo TO 0 : GOSUB Pantalla ]]
+Lentamente recuperas el sentido. Estás en tu cama en el rancho Red Creek contemplando a tu tío Howard. A su lado está un médico amigo suyo.
+
+  -Tuviste una mala caída trepando por esas rocas del cañón -dice tu tío Howard-. El doctor Parsons dice que no entiende cómo no te has roto ningún hueso. Estábamos muy preocupados pensando que te habías perdido en una de esas cuevas.
+
+  Te sientes un poco aturdido y muy débil, así que te limitas a sonreír sin decir nada. De todos modos, seguro que nadie te creería. No obstante, años después escribes un libro acerca de tus aventuras en la Cueva del Tiempo.
+[[ GOTO Fin ]]
+
+
+[[/********************** LIBRERIA DE RUTINAS *************************************/]]
+
+[[ LABEL Fin /* MENSAJE Y PROCESO DE FIN */]]
+[[ INK @ColorOpcion ]]
+F I N[[ TAB 13 : INK @ColorTexto : WAITKEY : GOTO s2 ]]
+
+
+[[ LABEL Pantalla /* GESTIONA LA DISTRIBUCION DE PANTALLA DE CADA SECCION */]]
+[[ CLEAR
+   IF @graficos = 0 THEN GOTO Pantalla_Return 
+   IF @Modo = 0 THEN GOSUB SoloTexto  
+   IF @Modo = 1 THEN GOSUB ImagenIzq 
+   IF @Modo = 2 THEN GOSUB ImagenSup 
+   LABEL Pantalla_Return
+   SET Imagen TO 0 : SET Modo TO 0 : CLEAR
+RETURN ]]
+
+[[ LABEL ImagenIzq 
+   PICTURE @Imagen
+   DISPLAY 1
+   MARGINS 11, 0, 21, 24
+   CLEAR
+   MARGINS 12, 0, 20, 24
+   RETURN ]]
+
+[[ LABEL ImagenSup
+PICTURE @Imagen
+DISPLAY 1
+MARGINS 0, 11, 32, 13
+CLEAR
+MARGINS 0, 12, 32, 12
+RETURN ]]
+
+[[ LABEL SoloTexto
+MARGINS 0, 0, 32, 24
+RETURN ]]
+
+[[ LABEL WaitkeyClear /* LA USO SOLO PARA AÑADIR UNA PAUSA ADICIONAL EN SECCIONES CON IMAGENES */
+WAITKEY
+CLEAR
+RETURN ]]
