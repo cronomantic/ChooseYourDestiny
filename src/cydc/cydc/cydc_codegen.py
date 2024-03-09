@@ -118,6 +118,12 @@ class CydcCodegen(object):
         "POP_PLAY": 0x55,
         "POP_LOOP": 0x56,
         "POP_PUSH_DI": 0x57,
+        "SET_XPOS": 0x58,
+        "SET_YPOS": 0x59,
+        "PUSH_XPOS": 0x5A,
+        "PUSH_YPOS": 0x5B,
+        "MIN": 0x5C,
+        "MAX": 0x5D,
     }
 
     def __init__(self, gettext):
@@ -156,6 +162,12 @@ class CydcCodegen(object):
                         skip = True
                     elif c[0] == "PUSH_INKEY":
                         c = ("INKEY", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_XPOS":
+                        c = ("SET_XPOS", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_YPOS":
+                        c = ("SET_YPOS", next[1])
                         skip = True
                     elif c[0] == "PUSH_DI":
                         c = ("SET_DI", next[1])
