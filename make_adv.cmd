@@ -17,9 +17,17 @@ SET IMGLINES=192
 REM Loading screen
 SET LOAD_SCR="LOAD.scr"
 
+REM Parameters for compiler
+SET CYDC_EXTRA_PARAMS=
+
 REM --------------------------------------
-%~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% -l %IMGLINES% -scr %LOAD_SCR% %TARGET%
+%~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -l %IMGLINES% -scr %LOAD_SCR% %TARGET%
 IF ERRORLEVEL 1 GOTO ERROR
+SET GAME=
+SET TARGET=
+SET IMGLINES=
+SET LOAD_SCR=
+SET CYDC_EXTRA_PARAMS=
 ECHO ---------------------
 ECHO Success!
 
@@ -43,6 +51,11 @@ CD ..\..
 GOTO END
 
 :ERROR
+SET GAME=
+SET TARGET=
+SET IMGLINES=
+SET LOAD_SCR=
+SET CYDC_EXTRA_PARAMS=
 ECHO ---------------------
 ECHO Compile error, please check
 PAUSE
