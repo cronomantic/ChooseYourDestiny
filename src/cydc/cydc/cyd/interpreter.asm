@@ -1413,6 +1413,66 @@ OP_POP_LOOP:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_SET_XPOS
+OP_SET_XPOS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (POS_X)
+    srl a
+    srl a
+    srl a
+    ld (de), a
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_SET_YPOS
+OP_SET_YPOS:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    ld a, (POS_Y)
+    ld (de), a
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_XPOS
+OP_PUSH_XPOS:
+    ld a, (POS_X)
+    srl a
+    srl a
+    srl a
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_YPOS
+OP_PUSH_YPOS:
+    ld a, (POS_Y)
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_MIN
+OP_MIN:
+    OP_2PARAM_GET_STACK  ; A= Param1, C=Param2
+    cp c                 ; a-c   
+    jr nc, 1f             ; A >= C
+    ld a, c
+    OP_2PARAM_STORE_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_MAX
+OP_MAX:
+    OP_2PARAM_GET_STACK  ; A= Param1, C=Param2
+    cp c                 ; a-c
+    jr c, 1f             ; A < C 
+    ld a, c
+1:  OP_2PARAM_STORE_STACK
+    jp EXEC_LOOP
+    ENDIF
+
 ;------------------------
 ERROR_NOP:
     ld a, 6
@@ -1914,7 +1974,42 @@ OPCODES:
     IFDEF UNUSED_OP_POP_PUSH_DI
     DW ERROR_NOP
     ENDIF
-
+    IFNDEF UNUSED_OP_SET_XPOS
+    DW OP_SET_XPOS
+    ENDIF
+    IFDEF UNUSED_OP_SET_XPOS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SET_YPOS
+    DW OP_SET_YPOS
+    ENDIF
+    IFDEF UNUSED_OP_SET_YPOS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_XPOS
+    DW OP_PUSH_XPOS
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_XPOS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_YPOS
+    DW OP_PUSH_YPOS
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_YPOS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_MAX
+    DW OP_MIN
+    ENDIF
+    IFDEF UNUSED_OP_MIN
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_MAX
+    DW OP_MAX
+    ENDIF
+    IFDEF UNUSED_OP_MAX
+    DW ERROR_NOP
+    ENDIF
 
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP

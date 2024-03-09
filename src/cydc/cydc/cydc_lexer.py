@@ -147,6 +147,10 @@ class CydcLexer(object):
         "NEWLINE": "NEWLINE",
         "WHILE": "WHILE",
         "WEND": "WEND",
+        "XPOS": "XPOS",
+        "YPOS": "YPOS",
+        "MIN": "MIN",
+        "MAX": "MIN",
     }
 
     # token_list
