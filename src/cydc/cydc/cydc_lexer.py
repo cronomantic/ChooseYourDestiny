@@ -150,7 +150,7 @@ class CydcLexer(object):
         "XPOS": "XPOS",
         "YPOS": "YPOS",
         "MIN": "MIN",
-        "MAX": "MIN",
+        "MAX": "MAX",
     }
 
     # token_list
