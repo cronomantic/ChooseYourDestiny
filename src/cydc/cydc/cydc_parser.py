@@ -669,24 +669,62 @@ class CydcParser(object):
                   | numexpression AND_B numexpression
                   | numexpression OR_B numexpression
         """
-        if isinstance(p[1], list):
-            p[0] = p[1]
-        else:
-            p[0] = [p[1]]
+        if len(p) == 4 and p[1] and p[3]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
 
-        if isinstance(p[3], list):
-            p[0] += p[3]
-        else:
-            p[0].append(p[3])
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
 
-        if p[2] == "+":
-            p[0].append(("ADD",))
-        elif p[2] == "-":
-            p[0].append(("SUB",))
-        elif p[2] == "&":
-            p[0].append(("AND",))
-        elif p[2] == "|":
-            p[0].append(("OR",))
+            if p[2] == "+":
+                p[0].append(("ADD",))
+            elif p[2] == "-":
+                p[0].append(("SUB",))
+            elif p[2] == "&":
+                p[0].append(("AND",))
+            elif p[2] == "|":
+                p[0].append(("OR",))
+
+    def p_numexpression_min(self, p):
+        """
+        numexpression : MIN LPAREN numexpression COMMA numexpression RPAREN
+        """
+        if len(p) == 4 and p[3] and p[5]:
+            p[0] = []
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0].append(p[5])
+
+            p[0].append(("MIN",))
+
+    def p_numexpression_max(self, p):
+        """
+        numexpression : MAX LPAREN numexpression COMMA numexpression RPAREN
+        """
+        if len(p) == 4 and p[3] and p[5]:
+            p[0] = []
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0].append(p[5])
+
+            p[0].append(("MAX",))
 
     def p_numexpression_unop(self, p):
         "numexpression : NOT_B numexpression %prec UNOT_B"
@@ -741,6 +779,14 @@ class CydcParser(object):
     def p_numexpression_inkey(self, p):
         "numexpression : INKEY LPAREN RPAREN"
         p[0] = ("PUSH_INKEY",)
+
+    def p_numexpression_xpos(self, p):
+        "numexpression : XPOS LPAREN RPAREN"
+        p[0] = ("PUSH_YPOS",)
+
+    def p_numexpression_ypos(self, p):
+        "numexpression : YPOS LPAREN RPAREN"
+        p[0] = ("PUSH_XPOS",)
 
     def p_numexpression_expression(self, p):
         "numexpression : expression"
