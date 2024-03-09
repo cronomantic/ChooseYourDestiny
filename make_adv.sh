@@ -16,6 +16,8 @@ IMGLINES="192"
 # Loading screen
 LOAD_SCR="$LOAD.scr"
 #
+# Parameters for compiler
+CYDC_EXTRA_PARAMS=
 # --------------------------------------
 
 #Check if python is installed
@@ -35,7 +37,7 @@ while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
-python $DIR/make_adventure.py -n $GAME -l $IMGLINES -scr $LOAD_SCR $TARGET
+python $DIR/make_adventure.py -n $GAME $CYDC_EXTRA_PARAMS -l $IMGLINES -scr $LOAD_SCR $TARGET
 RETVAL=$?
 if [ $RETVAL -ne 0 ]; then
     echo "---------------------"
