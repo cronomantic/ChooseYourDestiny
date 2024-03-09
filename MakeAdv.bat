@@ -17,6 +17,9 @@ SET IMGLINES=192
 REM Loading screen
 SET LOAD_SCR="LOAD.scr"
 
+REM Parameters for compiler
+SET CYDC_EXTRA_PARAMS=
+
 REM ---------------------------------
 
 
@@ -59,7 +62,7 @@ IF NOT EXIST "%~dp0\tools\sjasmplus.exe" (
   echo sjasmplus.exe file not found!
   GOTO ERROR
 )
-SET CYDCPARAMS=
+SET CYDCPARAMS=%CYDC_EXTRA_PARAMS%
 IF NOT EXIST "%~dp0\tokens.json" (
   SET CYDCPARAMS=%CYDCPARAMS% -T %~dp0\tokens.json
 ) else (
@@ -77,7 +80,12 @@ IF EXIST "%~dp0\charset.json" (
 SET CYDCPARAMS=%CYDCPARAMS% -csc %~dp0\IMAGES -pt3 %~dp0\TRACKS
 %~dp0\dist\python\python %~dp0\dist\cydc_cli.py %CYDCPARAMS% %TARGET% %~dp0\%GAME%.cyd %~dp0\tools\sjasmplus.exe %~dp0\tools\mkp3fs.exe %~dp0\.    
 IF ERRORLEVEL 1 GOTO ERROR
-SET CYDCPARAMS= 
+SET CYDCPARAMS=
+SET GAME=
+SET TARGET=
+SET IMGLINES=
+SET LOAD_SCR=
+SET CYDC_EXTRA_PARAMS=
 ECHO ---------------------
 ECHO Success!
 
@@ -103,6 +111,11 @@ GOTO END
 
 :ERROR
 SET CYDCPARAMS=
+SET GAME=
+SET TARGET=
+SET IMGLINES=
+SET LOAD_SCR=
+SET CYDC_EXTRA_PARAMS=
 ECHO ---------------------
 ECHO Compile error, please check
 PAUSE
