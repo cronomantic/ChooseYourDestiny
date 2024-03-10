@@ -37,7 +37,7 @@ OP_GOTO:
     ex de, hl
     ld a, (CHUNK)
     cp c       ; If the CHUNK is the same...
-    jr z, .same_CHUNK:
+    jr z, .same_CHUNK
     push hl
     ld a, c
     call LOAD_CHUNK
@@ -66,7 +66,7 @@ OP_RETURN:
     add ix, de
     ld a, (CHUNK)
     cp c       ; If the CHUNK is the same...
-    jr z, .same_CHUNK:
+    jr z, .same_CHUNK
     push hl
     ld a, c
     call LOAD_CHUNK
@@ -915,6 +915,7 @@ OP_PAUSE:
 
     IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
+    ld (.self_a), hl
     xor a
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
@@ -996,7 +997,17 @@ OP_CHOOSE:
     ld a, c
     or a
     jp z, OP_GOTO
-    jp OP_GOSUB
+    push hl
+.self_a+1:
+    ld hl, 0-0
+    ld a, (CHUNK)
+    ld (ix-1), l
+    ld (ix-2), h
+    ld (ix-3), a
+    ld de, 65536-3    ; ix-3
+    add ix, de
+    pop hl
+    jp OP_GOTO
     ENDIF
 
     IFNDEF UNUSED_OP_CHOOSE_W
@@ -1481,6 +1492,39 @@ OP_MAX:
     jp EXEC_LOOP
     ENDIF
 
+/*
+    IFNDEF UNUSED_OP_EXTERN
+OP_EXTERN:
+    ld b, (hl)
+    inc hl
+    ld a, (hl)
+    inc hl
+    ld (.jump_addr+0), a
+    ld a, (hl)
+    inc hl
+    ld (.jump_addr+1), a
+    push hl
+    ld a, (CHUNK)
+    push af
+    cp b       ; If the CHUNK is the same...
+    jr z, 1f
+    ld a, b
+    push hl
+    call LOAD_CHUNK
+    pop hl
+1:  ld de, FLAGS
+.jump_addr+1:
+    call 0-0
+    pop bc
+    ld a, (CHUNK)
+    cp b       ; If the CHUNK is the same...
+    jr z, 2f
+    ld a, b
+    call LOAD_CHUNK
+2:  pop hl
+    jp EXEC_LOOP
+    ENDIF
+*/
 ;------------------------
 ERROR_NOP:
     ld a, 6
