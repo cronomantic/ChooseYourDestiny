@@ -32,6 +32,7 @@ class CydcParser(object):
         self.tokens = self.lexer.get_tokens()
         self.parser = None
         self.errors = []
+        self.hidden_label_counter = 0
 
     precedence = (
         (
@@ -49,68 +50,12 @@ class CydcParser(object):
         ("right", "UNOT_B"),
     )
 
-    def p_script(self, p):
-        """
-        script : script ERROR_TEXT
-               | script TEXT
-               | script code
-               | ERROR_TEXT
-               | TEXT
-               | code
-        """
-        if len(p) == 2 and p[1]:
-            p[0] = []
-            if isinstance(p[1], list):
-                p[0] += p[1]
-            elif isinstance(p[1], tuple):
-                t = p[1]
-                if t[0] == "ERROR_TEXT":
-                    for err in t[1]:
-                        self.errors.append(
-                            f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
-                        )
-                    p[0] = None
-                else:
-                    p[0].append(p[1])
-            else:
-                p[0].append(p[1])
-        elif len(p) == 3:
-            p[0] = p[1]
-            if not p[0]:
-                p[0] = []
-            if p[2]:
-                if isinstance(p[2], list):
-                    p[0] += p[2]
-                elif isinstance(p[2], tuple):
-                    t = p[2]
-                    if t[0] == "ERROR_TEXT":
-                        for err in t[1]:
-                            self.errors.append(
-                                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
-                            )
-                        p[0] = None
-                    else:
-                        p[0].append(p[2])
-                else:
-                    p[0].append(p[2])
-
-    def p_code(self, p):
-        """
-        code : program CLOSE_CODE
-             | CLOSE_CODE
-        """
-        if len(p) == 2 and p[1]:
-            p[0] = []
-        elif len(p) == 3 and p[1]:
-            p[0] = p[1]
-
     def p_program(self, p):
         """
         program : program statements_nl
                 | program statements
                 | statements_nl
                 | statements
-
         """
         if len(p) == 2 and p[1]:
             p[0] = []
@@ -130,8 +75,8 @@ class CydcParser(object):
 
     def p_statements_nl(self, p):
         """
-        statements_nl   : statements NEWLINE
-                        | NEWLINE
+        statements_nl   : statements NEWLINE_CHAR
+                        | NEWLINE_CHAR
         """
         if len(p) == 2:
             p[0] = None
@@ -140,7 +85,11 @@ class CydcParser(object):
 
     def p_statements(self, p):
         """
-        statements  : statements COLON statement
+        statements  : statements COLON if_statement
+                    | statements COLON loop_statement
+                    | statements COLON statement
+                    | if_statement
+                    | loop_statement
                     | statement
         """
         if (len(p) == 2) and p[1]:
@@ -159,10 +108,150 @@ class CydcParser(object):
                 else:
                     p[0].append(p[3])
 
-    def p_statement_open_error(self, p):
-        "statement : ERROR_OPEN_CODE"
+    def p_loop_statement(self, p):
+        """
+        loop_statement : WHILE LPAREN boolexpression RPAREN loop_statement WEND
+        loop_statement : WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
+        """
+        if len(p) == 7 and p[3]:
+            label_loop = self._get_hidden_label()
+            label_end = self._get_hidden_label()
+
+            p[0] = [("LABEL", label_loop)]
+            if isinstance(p[3], list):
+                p[0] += p[3]
+                p[0] += [("IF_N_GOTO", label_end, 0, 0)]
+            else:
+                p[0] += [p[3], ("IF_N_GOTO", label_end, 0, 0)]
+
+            if p[5]:
+                if isinstance(p[5], list):
+                    p[0] += p[5]
+                else:
+                    p[0].append(p[5])
+
+            p[0] += [("GOTO", label_loop, 0, 0), ("LABEL", label_end)]
+
+    def p_loop_subprogram(self, p):
+        """
+        loop_subprogram : loop_subprogram statements_nl
+                        | loop_subprogram statements
+                        | statements_nl
+                        | statements
+                        | loop_empty
+        """
+        if len(p) == 2:
+            p[0] = []
+            if p[1]:
+                print(p[1])
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_loop_empty(self, p):
+        """
+        loop_empty : loop_empty NEWLINE_CHAR
+                    | empty
+        """
+        pass
+
+    def p_if_statement(self, p):
+        """
+        if_statement :  IF boolexpression then_statement else_statement ENDIF
+        """
+        if len(p) == 6 and p[2] and p[3]:
+            label = self._get_hidden_label()
+            p[0] = []
+            if isinstance(p[2], list):
+                p[0] += p[2]
+                p[0] += [("IF_N_GOTO", label, 0, 0)]
+            else:
+                p[0] += [p[2], ("IF_N_GOTO", label, 0, 0)]
+
+            if p[4]:
+                label2 = self._get_hidden_label()
+                p[0] += p[3]
+                p[0] += [("GOTO", label2, 0, 0), ("LABEL", label)]
+                p[0] += p[4]
+                p[0] += [("LABEL", label2)]
+            else:
+                p[0] += p[3]
+                p[0] += [("LABEL", label)]
+
+    def p_then_statement(self, p):
+        """
+        then_statement :   THEN if_statement
+                        |  THEN if_subprogram
+        """
+        if len(p) == 3 and p[2]:
+            p[0] = []
+            if isinstance(p[2], list):
+                p[0] += p[2]
+            else:
+                p[0].append(p[2])
+
+    def p_else_statement(self, p):
+        """
+        else_statement :    ELSE if_subprogram
+                        |   ELSE if_statement
+                        |   empty
+        """
+        p[0] = []
+        if len(p) == 3 and p[2]:
+            if isinstance(p[2], list):
+                p[0] += p[2]
+            else:
+                p[0].append(p[2])
+
+    def p_if_subprogram(self, p):
+        """
+        if_subprogram : if_subprogram statements_nl
+                        | if_subprogram statements
+                        | statements_nl
+                        | statements
+        """
+        if len(p) == 2 and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_statement_close_error(self, p):
+        "statement : ERROR_CLOSE_TEXT"
         self.errors.append(f"Invalid opening code token in line {p[1]}")
         p[0] = None
+
+    def p_statement_text_error(self, p):
+        "statement : ERROR_TEXT"
+        for err in p[1]:
+            self.errors.append(
+                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
+            )
+        p[0] = None
+
+    def p_statement_text(self, p):
+        "statement : TEXT"
+        p[0] = p[1]
 
     def p_statement_short_label(self, p):
         "statement : SHORT_LABEL"
@@ -171,6 +260,10 @@ class CydcParser(object):
     def p_statement_end(self, p):
         "statement : END"
         p[0] = ("END",)
+
+    def p_statement_newline(self, p):
+        "statement : NEWLINE"
+        p[0] = ("NEWLINE",)
 
     def p_statement_return(self, p):
         "statement : RETURN"
@@ -208,13 +301,6 @@ class CydcParser(object):
         "statement : LABEL ID"
         p[0] = ("LABEL", p[2])
 
-    def p_statement_char(self, p):
-        "statement : CHAR expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("CHAR", p[2])
-        else:
-            p[0] = None
-
     def p_statement_tab(self, p):
         "statement : TAB expression"
         if self._check_byte_value(p[2]):
@@ -229,137 +315,109 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_set_random_expression(self, p):
-        "statement : SET variableID TO RANDOM LPAREN expression RPAREN"
-        if self._check_byte_value(p[6]):
-            p[0] = ("RANDOM", p[2], p[6])
+    def p_statement_char(self, p):
+        "statement : CHAR numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_CHAR",))
 
-    def p_statement_set_random_expression_limit(self, p):
-        "statement : SET variableID TO RANDOM LPAREN expression COMMA expression RPAREN"
-        if self._check_byte_value(p[6]) and self._check_byte_value(p[8]):
-            limit = p[8] - p[6]
-            if limit <= 0 or limit > 255:
-                self.errors.append(f"Invalid values on RANDOM({p[6]}, {p[8]})")
-                p[0] = None
-            else:
-                p[0] = [
-                    ("RANDOM", p[2], limit),
-                    ("PUSH_I", p[2]),
-                    ("PUSH_D", p[6]),
-                    ("ADD",),
-                    ("POP_SET", p[2]),
-                ]
+    def p_statement_print(self, p):
+        "statement : PRINT numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_PRINT",))
 
-    def p_statement_set_random(self, p):
-        "statement : SET variableID TO RANDOM"
-        p[0] = ("RANDOM", p[2], 0)
-
-    def p_statement_set_inkey(self, p):
-        "statement : SET variableID TO INKEY"
-        p[0] = ("INKEY", p[2])
-
-    def p_statement_print_ind(self, p):
-        "statement : PRINT INDIRECTION variableID"
-        p[0] = ("PRINT_I", p[3])
-
-    def p_statement_print_dir(self, p):
-        "statement : PRINT expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PRINT_D", p[2])
+    def p_statement_ink(self, p):
+        "statement : INK numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_INK",))
 
-    def p_statement_ink_ind(self, p):
-        "statement : INK INDIRECTION variableID"
-        p[0] = ("INK_I", p[3])
-
-    def p_statement_ink_dir(self, p):
-        "statement : INK expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("INK_D", p[2])
+    def p_statement_paper(self, p):
+        "statement : PAPER numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_PAPER",))
 
-    def p_statement_paper_ind(self, p):
-        "statement : PAPER INDIRECTION variableID"
-        p[0] = ("PAPER_I", p[3])
-
-    def p_statement_paper_dir(self, p):
-        "statement : PAPER expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PAPER_D", p[2])
+    def p_statement_border(self, p):
+        "statement : BORDER numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_BORDER",))
 
-    def p_statement_border_ind(self, p):
-        "statement : BORDER INDIRECTION variableID"
-        p[0] = ("BORDER_I", p[3])
-
-    def p_statement_border_dir(self, p):
-        "statement : BORDER expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("BORDER_D", p[2])
+    def p_statement_bright(self, p):
+        "statement : BRIGHT numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_BRIGHT",))
 
-    def p_statement_bright_ind(self, p):
-        "statement : BRIGHT INDIRECTION variableID"
-        p[0] = ("BRIGHT_I", p[3])
-
-    def p_statement_bright_dir(self, p):
-        "statement : BRIGHT expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("BRIGHT_D", p[2])
+    def p_statement_flash(self, p):
+        "statement : FLASH numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_FLASH",))
 
-    def p_statement_flash_ind(self, p):
-        "statement : FLASH INDIRECTION variableID"
-        p[0] = ("FLASH_I", p[3])
-
-    def p_statement_flash_dir(self, p):
-        "statement : FLASH expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("FLASH_D", p[2])
+    def p_statement_sfx(self, p):
+        "statement : SFX numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_SFX",))
 
-    def p_statement_sfx_ind(self, p):
-        "statement : SFX INDIRECTION variableID"
-        p[0] = ("SFX_I", p[3])
-
-    def p_statement_sfx_dir(self, p):
-        "statement : SFX expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("SFX_D", p[2])
+    def p_statement_display(self, p):
+        "statement : DISPLAY numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_DISPLAY",))
 
-    def p_statement_display_ind(self, p):
-        "statement : DISPLAY INDIRECTION variableID"
-        p[0] = ("DISPLAY_I", p[3])
-
-    def p_statement_display_dir(self, p):
-        "statement : DISPLAY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("DISPLAY_D", p[2])
+    def p_statement_picture(self, p):
+        "statement : PICTURE numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_PICTURE",))
 
-    def p_statement_picture_ind(self, p):
-        "statement : PICTURE INDIRECTION variableID"
-        p[0] = ("PICTURE_I", p[3])
-
-    def p_statement_picture_dir(self, p):
-        "statement : PICTURE expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PICTURE_D", p[2])
+    def p_statement_track(self, p):
+        "statement : TRACK numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
         else:
-            p[0] = None
+            p[0] = [p[2]]
+        p[0].append(("POP_TRACK",))
+
+    def p_statement_play(self, p):
+        "statement : PLAY numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_PLAY",))
+
+    def p_statement_loop(self, p):
+        "statement : LOOP numexpression"
+        if isinstance(p[2], list):
+            p[0] = p[2]
+        else:
+            p[0] = [p[2]]
+        p[0].append(("POP_LOOP",))
 
     def p_statement_wait(self, p):
         "statement : WAIT expression"
@@ -379,39 +437,6 @@ class CydcParser(object):
         "statement : TYPERATE expression"
         if self._check_word_value(p[2]):
             p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
-        else:
-            p[0] = None
-
-    def p_statement_track_ind(self, p):
-        "statement : TRACK INDIRECTION variableID"
-        p[0] = ("TRACK_I", p[3])
-
-    def p_statement_track_dir(self, p):
-        "statement : TRACK expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("TRACK_D", p[2])
-        else:
-            p[0] = None
-
-    def p_statement_play_ind(self, p):
-        "statement : PLAY INDIRECTION variableID"
-        p[0] = ("PLAY_I", p[3])
-
-    def p_statement_play_dir(self, p):
-        "statement : PLAY expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("PLAY_D", p[2])
-        else:
-            p[0] = None
-
-    def p_statement_loop_ind(self, p):
-        "statement : LOOP INDIRECTION variableID"
-        p[0] = ("LOOP_I", p[3])
-
-    def p_statement_loop_dir(self, p):
-        "statement : LOOP expression"
-        if self._check_byte_value(p[2]):
-            p[0] = ("LOOP_D", p[2])
         else:
             p[0] = None
 
@@ -493,13 +518,51 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_set_ind_array(self, p):
+        "statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY"
+        if len(p) == 9 and p[3] and isinstance(p[7], list):
+            p[0] = []
+            for i, c in enumerate(p[7]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET_DI", (p[3], i)))
+                else:
+                    p[0] = None
+                    break
+        else:
+            p[0] = None
+
+    def p_statement_set_dir_array(self, p):
+        "statement : SET variableID TO LCURLY numexpressions_list RCURLY"
+        if len(p) == 7 and isinstance(p[5], list):
+            p[0] = []
+            for i, c in enumerate(p[5]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET", (p[2], i)))
+                else:
+                    p[0] = None
+                    break
+        else:
+            p[0] = None
+
+    def p_statement_set_ind(self, p):
+        "statement : SET LCARET variableID RCARET TO numexpression"
+        if len(p) == 7 and p[3]:
+            if isinstance(p[6], list):
+                p[0] = p[6]
+            else:
+                p[0] = [p[6]]
+            p[0].append(("POP_SET_DI", (p[3], 0)))
+
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
-        if isinstance(p[4], list):
-            p[0] = p[4]
-        else:
-            p[0] = [p[4]]
-        p[0].append(("POP_SET", p[2]))
+        if len(p) == 5:
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0].append(("POP_SET", (p[2], 0)))
 
     def p_statement_choose_if_wait_goto(self, p):
         "statement : CHOOSE IF WAIT expression THEN GOTO ID"
@@ -515,46 +578,6 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_if_return(self, p):
-        "statement : IF boolexpression THEN RETURN"
-        if isinstance(p[2], list):
-            p[0] = p[2]
-            p[0].append(("IF_RETURN",))
-        else:
-            p[0] = [p[2], ("IF_RETURN",)]
-
-    def p_statement_if_goto(self, p):
-        "statement : IF boolexpression THEN GOTO ID"
-        if isinstance(p[2], list):
-            p[0] = p[2]
-            p[0].append(("IF_GOTO", p[5], 0, 0))
-        else:
-            p[0] = [p[2], ("IF_GOTO", p[5], 0, 0)]
-
-    def p_statement_if_gosub(self, p):
-        "statement : IF boolexpression THEN GOSUB ID"
-        if isinstance(p[2], list):
-            p[0] = p[2]
-            p[0].append(("IF_GOSUB", p[5], 0, 0))
-        else:
-            p[0] = [p[2], ("IF_GOSUB", p[5], 0, 0)]
-
-    def p_statement_if_option_goto(self, p):
-        "statement : IF boolexpression OPTION GOTO ID"
-        if isinstance(p[2], list):
-            p[0] = p[2]
-            p[0].append(("IF_OPTION", 0, p[3], 0, 0))
-        else:
-            p[0] = [p[2], ("IF_OPTION", 0, p[3], 0, 0)]
-
-    def p_statement_if_option_gosub(self, p):
-        "statement : IF boolexpression OPTION GOSUB ID"
-        if isinstance(p[2], list):
-            p[0] = p[2]
-            p[0].append(("IF_OPTION", 0xFF, p[3], 0, 0))
-        else:
-            p[0] = [p[2], ("IF_OPTION", 0xFF, p[3], 0, 0)]
-
     def p_statement_option_goto(self, p):
         "statement : OPTION GOTO ID"
         p[0] = ("OPTION", 0, p[3], 0, 0)
@@ -562,6 +585,27 @@ class CydcParser(object):
     def p_statement_option_gosub(self, p):
         "statement : OPTION GOSUB ID"
         p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+
+    def p_numexpressions_list(self, p):
+        """
+        numexpressions_list : numexpressions_list COMMA numexpression
+                            | numexpression
+        """
+        if len(p) == 2 and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0].append(p[1])
+            else:
+                p[0].append([p[1]])
+        elif len(p) == 4:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[3]:
+                if isinstance(p[3], list):
+                    p[0].append(p[3])
+                else:
+                    p[0].append([p[3]])
 
     def p_boolexpression_binop(self, p):
         """
@@ -636,27 +680,65 @@ class CydcParser(object):
                   | numexpression AND_B numexpression
                   | numexpression OR_B numexpression
         """
-        if isinstance(p[1], list):
-            p[0] = p[1]
-        else:
-            p[0] = [p[1]]
+        if len(p) == 4 and p[1] and p[3]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
 
-        if isinstance(p[3], list):
-            p[0] += p[3]
-        else:
-            p[0].append(p[3])
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
 
-        if p[2] == "+":
-            p[0].append(("ADD",))
-        elif p[2] == "-":
-            p[0].append(("SUB",))
-        elif p[2] == "&":
-            p[0].append(("AND",))
-        elif p[2] == "|":
-            p[0].append(("OR",))
+            if p[2] == "+":
+                p[0].append(("ADD",))
+            elif p[2] == "-":
+                p[0].append(("SUB",))
+            elif p[2] == "&":
+                p[0].append(("AND",))
+            elif p[2] == "|":
+                p[0].append(("OR",))
+
+    def p_numexpression_min(self, p):
+        """
+        numexpression : MIN LPAREN numexpression COMMA numexpression RPAREN
+        """
+        if len(p) == 4 and p[3] and p[5]:
+            p[0] = []
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0].append(p[5])
+
+            p[0].append(("MIN",))
+
+    def p_numexpression_max(self, p):
+        """
+        numexpression : MAX LPAREN numexpression COMMA numexpression RPAREN
+        """
+        if len(p) == 4 and p[3] and p[5]:
+            p[0] = []
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0].append(p[5])
+
+            p[0].append(("MAX",))
 
     def p_numexpression_unop(self, p):
-        "numexpression : NOT_B expression %prec UNOT_B"
+        "numexpression : NOT_B numexpression %prec UNOT_B"
         if isinstance(p[2], list):
             p[0] = p[2].append(("NOT_B",))
         else:
@@ -666,9 +748,61 @@ class CydcParser(object):
         "numexpression : LPAREN numexpression RPAREN"
         p[0] = p[2]
 
+    def p_numexpression_variable_ind(self, p):
+        "numexpression : LCARET numexpression RCARET"
+        if len(p) == 4 and p[2]:
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [p[2]]
+            p[0].append(("POP_PUSH_I",))
+
+    def p_numexpression_variable_addr(self, p):
+        "numexpression : AT_CHAR AT_CHAR variableID"
+        p[0] = ("PUSH_D", (p[3], 0))
+
     def p_numexpression_variable(self, p):
-        "numexpression : INDIRECTION variableID"
-        p[0] = ("PUSH_I", p[2])
+        "numexpression : AT_CHAR variableID"
+        p[0] = ("PUSH_I", (p[2], 0))
+
+    def p_statement_random_expression_limit(self, p):
+        "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
+        if self._check_byte_value(p[3]) and self._check_byte_value(p[5]):
+            limit = p[5] - p[3]
+            if limit <= 0 or limit > 255:
+                self.errors.append(f"Invalid values on RANDOM({p[3]}, {p[5]})")
+                p[0] = None
+            else:
+                p[0] = [
+                    ("PUSH_RANDOM", limit),
+                    ("PUSH_D", p[3]),
+                    ("ADD",),
+                ]
+        else:
+            p[0] = None
+
+    def p_statement_random_expression(self, p):
+        "numexpression : RANDOM LPAREN expression RPAREN"
+        if self._check_byte_value(p[3]):
+            p[0] = ("PUSH_RANDOM", p[3])
+        else:
+            p[0] = None
+
+    def p_statement_random(self, p):
+        "numexpression : RANDOM LPAREN RPAREN"
+        p[0] = ("PUSH_RANDOM", 0)
+
+    def p_numexpression_inkey(self, p):
+        "numexpression : INKEY LPAREN RPAREN"
+        p[0] = ("PUSH_INKEY",)
+
+    def p_numexpression_xpos(self, p):
+        "numexpression : XPOS LPAREN RPAREN"
+        p[0] = ("PUSH_YPOS",)
+
+    def p_numexpression_ypos(self, p):
+        "numexpression : YPOS LPAREN RPAREN"
+        p[0] = ("PUSH_XPOS",)
 
     def p_numexpression_expression(self, p):
         "numexpression : expression"
@@ -723,6 +857,10 @@ class CydcParser(object):
         "number : DEC_NUMBER"
         p[0] = p[1]
 
+    def p_empty(self, p):
+        "empty :"
+        pass
+
     def p_error(self, p):
         if p:
             msg = f"Syntax error at line {p.lineno}: {p.value}"
@@ -740,7 +878,12 @@ class CydcParser(object):
             return None
         else:
             self.errors = []
-            return self.parser.parse(input, lexer=self.lexer)
+            self.hidden_label_counter = 0
+            cinput, cerrors = self._code_text_reversal(input)
+            self.errors += cerrors
+            if len(self.errors) > 0:
+                return []
+            return self.parser.parse(cinput, lexer=self.lexer)
 
     def debug_p(self, p):
         s = ""
@@ -749,13 +892,72 @@ class CydcParser(object):
         print(s)
 
     def _check_byte_value(self, val):
-        if val > 255 or val < 0:
+        if val not in range(256):
             self.errors.append(f"Invalid byte value {val}")
             return False
         return True
 
     def _check_word_value(self, val):
-        if val > ((64 * 1024) - 1) or val < 0:
+        if val not in range(64 * 1024):
             self.errors.append(f"Invalid word value {val}")
             return False
         return True
+
+    def _get_hidden_label(self):
+        l = f"*LABEL_{self.hidden_label_counter}*"
+        self.hidden_label_counter += 1
+        return l
+
+    def _code_text_reversal(self, text):
+        code = ""
+        skip = False
+        is_text = True
+        errors = []
+        curr_text = ""
+        curr_code = ""
+        curr_line = 0
+        curr_pos = 0
+        last_c_line = 0
+        last_c_pos = 0
+        for i, c in enumerate(text):
+            if skip:
+                curr_pos += 1
+                skip = False
+            elif (i + 1) < len(text):
+                if text[i] == "[" and text[i + 1] == "[":
+                    if not is_text:
+                        errors.append(
+                            f"Invalid code opening on line {curr_line} at {curr_pos}"
+                        )
+                        break
+                    skip = True
+                    is_text = False
+                    last_c_line = curr_line
+                    last_c_pos = curr_pos
+                    if len(curr_text) > 0:
+                        curr_code += "[[" + curr_text + "]]"
+                    curr_text = ""
+                elif text[i] == "]" and text[i + 1] == "]":
+                    if is_text:
+                        errors.append(
+                            f"Invalid code closure on line {curr_line} at {curr_pos}"
+                        )
+                        break
+                    skip = True
+                    is_text = True
+                    if len(curr_code) > 0:
+                        code += curr_code
+                    curr_code = ""
+                elif is_text:
+                    curr_text += c
+                else:
+                    curr_code += c
+                if c == "\n":
+                    curr_line += 1
+                    curr_pos = 0
+                else:
+                    curr_pos += 1
+        if not is_text and len(errors) == 0:
+            errors.append(f"Invalid code closure on line {last_c_line} at {last_c_pos}")
+
+        return (code, errors)
