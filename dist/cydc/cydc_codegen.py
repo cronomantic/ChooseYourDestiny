@@ -30,23 +30,23 @@ class CydcCodegen(object):
     BANK_SIZE = 16 * 1024
 
     opcodes = {
-        "END": 0x0,
-        "TEXT": 0x1,
-        "GOTO": 0x2,
-        "GOSUB": 0x3,
-        "RETURN": 0x4,
-        "MARGINS": 0x5,
-        "CENTER": 0x6,
-        "AT": 0x7,
-        "SET_D": 0x8,
-        "SET_I": 0x9,
-        "POP_SET": 0xA,
-        "PUSH_D": 0xB,
-        "PUSH_I": 0xC,
-        "IF_GOTO": 0xD,
-        "IF_GOSUB": 0xE,
-        "IF_OPTION": 0xF,
-        "IF_RETURN": 0x10,
+        "END": 0x00,
+        "TEXT": 0x01,
+        "GOTO": 0x02,
+        "GOSUB": 0x03,
+        "RETURN": 0x04,
+        "MARGINS": 0x05,
+        "CENTER": 0x06,
+        "AT": 0x07,
+        "SET_D": 0x08,
+        "SET_I": 0x09,
+        "POP_SET": 0x0A,
+        "PUSH_D": 0x0B,
+        "PUSH_I": 0x0C,
+        "IF_GOTO": 0x0D,
+        "IF_N_GOTO": 0x0E,
+        "PUSH_INKEY": 0x0F,
+        "PUSH_RANDOM": 0x10,
         "NOT": 0x11,
         "NOT_B": 0x12,
         "AND": 0x13,
@@ -86,7 +86,7 @@ class CydcCodegen(object):
         "TYPERATE": 0x35,
         "CLEAR": 0x36,
         "PAGEPAUSE": 0x37,
-        "CHAR": 0x38,
+        "CHAR_D": 0x38,
         "TAB": 0x39,
         "REPCHAR": 0x3A,
         "SFX_D": 0x3B,
@@ -99,6 +99,31 @@ class CydcCodegen(object):
         "LOOP_I": 0x42,
         "RANDOMIZE": 0x43,
         "POP_AT": 0x44,
+        "NEWLINE": 0x45,
+        "SET_DI": 0x46,
+        "POP_SET_DI": 0x47,
+        "PUSH_DI": 0x48,
+        "POP_INK": 0x49,
+        "POP_PAPER": 0x4A,
+        "POP_BORDER": 0x4B,
+        "POP_BRIGHT": 0x4C,
+        "POP_FLASH": 0x4D,
+        "POP_PRINT": 0x4E,
+        "CHAR_I": 0x4F,
+        "POP_CHAR": 0x50,
+        "POP_PICTURE": 0x51,
+        "POP_DISPLAY": 0x52,
+        "POP_SFX": 0x53,
+        "POP_TRACK": 0x54,
+        "POP_PLAY": 0x55,
+        "POP_LOOP": 0x56,
+        "POP_PUSH_I": 0x57,
+        "SET_XPOS": 0x58,
+        "SET_YPOS": 0x59,
+        "PUSH_XPOS": 0x5A,
+        "PUSH_YPOS": 0x5B,
+        "MIN": 0x5C,
+        "MAX": 0x5D,
     }
 
     def __init__(self, gettext):
@@ -108,6 +133,7 @@ class CydcCodegen(object):
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
+        self.optimize = True
 
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
@@ -123,8 +149,8 @@ class CydcCodegen(object):
         for i, c in enumerate(code):
             if skip:
                 skip = False
-            elif (i+1) < len(code):
-                next = code[i+1]
+            elif (i + 1) < len(code):
+                next = code[i + 1]
                 if next[0] == "POP_SET":
                     if c[0] == "PUSH_D":
                         c = ("SET_D", next[1], c[1])
@@ -132,13 +158,149 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("SET_I", next[1], c[1])
                         skip = True
+                    elif c[0] == "PUSH_RANDOM":
+                        c = ("RANDOM", next[1], c[1])
+                        skip = True
+                    elif c[0] == "PUSH_INKEY":
+                        c = ("INKEY", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_XPOS":
+                        c = ("SET_XPOS", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_YPOS":
+                        c = ("SET_YPOS", next[1])
+                        skip = True
+                    elif c[0] == "PUSH_DI":
+                        c = ("SET_DI", next[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PUSH_I":
+                    if c[0] == "PUSH_I":
+                        c = ("PUSH_DI", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_D":
+                        c = ("PUSH_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_INK":
+                    if c[0] == "PUSH_D":
+                        c = ("INK_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("INK_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PAPER":
+                    if c[0] == "PUSH_D":
+                        c = ("PAPER_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PAPER_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_BORDER":
+                    if c[0] == "PUSH_D":
+                        c = ("BORDER_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("BORDER_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_BRIGHT":
+                    if c[0] == "PUSH_D":
+                        c = ("BRIGHT_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("BRIGHT_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_FLASH":
+                    if c[0] == "PUSH_D":
+                        c = ("FLASH_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("FLASH_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PRINT":
+                    if c[0] == "PUSH_D":
+                        c = ("PRINT_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PRINT_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_CHAR":
+                    if c[0] == "PUSH_D":
+                        c = ("CHAR_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("CHAR_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PICTURE":
+                    if c[0] == "PUSH_D":
+                        c = ("PICTURE_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PICTURE_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_DISPLAY":
+                    if c[0] == "PUSH_D":
+                        c = ("DISPLAY_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("DISPLAY_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_SFX":
+                    if c[0] == "PUSH_D":
+                        c = ("SFX_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("SFX_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_TRACK":
+                    if c[0] == "PUSH_D":
+                        c = ("TRACK_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("TRACK_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_PLAY":
+                    if c[0] == "PUSH_D":
+                        c = ("PLAY_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("PLAY_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "POP_LOOP":
+                    if c[0] == "PUSH_D":
+                        c = ("LOOP_D", c[1])
+                        skip = True
+                    elif c[0] == "PUSH_I":
+                        c = ("LOOP_I", c[1])
+                        skip = True
+                    code_tmp.append(c)
+                elif next[0] == "IF_N_GOTO":
+                    if c[0] == "NOT":
+                        c = ("IF_GOTO", next[1], next[3])
+                        skip = True
                     code_tmp.append(c)
                 else:
                     code_tmp.append(c)
             else:
                 code_tmp.append(c)
-        #print(code)
-        #print(code_tmp)
+        # for c in code:
+        #    print(c)
+        # print(code)
+        # print()
+        # for c in code_tmp:
+        #    print(c)
         return code_tmp
 
     def code_translate(self, code, slice_text=False):
@@ -233,14 +395,26 @@ class CydcCodegen(object):
         for c in code:
             if len(queue) > 0 and c == 0:
                 c = queue.pop()
+            elif isinstance(c, tuple):  # Variable with displacement
+                if len(c) != 2:
+                    sys.exit(self._(f"ERROR: Invalid opcode translation!"))
+                disp = c[1]
+                c = c[0]
+                if isinstance(c, str):
+                    t = variables.get(c)
+                    if t is None:
+                        # print(variables)
+                        sys.exit(self._(f"ERROR: Variable {c} does not exists!"))
+                    elif (t + disp) not in range(256):
+                        sys.exit(self._(f"ERROR: Array {c} out of bounds!"))
+                    else:
+                        c = t + disp  # Adds displacement
+                else:
+                    c = c + disp
             elif isinstance(c, str):
                 t = symbols.get(c)
                 if t is None:
-                    t = variables.get(c)
-                    if t is None:
-                        sys.exit(self._(f"ERROR: Symbol {c} does not exists!"))
-                    else:
-                        c = t
+                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
                 else:  # label found
                     c = t[0]  # Extract bank
                     queue = self._convert_address(
@@ -280,10 +454,16 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def generate_code_dsk(self, code, tokens, font=None, slice_text=False):
+    def generate_code_dsk(
+        self, code, tokens, font=None, slice_text=False, show_debug=False
+    ):
         if font is None:
             font = CydcFont()
-        code = self.code_simple_optimize(code)
+        if self.optimize:
+            code = self.code_simple_optimize(code)
+        if show_debug:
+            for c in code:
+                print(c)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code
@@ -326,10 +506,31 @@ class CydcCodegen(object):
         header = self._word_to_list(len(header)) + header
         return header + code
 
-    def generate_code(self, code, slice_text=False):
-        code = self.code_simple_optimize(code)
+    def generate_code(self, code, slice_text=False, show_debug=False):
+        if self.optimize:
+            code = self.code_simple_optimize(code)
+        if show_debug:
+            for c in code:
+                print(c)
         (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
         self.code = [
             self.symbol_replacement(c, self.symbols, self.variables) for c in code
         ]
         return self.code
+
+    def get_unused_opcodes(self, code):
+        excluded_ops = [
+            "DECLARE",
+            "LABEL",
+            "TEXT",
+            "GOSUB",
+            "GOTO",
+            "IF_GOTO",
+            "IF_N_GOTO",
+            "RETURN",
+            "END",
+        ]
+        code = self.code_simple_optimize(code)
+        used_opcodes = {c[0] for c in code if c[0] not in excluded_ops}
+        all_opcodes = {c for c in self.opcodes.keys() if c not in excluded_ops}
+        return all_opcodes - used_opcodes

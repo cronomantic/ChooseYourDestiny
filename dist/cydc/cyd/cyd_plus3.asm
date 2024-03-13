@@ -23,7 +23,7 @@
 ; SOFTWARE.
 ;
 
-    DEFINE RELEASE "0.6"
+    DEFINE RELEASE "0.7"
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -359,10 +359,10 @@ START_LOADING:
     add hl, de
     ld (TOKENS_ADDR), hl
 
+    ld ix, INT_STACK_ADDR     ;Set internal Stack
+
     xor a
     call LOAD_CHUNK         ;Loads first CHUNK
-    ld hl, INT_STACK_ADDR
-    ld (INT_STACK_PTR), hl    ;Set Stack
     ld hl, CHUNK_ADDR       ;Start the CHUNK
     ; HL current pointer,
 EXEC_LOOP:
