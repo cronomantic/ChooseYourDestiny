@@ -9,7 +9,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [Requerimientos e Instalación](#requerimientos-e-instalación)
     - [Windows](#windows)
-    - [Linux, BSDs y compatibles](#linux-bsds-y-compatibles)
+    - [Linux, BSDs y compatibles (Experimental)](#linux-bsds-y-compatibles-experimental)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
@@ -103,7 +103,7 @@ Estas son las instrucciones más detalladas para cada sistema operativo:
 
 En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
 
-### Linux, BSDs y compatibles
+### Linux, BSDs y compatibles (Experimental)
 
 Para estos sistemas, los requerimientos son:
 
@@ -152,7 +152,7 @@ Este programa es el compilador que traduce el texto de la aventura a un fichero 
 cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-csc CSC_IMAGES_PATH] [-trk TRACKS_PATH]
-              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V]
+              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] 
               {48k,128k,plus3} input.txt SJASMPLUS_PATH MKP3FS_PATH OUTPUT_PATH
 ```
 
@@ -172,6 +172,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
+- **\-trim**: (Experimental) Elimina el código de aquellos comandos que no se usen en la aventura.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
