@@ -14,9 +14,9 @@ Improvements and contributions are welcome.
 
 ---
 
-Un interprete para ejecutar historias de tipo "Elige Tu Propia Aventura" o aventuras por opciones y librojuegos, para el Spectrum 48k, 128k, +2 y +3.
+Un intérprete para ejecutar historias de tipo "Elige Tu Propia Aventura" o aventuras por opciones y librojuegos, para el Spectrum 48k, 128k, +2 y +3.
 
-Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
+Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
