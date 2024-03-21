@@ -1,8 +1,8 @@
 # Manual de Choose Your Destiny
 
-El programa es un compilador y intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y librojuegos, para el Spectrum 48, 128, +2 y +3.
+El programa es un compilador e intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y libro juegos, para el Spectrum 48, 128, +2 y +3.
 
-Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guión de la aventura, a un fichero interpretable por el motor.
+Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
@@ -95,7 +95,7 @@ Estos son los requerimientos externos de la herramienta:
 * Descompresor de ficheros ZIP
 
 La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio.
-Si se actualiza una versión más antigua, es recomendable NO sobreescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guión `make_adv` para cada caso.
+Si se actualiza una versión más antigua, es recomendable NO sobrescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guion `make_adv` para cada caso.
 
 Estas son las instrucciones más detalladas para cada sistema operativo:
 
@@ -117,7 +117,7 @@ Para estos sistemas, los requerimientos son:
   
 Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`, que son requeridos por la herramienta. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. El script `make_adventure.py` requiere que ambas utilidades estén en la variable `PATH`.
 
-Debido a la heterodoxa naturaleza de las diferentes ditribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
+Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
 
 Una vez que se tengan los requerimientos, se puede proceder a instalar **SjASMPlus** con los siguientes comandos:
 
@@ -192,7 +192,7 @@ También hay que indicar un directorio de destino para dejar los ficheros result
 
 Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `CSC`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de archivos deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.CSC`, `001.CSC`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-csc` y -`pt3` respectivamente.
 
-Se pueden añadir efectos de sonido generados con la aplicación BeepFx de Shiru. Para utilizarlos, hay que exportar usando la opción `File->Compile` del menú superior. En la ventana flotante que aparece, debemos asegurarnos de que tenemos seleccionado `Assembly` e `Include Player Code`, el resto de opciones son indiferentes. Luego guardar el fichero en algún punto accesible para indicar la ruta desde la línea de comandos con la opción `-sfx`.
+Se pueden añadir efectos de sonido generados con la aplicación BeepFx de Shiru. Para utilizarlos, hay que exportar usando la opción `File->Compile` del menú superior. En la ventana flotante que aparece, debemos asegurarnos de que tenemos seleccionado `Assembly` e `Include Player Code`, el resto de las opciones son indiferentes. Luego guardar el fichero en algún punto accesible para indicar la ruta desde la línea de comandos con la opción `-sfx`.
 
 ---
 
@@ -235,7 +235,7 @@ Los parámetros que soporta:
 - **charset.chr**: Huego de caracteres de entrada.
 - **charset.json**: Fichero con el juego de caracteres para el compilador.
 
-El ancho de los caracteres empleado depende de la extensión del fichero de entrada, 8 pixels para `.chr` y `.ch8`, 6 para `.ch6` y 4 para`.ch4`, pero se pueden forzar el ancho con el parámetro `-w`. Indicar que los caracteres del 127 al 143 son especiales para los cursores y siempre tendrán ancho 8, con lo que el tamaño de la fuente será ignorado en esos caracteres. Si se desea definir un ancho específico para cada caracter tendrás que editarlo en el fichero JSON de salida. Tienes más información en la sección [Juego de caracteres](#juego-de-caracteres).
+El ancho de los caracteres empleado depende de la extensión del fichero de entrada, 8 pixels para `.chr` y `.ch8`, 6 para `.ch6` y 4 para`.ch4`, pero se pueden forzar el ancho con el parámetro `-w`. Indicar que los caracteres del 127 al 143 son especiales para los cursores y siempre tendrán ancho 8, con lo que el tamaño de la fuente será ignorado en esos caracteres. Si se desea definir un ancho específico para cada carácter tendrás que editarlo en el fichero JSON de salida. Tienes más información en la sección [Juego de caracteres](#juego-de-caracteres).
 
 ---
 
@@ -260,7 +260,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
 Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
-De nuevo, éste es un ejemplo autoexplicativo:
+De nuevo, éste es un ejemplo auto explicativo:
 
 ```
 [[ /* Comandos que ponen colores de pantalla y la borra */
@@ -287,7 +287,7 @@ En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al pun
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
-También se permite una versión acortada de las etiquetas precediento el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
+También se permite una versión acortada de las etiquetas precediendo el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
 
 ```
 [[ /* Comandos que ponen colores de pantalla y la borra */
@@ -315,7 +315,7 @@ Los comandos disponibles están descritos en su [sección](#comandos) correspond
 
 Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "flags" indistintamente a lo largo de este documento.
 
-Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el caracter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
+Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el carácter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
 
 ```
 [[
@@ -333,7 +333,7 @@ DECLARE 10 AS OtroNombre
 ]]
 ```
 
-Así, tanto *UnNombre* como *OtroNombre* servirán para identificar el flag 10. Ten en cuenta de a persar de tener distinto nombre, son la misma variable.
+Así, tanto *UnNombre* como *OtroNombre* servirán para identificar el flag 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
 
 Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, de la siguiente manera:
 
@@ -347,7 +347,7 @@ Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, 
 
 ```
 
-Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del caracter `@`**.
+Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del carácter `@`**.
 
 Los operandos disponibles son:
 
@@ -359,7 +359,7 @@ Los operandos disponibles son:
 
 El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
 
-Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarions realizan las correspondientes operaciones sobre los bits del flag.
+Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits del flag.
 
 La mayor parte de los comandos aceptan expresiones numéricas en sus parámetros, por ejemplo:
 
@@ -476,7 +476,7 @@ DECLARE 20 AS var : DECLARE 10 AS index: SET index AS @@var : SET [index] AS 0
 ]]
 ```
 
-Vemos que ésto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
+Vemos que esto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
   
 La indirección constituye una herramienta poderosa que nos permite implementar arrays en los flags, pero ¡ojo, que sólo tenemos 256!
 
@@ -696,7 +696,7 @@ Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 ### AT numexpression, numexpression
 
 Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Columna relativa al origen del área de texto.
 - Fila relativa al origen del área de texto.
@@ -762,7 +762,7 @@ Se puede configurar el número de líneas horizontales de la imagen a mostrar us
 
 Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un buffer la imagen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
 
-Para mostar una imagen cargada en el buffer, usamos `DISPLAY n`, donde n tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
+Para mostrar una imagen cargada en el buffer, usamos `DISPLAY n`, donde n tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
 
 ---
 
