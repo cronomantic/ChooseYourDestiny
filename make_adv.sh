@@ -37,7 +37,7 @@ while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
-python $DIR/make_adventure.py -n $GAME $CYDC_EXTRA_PARAMS -l $IMGLINES -scr $LOAD_SCR $TARGET
+python $DIR/make_adventure.py -n $GAME $CYDC_EXTRA_PARAMS -il $IMGLINES -scr $LOAD_SCR $TARGET
 RETVAL=$?
 if [ $RETVAL -ne 0 ]; then
     echo "---------------------"
