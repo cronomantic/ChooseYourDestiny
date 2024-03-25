@@ -126,10 +126,10 @@ def main():
     else:
         csc_path = os.path.join(dist_path, "csc")
         python_path = "python"
-        sjasmplus_path = os.path.join(tools_path, "sjasmplus")
-        mkp3fs_path = os.path.join(tools_path, "mkp3fs")
+        sjasmplus_path = "sjasmplus"
+        mkp3fs_path = "mkp3fs"
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
-
+    
     #########################################################
 
     arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
@@ -189,7 +189,7 @@ def main():
     )
     ###
     arg_parser.add_argument(
-        "-l",
+        "-il",
         "--image-lines",
         metavar=_("NUM_IMAGE_LINES"),
         type=int,
@@ -350,9 +350,6 @@ def main():
 
     if args.verbose:
         cydc_params = ["-v"] + cydc_params
-
-    if args.version:
-        cydc_params = ["-V"] + cydc_params
 
     if args.slice_texts:
         cydc_params = ["-S"] + cydc_params
