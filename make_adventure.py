@@ -125,9 +125,9 @@ def main():
         mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
     else:
         csc_path = os.path.join(dist_path, "csc")
-        python_path = "python"
-        sjasmplus_path = "sjasmplus"
-        mkp3fs_path = "mkp3fs"
+        python_path = "/usr/bin/python"
+        sjasmplus_path = "/usr/local/bin/sjasmplus"
+        mkp3fs_path = "/usr/local/bin/mkp3fs"
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
     
     #########################################################
