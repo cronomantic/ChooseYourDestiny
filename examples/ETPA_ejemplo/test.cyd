@@ -89,7 +89,7 @@
   Tratas de hacerte una idea de tu situación, cuando de pronto aparece un caballo montado por un caballero con armadura, como los de los libros de historia. La visión te resulta tan inusitada que te dan ganas de echarte a reír.
 
   El caballero levanta su casco e irrumpe en sonoras carcajadas. -¡Menudo sitio para tomar un baño! -grita-. De todos modos, opino que ha valido la pena, ¡Has quedado tan limpio como un cerdo!
-[[ IF @graficos = 1 THEN GOSUB WaitkeyClear ]]
+[[ IF @graficos = 1 THEN GOSUB WaitkeyClear ENDIF ]]
   Está a punto de caerse del caballo a causa de las fuertes carcajadas. -Anda, sigueme y te llevaré de vuelta al castillo -dice-. 
   
   Parece feliz de tener un nuevo siervo.
@@ -99,7 +99,7 @@
   A medida que aclara el día te das cuenta que no estás en el buen camino. El cañón parece menos profundo y el cauce del río está sembrado de cantos rodados que nunca habías visto. El viento es helado a pesar de estar en pleno verano. Al subir a un terreno más elevado descubres manchas de nieve. Desde un risco, divisas una llanura árida con lagos helados y, a lo lejos, una cadena montañosa con picos cubiertos por la nieve. Empiezas a pensar que no se trata simplemente de que te hayas perdido; te has perdido en el tiempo y, por alguna extraña razón, has sido transportado varios millones de años atrás a la Edad del Hielo.
 [[ WAITKEY : CLEAR ]]
   Te diriges a una de las colinas que bordean el cañón, buscando un lugar para resguardarte del viento y descubres la entrada de otra cueva.
-  [[ IF @graficos = 1 THEN GOSUB WaitkeyClear ]]
+  [[ IF @graficos = 1 THEN GOSUB WaitkeyClear ENDIF ]]
   Sientes la tentación de penetrar en ella aunque piensas que deberías seguir andando para ver si de algún modo logras llegar a un sitio conocido.
 
 [[ INK @ColorOpcion : OPTION GOTO s10 ]]Entras en la cueva.
@@ -133,10 +133,10 @@ F I N[[ TAB 13 : INK @ColorTexto : WAITKEY : GOTO s2 ]]
 
 [[ LABEL Pantalla /* GESTIONA LA DISTRIBUCION DE PANTALLA DE CADA SECCION */]]
 [[ CLEAR
-   IF @graficos = 0 THEN GOTO Pantalla_Return 
-   IF @Modo = 0 THEN GOSUB SoloTexto  
-   IF @Modo = 1 THEN GOSUB ImagenIzq 
-   IF @Modo = 2 THEN GOSUB ImagenSup 
+   IF @graficos = 0 THEN GOTO Pantalla_Return ENDIF
+   IF @Modo = 0 THEN GOSUB SoloTexto ENDIF 
+   IF @Modo = 1 THEN GOSUB ImagenIzq ENDIF
+   IF @Modo = 2 THEN GOSUB ImagenSup ENDIF
    LABEL Pantalla_Return
    SET Imagen TO 0 : SET Modo TO 0 : CLEAR
 RETURN ]]

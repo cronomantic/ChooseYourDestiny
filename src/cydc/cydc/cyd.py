@@ -558,10 +558,9 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
         result = subprocess.run(
             args=command_line,
             check=False,
-            stdout=stdout,
-            stderr=stderr,
-            text=capture_output,
-            capture_output=capture_output,
+            stdout=subprocess.PIPE if capture_output else stdout,
+            stderr=subprocess.PIPE if capture_output else stderr,
+            universal_newlines=capture_output,
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
