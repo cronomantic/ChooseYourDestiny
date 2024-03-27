@@ -94,14 +94,13 @@ Estos son los requerimientos externos de la herramienta:
 * [TAPTOOLS 1.0.8 o superior](http://www.seasip.info/ZX/unix.html), para ser más exactos la utilidad `mkp3fs`.
 * Descompresor de ficheros ZIP
 
-La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio.
 Si se actualiza una versión más antigua, es recomendable NO sobrescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guion `make_adv` para cada caso.
 
 Estas son las instrucciones más detalladas para cada sistema operativo:
 
 ### Windows
 
-En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
+La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio. En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
 
 ### Linux, BSDs y compatibles (Experimental)
 
@@ -116,25 +115,26 @@ Para estos sistemas, los requerimientos son:
 * git
 * libdsk
   
-Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`, que son requeridos por la herramienta. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. El script `make_adventure.py` requiere que ambas utilidades estén en la variable `PATH`.
+Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. 
 
 Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
 
-Una vez que se tengan los requerimientos, se puede proceder a instalar **SjASMPlus** con los siguientes comandos:
+Lo primero que hay que hacer es clonar el repositorio del motor en cualquier lugar que creas conveniente y de forma recursiva para bajarse las dependencias:
 
 ```bash
-git clone --recursive https://github.com/z00m128/sjasmplus.git
-cd sjasmplus/
-make clean
-make
-sudo make install
+git clone --recursive https://github.com/cronomantic/ChooseYourDestiny.git
+cd ChooseYourDestiny
 ```
 
-El último comando realiza la instalación en el sistema, con lo que debe hacerse con permisos de administrador. En el caso del ejemplo, se usa `sudo`. Si no existe sudo, doas o herramienta similar, entoces tendrás que hacerlo con el usuario *root* mediante `su -` y luego `make install`.
+Ahora se puede proceder a compilar **SjASMPlus** con los siguientes comandos:
 
-Para compilar e instalar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**.
-
-Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando (si usas Ubuntu, tienes que tener activado el repositorio "Universe"):
+```bash
+cd external/sjasmplus
+make clean
+make
+cd ..
+```
+Ahora, pasaremos a compilar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**. Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando (si usas Ubuntu, tienes que tener activado el repositorio "Universe"):
 
 ```bash
 sudo apt-get install libdsk4 libdsk4-dev libdsk-utils
@@ -145,17 +145,24 @@ Para ArchLinux, el comando sería el siguiente:
 pacman -S libdsk
 ```
 
+Consulta si dispones de dicha librería en tu distribución. Si no es el caso, tendrás que bajártela y compilarla tú mismo.
+
 Una vez hecho esto, realizamos la siquiente secuencia de comandos:
 
 ```bash
-wget http://www.seasip.info/ZX/taptools-1.1.1.tar.gz
 tar -xf taptools-1.1.1.tar.gz
 cd taptools-1.1.1
 ./configure
 make
-sudo make install
 ```
-De nuevo, cambiar el último comando con el adecuado para tu sistema.
+Y con esto ya tenemos preparadas las dependencias. Como último paso, debemos poner el script de compilación como ejecutable:
+
+```bash
+cd ../..
+chmod a+x make_adv.sh
+```
+
+Y con esto ya podrías usar la herramienta en Linux.
 
 
 ## CYDC (Compilador)
