@@ -118,6 +118,7 @@ def main():
     curr_path = os.path.abspath(os.path.dirname(__file__))
     dist_path = os.path.join(curr_path, "dist")
     tools_path = os.path.join(curr_path, "tools")
+    external_path = os.path.join(curr_path, "tools")
     if os.name == "nt":
         csc_path = os.path.join(dist_path, "csc.exe")
         python_path = os.path.join(dist_path, "python", "python.exe")
@@ -126,8 +127,10 @@ def main():
     else:
         csc_path = os.path.join(dist_path, "csc")
         python_path = "/usr/bin/python"
-        sjasmplus_path = "/usr/local/bin/sjasmplus"
-        mkp3fs_path = "/usr/local/bin/mkp3fs"
+        sjasmplus_path = os.path.join(external_path, "sjasmplus")
+        sjasmplus_path = os.path.join(sjasmplus_path, "sjasmplus")
+        mkp3fs_path = os.path.join(external_path, "taptools-1.1.1")
+        mkp3fs_path = os.path.join(mkp3fs_path, "mkp3fs")
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
     
     #########################################################
