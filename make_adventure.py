@@ -118,7 +118,7 @@ def main():
     curr_path = os.path.abspath(os.path.dirname(__file__))
     dist_path = os.path.join(curr_path, "dist")
     tools_path = os.path.join(curr_path, "tools")
-    external_path = os.path.join(curr_path, "tools")
+    external_path = os.path.join(curr_path, "external")
     if os.name == "nt":
         csc_path = os.path.join(dist_path, "csc.exe")
         python_path = os.path.join(dist_path, "python", "python.exe")
