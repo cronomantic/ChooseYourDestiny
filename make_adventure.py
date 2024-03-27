@@ -56,6 +56,7 @@ def run_exec(exec_path, parameter_list=[], capture_output=False):
             stderr=stderr,
             text=capture_output,
             capture_output=capture_output,
+            universal_newlines=capture_output,
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
@@ -132,7 +133,7 @@ def main():
         mkp3fs_path = os.path.join(external_path, "taptools-1.1.1")
         mkp3fs_path = os.path.join(mkp3fs_path, "mkp3fs")
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
-    
+
     #########################################################
 
     arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
@@ -396,13 +397,15 @@ def main():
                     ],
                 )
             except OSError as os1:
-                sys.exit(_("ERROR: Error running CSC."), os1)
+                err = _("ERROR: Error running CSC.") + str(os1)
+                sys.exit(err)
 
     try:
         print("Compiling the script...")
         run_exec(python_path, cydc_params)
     except OSError as os1:
-        sys.exit(_("ERROR: Error running CYDC."), os1)
+        err = _("ERROR: Error running CYDC.") + str(os1)
+        sys.exit(err)
 
     if args.model == "plus3":
         print("Cleaning...")

@@ -813,7 +813,7 @@ class CydcParser(object):
 
     def p_variable_ID(self, p):
         """
-        variableID  : expression
+        variableID  : number
                     | ID
         """
         if isinstance(p[1], int):
@@ -831,7 +831,6 @@ class CydcParser(object):
                   | expression TIMES expression
                   | expression DIVIDE expression
         """
-        # print [repr(p[i]) for i in range(0,4)]
         if p[2] == "+":
             p[0] = p[1] + p[3]
         elif p[2] == "-":
