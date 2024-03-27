@@ -49,7 +49,7 @@ endif
 else
 # Token file exists, use it...
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
-	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) plus3 $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
 	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) plus3 $(ASM) $(MKP3FS) .
 endif
