@@ -134,7 +134,7 @@ El último comando realiza la instalación en el sistema, con lo que debe hacers
 
 Para compilar e instalar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**.
 
-Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando:
+Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando (si usas Ubuntu, tienes que tener activado el repositorio "Universe"):
 
 ```bash
 sudo apt-get install libdsk4 libdsk4-dev libdsk-utils
