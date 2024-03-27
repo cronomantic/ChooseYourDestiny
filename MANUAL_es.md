@@ -114,6 +114,7 @@ Para estos sistemas, los requerimientos son:
 * Autotools (autoconf, automake, aclocals...).
 * wget
 * git
+* libdsk
   
 Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`, que son requeridos por la herramienta. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. El script `make_adventure.py` requiere que ambas utilidades estén en la variable `PATH`.
 
@@ -131,12 +132,25 @@ sudo make install
 
 El último comando realiza la instalación en el sistema, con lo que debe hacerse con permisos de administrador. En el caso del ejemplo, se usa `sudo`. Si no existe sudo, doas o herramienta similar, entoces tendrás que hacerlo con el usuario *root* mediante `su -` y luego `make install`.
 
-Para instalar **TAPTOOLS**, realizamos la siquiente secuencia de comandos:
+Para compilar e instalar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**.
+
+Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando:
 
 ```bash
-wget http://www.seasip.info/ZX/taptools-1.0.8.tar.gz
-tar -xf taptools-1.0.8.tar.gz
-cd taptools-1.0.8
+sudo apt-get install libdsk4 libdsk4-dev libdsk-utils
+```
+Para ArchLinux, el comando sería el siguiente:
+
+```bash
+pacman -S libdsk
+```
+
+Una vez hecho esto, realizamos la siquiente secuencia de comandos:
+
+```bash
+wget http://www.seasip.info/ZX/taptools-1.1.1.tar.gz
+tar -xf taptools-1.1.1.tar.gz
+cd taptools-1.1.1
 ./configure
 make
 sudo make install
@@ -1008,7 +1022,9 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
+- Pablo Martínez por la ayuda con el testeo en Linux.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
+
 
 ---
 
