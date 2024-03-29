@@ -9,7 +9,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [Requerimientos e Instalación](#requerimientos-e-instalación)
     - [Windows](#windows)
-    - [Linux, BSDs y compatibles (Experimental)](#linux-bsds-y-compatibles-experimental)
+    - [Linux, BSDs y compatibles](#linux-bsds-y-compatibles)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
@@ -102,7 +102,7 @@ Estas son las instrucciones más detalladas para cada sistema operativo:
 
 La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio. En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
 
-### Linux, BSDs y compatibles (Experimental)
+### Linux, BSDs y compatibles
 
 Para estos sistemas, los requerimientos son:
 
