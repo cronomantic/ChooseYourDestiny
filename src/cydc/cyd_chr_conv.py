@@ -85,14 +85,14 @@ def main():
     program = "Choose Your Destiny Font Conversion " + version
     exec = "cyd_font_conv"
 
-    if sys.version_info[0] < 3:  # Python 2
-        sys.exit(_("ERROR: Invalid python version"))
-
     gettext.bindtextdomain(
         exec, os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
     )
     gettext.textdomain(exec)
     _ = gettext.gettext
+    
+    if sys.version_info[0] < 3:  # Python 2
+        sys.exit(_("ERROR: Invalid python version"))
 
     arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
 
