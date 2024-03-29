@@ -274,7 +274,7 @@ def main():
         "-trim",
         "--trim-interpreter",
         action="store_true",
-        help=_("show additional information"),
+        help=_("exclude code of unused commands"),
     )
     arg_parser.add_argument(
         "-code",
