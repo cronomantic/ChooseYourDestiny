@@ -505,7 +505,7 @@ Por último, y relacionado con los arrays, podemos realizar asignaciones múltip
 
 ```
 [[
-DECLARE var AS 10
+DECLARE 10 AS var
 SET var AS {0, 1, 2, 3}
 ]]
 ```
