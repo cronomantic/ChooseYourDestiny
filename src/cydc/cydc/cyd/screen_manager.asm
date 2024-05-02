@@ -188,6 +188,9 @@ CLS_BUFFER:
     ld (hl), 0
     ldir
     ret
+;---------------
+
+;---------------
 
 LOAD_FILENAME:
     DB "000"

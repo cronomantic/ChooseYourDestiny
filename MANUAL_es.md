@@ -55,6 +55,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [SFX numexpression](#sfx-numexpression)
     - [PICTURE numexpression](#picture-numexpression)
     - [DISPLAY numexpression](#display-numexpression)
+    - [BLIP expression, expression, expression, expression AT numexpression, numexpression](#blip-expression-expression-expression-expression-at-numexpression-numexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
@@ -64,8 +65,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
     - [INKEY](#inkey)
-  - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
-  - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
+    - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
+    - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
     - [POSY()](#posy)
     - [POSX()](#posx)
     - [RANDOMIZE](#randomize)
@@ -693,6 +694,19 @@ Muestra el contenido actual del buffer en pantalla.
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. 
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
+### BLIP expression, expression, expression, expression AT numexpression, numexpression
+
+Copia una parte de la imagen cargada en el buffer a la pantalla.
+Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
+
+Los parámetros, por órden, son:
+- Columna origen del rectángulo a copiar desde el buffer.
+- Fila origen del rectángulo a copiar desde el buffer.
+- Ancho del rectángulo a copiar desde el buffer.
+- Alto del rectángulo a copiar desde el buffer.
+
+La unidad de medida empleada en todos los parámetros es el carácter 8x8.
+
 ### WAIT expression
 
 Realiza una pausa. El parámetro es el número de "fotogramas" (50 por segundo) a esperar, y es un número de 16 bits.
@@ -742,11 +756,11 @@ Las posiciones se asumen en tamaño de carácter 8x8.
 
 *Función* que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
 
-## MIN(numexpression,numexpression)
+### MIN(numexpression,numexpression)
 
 *Función* que acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
-## MAX(numexpression,numexpression)
+### MAX(numexpression,numexpression)
 
 *Función* que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
