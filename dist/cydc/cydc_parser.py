@@ -440,6 +440,109 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_blit(self, p):
+        "statement : BLIT expression COMMA expression COMMA expression COMMA expression AT numexpression COMMA numexpression"
+        if (
+            self._check_byte_value(p[2])
+            and self._check_byte_value(p[4])
+            and self._check_byte_value(p[6])
+            and self._check_byte_value(p[8])
+        ):
+            row = p[4]
+            col = p[2]
+            width = p[6]
+            height = p[8]
+            if row >= 24:
+                row = 23
+            if col >= 32:
+                col = 31
+            if row < 0:
+                row = 0
+            if col < 0:
+                col = 0
+            if width <= 0:
+                width = 1
+            if height <= 0:
+                height = 1
+            if (width + col) > 32:
+                width = 32 - col
+            if (height + row) > 24:
+                height = 24 - row
+            if isinstance(p[10], int) and isinstance(p[12], int):
+                row_d = p[12]
+                col_d = p[10]
+                if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                    if row_d >= 24:
+                        row_d = 23
+                    if col_d >= 32:
+                        col_d = 31
+                    if row_d < 0:
+                        row_d = 0
+                    if col_d < 0:
+                        col_d = 0
+                    p[0] = ("BLIT", col, row, width, height, col_d, row_d)
+                else:
+                    p[0] = None
+            elif isinstance(p[10], tuple) and isinstance(p[12], tuple):
+                t1 = p[10]
+                t2 = p[12]
+                if (
+                    (t1[0] == "PUSH_D")
+                    and (t2[0] == "PUSH_D")
+                    and isinstance(t1[1], int)
+                    and isinstance(t2[1], int)
+                ):
+                    row_d = t2[1]
+                    col_d = t1[1]
+                    if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                        if row_d >= 24:
+                            row_d = 23
+                        if col_d >= 32:
+                            col_d = 31
+                        if row_d < 0:
+                            row_d = 0
+                        if col_d < 0:
+                            col_d = 0
+                        p[0] = ("BLIT", col, row, width, height, col_d, row_d)
+                    else:
+                        p[0] = None
+                else:
+                    p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
+            else:
+                if isinstance(p[10], list):
+                    p[0] = p[10]
+                elif isinstance(p[10], int):
+                    col_d = p[10]
+                    if self._check_byte_value(col_d):
+                        if col_d >= 32:
+                            col_d = 31
+                        if col_d < 0:
+                            col_d = 0
+                        p[0] = [("PUSH_D", col_d)]
+                    else:
+                        p[0] = None
+                        return p
+                else:
+                    p[0] = [p[10]]
+                if isinstance(p[12], list):
+                    p[0] += p[12]
+                elif isinstance(p[12], int):
+                    row_d = p[12]
+                    if self._check_byte_value(row_d):
+                        if row_d >= 24:
+                            row_d = 23
+                        if row_d < 0:
+                            row_d = 0
+                        p[0].append(("PUSH_D", row_d))
+                    else:
+                        p[0] = None
+                        return p
+                else:
+                    p[0].append(p[12])
+                p[0].append(("POP_BLIT", col, row, width, height))
+        else:
+            p[0] = None
+
     def p_statement_margins(self, p):
         "statement : MARGINS expression COMMA expression COMMA expression COMMA expression"
         if (
@@ -489,17 +592,60 @@ class CydcParser(object):
                 p[0] = ("AT", col, row)
             else:
                 p[0] = None
+        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
+            t1 = p[2]
+            t2 = p[4]
+            if (
+                (t1[0] == "PUSH_D")
+                and (t2[0] == "PUSH_D")
+                and isinstance(t1[1], int)
+                and isinstance(t2[1], int)
+            ):
+                row = t2[1]
+                col = t1[1]
+                if self._check_byte_value(row) and self._check_byte_value(col):
+                    if row >= 24:
+                        row = 23
+                    if col >= 32:
+                        col = 31
+                    if row < 0:
+                        row = 0
+                    if col < 0:
+                        col = 0
+                    p[0] = ("AT", col, row)
+                else:
+                    p[0] = None
+            else:
+                p[0] = [t1, t2, ("POP_AT",)]
         else:
             if isinstance(p[2], list):
                 p[0] = p[2]
             elif isinstance(p[2], int):
-                p[0] = [("PUSH_D", p[2])]
+                col = p[2]
+                if self._check_byte_value(col):
+                    if col >= 32:
+                        col = 31
+                    if col < 0:
+                        col = 0
+                    p[0] = [("PUSH_D", col)]
+                else:
+                    p[0] = None
+                    return p
             else:
                 p[0] = [p[2]]
             if isinstance(p[4], list):
                 p[0] += p[4]
             elif isinstance(p[4], int):
-                p[0].append(("PUSH_D", p[4]))
+                row = p[4]
+                if self._check_byte_value(row):
+                    if row >= 24:
+                        row = 23
+                    if row < 0:
+                        row = 0
+                    p[0].append(("PUSH_D", row))
+                else:
+                    p[0] = None
+                    return p
             else:
                 p[0].append(p[4])
             p[0].append(("POP_AT",))
