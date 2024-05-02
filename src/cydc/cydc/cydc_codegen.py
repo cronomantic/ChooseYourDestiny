@@ -124,6 +124,8 @@ class CydcCodegen(object):
         "PUSH_YPOS": 0x5B,
         "MIN": 0x5C,
         "MAX": 0x5D,
+        "BLIT": 0x5E,
+        "POP_BLIT": 0x5F,
     }
 
     def __init__(self, gettext):
