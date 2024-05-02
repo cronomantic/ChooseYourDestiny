@@ -1479,7 +1479,6 @@ OP_MIN:
     jr nc, 1f             ; A >= C
     ld a, c
     OP_2PARAM_STORE_STACK
-    jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_MAX
@@ -1489,8 +1488,206 @@ OP_MAX:
     jr c, 1f             ; A < C 
     ld a, c
 1:  OP_2PARAM_STORE_STACK
-    jp EXEC_LOOP
     ENDIF
+;-------------------------------------------------------
+
+    IFNDEF UNUSED_OP_POP_BLIT
+OP_POP_BLIT:
+    ld de, CPY_SCR_BLK_X
+    ldi
+    ldi
+    ldi
+    ldi
+    ld b, (ix+0)               ; GET Y
+    inc ix
+    ld c, (ix+0)               ; GET X
+    inc ix
+    ld (CPY_SCR_BLK_X_D), bc
+    jr 1f
+    DEFINE BLIT_USED
+    ENDIF
+
+    IFNDEF UNUSED_OP_BLIT
+OP_BLIT:
+    ld de, CPY_SCR_BLK_X
+    ldi
+    ldi
+    ldi
+    ldi 
+    ldi
+    ldi
+    ld bc, (CPY_SCR_BLK_X_D)
+    DEFINE USED_BLIT
+    ENDIF
+
+    IFDEF BLIT_USED 
+1:  ld de, (CPY_SCR_BLK_W)
+    push hl
+    ld a, c
+    cp 32
+    jr c, 1f
+    ld c, 31
+1:  ld a, b
+    cp 24
+    jr c, 2f
+    ld b, 23
+2:  ld a, e
+    add a, c
+    cp 32
+    jr c,3f
+    ld a, e
+    sub 32
+    ld e, a
+3:  ld a, d
+    add a, b
+    cp 24
+    jr c, 4f
+    ld a, d
+    sub 24
+    ld d, a
+4:  ld (CPY_SCR_BLK_W), de
+    ld (CPY_SCR_BLK_X_D), bc
+    
+.getPxlAddr:
+    ;ld bc,(CPY_SCR_BLK_X_D)
+    ld a, b                 
+    and %00011000
+    add a, %01000000         ; Sumamos $40 (bits superiores = 010)
+    ld d, a
+    ld a, b
+    and %00000111
+    rrca
+    rrca
+    rrca
+    add a, c
+    ld e, a
+
+    ld bc,(CPY_SCR_BLK_X)
+    ld a, b
+    and %00011111
+    add a, HIGH SCREEN_BUFFER_PXL
+    ld h, a
+    ld a, c
+    and %00011111
+    ld l, a
+
+;Copy pixels
+    ld bc,(CPY_SCR_BLK_W)
+.loopRowsPxl:
+    push bc
+    push de
+    ld b, 0
+    ld a, c
+
+    REPT 7
+    push hl
+    push de
+    ld c, a
+    ex af, af'
+    ldir
+    pop de
+    pop hl
+    inc d
+    ld a, l
+    add a, 32 
+    ld l, a
+    ex af, af'
+    ENDR
+
+    push hl     ;Last line
+    ld c, a
+    ldir
+    pop hl
+    ld a, l
+    and %00011111
+    ld l, a
+    inc h
+    pop de
+    ld a, e     ; A = lower part of the address. RRRC CCCC.
+    add a, $20  ; Add one line (RRRC CCCC + 0010 0000).
+    ld e, a     ; L = A.
+    jr nc,1f    ; If there is no carry, the row follows between 0 
+                ; and 7, it exits.  ; There is carry-over, the third of the screen has to be changed.
+    ld a, d     ; A = upper part of memory address. 010T TSSS.
+    add a, $08  ; Add one third (010T TSSS + 0000 1000).
+    ld d, a     ; H = A.  ret
+
+1:  pop bc
+    djnz .loopRowsPxl
+
+.getAttAddr:
+    ld bc,(CPY_SCR_BLK_X)
+    ld a, b
+    rrca
+    rrca
+    rrca
+    and %00000011
+    add a, HIGH SCREEN_BUFFER_ATT
+    ld h, a
+    ld a, b
+    and %00000111
+    rrca
+    rrca
+    rrca
+    add a, c
+    ld l, a
+
+    ld bc,(CPY_SCR_BLK_X_D)
+    ld a, b
+    rrca
+    rrca
+    rrca
+    and %00000011
+    add a, %01011000         ; Ponemos los bits 15-10 como 010110b
+    ld d, a
+    ld a, b
+    and %00000111
+    rrca
+    rrca
+    rrca
+    add a, c
+    ld e, a
+
+;Copy attr
+    ld bc,(CPY_SCR_BLK_W)
+.loopRowsAtt:
+    push bc
+    ld b, 0
+    push de
+    push hl
+    ldir
+    pop hl
+    pop de
+    ld a, $20
+    add a, l
+    jr nc, 1f
+    inc h
+1:  ld l, a
+    ld a, $20
+    add a, e
+    jr nc, 2f
+    inc d
+2:  ld e, a
+    pop bc
+    djnz .loopRowsAtt
+
+    pop hl
+    jp EXEC_LOOP
+
+CPY_SCR_BLK_X     DB 0
+CPY_SCR_BLK_Y     DB 0
+CPY_SCR_BLK_W     DB 0
+CPY_SCR_BLK_H     DB 0
+CPY_SCR_BLK_X_D   DB 0
+CPY_SCR_BLK_Y_D   DB 0
+
+    UNDEFINE BLIT_USED
+    ENDIF
+
+
+;---------------
+
+;-------------------------------------------------------
 
 /*
     IFNDEF UNUSED_OP_EXTERN
@@ -2060,6 +2257,18 @@ OPCODES:
     DW OP_MAX
     ENDIF
     IFDEF UNUSED_OP_MAX
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_BLIT
+    DW OP_BLIT
+    ENDIF
+    IFDEF UNUSED_OP_BLIT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_BLIT
+    DW OP_POP_BLIT
+    ENDIF
+    IFDEF UNUSED_OP_POP_BLIT
     DW ERROR_NOP
     ENDIF
 
