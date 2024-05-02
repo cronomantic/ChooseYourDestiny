@@ -1525,25 +1525,23 @@ OP_BLIT:
     push hl
     ld a, c
     cp 32
-    jr c, 1f
-    ld c, 31
-1:  ld a, b
+    jp nc, .endBlit
+    ld a, b
     cp 24
-    jr c, 2f
-    ld b, 23
-2:  ld a, e
+    jp nc, .endBlit
+    ld a, e
     add a, c
     cp 32
-    jr c,3f
-    ld a, e
-    sub 32
+    jr c, 3f
+    ld a, 32
+    sub c
     ld e, a
 3:  ld a, d
     add a, b
     cp 24
     jr c, 4f
-    ld a, d
-    sub 24
+    ld a, 24
+    sub b
     ld d, a
 4:  ld (CPY_SCR_BLK_W), de
     ld (CPY_SCR_BLK_X_D), bc
@@ -1671,6 +1669,7 @@ OP_BLIT:
     pop bc
     djnz .loopRowsAtt
 
+.endBlit:
     pop hl
     jp EXEC_LOOP
 

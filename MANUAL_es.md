@@ -55,7 +55,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [SFX numexpression](#sfx-numexpression)
     - [PICTURE numexpression](#picture-numexpression)
     - [DISPLAY numexpression](#display-numexpression)
-    - [BLIP expression, expression, expression, expression AT numexpression, numexpression](#blip-expression-expression-expression-expression-at-numexpression-numexpression)
+    - [BLIT expression, expression, expression, expression AT numexpression, numexpression](#blit-expression-expression-expression-expression-at-numexpression-numexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
@@ -694,7 +694,7 @@ Muestra el contenido actual del buffer en pantalla.
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. 
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
-### BLIP expression, expression, expression, expression AT numexpression, numexpression
+### BLIT expression, expression, expression, expression AT numexpression, numexpression
 
 Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
