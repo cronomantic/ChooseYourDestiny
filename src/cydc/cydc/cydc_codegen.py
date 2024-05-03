@@ -126,6 +126,8 @@ class CydcCodegen(object):
         "MAX": 0x5D,
         "BLIT": 0x5E,
         "POP_BLIT": 0x5F,
+        "MENUCONFIG": 0x60,
+        "POP_MENUCONFIG": 0x61,
     }
 
     def __init__(self, gettext):

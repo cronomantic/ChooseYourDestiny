@@ -23,12 +23,17 @@
 ;------------------------------
 
 INIT_WIN:
-    ld de, PRT_INTERVAL
+    ld de, NUM_OPTIONS
     ld bc, .end_data-.data
     ld hl, .data
     ldir
     jp CLEAR_WIN
 .data:
+    DEFB 0
+    DEFB 0
+    DEFB 0
+    DEFB 1
+    DEFB 0
     DEFW 1
     DEFB 0
     DEFB 0
@@ -697,11 +702,11 @@ PRINT_SELECTED_OPTION_BULLET:
     push af
     ld bc, (POS_X)
     ld a, (SELECTED_OPTION)
+    sla a
+    sla a
+    sla a
+    ld h, HIGH OPTIONS_TABLE
     ld l, a
-    ld h, 0
-    ld de, OPTIONS_POS
-    add hl, hl
-    add hl, de
     ld e, (hl)
     inc hl
     ld d, (hl)
@@ -1192,6 +1197,10 @@ CLEAR_WIN:
     pop ix
     xor a
     ld (NUM_OPTIONS), a          ;Clear options.
+    ret
+
+BACKSPACE:
+    ;TODO:
     ret
 
 ;' scrolls the window defined by (row, col, width, height) 1 cell up
