@@ -1,0 +1,29 @@
+[[
+    PAGEPAUSE 1
+    BORDER 0
+    INK 7
+    BRIGHT 1
+    FLASH 0
+    PAPER 0
+    CLEAR
+]]Elige una opción:
+
+[[OPTION GOTO Opcion1]]Primera opción.  [[OPTION GOTO Opcion2]]Segunda opción.
+[[OPTION GOTO Opcion3]]Tercera opción.  [[OPTION GOTO Opcion4]]Cuarta opción.
+[[OPTION GOTO Opcion5]]Quinta opción.   [[OPTION GOTO Opcion6]]Sexta opción.
+
+[[
+    MENUCONFIG 1,2 : CHOOSE
+    LABEL Opcion1]]Has elegido la opción 1.[[
+    GOTO Siguiente
+    LABEL Opcion2]]Has elegido la opción 2.[[
+    GOTO Siguiente
+    LABEL Opcion3]]Has elegido la opción 3.[[
+    GOTO Siguiente
+    LABEL Opcion4]]Has elegido la opción 4.[[
+    GOTO Siguiente
+    LABEL Opcion5]]Has elegido la opción 5.[[
+    GOTO Siguiente
+    LABEL Opcion6]]Has elegido la opción 6.[[  
+    LABEL Siguiente
+    WAITKEY : END]]

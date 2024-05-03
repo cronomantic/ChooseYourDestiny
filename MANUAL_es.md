@@ -42,6 +42,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [OPTION GOSUB ID](#option-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
+    - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
@@ -250,12 +251,14 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 Esta utilidad permite convertir juegos de caracteres en formato `.chr`, `.ch8`, `.ch6` y `.ch4` en un fichero utilizable por el compilador en formato JSON. Estos formatos son editables con ZxPaintbrush.
 
 ```batch
-cyd_chr_conv.py [-h] [-w WITDH] [-V] charset.chr charset.json
+cyd_chr_conv.py [-h] [-w WITDH] [-v] [-V] charset.chr charset.json
 ```
 Los parámetros que soporta:
 
 - **\-w, --width**: Ancho de los caracteres (1-8).
 - **\-h, --help**: Muestra la ayuda.
+- **\-v, --verbose**: Modo verboso.
+- **\-V, --verbose**: Versión del programa.
 - **charset.chr**: Huego de caracteres de entrada.
 - **charset.json**: Fichero con el juego de caracteres para el compilador.
 
@@ -304,7 +307,7 @@ De nuevo, éste es un ejemplo auto explicativo:
 ```
 
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
-Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 16 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
+Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 32 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
 
 Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
@@ -623,20 +626,30 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta *ID*. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta *ID*. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
 
 ### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta *ID*, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 16 como máximo en una pantalla.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta *ID*, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
 
 ### CHOOSE
 
-Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opciñon correspondiente.
+Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
+La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-numexpression-numexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A**. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
 Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta *ID*.  
 El timeout tiene como máximo 65535 (16 bits).
+
+### MENUCONFIG numexpression, numexpression
+
+Configura el desplazamiento por el menú de opciones. 
+
+- El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
+- El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
+
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1`.
 
 ### CHAR numexpression
 
@@ -704,8 +717,10 @@ Los parámetros, por órden, son:
 - Fila origen del rectángulo a copiar desde el buffer.
 - Ancho del rectángulo a copiar desde el buffer.
 - Alto del rectángulo a copiar desde el buffer.
+- Columna destino en pantalla.
+- Fila destino en pantalla.
 
-La unidad de medida empleada en todos los parámetros es el carácter 8x8.
+La unidad de medida empleada en todos los parámetros es el carácter 8x8 y sólo los dos últimos aceptan variables.
 
 ### WAIT expression
 
@@ -1045,7 +1060,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
-- Pablo Martínez por la ayuda con el testeo en Linux.
+- Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
 
