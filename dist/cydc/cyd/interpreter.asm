@@ -788,31 +788,22 @@ OP_OPTION:
     call PUT_8X8_CHAR           ; Print the character
     pop de
     pop af
-    ld hl, OPTIONS_POS
     sla a
-    add a, l
-    jr nc, 1f
-    inc h
-1:  ld l, a
-    ld (hl), e                  ;Store address
+    sla a
+    sla a
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+    ld (hl), e             ;Store screen pos
     inc hl
     ld (hl), d
+    inc hl
+    ex de, hl              ;Move option table address to DE
     pop hl
-    ld de, OPTIONS_JMP_ADDR
+    ldi                    ;Copy Address to address table
+    ldi
+    ldi
+    ldi
     pop af
-    ld b, a               ;Save current pos to B
-    or a
-    jr z, 2f              ;search the top of the address table
-.loop:
-    inc de                ;Advance 4 positions
-    inc de
-    inc de
-    inc de
-    djnz .loop
-2:  ldi                   ;Copy Address to address table
-    ldi
-    ldi
-    ldi
     inc a
     ld (NUM_OPTIONS), a   ;Increment options
     jp EXEC_LOOP
@@ -929,32 +920,82 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
     call INKEY
+    cp 'o'
+    jp z, .left
+    cp 'p'
+    jp z, .right
     cp 'q'
-    jr z, .up
+    jp z, .up
     cp 'a'
-    jr z, .down
+    jp z, .down
     cp ' '
-    jr z, .selected
+    jp z, .selected
     cp 13
-    jr z, .selected
+    jp z, .selected
     call ANIMATE_OPTION_BULLET
-    ;jr 1b
     jr .inkey
-.up:
+.left:
     ld a, (SELECTED_OPTION)
     or a
-    jr z, .inkey
+    jp z, .inkey
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
     pop af
-    dec a
+    sub b
+    jp c, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+3:  call INKEY
+    or a
+    jp z, .inkey
+    jr 3b
+.right:
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    dec c
+    ld a, (SELECTED_OPTION)
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
+    pop af
+    add a, b
+    cp c
+    jp nc, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+4:  call INKEY
+    or a
+    jp z, .inkey
+    jr 4b
+.up:
+    ld a, (SELECTED_OPTION)
+    or a
+    jp z, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_COL_OPTION)
+    ld b, a
+    pop af
+    sub b
+    jp c, .inkey
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
 2:  call INKEY
     or a
-    jr z, .inkey
+    jp z, .inkey
     jr 2b
 .down:
     ld a, (NUM_OPTIONS)
@@ -962,39 +1003,40 @@ OP_CHOOSE:
     dec c
     ld a, (SELECTED_OPTION)
     cp c                        ; selected_option-numoptions
-    jr nc, .inkey
+    jp nc, .inkey
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_COL_OPTION)
+    ld b, a
     pop af
-    inc a
+    add a, b
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
 3:  call INKEY
     or a
-    jr z, .inkey
+    jp z, .inkey
     jr 3b
 .selected:
-    ld hl, OPTIONS_JMP_ADDR
-    ld c, (hl)
-    inc hl
     ld a, (SELECTED_OPTION)
-    or a
-    jr z, 2f
-1:  inc hl
-    inc hl
-    inc hl
-    ld c, (hl)
-    inc hl
-    dec a
-    jr nz, 1b
-2:  xor a
+    sla a
+    sla a
+    sla a
+    add a, 2
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+    xor a
     ld (NUM_OPTIONS), a
-4:  call INKEY
+5:  call INKEY
     or a
-    jr nz, 4b
-    ld a, c
+    jr nz, 5b
+    ld a, (hl)
+    inc hl
     or a
     jp z, OP_GOTO
     push hl
@@ -1042,74 +1084,127 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
     call INKEY
+    cp 'o'
+    jp z, .left
+    cp 'p'
+    jp z, .right
     cp 'q'
-    jr z, .up
+    jp z, .up
     cp 'a'
-    jr z, .down
+    jp z, .down
     cp ' '
-    jr z, .selected
+    jp z, .selected
     cp 13
-    jr z, .selected
+    jp z, .selected
     ld bc, (DOWN_COUNTER)
     ld a, c
     or b
-    jr z, .count_elapsed
+    jp z, .count_elapsed
     call ANIMATE_OPTION_BULLET
     ;jr 1b
     jr .inkey
-.up:
+.left:
     ld a, (SELECTED_OPTION)
     or a
-    jr z, .inkey
+    jp z, .inkey
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
     pop af
-    dec a
+    sub b
+    jp c, .inkey
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-6:  call INKEY
+3:  call INKEY
     or a
-    jr z, .inkey
-    jr 6b
+    jp z, .inkey
+    jr 3b
+.right:
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    dec c
+    ld a, (SELECTED_OPTION)
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
+    pop af
+    add a, b
+    cp c
+    jp nc, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+4:  call INKEY
+    or a
+    jp z, .inkey
+    jr 4b
+.up:
+    ld a, (SELECTED_OPTION)
+    or a
+    jp z, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_COL_OPTION)
+    ld b, a
+    pop af
+    sub b
+    jp c, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+2:  call INKEY
+    or a
+    jp z, .inkey
+    jr 2b
 .down:
     ld a, (NUM_OPTIONS)
     ld c, a
     dec c
     ld a, (SELECTED_OPTION)
     cp c                        ; selected_option-numoptions
-    jr nc, .inkey
+    jp nc, .inkey
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_COL_OPTION)
+    ld b, a
     pop af
-    inc a
+    add a, b
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-5:  call INKEY
+3:  call INKEY
     or a
-    jr z, .inkey
-    jr 5b
+    jp z, .inkey
+    jr 3b
 .count_elapsed:
-    ld a, MAXIMUM_OPTIONS
+    ld hl, TIMEOUT_OPTION
     jr 3f
 .selected:
-    ld a, (SELECTED_OPTION)
-3:  ld hl, OPTIONS_JMP_ADDR
-    ld c, (hl)               ;C= if is GOSUB
+    ld a, (SELECTED_OPTION) 
+    sla a
+    sla a
+    sla a
+    add a, 2
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+3:  ld c, (hl)               ;C= if is GOSUB
     inc hl
-    or a
-    jr z, 2f
-1:  inc hl
-    inc hl
-    inc hl
-    ld c, (hl)               ;C= if is GOSUB
-    inc hl
-    dec a
-    jr nz, 1b
-2:  xor a
+    xor a
     ld (NUM_OPTIONS), a
 4:  call INKEY
     or a
@@ -1491,6 +1586,27 @@ OP_MAX:
     ENDIF
 ;-------------------------------------------------------
 
+    IFNDEF UNUSED_OP_POP_MENUCONFIG
+OP_POP_MENUCONFIG:
+    ld b, (ix+0)
+    ld c, (ix+1)
+    inc ix
+    inc ix
+    ld (INCR_ROW_OPTION), bc
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_MENUCONFIG
+OP_MENUCONFIG:
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    ld (INCR_ROW_OPTION), bc
+    jp EXEC_LOOP
+    ENDIF
+
+;-------------------------------------------------------
     IFNDEF UNUSED_OP_POP_BLIT
 OP_POP_BLIT:
     ld de, CPY_SCR_BLK_X
@@ -1682,9 +1798,8 @@ CPY_SCR_BLK_Y_D   DB 0
 
     UNDEFINE BLIT_USED
     ENDIF
-
-
 ;---------------
+
 
 ;-------------------------------------------------------
 
@@ -2268,6 +2383,18 @@ OPCODES:
     DW OP_POP_BLIT
     ENDIF
     IFDEF UNUSED_OP_POP_BLIT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_MENUCONFIG
+    DW OP_MENUCONFIG
+    ENDIF
+    IFDEF UNUSED_OP_MENUCONFIG
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_MENUCONFIG
+    DW OP_POP_MENUCONFIG
+    ENDIF
+    IFDEF UNUSED_OP_POP_MENUCONFIG
     DW ERROR_NOP
     ENDIF
 
