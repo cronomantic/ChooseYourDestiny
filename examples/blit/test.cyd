@@ -1,0 +1,20 @@
+[[
+    INK 7
+    PAPER 0
+    BORDER 1
+    CLEAR
+    PICTURE 0            /* Cargando imagen 0 */
+    DECLARE 0 AS row     /* Variable para filas */
+    DECLARE 1 AS col     /* Variable para columnas */
+    SET row TO 0
+    WHILE (@row <= 24)
+        SET col TO 0
+        WHILE (@col <= 32)
+            BLIT 0, 0, 2, 2 AT @col, @row
+            SET col TO @col+2
+        WEND
+        SET row TO @row+2
+    WEND
+    AT 31, 23
+    WAITKEY
+    END]]
