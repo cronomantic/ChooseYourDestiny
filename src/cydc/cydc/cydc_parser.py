@@ -521,7 +521,7 @@ class CydcParser(object):
                         p[0] = [("PUSH_D", col_d)]
                     else:
                         p[0] = None
-                        return p
+                        return None
                 else:
                     p[0] = [p[10]]
                 if isinstance(p[12], list):
@@ -536,7 +536,7 @@ class CydcParser(object):
                         p[0].append(("PUSH_D", row_d))
                     else:
                         p[0] = None
-                        return p
+                        return None
                 else:
                     p[0].append(p[12])
                 p[0].append(("POP_BLIT", col, row, width, height))
@@ -630,7 +630,7 @@ class CydcParser(object):
                     p[0] = [("PUSH_D", col)]
                 else:
                     p[0] = None
-                    return p
+                    return None
             else:
                 p[0] = [p[2]]
             if isinstance(p[4], list):
@@ -645,10 +645,85 @@ class CydcParser(object):
                     p[0].append(("PUSH_D", row))
                 else:
                     p[0] = None
-                    return p
+                    return None
             else:
                 p[0].append(p[4])
             p[0].append(("POP_AT",))
+
+    def p_statement_menuconfig(self, p):
+        "statement : MENUCONFIG numexpression COMMA numexpression"
+        if isinstance(p[2], int) and isinstance(p[4], int):
+            if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+                row_d = p[4]
+                col_d = p[2]
+                if row_d >= 32:
+                    row_d = 31
+                if col_d >= 32:
+                    col_d = 31
+                if row_d < 0:
+                    row_d = 0
+                if col_d < 0:
+                    col_d = 0
+                p[0] = ("MENUCONFIG", col_d, row_d)
+            else:
+                p[0] = None
+        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
+            t1 = p[2]
+            t2 = p[4]
+            if (
+                (t1[0] == "PUSH_D")
+                and (t2[0] == "PUSH_D")
+                and isinstance(t1[1], int)
+                and isinstance(t2[1], int)
+            ):
+                row_d = t2[1]
+                col_d = t1[1]
+                if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                    if row_d >= 32:
+                        row_d = 31
+                    if col_d >= 32:
+                        col_d = 31
+                    if row_d < 0:
+                        row_d = 0
+                    if col_d < 0:
+                        col_d = 0
+                    p[0] = ("MENUCONFIG", col_d, row_d)
+                else:
+                    p[0] = None
+            else:
+                p[0] = [t1, t2, ("POP_MENUCONFIG",)]
+        else:
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            elif isinstance(p[2], int):
+                col = p[2]
+                if self._check_byte_value(col_d):
+                    if col_d >= 32:
+                        col_d = 31
+                    if col_d < 0:
+                        col_d = 0
+                    p[0] = [("PUSH_D", col_d)]
+                else:
+                    p[0] = None
+                    return None
+            else:
+                p[0] = [p[2]]
+            if isinstance(p[4], list):
+                p[0] += p[4]
+            elif isinstance(p[4], int):
+                row_d = p[4]
+                if self._check_byte_value(row_d):
+                    if row_d >= 32:
+                        row_d = 31
+                    if row_d < 0:
+                        row_d = 0
+                    p[0].append(("PUSH_D", row_d))
+                else:
+                    p[0] = None
+                    return None
+            else:
+                p[0].append(p[4])
+            p[0].append(("POP_MENUCONFIG",))
 
     def p_statement_repchar(self, p):
         "statement : REPCHAR expression COMMA expression"

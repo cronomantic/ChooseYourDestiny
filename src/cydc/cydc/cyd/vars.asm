@@ -24,10 +24,6 @@
 
 
 
-    IFNDEF MAX_OPTIONS
-    DEFINE MAX_OPTIONS 16
-    ENDIF
-
     ORG $5d00
 
 START_VARS:
@@ -37,6 +33,28 @@ INITIAL_STACK EQU START_VARS
 FLAGS:
     DEFS 256
 ;------------------------------------------------------------------------
+
+    DEFINE MAXIMUM_OPTIONS 32
+
+    ALIGN 256
+OPTIONS_TABLE:
+    DEFS 256, 0
+TIMEOUT_OPTION:
+    DEFS 4, 0
+;  X, Y Cursor Marker - Addr Jump
+
+NUM_OPTIONS:
+    DEFB 0
+SELECTED_OPTION:
+    DEFB 0
+INCR_ROW_OPTION:
+    DEFB 0
+INCR_COL_OPTION:
+    DEFB 1
+CYCLE_OPTION:
+    DEFB 0
+
+;--------------------------------------------------------------------------
 ;Print speed
 PRT_INTERVAL:
     DEFW 1
@@ -55,38 +73,14 @@ MAX_X:
     DEFB 255
 MAX_Y:
     DEFB 23
-;MAX_LINES:
-;    DEFB 24
-;NUM_LINES:
-;    DEFB 0
-;INT_STACK_PTR:
-;    DEFW 0
-;INT_CURRENT_PC:
-;    DEFW 0
+
 CHUNK:
     DEFB 0
 
-NUM_OPTIONS:
-    DEFB 0
-; X, Y Cursor Marker
-OPTIONS_POS:
-    DEFS 2*MAX_OPTIONS, 0
-; Addr Jump
-OPTIONS_JMP_ADDR:
-    DEFS 4*MAX_OPTIONS, 0
-TIMEOUT_OPTION:
-    DEFS 4, 0
-
-SELECTED_OPTION:
-    DB 0
-CYCLE_OPTION:
-    DB 0
 WAIT_NEW_SCREEN:
     DB 0
 SKIP_SPACES:
     DB 0
-
-MAXIMUM_OPTIONS EQU MAX_OPTIONS
 
 NO_SELECTED_BULLET  EQU 127
 SELECTED_BULLET     EQU 128

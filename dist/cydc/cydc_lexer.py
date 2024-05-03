@@ -152,6 +152,7 @@ class CydcLexer(object):
         "MIN": "MIN",
         "MAX": "MAX",
         "BLIT": "BLIT",
+        "MENUCONFIG": "MENUCONFIG",
     }
 
     # token_list
