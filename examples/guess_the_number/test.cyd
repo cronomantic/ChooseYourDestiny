@@ -1,0 +1,140 @@
+[[
+    PAGEPAUSE 1
+    BORDER 0
+    INK 7
+    BRIGHT 1
+    FLASH 0
+    PAPER 0
+    CLEAR
+	
+	DECLARE 0 as secreto
+	DECLARE 1 as intento
+	SET secreto TO RANDOM (1, 32)
+	LABEL Menu
+]]Adivina el número secreto:
+
+[[OPTION GOTO Opcion1]]1  [[OPTION GOTO Opcion2]]2  [[OPTION GOTO Opcion3]]3  [[OPTION GOTO Opcion4]]4  [[OPTION GOTO Opcion5]]5  [[OPTION GOTO Opcion6]]6
+[[OPTION GOTO Opcion7]]7  [[OPTION GOTO Opcion8]]8  [[OPTION GOTO Opcion9]]9  [[OPTION GOTO Opcion10]]10 [[OPTION GOTO Opcion11]]11 [[OPTION GOTO Opcion12]]12
+[[OPTION GOTO Opcion13]]13 [[OPTION GOTO Opcion14]]14 [[OPTION GOTO Opcion15]]15 [[OPTION GOTO Opcion16]]16 [[OPTION GOTO Opcion17]]17 [[OPTION GOTO Opcion18]]18
+[[OPTION GOTO Opcion19]]19 [[OPTION GOTO Opcion20]]20 [[OPTION GOTO Opcion21]]21 [[OPTION GOTO Opcion22]]22 [[OPTION GOTO Opcion23]]23 [[OPTION GOTO Opcion24]]24
+[[OPTION GOTO Opcion25]]25 [[OPTION GOTO Opcion26]]26 [[OPTION GOTO Opcion27]]27 [[OPTION GOTO Opcion28]]28 [[OPTION GOTO Opcion29]]29 [[OPTION GOTO Opcion30]]30
+[[OPTION GOTO Opcion31]]31 [[OPTION GOTO Opcion32]]32
+
+[[
+    MENUCONFIG 1,6 : CHOOSE
+    LABEL Opcion1
+	SET intento TO 1
+    GOTO Siguiente
+    LABEL Opcion2
+	SET intento TO 2
+    GOTO Siguiente
+    LABEL Opcion3
+	SET intento TO 3
+    GOTO Siguiente
+    LABEL Opcion4
+	SET intento TO 4
+    GOTO Siguiente
+    LABEL Opcion5
+	SET intento TO 5
+    GOTO Siguiente
+    LABEL Opcion6
+	SET intento TO 6
+    GOTO Siguiente
+    LABEL Opcion7
+	SET intento TO 7
+    GOTO Siguiente
+    LABEL Opcion8
+	SET intento TO 8
+    GOTO Siguiente
+    LABEL Opcion9
+	SET intento TO 9
+    GOTO Siguiente
+    LABEL Opcion10
+	SET intento TO 10
+    GOTO Siguiente
+    LABEL Opcion11
+	SET intento TO 11
+    GOTO Siguiente
+    LABEL Opcion12
+	SET intento TO 12
+    GOTO Siguiente
+    LABEL Opcion13
+	SET intento TO 13
+    GOTO Siguiente
+    LABEL Opcion14
+	SET intento TO 14
+    GOTO Siguiente
+    LABEL Opcion15
+	SET intento TO 15
+    GOTO Siguiente
+    LABEL Opcion16
+	SET intento TO 16
+    GOTO Siguiente
+    LABEL Opcion17
+	SET intento TO 17
+    GOTO Siguiente
+    LABEL Opcion18
+	SET intento TO 18
+    GOTO Siguiente
+    LABEL Opcion19
+	SET intento TO 19
+    GOTO Siguiente
+    LABEL Opcion20
+	SET intento TO 20
+    GOTO Siguiente
+    LABEL Opcion21
+	SET intento TO 21
+    GOTO Siguiente
+    LABEL Opcion22
+	SET intento TO 22
+    GOTO Siguiente
+    LABEL Opcion23
+	SET intento TO 23
+    GOTO Siguiente
+    LABEL Opcion24
+	SET intento TO 24
+    GOTO Siguiente
+    LABEL Opcion25
+	SET intento TO 25
+    GOTO Siguiente
+    LABEL Opcion26
+	SET intento TO 26
+    GOTO Siguiente
+    LABEL Opcion27
+	SET intento TO 27
+    GOTO Siguiente
+    LABEL Opcion28
+	SET intento TO 28
+    GOTO Siguiente
+    LABEL Opcion29
+	SET intento TO 29
+    GOTO Siguiente
+    LABEL Opcion30
+	SET intento TO 30
+    GOTO Siguiente
+    LABEL Opcion31
+	SET intento TO 31
+    GOTO Siguiente
+    LABEL Opcion32
+	SET intento TO 32
+    GOTO Siguiente
+	LABEL Siguiente
+	IF @secreto > @intento THEN
+		CLEAR
+		]]El número secreto es mayor.
+		[[
+		WAITKEY: CLEAR: GOTO Menu
+	ELSE
+		IF @secreto < @intento THEN
+			CLEAR
+			]]El número secreto es menor.
+			[[
+			WAITKEY: CLEAR: GOTO Menu
+		ELSE
+			CLEAR
+			]]¡Has encontrado el número secreto! ¡Felicidades!
+			[[
+			WAITKEY : END
+		ENDIF
+	ENDIF
+    WAITKEY : END]]

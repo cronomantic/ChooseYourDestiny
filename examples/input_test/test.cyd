@@ -1,0 +1,88 @@
+[[ /* Pone colores de pantalla y la borra */
+   PAPER 0    /* Color de fondo negro  */
+   INK   7    /* Color de texto blanco */
+   BORDER 0   /* Borde de color negro  */
+   CLEAR      /* Borramos la pantalla*/
+   PAGEPAUSE 1
+   
+   DECLARE 0 AS str        /* Comienzo del array de 16 caracteres */
+   DECLARE 16 AS ptr       /* Puntero actual sobre la cadena */
+   DECLARE 17 AS chr       /* Carácter Leído del teclado */
+
+]]Introduce tu nombre:[[
+   GOSUB inputStr]]
+Bienvenido [[
+   GOSUB printStr
+   NEWLINE /* Salto de línea */
+   WAITKEY
+   END
+  
+   /* Subrutina para imprimir una cadena de 16 caracteres*/
+   #printStr
+   /* Inicializamos el puntero con la dirección de la variable inicial de la cadena */
+   SET ptr TO @@str
+   /* 
+   Mientras el puntero sea menor a la dirección del mismo... 
+   (La dirección nos sirve como marcador para indicar el final de la cadena) 
+   */
+   WHILE (@ptr < @@ptr)
+      /* Si el contenido de la variable marcada con el puntero es cero acabamos */
+      IF [@ptr] = 0 THEN RETURN ENDIF
+      /* Imprimimos el carácter haciendo indirección sobre el puntero */
+      CHAR [@ptr]
+      /* Incrementamos el puntero una posición */
+      SET ptr TO @ptr + 1
+   WEND
+   RETURN
+
+   #inputStr
+   /* Inicializamos el puntero con la dirección de la variable inicial de la cadena */
+   SET ptr TO @@str
+   /* Rellenamos toda la cadena con ceros */
+   WHILE (@ptr < @@ptr)
+      SET [ptr] TO 0
+      SET ptr TO @ptr + 1
+   WEND
+   /* Volvemos a poner el puntero al principio */
+   SET ptr TO @@str
+   /* Bucle infinito */
+   WHILE ()
+      /* Ponemos el carácter '_' como cursor */
+      CHAR 95
+      /* Leeemos una tecla pulsada y guardamos su código ASCII en chr */
+      SET chr TO INKEY()
+      /* Borramos el cursor */
+      BACKSPACE
+      /* Si la tecla es ENTER, salimos */
+      IF @chr = 13 THEN RETURN ENDIF
+      /* Si la tecla es DELETE... */
+      IF @chr = 12 THEN
+         /* Ponemos el puntero actual a cero, si no estamos al final del array */
+         IF @ptr < @@ptr THEN
+            SET [ptr] TO 0
+         ENDIF
+         /* Si no estamos al principio del array... */
+         IF @ptr > @@str THEN
+            /* Borramos la posición actual en pantalla y volvemos atrás */
+            BACKSPACE
+            /* Movemos el puntero a la posición anterior */
+            SET ptr TO @ptr - 1
+            /* Lo rellenamos también con cero */
+            SET [ptr] TO 0
+         ENDIF
+      ELSE 
+         /* 
+         Si el carácter es mayor que 32 y menor que 128 (caractéres ASCII imprimibles)
+         y no estamos al final del array...
+         */
+         IF @chr >= 32 AND @chr < 128 AND @ptr < @@ptr THEN 
+            /* Imprimimos el carácter */
+            CHAR @chr
+            /* Guardamos el carácter en el array */
+            SET [ptr] TO @chr
+            /* Avanzamos el puntero */
+            SET ptr TO @ptr + 1 
+         ENDIF
+      ENDIF
+   WEND
+]]

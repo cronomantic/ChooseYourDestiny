@@ -42,6 +42,7 @@ LASTK               EQU $5C08  ; Last key pressed
 REPDEL              EQU $5C09  ; Time in 1/50s before key repeats
 REPPER              EQU $5C0A  ; Delay in 1/50s between key repeats
 PIP                 EQU $5C39  ; Length of keyboard click
+KSTATE              EQU $5C00
 
 SCR_PXL_SIZE        EQU 32*192
 SCR_ATT_SIZE        EQU 32*24
@@ -50,6 +51,8 @@ SCR_SIZE            EQU SCR_ATT_SIZE + SCR_PXL_SIZE
 SCR_PXL             EQU $4000
 SCR_ATT             EQU SCR_PXL + SCR_PXL_SIZE
 SCR_ADDR            EQU SCR_PXL
+
+
 
     IFDEF USE_ROM_KEYB
 KEY_SCAN          EQU $028E
