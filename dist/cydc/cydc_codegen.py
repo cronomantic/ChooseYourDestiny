@@ -128,6 +128,8 @@ class CydcCodegen(object):
         "POP_BLIT": 0x5F,
         "MENUCONFIG": 0x60,
         "POP_MENUCONFIG": 0x61,
+        "PUSH_IS_DISK": 0x62,
+        "BACKSPACE": 0x63,
     }
 
     def __init__(self, gettext):
@@ -166,7 +168,7 @@ class CydcCodegen(object):
                         c = ("RANDOM", next[1], c[1])
                         skip = True
                     elif c[0] == "PUSH_INKEY":
-                        c = ("INKEY", next[1])
+                        c = ("INKEY", next[1], c[1])
                         skip = True
                     elif c[0] == "PUSH_XPOS":
                         c = ("SET_XPOS", next[1])
@@ -299,12 +301,16 @@ class CydcCodegen(object):
                     code_tmp.append(c)
             else:
                 code_tmp.append(c)
+        # Append an END just in case...
+        last_opcode = code_tmp[-1]
+        if last_opcode[0] != "END":
+            code_tmp.append(("END",))
         # for c in code:
         #    print(c)
         # print(code)
         # print()
         # for c in code_tmp:
-        #    print(c)
+        #     print(c)
         return code_tmp
 
     def code_translate(self, code, slice_text=False):

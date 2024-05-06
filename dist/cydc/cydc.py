@@ -555,7 +555,7 @@ def main():
         chunks = codegen.generate_code(
             code=code, slice_text=args.slice_texts, show_debug=False
         )
-
+        
         # To calculate the offset
         num_blocks = len(blocks) + len(chunks)
         bank0_offset = (5 * num_blocks) + asm_size + 0x8000
@@ -646,7 +646,7 @@ def main():
         index = [
             (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
         ]
-
+        
         print("\nRAM usage:\n-----------------")
         for i, v in enumerate(available_banks):
             print(

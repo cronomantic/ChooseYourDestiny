@@ -153,6 +153,8 @@ class CydcLexer(object):
         "MAX": "MAX",
         "BLIT": "BLIT",
         "MENUCONFIG": "MENUCONFIG",
+        "ISDISK": "ISDISK",
+        "BACKSPACE": "BACKSPACE",
     }
 
     # token_list
