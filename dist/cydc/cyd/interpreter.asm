@@ -345,36 +345,22 @@ OP_SUB:
 
     IFNDEF UNUSED_OP_INKEY
 OP_INKEY:
+    ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
-    ld d, HIGH FLAGS
-    push hl
-1:  call INKEY
-    or a
-    jr z, 1b
-    push af
-2:  call INKEY
-    or a
-    jr nz, 2b    
-    pop af
+    ld a, (hl)
+    inc hl
+    call INKEY_SELECT_WAIT_MODE    
     ld (de), a
-    pop hl
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_PUSH_INKEY
 OP_PUSH_INKEY:
-    push hl
-1:  call INKEY
-    or a
-    jr z, 1b
-    push af
-2:  call INKEY
-    or a
-    jr nz, 2b    
-    pop af
+    ld a, (hl)
+    inc hl
+    call INKEY_SELECT_WAIT_MODE 
     PUSH_INT_STACK
-    pop hl
     jp EXEC_LOOP
     ENDIF
 
@@ -660,6 +646,7 @@ OP_MARGINS:
     ld a, c
     push af
     call SET_MARGINS
+    call SET_BACKSPACE_MARGINS_WIDTH
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -1241,14 +1228,6 @@ OP_PAGEPAUSE:
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_NEWLINE
-OP_NEWLINE:
-    push hl
-    call CRLF
-    pop hl
-    jp EXEC_LOOP
-    ENDIF
-
     IFNDEF UNUSED_OP_CHAR_D
 OP_CHAR_D:
     ld a, (hl)
@@ -1301,6 +1280,54 @@ OP_TAB2:
     push af
     call PUT_VAR_CHAR
     pop af
+    pop bc
+    djnz 1b
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+;    IFNDEF UNUSED_OP_INPUT
+;OP_INPUT:
+;    ld d, HIGH FLAGS
+;    ld e, (hl)
+;    inc hl
+;    ld b,(hl)
+;    inc hl
+;    ld c, (hl)
+;    inc hl
+;    push hl
+;    push de
+;    call INPUT_STR
+;    ld a, (INPUT_STR_MAXSIZE)            ;Copy from buffer to flags
+;    ld c, a
+;    ld b, 0
+;    ld hl, BUFFER
+;    pop de
+;    ldir
+;    pop hl
+;    jp EXEC_LOOP
+;    ENDIF
+
+    IFNDEF UNUSED_OP_NEWLINE
+OP_NEWLINE:
+    ld b, (hl)
+    inc hl
+    push hl
+1:  push bc
+    call CRLF
+    pop bc
+    djnz 1b
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_BACKSPACE
+OP_BACKSPACE:
+    ld b, (hl)
+    inc hl
+    push hl
+1:  push bc
+    call BACKSPACE
     pop bc
     djnz 1b
     pop hl
@@ -1583,6 +1610,13 @@ OP_MAX:
     jr c, 1f             ; A < C 
     ld a, c
 1:  OP_2PARAM_STORE_STACK
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_IS_DISK
+OP_PUSH_IS_DISK:
+    ld a, IS_PLUS3
+    PUSH_INT_STACK
+    jp EXEC_LOOP
     ENDIF
 ;-------------------------------------------------------
 
@@ -2397,6 +2431,25 @@ OPCODES:
     IFDEF UNUSED_OP_POP_MENUCONFIG
     DW ERROR_NOP
     ENDIF
+    IFNDEF UNUSED_OP_PUSH_IS_DISK
+    DW OP_PUSH_IS_DISK
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_IS_DISK
+    DW ERROR_NOP
+    ENDIF
+    ;IFNDEF UNUSED_OP_INPUT
+    ;DW OP_INPUT
+    ;ENDIF
+    ;IFDEF UNUSED_OP_INPUT
+    ;DW ERROR_NOP
+    ;ENDIF
+    IFNDEF UNUSED_OP_BACKSPACE
+    DW OP_BACKSPACE
+    ENDIF
+    IFDEF UNUSED_OP_BACKSPACE
+    DW ERROR_NOP
+    ENDIF
+
 
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP

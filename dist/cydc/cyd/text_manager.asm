@@ -23,10 +23,16 @@
 ;------------------------------
 
 INIT_WIN:
+    ld a, $20
+    call GET_CHARACTER_WIDTH
+    ld (WIDTH_BACKSPACE), a
+
+    ;Init other variables
     ld de, NUM_OPTIONS
     ld bc, .end_data-.data
     ld hl, .data
     ldir
+    call SET_BACKSPACE_MARGINS_WIDTH
     jp CLEAR_WIN
 .data:
     DEFB 0
@@ -1064,6 +1070,52 @@ PUT_8X8_CHAR:
     ENDR
     ret
 ;-----------------------------------------------------
+
+BACKSPACE:
+    ld a, (WIDTH_BACKSPACE)
+    ld l, a
+    ld de, (POS_X)
+    ld bc, (MIN_X)            ; Loads positions
+    ld a, e                   ; Gets POS_X on A
+1:  sub l                     ; Backtrack a position
+    jr c, 2f                  ; If POS_X < 0
+    cp c                      ; Compare with MIN_X
+    jr nc, .noLeftBorder      ; Test left border
+2:  ld a, d                   ; Gets POS_Y on A
+    or a                      ; Is Zero ?
+    jr z, .noBacktrack        ; if it is zero, then do nothing
+    dec a                     ; Decrement position
+    cp b                      ; Compare with MIN_Y
+    jr c, .noBacktrack        ; IF Y < MIN_Y, do nothing
+    ld d, a                   ; Store the new position Y
+    ld a, (MAX_X_BACKSPACE)   ; Sets X to the right side (MAX_X)
+    jr 1b                     ; substract again
+.noLeftBorder:
+    ld e, a                   ; Store the new position X
+.noBacktrack:
+    ld (POS_X), de            ; Update new screen position
+    push de
+    ld a, $20                 ; Clear the new position
+    call PUT_VAR_CHAR
+    pop de                    ; Step back again
+    ld (POS_X), de
+    ret
+
+SET_BACKSPACE_MARGINS_WIDTH:
+    ld a, (WIDTH_BACKSPACE)
+    ld c, a
+    ld a, (MAX_X)
+    ld b, a
+    ld a, (MIN_X)
+1:  cp b
+    jr nc, 2f                 ;Right border overshoot
+    add a, c
+    jr nc, 1b                 ;beyond 255!
+2:  sub c                     ;Step back
+    ld (MAX_X_BACKSPACE), a
+    ret
+
+;-----------------------------------------------------
 CLEAR_WIN:
     push ix
     ld ix, 0
@@ -1198,11 +1250,7 @@ CLEAR_WIN:
     xor a
     ld (NUM_OPTIONS), a          ;Clear options.
     ret
-
-BACKSPACE:
-    ;TODO:
-    ret
-
+;----------------------------------------------------
 ;' scrolls the window defined by (row, col, width, height) 1 cell up
 ;WIN_SCROLL_UP:
 ;    ld bc, (MIN_X)

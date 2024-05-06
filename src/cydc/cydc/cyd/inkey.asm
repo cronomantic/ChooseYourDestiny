@@ -21,10 +21,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+
+
 INKEY:
-    ;push hl
-    ;push de
-    ;push bc
     exx
 
     call KEY_SCAN
@@ -41,17 +40,39 @@ INKEY:
     ;Keycode on A
     exx
     ret
-    ;jr 1f
+.empty_inkey:
+    xor a
+    exx
+    ret
+
+/*
+INKEY:
+    push hl
+    push de
+    push bc
+
+    call KEY_SCAN
+    jp nz, .empty_inkey
+
+    call K_TEST
+    jp nc, .empty_inkey
+
+    dec d   ; D is expected to be FLAGS so set bit 3 $FF
+    ; 'L' Mode so no keywords.
+    ld e, a ; main key to A
+    ; C is MODE 0 'KLC' from above still.
+    call K_DECODE ; routine K-DECODE
+    ;Keycode on A
+    jr 1f
 
 .empty_inkey:
     xor a
 1:
-    ;pop bc
-    ;pop de
-    ;pop hl
-    exx
+    pop bc
+    pop de
+    pop hl
     ret
-
+*/
 
     IFNDEF USE_ROM_KEYB
 ; THE 'KEYBOARD SCANNING' SUBROUTINE
@@ -388,3 +409,48 @@ KEYTABLE_F:
 
     ENDIF
 
+INKEY_WAIT_ITERATIONS       EQU 10
+INKEY_NO_WAIT_ITERATIONS    EQU INKEY_WAIT_ITERATIONS
+
+
+INKEY_SELECT_WAIT_MODE:
+    or a
+    jr nz, INKEY_NO_WAIT
+
+INKEY_WAIT:
+    push bc
+1:  call INKEY
+    or a
+    jr z, 1b       ;Detect keypress
+    ld c, a
+    ld b, INKEY_WAIT_ITERATIONS
+2:  call INKEY
+    or a
+    jr z, 2b       ;Detect keypress again
+    cp c
+    jr nz, 1b      ;Different key, we begin again
+    djnz 2b        ;Decrease counter
+3:  call INKEY
+    or a
+    jr nz, 3b       ;Detect key release
+    ld a, c
+    pop bc
+    ret
+
+INKEY_NO_WAIT:
+    push bc
+1:  call INKEY
+    or a
+    jr z, .empty_inkey
+    ld c, a
+    ld b, INKEY_NO_WAIT_ITERATIONS
+2:  call INKEY
+    or a
+    jr z, .empty_inkey
+    cp c
+    jr nz, 1b      ;Different key, we begin again
+    djnz 2b        ;Decrease counter
+    ld a, c        ;Returns key pressed
+.empty_inkey:
+    pop bc
+    ret
