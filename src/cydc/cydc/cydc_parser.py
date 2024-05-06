@@ -111,7 +111,9 @@ class CydcParser(object):
     def p_loop_statement(self, p):
         """
         loop_statement : WHILE LPAREN boolexpression RPAREN loop_statement WEND
-        loop_statement : WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
+                       | WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
+                       | WHILE LPAREN RPAREN loop_statement WEND
+                       | WHILE LPAREN RPAREN loop_subprogram WEND
         """
         if len(p) == 7 and p[3]:
             label_loop = self._get_hidden_label()
@@ -131,6 +133,15 @@ class CydcParser(object):
                     p[0].append(p[5])
 
             p[0] += [("GOTO", label_loop, 0, 0), ("LABEL", label_end)]
+        elif len(p) == 6:
+            label_loop = self._get_hidden_label()
+            p[0] = [("LABEL", label_loop)]
+            if p[4]:
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0].append(p[4])
+            p[0] += [("GOTO", label_loop, 0, 0)]
 
     def p_loop_subprogram(self, p):
         """
@@ -261,10 +272,6 @@ class CydcParser(object):
         "statement : END"
         p[0] = ("END",)
 
-    def p_statement_newline(self, p):
-        "statement : NEWLINE"
-        p[0] = ("NEWLINE",)
-
     def p_statement_return(self, p):
         "statement : RETURN"
         p[0] = ("RETURN",)
@@ -300,6 +307,32 @@ class CydcParser(object):
     def p_statement_label(self, p):
         "statement : LABEL ID"
         p[0] = ("LABEL", p[2])
+
+    def p_statement_backspace(self, p):
+        """
+        statement : BACKSPACE expression
+                  | BACKSPACE
+        """
+        if len(p) == 3 and p[2]:
+            if self._check_byte_value(p[2]):
+                p[0] = ("BACKSPACE", p[2])
+            else:
+                p[0] = None
+        elif len(p) == 2:
+            p[0] = ("BACKSPACE", 1)
+
+    def p_statement_newline(self, p):
+        """
+        statement : NEWLINE expression
+                  | NEWLINE
+        """
+        if len(p) == 3 and p[2]:
+            if self._check_byte_value(p[2]):
+                p[0] = ("NEWLINE", p[2])
+            else:
+                p[0] = None
+        elif len(p) == 2:
+            p[0] = ("NEWLINE", 1)
 
     def p_statement_tab(self, p):
         "statement : TAB expression"
@@ -1013,9 +1046,16 @@ class CydcParser(object):
         "numexpression : RANDOM LPAREN RPAREN"
         p[0] = ("PUSH_RANDOM", 0)
 
+    def p_numexpression_inkey_expression(self, p):
+        "numexpression : INKEY LPAREN expression RPAREN"
+        if self._check_byte_value(p[3]):
+            p[0] = ("PUSH_INKEY", p[3])
+        else:
+            p[0] = None
+
     def p_numexpression_inkey(self, p):
         "numexpression : INKEY LPAREN RPAREN"
-        p[0] = ("PUSH_INKEY",)
+        p[0] = ("PUSH_INKEY", 0)
 
     def p_numexpression_xpos(self, p):
         "numexpression : XPOS LPAREN RPAREN"
@@ -1024,6 +1064,10 @@ class CydcParser(object):
     def p_numexpression_ypos(self, p):
         "numexpression : YPOS LPAREN RPAREN"
         p[0] = ("PUSH_XPOS",)
+
+    def p_numexpression_isdisk(self, p):
+        "numexpression : ISDISK LPAREN RPAREN"
+        p[0] = ("PUSH_IS_DISK",)
 
     def p_numexpression_expression(self, p):
         "numexpression : expression"
