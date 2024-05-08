@@ -45,6 +45,20 @@ def get_unused_opcodes_defines(unused_opcodes=None):
         asm += f"    DEFINE UNUSED_OP_{c}\n"
     return asm
 
+
+def get_game_id(name=None):
+    if name is None or len(name) == 0:
+        return "    DEFB 16,0"
+    elif len(name) < 16:
+        n = 16 - len(name)
+        name = '"' + name + '"'
+        for i in range(n):
+            name += ", 0"
+        return f"    DEFB {name}"
+    else:
+        return '"' + name[0:15] + '"'
+
+
 def get_asm_template(filename):
     filepath = os.path.join(os.path.dirname(__file__), "cyd", filename + ".asm")
     filepath = os.path.abspath(filepath)
@@ -65,6 +79,7 @@ def get_asm_128(
     has_tracks=False,
     tap_path="",
     unused_opcodes=None,
+    name="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -83,6 +98,7 @@ def get_asm_128(
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
+        GAMEID=get_game_id(name),
     )
 
     t = get_asm_template("inkey")
@@ -90,6 +106,8 @@ def get_asm_128(
     t = get_asm_template("bank_zx128")
     includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
+    includes += t.substitute(d)
+    t = get_asm_template("savegame_tape")
     includes += t.substitute(d)
     if has_tracks:
         t = get_asm_template("music_manager_tape")
@@ -114,7 +132,7 @@ def get_asm_128(
     asm += t.substitute(d)
     if has_tracks:
         asm += "    DEFINE USE_VORTEX\n\n"
-        
+
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     t = get_asm_template("cyd_tape")
@@ -132,6 +150,7 @@ def get_asm_48(
     sfx_asm,
     tap_path="",
     unused_opcodes=None,
+    name="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -150,12 +169,15 @@ def get_asm_48(
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
+        GAMEID=get_game_id(name),
     )
     t = get_asm_template("inkey")
     includes = t.substitute(d)
     t = get_asm_template("bank_zx128")
     includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
+    includes += t.substitute(d)
+    t = get_asm_template("savegame_tape")
     includes += t.substitute(d)
     t = get_asm_template("screen_manager_tape")
     includes += t.substitute(d)
@@ -170,13 +192,13 @@ def get_asm_48(
     asm = t.substitute(d)
     t = get_asm_template("vars")
     asm += t.substitute(d)
-    
+
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)
 
-    #Use the ROM KEYB routines to save memory...
+    # Use the ROM KEYB routines to save memory...
     asm = "    DEFINE USE_ROM_KEYB\n" + asm
 
     return asm
@@ -203,6 +225,7 @@ def get_asm_128_size(
         has_tracks=has_tracks,
         tap_path="",
         unused_opcodes=unused_opcodes,
+        name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
     res = run_assembler(
@@ -242,6 +265,7 @@ def get_asm_48_size(
         sfx_asm=sfx_asm,
         tap_path="",
         unused_opcodes=unused_opcodes,
+        name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
     res = run_assembler(
@@ -279,6 +303,7 @@ def do_asm_128(
     loading_scr=None,
     has_tracks=False,
     unused_opcodes=None,
+    name="",
 ):
 
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -298,6 +323,7 @@ def do_asm_128(
         has_tracks=has_tracks,
         tap_path=tap_path,
         unused_opcodes=unused_opcodes,
+        name=name,
     )
 
     block_list = ""
@@ -377,6 +403,7 @@ def do_asm_48(
     sfx_asm,
     loading_scr=None,
     unused_opcodes=None,
+    name="",
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
@@ -394,6 +421,7 @@ def do_asm_48(
         sfx_asm=sfx_asm,
         tap_path=tap_path,
         unused_opcodes=unused_opcodes,
+        name=name,
     )
 
     block_list = ""
@@ -462,6 +490,7 @@ def do_asm_plus3(
     filename_script="SCRIPT.DAT",
     loading_scr=None,
     unused_opcodes=None,
+    name="",
 ):
 
     if sfx_asm is None:
@@ -488,12 +517,15 @@ def do_asm_plus3(
         FILENAME_SCRIPT=filename_script,
         DEFINE_LOADING_SCREEN=loading_scr_def,
         LOADSCR_DAT=loading_scr,
+        GAMEID=get_game_id(name),
     )
     t = get_asm_template("inkey")
     includes = t.substitute(d)
     t = get_asm_template("bank_zx128")
     includes += t.substitute(d)
     t = get_asm_template("plus3dos")
+    includes += t.substitute(d)
+    t = get_asm_template("savegame_plus3")
     includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
@@ -518,7 +550,7 @@ def do_asm_plus3(
     asm += t.substitute(d)
 
     asm += get_unused_opcodes_defines(unused_opcodes)
-    
+
     t = get_asm_template("cyd_plus3")
     asm += t.substitute(d)
     t = get_asm_template("loaderplus3")

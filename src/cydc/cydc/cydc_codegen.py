@@ -130,6 +130,12 @@ class CydcCodegen(object):
         "POP_MENUCONFIG": 0x61,
         "PUSH_IS_DISK": 0x62,
         "BACKSPACE": 0x63,
+        "RAMLOAD": 0x64,
+        "RAMSAVE": 0x65,
+        "POP_SLOT_LOAD": 0x66,
+        "POP_SLOT_SAVE": 0x67,
+        "PUSH_SAVE_RESULT": 0x68,
+        "FADEOUT": 0x69,
     }
 
     def __init__(self, gettext):

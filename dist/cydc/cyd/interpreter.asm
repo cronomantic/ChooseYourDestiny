@@ -1286,28 +1286,6 @@ OP_TAB2:
     jp EXEC_LOOP
     ENDIF
 
-;    IFNDEF UNUSED_OP_INPUT
-;OP_INPUT:
-;    ld d, HIGH FLAGS
-;    ld e, (hl)
-;    inc hl
-;    ld b,(hl)
-;    inc hl
-;    ld c, (hl)
-;    inc hl
-;    push hl
-;    push de
-;    call INPUT_STR
-;    ld a, (INPUT_STR_MAXSIZE)            ;Copy from buffer to flags
-;    ld c, a
-;    ld b, 0
-;    ld hl, BUFFER
-;    pop de
-;    ldir
-;    pop hl
-;    jp EXEC_LOOP
-;    ENDIF
-
     IFNDEF UNUSED_OP_NEWLINE
 OP_NEWLINE:
     ld b, (hl)
@@ -1834,6 +1812,127 @@ CPY_SCR_BLK_Y_D   DB 0
     ENDIF
 ;---------------
 
+    IFNDEF UNUSED_OP_FADEOUT
+OP_FADEOUT:
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push hl
+
+.fadeout:
+    ; bc: y - x
+    ; de: height - width
+    ld a, b
+    rrca
+    rrca
+    rrca
+    and %00000011
+    add a, %01011000
+    ld h, a
+    ld a, b
+    and %00000111
+    rrca
+    rrca
+    rrca
+    add a, c
+    ld l, a        ; HL -> Attr coordinates
+
+    ld a, 8        ; Num iterations
+3:  ex af, af'
+    push hl
+    push de
+2:  ld b, e        ; width -> B
+    push hl
+1:  ld a, (hl)     ; read current attribute; for both PAPER and INK (individually), all three bits are merged into one by OR
+    ld c, a        ; the merged bits will land into "bottom" bit (b0 INK, b3 PAPER)
+    rra                 ; setting those to "1" for non-zero INK/PAPER value
+    or c           ; and "0" for zero INK/PAPER - this will be then subtracted
+    rra                 ; from current attribute
+    or c           ; *here* the bits 0 and 3 are "1" for non-zero INK and PAPER
+    and %00001001   ; extract those bottom INK (+1)/PAPER (+8) bits into A
+    ; subtract that value from current attribute, to decrement INK/PAPER individually
+    sub c           ; A = decrement - attribute
+    neg             ; A = attribute - decrement (new attribute value)
+    ld (hl), a     ; write the darkened attribute value
+    inc hl
+    djnz 1b
+    pop hl         ; Restore hl
+    ld a, 32       ; next attr line
+    add a, l
+    jr nc, 4f
+    inc h
+4:  ld l, a
+    dec d
+    jr nz, 2b
+    pop de
+    pop hl
+    ex af, af'
+    dec a
+    jr nz, 3b
+
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+;---------------
+    IFNDEF UNUSED_OP_RAMLOAD
+OP_RAMLOAD:
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    push hl
+    call CHK_RAMLOAD_PARAMETERS
+    call RAMLOAD
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_RAMSAVE
+OP_RAMSAVE:
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    push hl
+    call CHK_RAMLOAD_PARAMETERS
+    call RAMSAVE
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_SLOT_LOAD
+OP_POP_SLOT_LOAD:
+    POP_INT_STACK
+    ld (CURR_SAVE_SLOT), a
+    call DO_LOAD
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_SLOT_SAVE
+OP_POP_SLOT_SAVE:
+    POP_INT_STACK
+    ld (CURR_SAVE_SLOT), a
+    ld b, (hl)
+    inc hl
+    ld c, (hl)
+    inc hl
+    call CHK_RAMLOAD_PARAMETERS
+    call DO_SAVE
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_SAVE_RESULT
+OP_PUSH_SAVE_RESULT:
+    ld a, (LAST_SAVE_RESULT)
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
 
 ;-------------------------------------------------------
 
@@ -2437,20 +2536,50 @@ OPCODES:
     IFDEF UNUSED_OP_PUSH_IS_DISK
     DW ERROR_NOP
     ENDIF
-    ;IFNDEF UNUSED_OP_INPUT
-    ;DW OP_INPUT
-    ;ENDIF
-    ;IFDEF UNUSED_OP_INPUT
-    ;DW ERROR_NOP
-    ;ENDIF
     IFNDEF UNUSED_OP_BACKSPACE
     DW OP_BACKSPACE
     ENDIF
     IFDEF UNUSED_OP_BACKSPACE
     DW ERROR_NOP
     ENDIF
-
+    IFNDEF UNUSED_OP_RAMLOAD
+    DW OP_RAMLOAD
+    ENDIF
+    IFDEF UNUSED_OP_RAMLOAD
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_RAMSAVE
+    DW OP_RAMSAVE
+    ENDIF
+    IFDEF UNUSED_OP_RAMSAVE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_SLOT_LOAD
+    DW OP_POP_SLOT_LOAD
+    ENDIF
+    IFDEF UNUSED_OP_POP_SLOT_LOAD
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_SLOT_SAVE
+    DW OP_POP_SLOT_SAVE
+    ENDIF
+    IFDEF UNUSED_OP_POP_SLOT_SAVE
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_SAVE_RESULT
+    DW OP_PUSH_SAVE_RESULT
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_SAVE_RESULT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_FADEOUT
+    DW OP_FADEOUT
+    ENDIF
+    IFDEF UNUSED_OP_FADEOUT
+    DW ERROR_NOP
+    ENDIF
 
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
+

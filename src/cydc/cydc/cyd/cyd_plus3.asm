@@ -41,6 +41,9 @@ SCRIPT_FILE_H   EQU 0 << 8
 VORTEX_BANK     EQU 1
 VORTEX_FILE_H   EQU 2 << 8
 
+SAVEGAME_BANK     EQU 0
+SAVEGAME_FILE_H   EQU 3 << 8
+
 CHUNK_ADDR      EQU $C000
 MDLADDR 		EQU $C000
 
@@ -68,6 +71,9 @@ MDLADDR 		EQU $C000
     ;Disable CAPS_LOCK
     res 3,(IY+$30)
 
+    ld a, $FF
+    ld (LAST_SAVE_RESULT), a
+
     xor a
     call BORDER
     xor a
@@ -90,7 +96,11 @@ UPDATE_SCR_FLAG:
 
     org $8060
 SIGNATURE:
-    DB "Choose Your Destiny v", RELEASE, 0
+    DB "CYD v", RELEASE, 0
+
+    org $8070
+GAME_ID:
+@{GAMEID}
 
     org $8080
 ISR:
