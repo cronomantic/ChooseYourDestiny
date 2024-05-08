@@ -506,6 +506,7 @@ def main():
                 filename_script="SCRIPT.DAT",
                 loading_scr=loading_scr,
                 unused_opcodes=unused_opcodes,
+                name=output_name,
             )
         elif model == "128k":
             if verbose:
@@ -555,7 +556,7 @@ def main():
         chunks = codegen.generate_code(
             code=code, slice_text=args.slice_texts, show_debug=False
         )
-        
+
         # To calculate the offset
         num_blocks = len(blocks) + len(chunks)
         bank0_offset = (5 * num_blocks) + asm_size + 0x8000
@@ -646,7 +647,7 @@ def main():
         index = [
             (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
         ]
-        
+
         print("\nRAM usage:\n-----------------")
         for i, v in enumerate(available_banks):
             print(
@@ -679,6 +680,7 @@ def main():
                     loading_scr=loading_scr,
                     has_tracks=has_tracks,
                     unused_opcodes=unused_opcodes,
+                    name=output_name,
                 )
             else:
                 if verbose:
@@ -699,6 +701,7 @@ def main():
                     charw=l_charw,
                     loading_scr=loading_scr,
                     unused_opcodes=unused_opcodes,
+                    name=output_name,
                 )
         except ValueError as e1:
             sys.exit(_("ERROR: Error assembling TAP."), e1)

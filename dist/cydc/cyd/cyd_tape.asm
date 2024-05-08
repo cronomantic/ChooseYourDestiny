@@ -22,7 +22,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 ;
-    ;THIS IS A TEST
+
 
     DEFINE RELEASE "0.8"
 
@@ -50,6 +50,9 @@ INT_STACK_ADDR EQU $8000
 
     ;Disable CAPS_LOCK
     res 3,(IY+$30)
+
+    ld a, $FF
+    ld (LAST_SAVE_RESULT), a
 
     xor a
     call BORDER
@@ -85,7 +88,11 @@ VORTEX_BANK:
 
     org $8060
 SIGNATURE:
-    DB "Choose Your Destiny v", RELEASE, 0
+    DB "CYD v", RELEASE, 0
+
+    org $8070
+GAME_ID:
+@{GAMEID}
 
     org $8080
 ISR:

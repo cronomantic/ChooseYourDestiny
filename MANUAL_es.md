@@ -53,6 +53,10 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [BORDER numexpression](#border-numexpression)
     - [BRIGHT numexpression](#bright-numexpression)
     - [FLASH numexpression](#flash-numexpression)
+    - [NEWLINE expression](#newline-expression)
+    - [NEWLINE](#newline)
+    - [BACKSPACE expression](#backspace-expression)
+    - [BACKSPACE](#backspace)
     - [SFX numexpression](#sfx-numexpression)
     - [PICTURE numexpression](#picture-numexpression)
     - [DISPLAY numexpression](#display-numexpression)
@@ -61,11 +65,13 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
+    - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
-    - [INKEY](#inkey)
+    - [INKEY(expression)](#inkeyexpression)
+    - [INKEY()](#inkey)
     - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
     - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
     - [POSY()](#posy)
@@ -74,12 +80,24 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
     - [LOOP numexpression](#loop-numexpression)
+    - [RAMSAVE varID, expression](#ramsave-varid-expression)
+    - [RAMSAVE varID](#ramsave-varid)
+    - [RAMSAVE](#ramsave)
+    - [RAMLOAD varID, expression](#ramload-varid-expression)
+    - [RAMLOAD varID](#ramload-varid)
+    - [RAMLOAD](#ramload)
+    - [SAVE numexpression, expression, expression](#save-numexpression-expression-expression)
+    - [SAVE numexpression, expression](#save-numexpression-expression)
+    - [SAVE numexpression](#save-numexpression)
+    - [LOAD numexpression](#load-numexpression)
+    - [SAVERESULT()](#saveresult)
+    - [ISDISK()](#isdisk)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
   - [Melodías](#melodías)
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
     - [Windows](#windows-1)
-    - [Linux, BSDs,...](#linux-bsds)
+    - [Linux, BSDs](#linux-bsds)
   - [Ejemplos](#ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
@@ -93,10 +111,10 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 Estos son los requerimientos externos de la herramienta:
 
-* [Python 3.11 o superior](https://www.python.org/)
-* [SjAsmPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
-* [TAPTOOLS 1.0.8 o superior](http://www.seasip.info/ZX/unix.html), para ser más exactos la utilidad `mkp3fs`.
-* Descompresor de ficheros ZIP
+- [Python 3.11 o superior](https://www.python.org/)
+- [SjAsmPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
+- [TAPTOOLS 1.0.8 o superior](http://www.seasip.info/ZX/unix.html), para ser más exactos la utilidad `mkp3fs`.
+- Descompresor de ficheros ZIP
 
 Si se actualiza una versión más antigua, es recomendable NO sobrescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guion `make_adv` para cada caso.
 
@@ -110,16 +128,16 @@ La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondi
 
 Para estos sistemas, los requerimientos son:
 
-* GNU/Linux / Unix / macOS / BSD con shell compatible con BASH.
-* Python 3.11 o superior
-* Todos los programas comunes del sistema (grep, cat, etc...).
-* Todos los programas requeridos para compilar programas C en el sistema (libc, libstdc++, g++, GNU make, etc...).
-* Autotools (autoconf, automake, aclocals...).
-* wget
-* git
-* libdsk
+- GNU/Linux / Unix / macOS / BSD con shell compatible con BASH.
+- Python 3.11 o superior
+- Todos los programas comunes del sistema (grep, cat, etc...).
+- Todos los programas requeridos para compilar programas C en el sistema (libc, libstdc++, g++, GNU make, etc...).
+- Autotools (autoconf, automake, aclocals...).
+- wget
+- git
+- libdsk
   
-Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente. 
+Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente.
 
 Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
 
@@ -138,11 +156,13 @@ make clean
 make
 cd ..
 ```
+
 Ahora, pasaremos a compilar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**. Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando (si usas Ubuntu, tienes que tener activado el repositorio "Universe"):
 
 ```bash
 sudo apt-get install libdsk4 libdsk4-dev libdsk-utils
 ```
+
 Para ArchLinux, el comando sería el siguiente:
 
 ```bash
@@ -159,6 +179,7 @@ cd taptools-1.1.1
 ./configure
 make
 ```
+
 Y con esto ya tenemos preparadas las dependencias. Como último paso, debemos poner el script de compilación como ejecutable:
 
 ```bash
@@ -167,7 +188,6 @@ chmod a+x make_adv.sh
 ```
 
 Y con esto ya podrías usar la herramienta en Linux.
-
 
 ## CYDC (Compilador)
 
@@ -253,6 +273,7 @@ Esta utilidad permite convertir juegos de caracteres en formato `.chr`, `.ch8`, 
 ```batch
 cyd_chr_conv.py [-h] [-w WITDH] [-v] [-V] charset.chr charset.json
 ```
+
 Los parámetros que soporta:
 
 - **\-w, --width**: Ancho de los caracteres (1-8).
@@ -333,7 +354,6 @@ También se permite una versión acortada de las etiquetas precediendo el caract
 [[ #Final : WAITKEY: END ]]
 ```
 
-
 Los comandos disponibles están descritos en su [sección](#comandos) correspondiente.
 
 ---
@@ -360,7 +380,7 @@ DECLARE 10 AS OtroNombre
 ]]
 ```
 
-Así, tanto *UnNombre* como *OtroNombre* servirán para identificar el flag 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
+Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar el flag 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
 
 Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, de la siguiente manera:
 
@@ -410,16 +430,16 @@ Consulta la referencia de [comandos](#comandos) para saber cuáles de ellos los 
 
 Por último, hay una serie de comandos especiales llamados **funciones**. Estos comandos no pueden usarse por sí solos, sino que deben usarse dentro de una expresión numérica, ya que devuelven un valor a emplear dentro de ella.
 
-* **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
-* **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
-* **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
-* **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
-* **MIN(numexpression,numexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
-* **MAX(numexpression,numexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
-* **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
-* **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
+- **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+- **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
+- **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
+- **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
+- **MIN(numexpression,numexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+- **MAX(numexpression,numexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+- **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
+- **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
-Así que, por ejemplo `SET flag_no TO RANDOM(6)`, asigna a la variable *flag_no* un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET flag_no TO RANDOM(6) + @var + 1` 
+Así que, por ejemplo `SET flag_no TO RANDOM(6)`, asigna a la variable _flag_no_ un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET flag_no TO RANDOM(6) + @var + 1`
 
 ---
 
@@ -427,29 +447,29 @@ Así que, por ejemplo `SET flag_no TO RANDOM(6)`, asigna a la variable *flag_no*
 
 Para controlar el flujo de ejecución, tenemos diferentes comandos, que describiré ahora:
 
-* **GOTO ID**
+- **GOTO ID**
 
-Salta a la etiqueta *ID*.
+Salta a la etiqueta _ID_.
 
-* **GOSUB ID**
+- **GOSUB ID**
 
-Salto de subrutina, hace un salto a la etiqueta *ID*, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
 
-* **RETURN**
+- **RETURN**
 
 Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
 
-* **IF condexpression THEN ... ENDIF**
+- **IF condexpression THEN ... ENDIF**
 
-Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
+Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
 
-* **IF condexpression THEN ... ELSE ... ENDIF**
+- **IF condexpression THEN ... ELSE ... ENDIF**
 
-Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
 
-* **WHILE (condexpression) ... WEND**
+- **WHILE (condexpression) ... WEND**
 
-Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición *condexpression* evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
 Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
 
@@ -457,7 +477,7 @@ Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cu
 [[IF @var = 0 THEN GOTO salto ENDIF]]
 ```
 
-Para que se ejecute el salto, tiene que cumplirse que la variable *var* sea igual a cero. Esto es una expresión condicional.
+Para que se ejecute el salto, tiene que cumplirse que la variable _var_ sea igual a cero. Esto es una expresión condicional.
 
 Una condición es siempre una comparación entre dos expresiones numéricas:
 
@@ -484,18 +504,18 @@ Recuerdo de nuevo que los operadores lógicos de las expresiones condicionales *
 
 ## Asignaciones e indirección
 
-Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#flags-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte. 
+Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#flags-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte.
 
 La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir al flag o variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
 
-- `SET var to [2+2]`: indica que vamos a asignar a *var* el contenido del flag 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
-- `SET var TO [@indice]`: aquí es donde se muestra realmente la utilidad, ya que estamos indicando que guardamos en *var* el contenido de la variable cuyo número corresponde con el contenido de la variable *indice*. Es decir, podemos cambiar de forma dinámica la variable a la cual hacemos la asignación.
-- `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en *var* el contenido de la variable corresponda con el contenido de *indice* mas dos.
-- `SET [var] TO 0`: La indirección también puede usarse en el lado derecho, y en este caso, no se soportan expresiones numéricas, sólo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable *var*.
+- `SET var to [2+2]`: indica que vamos a asignar a _var_ el contenido del flag 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
+- `SET var TO [@indice]`: aquí es donde se muestra realmente la utilidad, ya que estamos indicando que guardamos en _var_ el contenido de la variable cuyo número corresponde con el contenido de la variable _indice_. Es decir, podemos cambiar de forma dinámica la variable a la cual hacemos la asignación.
+- `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en _var_ el contenido de la variable corresponda con el contenido de _indice_ mas dos.
+- `SET [var] TO 0`: La indirección también puede usarse en el lado derecho, y en este caso, no se soportan expresiones numéricas, sólo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable _var_.
 - `INK [@var]`: La indirección también es soportada por aquellos comandos que admitan expresiones numéricas.
-- `SET [@@var] TO 0`: Por completitud, ya que operamos con punteros, usando `@@` tenemos la operación complementaria a la indirección, es decir, devuelve el número de índice de una variable dada, con lo que en el ejemplo, la operación sería equivalente a `SET var TO 0`. 
- 
-Si usamos los indicadores numéricos con las variables (p.ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos: 
+- `SET [@@var] TO 0`: Por completitud, ya que operamos con punteros, usando `@@` tenemos la operación complementaria a la indirección, es decir, devuelve el número de índice de una variable dada, con lo que en el ejemplo, la operación sería equivalente a `SET var TO 0`.
+
+Si usamos los indicadores numéricos con las variables (p.ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos:
 
 ```
 [[
@@ -527,7 +547,7 @@ SET 13 AS 3
 ]]
 ```
 
-Es decir, podemos asignar de forma consecutiva una secuencia de valores a una secuencia de variables, comenzando por la variable indicada en el lado izquierdo. Lo cual permite asignar valores para arrays, o asignar múltiples valores de forma consecutiva. 
+Es decir, podemos asignar de forma consecutiva una secuencia de valores a una secuencia de variables, comenzando por la variable indicada en el lado izquierdo. Lo cual permite asignar valores para arrays, o asignar múltiples valores de forma consecutiva.
 
 ---
 
@@ -539,18 +559,18 @@ Antes de describir los comandos, vamos a hablar resumidamente de la leyenda util
 - **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
 - **numexpression**, expresión numérica tal y como es descrita en su [sección](#flags-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
 - **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
-- **varID**, identificador de variable, puede ser una *expression* si usamos su índice numérico o un *ID* si lo hemos declarado así con `DECLARE`.
+- **varID**, identificador de variable, puede ser una _expression_ si usamos su índice numérico o un _ID_ si lo hemos declarado así con `DECLARE`.
 
 ### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**
 
 Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
 
-| Comando obsoleto                       | Sustituir por...                              |
-|----------------------------------------|-----------------------------------------------|
-| `IF condexpression THEN GOTO ID`       | `IF condexpression THEN GOTO ID ENDIF`        |
-| `IF condexpression THEN GOSUB ID`      | `IF condexpression THEN GOSUB ID ENDIF`       |
-| `IF condexpression OPTION GOTO ID`     | `IF condexpression OPTION GOTO ID ENDIF`      |
-| `IF condexpression OPTION GOSUB ID`    | `IF condexpression OPTION GOSUB ID ENDIF`     |
+| Comando obsoleto                    | Sustituir por...                          |
+| ----------------------------------- | ----------------------------------------- |
+| `IF condexpression THEN GOTO ID`    | `IF condexpression THEN GOTO ID ENDIF`    |
+| `IF condexpression THEN GOSUB ID`   | `IF condexpression THEN GOSUB ID ENDIF`   |
+| `IF condexpression OPTION GOTO ID`  | `IF condexpression OPTION GOTO ID ENDIF`  |
+| `IF condexpression OPTION GOSUB ID` | `IF condexpression OPTION GOSUB ID ENDIF` |
 
 ---
 
@@ -562,19 +582,19 @@ Declara la etiqueta labelId en este punto. Todos los saltos con referencia a est
 
 ### #ID
 
-Versión resumida para declarar la etiqueta *ID*, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
+Versión resumida para declarar la etiqueta _ID_, de tal manera que `#LabelId` es lo mismo que `LABEL LabelId`.
 
 ### DECLARE expression AS ID
 
-Declara el identificador *ID* como un símbolo que representa al flag *expression* en su lugar.
+Declara el identificador _ID_ como un símbolo que representa al flag _expression_ en su lugar.
 
 ### GOTO ID
 
-Salta a la etiqueta *ID*.
+Salta a la etiqueta _ID_.
 
 ### GOSUB ID
 
-Salto de subrutina, hace un salto a la etiqueta *ID*, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
 
 ### RETURN
 
@@ -582,31 +602,31 @@ Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
 
 ### IF condexpression THEN ... ENDIF
 
-Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
+Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ENDIF`.
 
 ### IF condexpression THEN ... ELSE ... ENDIF
 
-Si la expresión condicional *condexpression* resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
 
 ### WHILE (condexpression) ... WEND
 
-Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición *condexpression* evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
 ### SET varID TO numexpression
 
-Asigna el valor de *numexpression* a la variable *varID*.
+Asigna el valor de _numexpression_ a la variable _varID_.
 
 ### SET [varID] TO numexpression
 
-Asigna el valor de *numexpression* a la variable cuyo índice corresponde con el contenido de *varID*.
+Asigna el valor de _numexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
 
 ### SET varID TO {numexpression1, numexpression2,...}
 
-Asigna el valor de *numexpression1* a la variable *varID*,  *numexpression2* a la variable *varID*+1, y así.
+Asigna el valor de _numexpression1_ a la variable _varID_,  _numexpression2_ a la variable _varID_+1, y así.
 
 ### SET [varID] TO {numexpression1, numexpression2,...}
 
-Asigna el valor de *numexpression1* a la variable cuyo índice corresponde con el contenido de *varID*, *numexpression2* a la variable cuyo índice corresponde con el contenido de *varID*+1, y así.
+Asigna el valor de _numexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _numexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
 ### END
 
@@ -626,11 +646,11 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta *ID*. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
 
 ### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta *ID*, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
 
 ### CHOOSE
 
@@ -639,12 +659,12 @@ La selección se realiza con las teclas **O** y **P** para "desplazamiento horiz
 
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta *ID*.  
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.  
 El timeout tiene como máximo 65535 (16 bits).
 
 ### MENUCONFIG numexpression, numexpression
 
-Configura el desplazamiento por el menú de opciones. 
+Configura el desplazamiento por el menú de opciones.
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
@@ -691,6 +711,23 @@ Activa o desactiva el brillo (0 desactivado, 1 activado).
 
 Activa o desactiva el parpadeo (0 desactivado, 1 activado).
 
+### NEWLINE expression
+
+Imprime tantos saltos de línea como el número indicado en el parámetro (0 es 256)
+
+### NEWLINE
+
+Equivalente a `NEWLINE 1`.
+
+### BACKSPACE expression
+
+Retrasa el cursor de impresión tantas posiciones como las indicadas en el parámetro (0 es 256), eliminado el carácter en la nueva posición y sustituyéndolo por un espacio. El tamaño de carácter que se usará es el del espacio (número 32).
+Hay que tener en cuenta que si se usan carácteres de distintos tamaños al del espacio, esta operación no funcionará bien.
+
+### BACKSPACE
+
+Equivalente a `BACKSPACE 1`.
+
 ### SFX numexpression
 
 Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
@@ -704,7 +741,7 @@ La imagen no se muestra, lo que permite controlar cuándo se realiza la carga de
 ### DISPLAY numexpression
 
 Muestra el contenido actual del buffer en pantalla.  
-El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí. 
+El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
 ### BLIT expression, expression, expression, expression AT numexpression, numexpression
@@ -713,6 +750,7 @@ Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
 
 Los parámetros, por órden, son:
+
 - Columna origen del rectángulo a copiar desde el buffer.
 - Fila origen del rectángulo a copiar desde el buffer.
 - Ancho del rectángulo a copiar desde el buffer.
@@ -745,6 +783,17 @@ Define el área de pantalla donde se escribirá el texto. Los parámetros, por �
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
+### FADEOUT  expression, expression, expression, expression
+
+Hace un fundido en negro en el área de pantalla definida por los parámetros que, por órden, son:
+
+- Columna inicial.
+- Fila inicial.
+- Ancho (en carácteres).
+- Alto (en carácteres).
+
+Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
+
 ### AT numexpression, numexpression
 
 Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
@@ -757,27 +806,31 @@ Las posiciones se asumen en tamaño de carácter 8x8.
 
 ### RANDOM(expression)
 
-*Función* que devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+_Función_ que devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
 
 ### RANDOM()
 
-*Función* que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
+_Función_ que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
 
 ### RANDOM(expression, expression)
 
-*Función* que devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
+_Función_ que devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
 
-### INKEY
+### INKEY(expression)
 
-*Función* que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
+_Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero, se espera hasta que se pulse una tecla. Si es distinto de cero, devuelve el código de la tecla pulsada en ese momento, y cero si no hay ninguna tecla pulsada.
+
+### INKEY()
+
+_Función_ que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada. Es equivalente a `INKEY(0)`
 
 ### MIN(numexpression,numexpression)
 
-*Función* que acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+_Función_ que acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
 ### MAX(numexpression,numexpression)
 
-*Función* que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+_Función_ que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
 ### POSY()
 
@@ -802,6 +855,58 @@ Si el parámetro es distinto de cero y la música está desactivada, reproduce l
 ### LOOP numexpression
 
 Establece si al acabar la pista musical cargada en ese momento, se repite de nuevo o no. Un valor 0 significa falso y distinto de cero, verdadero.
+
+### RAMSAVE varID, expression
+
+Copia desde la variable indicada en el primer parámetro, tantas variables como las indicadas en el segundo parámetro (si es cero, se considera como 256) a un almacenamiento temporal. Antes de realizar la copia, el almacén temporal se rellena con ceros, con lo que las variables no copiadas tendrán este valor en el almacén temporal.
+
+### RAMSAVE varID
+
+Es el equivalente a `RAMSAVE varId, 0`, es decir, copia todas las variables desde el primer parámetro hasta el final al almacén temporal.
+
+### RAMSAVE
+
+Es el equivalente a `RAMSAVE 0, 0`, es decir, copia todas las variables al almacén temporal.
+
+### RAMLOAD varID, expression
+
+Es la operación inversa a `RAMSAVE`. Copia desde el almacenamiento temporal a las variables, desde la variable indicada en el primer parámetro y tantas variables como las indicadas en el segundo (si es cero, se considera como 256). 
+
+### RAMLOAD varID
+
+Es el equivalente a `RAMLOAD varId, 0`, es decir, copia todas las variables desde el primer parámetro hasta el final desde el almacén temporal.
+
+### RAMLOAD
+
+Es el equivalente a `RAMLOAD 0, 0`, es decir, copia todas las variables desde el almacén temporal.
+
+### SAVE numexpression, expression, expression
+
+### SAVE numexpression, expression
+
+### SAVE numexpression
+
+### LOAD numexpression
+
+Carga una partida guardada desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
+
+
+
+### SAVERESULT()
+
+Devuelve el resultado de la última operación de `SAVE` o `LOAD`. Los valores posibles son los siguientes:
+
+0. Resultado correcto.
+1. Error al cargar/guardar en cinta/disco.
+2. La partida grabada no corresponde al juego actual.
+3. El slot seleccionado de la partida grabada no corresponde al que se ha solicitado.
+4. Error de chequeo del fichero de partida grabada.
+
+Con cualquier otro valor, el resultado está indefinido.
+
+### ISDISK()
+
+Devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso contrario.
 
 ---
 
@@ -899,7 +1004,7 @@ REM --------------------------------------
 
 El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
 
-### Linux, BSDs,...
+### Linux, BSDs
 
 Como ejemplo se ha incluido el fichero `make_adv.sh` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.cyd`.
 
@@ -1063,16 +1168,13 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
-
 ---
 
 ## Licencia
 
-
-Copyright (c) 2023 Sergio Chico
+Copyright (c) 2024 Sergio Chico
 
 Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
 
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
-

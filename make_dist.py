@@ -122,13 +122,13 @@ with zipfile.ZipFile(
         zFile.write(f_path, arcname=f)
     zFile.close()
 
-with zipfile.ZipFile(
-    os.path.join(currentPath, "ChooseYourDestiny_Linux_x64.zip"),
-    mode="w",
-    compression=zipfile.ZIP_DEFLATED,
-    compresslevel=9,
-) as zFile:
-    for f in DIST_FILES_LINUX:
-        f_path = os.path.join(currentPath, os.path.normpath(f))
-        zFile.write(f_path, arcname=f)
-    zFile.close()
+# with zipfile.ZipFile(
+#    os.path.join(currentPath, "ChooseYourDestiny_Linux_x64.zip"),
+#    mode="w",
+#    compression=zipfile.ZIP_DEFLATED,
+#    compresslevel=9,
+# ) as zFile:
+#    for f in DIST_FILES_LINUX:
+#        f_path = os.path.join(currentPath, os.path.normpath(f))
+#        zFile.write(f_path, arcname=f)
+#    zFile.close()
