@@ -1251,6 +1251,9 @@ CLEAR_WIN:
     ld (NUM_OPTIONS), a          ;Clear options.
     ret
 ;----------------------------------------------------
+
+
+;----------------------------------------------------
 ;' scrolls the window defined by (row, col, width, height) 1 cell up
 ;WIN_SCROLL_UP:
 ;    ld bc, (MIN_X)

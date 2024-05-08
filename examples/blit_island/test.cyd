@@ -53,4 +53,5 @@
 ]]Pero el barco se aleja sin verme. Me resigno de nuevo a mi soledad...
 [[
 	WAITKEY
-    END]]
+   FADEOUT 0, 0, 32, 24
+   END]]

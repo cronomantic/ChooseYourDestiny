@@ -155,6 +155,12 @@ class CydcLexer(object):
         "MENUCONFIG": "MENUCONFIG",
         "ISDISK": "ISDISK",
         "BACKSPACE": "BACKSPACE",
+        "LOAD": "LOAD",
+        "SAVE": "SAVE",
+        "RAMLOAD": "RAMLOAD",
+        "RAMSAVE": "RAMSAVE",
+        "SAVERESULT": "SAVERESULT",
+        "FADEOUT": "FADEOUT",
     }
 
     # token_list
