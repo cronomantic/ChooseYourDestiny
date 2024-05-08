@@ -452,6 +452,17 @@ class CydcParser(object):
             p[0] = [p[2]]
         p[0].append(("POP_LOOP",))
 
+    def p_statement_load(self, p):
+        "statement : LOAD numexpression"
+        if len(p) == 3 and p[2]:
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [p[2]]
+            p[0].append(("POP_SLOT_LOAD",))
+        else:
+            p[0] = None
+
     def p_statement_wait(self, p):
         "statement : WAIT expression"
         if self._check_word_value(p[2]):
@@ -576,37 +587,73 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_fadeout(self, p):
+        """
+        statement : FADEOUT expression COMMA expression COMMA expression COMMA expression
+        """
+        if len(p) == 9:
+            if (
+                self._check_byte_value(p[2])
+                and self._check_byte_value(p[4])
+                and self._check_byte_value(p[6])
+                and self._check_byte_value(p[8])
+            ):
+                row = p[4]
+                col = p[2]
+                width = p[6]
+                height = p[8]
+                if row >= 24:
+                    row = 23
+                if col >= 32:
+                    col = 31
+                if row < 0:
+                    row = 0
+                if col < 0:
+                    col = 0
+                if width <= 0:
+                    width = 1
+                if height <= 0:
+                    height = 1
+                if (width + col) > 32:
+                    width = 32 - col
+                if (height + row) > 24:
+                    height = 24 - row
+                p[0] = ("FADEOUT", col, row, width, height)
+            else:
+                p[0] = None
+
     def p_statement_margins(self, p):
         "statement : MARGINS expression COMMA expression COMMA expression COMMA expression"
-        if (
-            self._check_byte_value(p[2])
-            and self._check_byte_value(p[4])
-            and self._check_byte_value(p[6])
-            and self._check_byte_value(p[8])
-        ):
-            row = p[4]
-            col = p[2]
-            width = p[6]
-            height = p[8]
-            if row >= 24:
-                row = 23
-            if col >= 32:
-                col = 31
-            if row < 0:
-                row = 0
-            if col < 0:
-                col = 0
-            if width <= 0:
-                width = 1
-            if height <= 0:
-                height = 1
-            if (width + col) > 32:
-                width = 32 - col
-            if (height + row) > 24:
-                height = 24 - row
-            p[0] = ("MARGINS", col, row, width, height)
-        else:
-            p[0] = None
+        if len(p) == 9:
+            if (
+                self._check_byte_value(p[2])
+                and self._check_byte_value(p[4])
+                and self._check_byte_value(p[6])
+                and self._check_byte_value(p[8])
+            ):
+                row = p[4]
+                col = p[2]
+                width = p[6]
+                height = p[8]
+                if row >= 24:
+                    row = 23
+                if col >= 32:
+                    col = 31
+                if row < 0:
+                    row = 0
+                if col < 0:
+                    col = 0
+                if width <= 0:
+                    width = 1
+                if height <= 0:
+                    height = 1
+                if (width + col) > 32:
+                    width = 32 - col
+                if (height + row) > 24:
+                    height = 24 - row
+                p[0] = ("MARGINS", col, row, width, height)
+            else:
+                p[0] = None
 
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
@@ -758,6 +805,66 @@ class CydcParser(object):
                 p[0].append(p[4])
             p[0].append(("POP_MENUCONFIG",))
 
+    def p_statement_save(self, p):
+        """
+        statement : SAVE numexpression COMMA variableID COMMA expression
+                  | SAVE numexpression COMMA variableID
+                  | SAVE numexpression
+        """
+        if len(p) == 7 and p[2] and self._is_valid_var(p[4]):
+            if self._check_byte_value(p[6]):
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                p[0].append(("POP_SLOT_SAVE", (p[4], 0), p[6]))
+            else:
+                p[0] = None
+        elif len(p) == 5 and p[2] and self._is_valid_var(p[4]):
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [p[2]]
+            p[0].append(("POP_SLOT_SAVE", (p[4], 0), 0))
+        elif len(p) == 3 and p[2]:
+            if isinstance(p[2], list):
+                p[0] = p[2]
+            else:
+                p[0] = [p[2]]
+            p[0].append(("POP_SLOT_SAVE", 0, 0))
+
+    def p_statement_ramload(self, p):
+        """
+        statement : RAMLOAD variableID COMMA expression
+                  | RAMLOAD variableID
+                  | RAMLOAD
+        """
+        if len(p) == 5 and self._is_valid_var(p[2]):
+            if self._check_byte_value(p[4]):
+                p[0] = ("RAMLOAD", (p[2], 0), p[4])
+            else:
+                p[0] = None
+        elif len(p) == 3 and self._is_valid_var(p[2]):
+            p[0] = ("RAMLOAD", (p[2], 0), 0)
+        elif len(p) == 2:
+            p[0] = ("RAMLOAD", 0, 0)
+
+    def p_statement_ramsave(self, p):
+        """
+        statement : RAMSAVE variableID COMMA expression
+                  | RAMSAVE variableID
+                  | RAMSAVE
+        """
+        if len(p) == 5 and self._is_valid_var(p[2]):
+            if self._check_byte_value(p[4]):
+                p[0] = ("RAMSAVE", (p[2], 0), p[4])
+            else:
+                p[0] = None
+        elif len(p) == 3 and self._is_valid_var(p[2]):
+            p[0] = ("RAMSAVE", (p[2], 0), 0)
+        elif len(p) == 2:
+            p[0] = ("RAMSAVE", 0, 0)
+
     def p_statement_repchar(self, p):
         "statement : REPCHAR expression COMMA expression"
         if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
@@ -774,7 +881,7 @@ class CydcParser(object):
 
     def p_statement_set_ind_array(self, p):
         "statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY"
-        if len(p) == 9 and p[3] and isinstance(p[7], list):
+        if len(p) == 9 and self._is_valid_var(p[3]) and isinstance(p[7], list):
             p[0] = []
             for i, c in enumerate(p[7]):
                 if isinstance(c, list):
@@ -788,7 +895,7 @@ class CydcParser(object):
 
     def p_statement_set_dir_array(self, p):
         "statement : SET variableID TO LCURLY numexpressions_list RCURLY"
-        if len(p) == 7 and isinstance(p[5], list):
+        if len(p) == 7 and self._is_valid_var(p[2]) and isinstance(p[5], list):
             p[0] = []
             for i, c in enumerate(p[5]):
                 if isinstance(c, list):
@@ -802,7 +909,7 @@ class CydcParser(object):
 
     def p_statement_set_ind(self, p):
         "statement : SET LCARET variableID RCARET TO numexpression"
-        if len(p) == 7 and p[3]:
+        if len(p) == 7 and self._is_valid_var(p[3]):
             if isinstance(p[6], list):
                 p[0] = p[6]
             else:
@@ -811,7 +918,7 @@ class CydcParser(object):
 
     def p_statement_set_dir(self, p):
         "statement : SET variableID TO numexpression"
-        if len(p) == 5:
+        if len(p) == 5 and self._is_valid_var(p[2]):
             if isinstance(p[4], list):
                 p[0] = p[4]
             else:
@@ -1013,11 +1120,21 @@ class CydcParser(object):
 
     def p_numexpression_variable_addr(self, p):
         "numexpression : AT_CHAR AT_CHAR variableID"
-        p[0] = ("PUSH_D", (p[3], 0))
+        if self._is_valid_var(p[3]):
+            p[0] = ("PUSH_D", (p[3], 0))
+        else:
+            p[0] = None
 
     def p_numexpression_variable(self, p):
         "numexpression : AT_CHAR variableID"
-        p[0] = ("PUSH_I", (p[2], 0))
+        if self._is_valid_var(p[2]):
+            p[0] = ("PUSH_I", (p[2], 0))
+        else:
+            p[0] = None
+
+    def p_statement_saveresult_expression(self, p):
+        "numexpression : SAVERESULT LPAREN RPAREN"
+        p[0] = ("PUSH_SAVE_RESULT",)
 
     def p_statement_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
@@ -1166,6 +1283,9 @@ class CydcParser(object):
             self.errors.append(f"Invalid word value {val}")
             return False
         return True
+
+    def _is_valid_var(self, val):
+        return isinstance(val, str) or isinstance(val, int)
 
     def _get_hidden_label(self):
         l = f"*LABEL_{self.hidden_label_counter}*"

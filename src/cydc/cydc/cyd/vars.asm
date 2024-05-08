@@ -31,18 +31,33 @@ INITIAL_STACK EQU START_VARS
 
     ALIGN 256
 FLAGS:
-    DEFS 256
+    DEFS 256, 0
 ;------------------------------------------------------------------------
-
     DEFINE MAXIMUM_OPTIONS 32
-
     ALIGN 256
 OPTIONS_TABLE:
     DEFS 256, 0
 TIMEOUT_OPTION:
     DEFS 4, 0
 ;  X, Y Cursor Marker - Addr Jump
+;------------------------------------------------------------------------
+    IFNDEF TEXT_BUFFER_LEN
+    DEFINE TEXT_BUFFER_LEN   128
+    ENDIF
 
+    IFNDEF TOKEN_BUFFER_LEN
+    DEFINE TOKEN_BUFFER_LEN  32
+    ENDIF
+;------------------------------------------------------------------------
+BUFFER:
+    DEFS TEXT_BUFFER_LEN+TOKEN_BUFFER_LEN,0
+
+;Buffer for text
+TEXT_BUFFER EQU BUFFER
+;Buffer for decompressing token
+TOKEN_BUFFER EQU TEXT_BUFFER + TEXT_BUFFER_LEN
+;------------------------------------------------------------------------
+    ; OPTIONS
 NUM_OPTIONS:
     DEFB 0
 SELECTED_OPTION:
@@ -78,23 +93,30 @@ CHUNK:
     DEFB 0
 
 WAIT_NEW_SCREEN:
-    DB 0
+    DEFB 0
 SKIP_SPACES:
-    DB 0
+    DEFB 0
 
 MAX_X_BACKSPACE:
-    DB 0
+    DEFB 0
 WIDTH_BACKSPACE:
-    DB 0
+    DEFB 0
+
+CURR_SAVE_SLOT:
+    DEFB 0
+LAST_SAVE_RESULT:
+    DEFB 255
+LAST_DISK_ERROR:
+    DEFB 0
 
 NO_SELECTED_BULLET  EQU 127
 SELECTED_BULLET     EQU 128
 WAIT_TO_KEY_BULLET  EQU SELECTED_BULLET+8
 
 PIC_NUM_LINES_PXL:
-    DB 0
+    DEFB 0
 PIC_NUM_LINES_ATT:
-    DB 0
+    DEFB 0
 
 SCR_BUFF_ADDR EQU $6000
     ORG SCR_BUFF_ADDR
@@ -103,25 +125,24 @@ SCREEN_BUFFER_PXL:
 SCREEN_BUFFER_ATT:
     DEFS SCR_ATT_SIZE,0
 
-BUFFER:
-    DEFS 1024
+;--------------------------------------------------
+SAVE_START:
+SAVE_GAME_ID:
+    DEFS 16, 0
+SAVE_SLOT:
+    DEFB 0
+SAVE_NVARS:
+    DEFB 0
+SAVE_ORIGIN:
+    DEFB 0   
+SAVE_FLAGS:
+    DEFS 256, 0
+SAVE_CHECKSUM:
+    DEFW 0
+SAVE_END:
 
-;------------------------------------------------------------------------
-    IFNDEF TEXT_BUFFER_LEN
-    DEFINE TEXT_BUFFER_LEN   128
-    ENDIF
-
-    IFNDEF TOKEN_BUFFER_LEN
-    DEFINE TOKEN_BUFFER_LEN  32
-    ENDIF
-;------------------------------------------------------------------------
-;Buffer for text
-TEXT_BUFFER EQU BUFFER
-;Buffer for decompressing token
-TOKEN_BUFFER EQU TEXT_BUFFER + TEXT_BUFFER_LEN
-
-;------------------------------------------------------------------------
-
+SAVE_SIZE EQU SAVE_END-SAVE_START
+;--------------------------------------------------
     ;INCLUDE "VTII10bG_vars.asm"
 
 END_VARS:
