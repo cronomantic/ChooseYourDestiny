@@ -1,7 +1,7 @@
 NAME:=test
 CYD_FILENAME:=$(NAME).cyd
 
-TAP_TARGET:=48k
+TAP_TARGET:=128k
 
 .PHONY: clean clean_all disk test_disk tape test_tape all
 
