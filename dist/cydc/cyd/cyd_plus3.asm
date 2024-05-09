@@ -94,6 +94,9 @@ DOWN_COUNTER:
 UPDATE_SCR_FLAG:
     DB 0
 
+TMP_AREA:
+    DS 16, 0
+
     org $8060
 SIGNATURE:
     DB "CYD v", RELEASE, 0
@@ -381,8 +384,13 @@ EXEC_LOOP:
     ld d, HIGH OPCODES
     ld e, (hl)                ; Loads instruction
     sla e
+    IFDEF USE_256_OPCODES
     jr nc, 1f
     inc d
+    ENDIF
+    IFNDEF USE_256_OPCODES
+    jp c, ERROR_NOP
+    ENDIF
 1:  inc hl
     ld a, (de)
     ld (.smod), a

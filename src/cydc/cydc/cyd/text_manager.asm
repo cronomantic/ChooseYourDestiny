@@ -40,6 +40,8 @@ INIT_WIN:
     DEFB 0
     DEFB 1
     DEFB 0
+    DEFB 0
+    DEFS 6, 0
     DEFW 1
     DEFB 0
     DEFB 0
@@ -1116,17 +1118,19 @@ SET_BACKSPACE_MARGINS_WIDTH:
     ret
 
 ;-----------------------------------------------------
-CLEAR_WIN:
-    push ix
-    ld ix, 0
-    add ix, sp
-    ld hl, 0
-    push hl
-    push hl
 
+CLEAR_WIN:
     ld bc, (MIN_X)
     ld de, (MAX_X)
     ld (POS_X), bc         ;set to origin of window
+    call CLEAR_RECT
+    xor a
+    ld (NUM_OPTIONS), a          ;Clear options.
+    ret
+
+CLEAR_RECT:
+    push ix
+    ld ix, TMP_AREA+4
 
     ld (ix-2), b           ; YPOS
 
@@ -1245,10 +1249,7 @@ CLEAR_WIN:
 
 .clearbox_row_skip:
     djnz .clearbox_outer_loop
-    ld sp, ix
     pop ix
-    xor a
-    ld (NUM_OPTIONS), a          ;Clear options.
     ret
 ;----------------------------------------------------
 

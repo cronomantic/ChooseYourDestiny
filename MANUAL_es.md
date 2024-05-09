@@ -42,6 +42,9 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [OPTION GOSUB ID](#option-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
+    - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
+    - [OPTIONSEL()](#optionsel)
+    - [NUMOPTIONS()](#numoptions)
     - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
@@ -67,6 +70,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
+    - [FILLATTR expression, expression, expression, expression, expression, expression, expression, expression](#fillattr-expression-expression-expression-expression-expression-expression-expression-expression)
+    - [PUTATTR numexpression, numexpression, expression, expression, expression, expression](#putattr-numexpression-numexpression-expression-expression-expression-expression)
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -86,8 +91,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RAMLOAD varID, expression](#ramload-varid-expression)
     - [RAMLOAD varID](#ramload-varid)
     - [RAMLOAD](#ramload)
-    - [SAVE numexpression, expression, expression](#save-numexpression-expression-expression)
-    - [SAVE numexpression, expression](#save-numexpression-expression)
+    - [SAVE numexpression, varId, expression](#save-numexpression-varid-expression)
+    - [SAVE numexpression, varId](#save-numexpression-varid)
     - [SAVE numexpression](#save-numexpression)
     - [LOAD numexpression](#load-numexpression)
     - [SAVERESULT()](#saveresult)
@@ -657,10 +662,24 @@ Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si con
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
 La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-numexpression-numexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A**. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
+Recuerda que si se borra la pantalla antes de este comando, perderás las opciones y dará un error de sistema.
+
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
 Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.  
 El timeout tiene como máximo 65535 (16 bits).
+
+### CHOOSE IF CHANGED THEN GOSUB ID
+
+Funciona exactamente igual que `CHOOSE`, pero se hace un salto de subrutina a la etiqueta _ID_ cada vez que se cambia de opción. Por tanto, es recomendable que se haga un `RETURN` lo antes posible para evitar lentitud. Para saber la opción elegida y el número de opciones total de nuestro menú, podemos usar las funciones `OPTIONSEL()` y `NUMOPTIONS` respectivamente.
+
+### OPTIONSEL()
+
+_Función_ que devuelve la opción actualmente seleccionada en el menú actualmente activo. Si no tenemos un menú activo, el resultado de esta función está indefinido.
+
+### NUMOPTIONS()
+
+_Función_ que devuelve el número de opciones del menú actualmente activo. Si no tenemos un menú activo, el resultado de esta función está indefinido.
 
 ### MENUCONFIG numexpression, numexpression
 
@@ -804,6 +823,32 @@ Los parámetros, por orden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
+### FILLATTR expression, expression, expression, expression, expression, expression, expression, expression
+
+Rellenamos en pantalla un rectángulo con un valor de atributos determinado. Los píxeles no se alteran.
+Los parámetros, por órden, son:
+
+- Columna origen del rectángulo a rellenar.
+- Fila origen del rectángulo a rellenar.
+- Ancho del rectángulo a rellenar.
+- Alto del rectángulo a rellenar.
+- Valor de "tinta" [0-7].
+- Valor de color de fondo [0-7].
+- Valor de brillo [0-1].
+- Valor de parpadeo [0-1].
+
+### PUTATTR numexpression, numexpression, expression, expression, expression, expression
+
+Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
+Los parámetros, por órden, son:
+
+- Columna del carácter 8x8.
+- Fila del carácter 8x8.
+- Valor de "tinta" [0-7].
+- Valor de color de fondo [0-7].
+- Valor de brillo [0-1].
+- Valor de parpadeo [0-1].
+
 ### RANDOM(expression)
 
 _Función_ que devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
@@ -834,11 +879,11 @@ _Función_ que acota el valor del primer parámetro al máximo indicado por el s
 
 ### POSY()
 
-Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
+_Función_ que devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
 
 ### POSX()
 
-Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
+_Función_ que devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
 ### RANDOMIZE
 
@@ -870,7 +915,7 @@ Es el equivalente a `RAMSAVE 0, 0`, es decir, copia todas las variables al almac
 
 ### RAMLOAD varID, expression
 
-Es la operación inversa a `RAMSAVE`. Copia desde el almacenamiento temporal a las variables, desde la variable indicada en el primer parámetro y tantas variables como las indicadas en el segundo (si es cero, se considera como 256). 
+Es la operación inversa a `RAMSAVE`. Copia desde el almacenamiento temporal a las variables, desde la variable indicada en el primer parámetro y tantas variables como las indicadas en el segundo (si es cero, se considera como 256).
 
 ### RAMLOAD varID
 
@@ -880,24 +925,39 @@ Es el equivalente a `RAMLOAD varId, 0`, es decir, copia todas las variables desd
 
 Es el equivalente a `RAMLOAD 0, 0`, es decir, copia todas las variables desde el almacén temporal.
 
-### SAVE numexpression, expression, expression
+### SAVE numexpression, varId, expression
 
-### SAVE numexpression, expression
+Salva una serie de variables en cinta o disco.  El primer parámetro indica el número de fichero a guardar, el segundo parámetro es la variable inicial del rango de variables que se guardará el fichero, y el tercero en número de variables a guardar en ese rango (si es cero, se considera como 256).
+Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
+
+- En el caso del disco, se guardará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P.ej. el fichero a cargar con 16 sería el `016.SAV`. Si el fichero ya existiese, se sobreescribirá.
+- En el caso de la cinta, se guardará en ésta. El sistema empezará inmediatamente a guardar, con lo que el autor es el responsable de indicar al usuario que se va a grabar y que tiene que poner la unidad de casette (o equivalente) a grabar. El proceso puede interrumpirse con la tecla **BREAK**.
+  
+El resultado de la operación se puede consultar con la función `SAVERESULT()`.
+
+### SAVE numexpression, varId
+
+Es el equivalente a `SAVE numexpression, varId, 0`, es decir, guarda todas las variables desde el segundo parámetro hasta el final.
 
 ### SAVE numexpression
 
+Es el equivalente a `SAVE numexpression, 0, 0`, es decir, guarda todas las variables
+
 ### LOAD numexpression
 
-Carga una partida guardada desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
+Carga una serie de variables desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
 
+- En el caso del disco, se cargará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P.ej. el fichero a cargar con 16 sería el `016.SAV`.
+- En el caso de la cinta, se cargará el primer bloque sin cabecera que encuentre, con lo que es necesario que el usuario avance la cinta a la posición correcta. El sistema empezará inmediatamente a cargar, con lo que el autor es el responsable de indicar al usuario que se va a cargar y que tiene que poner la unidad de casette (o equivalente) a reproducir. El proceso puede interrumpirse con la tecla **BREAK**.
 
+El resultado de la carga se puede consultar con la función `SAVERESULT()`.
 
 ### SAVERESULT()
 
-Devuelve el resultado de la última operación de `SAVE` o `LOAD`. Los valores posibles son los siguientes:
+_Función_ que devuelve el resultado de la última operación de `SAVE` o `LOAD`. Los valores posibles son los siguientes:
 
 0. Resultado correcto.
-1. Error al cargar/guardar en cinta/disco.
+1. Error al cargar/guardar en cinta/disco. En caso de cinta, operación interrumpida con **BREAK**.
 2. La partida grabada no corresponde al juego actual.
 3. El slot seleccionado de la partida grabada no corresponde al que se ha solicitado.
 4. Error de chequeo del fichero de partida grabada.
@@ -906,7 +966,7 @@ Con cualquier otro valor, el resultado está indefinido.
 
 ### ISDISK()
 
-Devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso contrario.
+_Función_ que devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso contrario.
 
 ---
 

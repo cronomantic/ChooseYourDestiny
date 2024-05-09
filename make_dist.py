@@ -64,6 +64,8 @@ SRC_FILES = [
     "cydc/cyd/vars.asm",
     "cydc/cyd/VTII10bG.asm",
     "cydc/cyd/VTII10bG_vars.asm",
+    "cydc/cyd/savegame_plus3.asm",
+    "cydc/cyd/savegame_tape.asm",
 ]
 
 for file in SRC_FILES:
