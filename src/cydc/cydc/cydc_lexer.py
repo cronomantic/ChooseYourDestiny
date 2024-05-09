@@ -161,6 +161,11 @@ class CydcLexer(object):
         "RAMSAVE": "RAMSAVE",
         "SAVERESULT": "SAVERESULT",
         "FADEOUT": "FADEOUT",
+        "FILLATTR": "FILLATTR",
+        "PUTATTR": "PUTATTR",
+        "CHANGED": "CHANGED",
+        "OPTIONSEL": "OPTIONSEL",
+        "NUMOPTIONS": "NUMOPTIONS",
     }
 
     # token_list
