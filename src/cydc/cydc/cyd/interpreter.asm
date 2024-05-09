@@ -1233,10 +1233,11 @@ OP_CHOOSE_CH:
     xor a
     ld (SELECTED_OPTION), a        ;Resets selected option
     ld (.self_a), hl
+    jp .on_change_gosub 
 .no_store_ret_addr:
     ld a, (NUM_OPTIONS)
     or a
-    jp nz, .options         ; No options available
+    jp nz, .options       ; No options available
     ld a, 3
     jp SYS_ERROR
 .options:
