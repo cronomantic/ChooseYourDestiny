@@ -184,17 +184,10 @@ DO_SAVE:
 ;   NC   : SPACE pressed
     jr nc, .save_error
     xor a
-    jr .end
+    jr END_TAPE_OP
 .save_error:
     ld a, 1
-.end:
-    ld (LAST_SAVE_RESULT), a
-    pop af
-    call SET_RAM_BANK
-    pop hl
-    pop ix
-    ret
-
+    jr END_TAPE_OP
 
 ; 0 <- Operation OK
 ; 1 <- Disk/tape error.
@@ -239,22 +232,29 @@ DO_LOAD:
     ld bc, (SAVE_NVARS)
     call RAMLOAD
     xor a
-    jr .end
+    jr END_TAPE_OP
 .gameid_error:
     ld a, 2
-    jr .end
+    jr END_TAPE_OP
 .slot_error:
     ld a, 3
-    jr .end
+    jr END_TAPE_OP
 .chksum_error:
     ld a, 4
-    jr .end
+    jr END_TAPE_OP
 .load_error:
     ld a, 1
-.end
+END_TAPE_OP:
     ld (LAST_SAVE_RESULT), a
+    ld a, (BORDCR)
+    rrca
+    rrca
+    rrca
+    and %00000111
+    call BORDER
     pop af
     call SET_RAM_BANK
     pop hl
     pop ix
     ret
+
