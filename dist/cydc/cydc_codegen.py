@@ -136,6 +136,11 @@ class CydcCodegen(object):
         "POP_SLOT_SAVE": 0x67,
         "PUSH_SAVE_RESULT": 0x68,
         "FADEOUT": 0x69,
+        "FILLATTR": 0x6A,
+        "PUTATTR": 0x6B,
+        "POP_PUTATTR": 0x6C,
+        "CHOOSE_CH": 0x6D,
+        "PUSH_OPTION_ST": 0x6E,
     }
 
     def __init__(self, gettext):

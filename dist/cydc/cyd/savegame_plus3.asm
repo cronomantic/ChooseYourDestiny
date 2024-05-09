@@ -22,20 +22,19 @@
 ; SOFTWARE.
 ;
 
-
 ; B <- Start flag
 ; C <- Number of flags to save
 CHK_RAMLOAD_PARAMETERS:
     ld a, c
     or b                  ;Both are zero
     ret z
-    ld a, c
+    ld a, c               ; Number to copy 0 = 256
     or a
     jr z, 1f
     ld a, b
     add a, c
     ret nc                ; If NC then < 256 so OK
-1:  xor a
+1:  xor a                 ; size = 256 - index
     sub b
     ld c, a
     ret
@@ -145,10 +144,31 @@ COMPARE_GAME_ID:
     xor a        ;Clear Z
     ret
 
-;------------------------------------------
+BUILD_FILENAME:
+    ; Input A <- File Index
+    ; Output HL <- Start of filename string
+    ld de, TEXT_BUFFER
+    ld h, 0
+    ld l, a
+    call CONV_HL_TO_STR
+    ld hl, SAV_EXTENSION
+    ld b, 5
+1:  ld a, (hl)
+    ld (de), a
+    inc hl
+    inc de
+    djnz 1b
+    ld hl, TEXT_BUFFER+2
+    ret
+
+SAV_EXTENSION:
+    DB ".SAV", $FF
+
+
 ; 0 <- Operation OK
 ; 1 <- Disk/tape error.
 DO_SAVE:
+    ; Input A <- Slot
     ; B <- Start flag
     ; C <- Number of flags to save
     push ix
@@ -166,28 +186,32 @@ DO_SAVE:
     ld bc, SAVE_SIZE-2
     call CRC16
     ld (SAVE_CHECKSUM), hl
-    ld a, ($5b5c)
-    or ROM48KBASIC
-    call SET_RAM_BANK
-    push af
-    ld a, $FF
-    ld ix, SAVE_START
+    ld a, (SAVE_SLOT)
+    call BUILD_FILENAME
+    ld bc, SAVEGAME_FILE_H+3 ; FIle id, exclusive read/write
+    ld de, $0204             ; Open file
+    call PLUS3_DOS_OPEN
+    jr nc, .disk_error
+    ld bc, SAVEGAME_FILE_H+SAVEGAME_BANK
     ld de, SAVE_SIZE
-;Save
-; On entry:
-;  A=block type
-;  IX=start
-;  DE=length
-    call $04C6      ; Call SA_BYTES+4
-; On exit:
-;   C    : Ok
-;   NC   : SPACE pressed
-    jr nc, .save_error
+    ld hl, SAVE_START
+    call PLUS3_DOS_WRITE
+    jr nc, .disk_error
+    ld b, SAVEGAME_FILE_H>>8
+    call PLUS3_DOS_CLOSE
+    jr nc, .disk_error
     xor a
-    jr END_TAPE_OP
-.save_error:
+    jr .end
+.disk_error:
+    ld (LAST_DISK_ERROR), a
+    ld b, SAVEGAME_FILE_H>>8
+    call PLUS3_DOS_ABANDON
     ld a, 1
-    jr END_TAPE_OP
+.end:
+    ld (LAST_SAVE_RESULT), a
+    pop hl
+    pop ix
+    ret
 
 ; 0 <- Operation OK
 ; 1 <- Disk/tape error.
@@ -197,29 +221,20 @@ DO_SAVE:
 DO_LOAD:
     push ix
     push hl
-    ld a, ($5b5c)
-    or ROM48KBASIC
-    call SET_RAM_BANK
-    push af
-    ld a, $FF
-    ld ix, SAVE_START
+    ld a, (CURR_SAVE_SLOT)
+    call BUILD_FILENAME
+    ld bc, SAVEGAME_FILE_H+3 ; FIle id, exclusive read/write
+    ld de, $0002             ; Open file
+    call PLUS3_DOS_OPEN
+    jr nc, .disk_error
+    ld bc, SAVEGAME_FILE_H+SAVEGAME_BANK
     ld de, SAVE_SIZE
-    scf
-;Loading data
-; On entry:
-;  A=block type
-;  IX=start
-;  DE=length
-;  CS=load, CC=verify
-    inc d
-    ex af, af'       ; Set up flags
-    dec d
-    di               ; Disable interupts
-    call $0562       ; Call LD_BYTES+12
-;   C    : Ok
-;   NC   : SPACE pressed or Loading error
-    ei
-    jr nc, .load_error
+    ld hl, SAVE_START
+    call PLUS3_DOS_READ
+    jr nc, .disk_error
+    ld b, SAVEGAME_FILE_H>>8
+    call PLUS3_DOS_CLOSE
+    jr nc, .disk_error
     call TEST_CHECKSUM
     jr nz, .chksum_error
     call COMPARE_GAME_ID
@@ -232,29 +247,27 @@ DO_LOAD:
     ld bc, (SAVE_NVARS)
     call RAMLOAD
     xor a
-    jr END_TAPE_OP
+    jr .end
 .gameid_error:
     ld a, 2
-    jr END_TAPE_OP
+    jr .end
 .slot_error:
     ld a, 3
-    jr END_TAPE_OP
+    jr .end
 .chksum_error:
     ld a, 4
-    jr END_TAPE_OP
-.load_error:
+    jr .end
+.disk_error:
+    ld (LAST_DISK_ERROR), a
+    ld b, SAVEGAME_FILE_H>>8
+    call PLUS3_DOS_ABANDON
     ld a, 1
-END_TAPE_OP:
+.end:
     ld (LAST_SAVE_RESULT), a
-    ld a, (BORDCR)
-    rrca
-    rrca
-    rrca
-    and %00000111
-    call BORDER
-    pop af
-    call SET_RAM_BANK
     pop hl
     pop ix
     ret
+    
+
+;------------------------------------------
 
