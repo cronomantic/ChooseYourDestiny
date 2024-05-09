@@ -1,7 +1,7 @@
 ; 
 ; MIT License
 ; 
-; Copyright (c) 2023 Sergio Chico
+; Copyright (c) 2024 Sergio Chico
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -1039,6 +1039,8 @@ OP_CHOOSE:
     jp OP_GOTO
     ENDIF
 
+;----------------------------------------------
+
     IFNDEF UNUSED_OP_CHOOSE_W
 OP_CHOOSE_W:
 
@@ -1201,6 +1203,213 @@ OP_CHOOSE_W:
     jp z, OP_GOTO
     jp OP_GOSUB
     ENDIF
+
+;----------------------------------------------
+
+    IFNDEF UNUSED_OP_CHOOSE_CH
+OP_CHOOSE_CH:
+    ld a, (RETURN_FROM_CHOOSE_CH)
+    or a
+    jr nz, .no_store_ret_addr
+    inc a                           ;Sets a to 1
+    ld de, RETURN_FROM_CHOOSE_CH    
+    ld (de), a                      ;Store 1 at RETURN_FROM_CHOOSE_CH (when we return here, skip this)
+    inc de
+    dec hl                          ;Returns to previous position
+    ex de, hl
+    ld a, (CHUNK)
+    ld (hl), a
+    inc hl
+    ld (hl), e
+    inc hl
+    ld (hl), d
+    inc hl
+    ex de, hl
+    inc hl                         ;restore IP to current position
+    ;read destination address for change
+    ldi
+    ldi
+    ldi
+    xor a
+    ld (SELECTED_OPTION), a        ;Resets selected option
+    ld (.self_a), hl
+.no_store_ret_addr:
+    ld a, (NUM_OPTIONS)
+    or a
+    jp nz, .options         ; No options available
+    ld a, 3
+    jp SYS_ERROR
+.options:
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+.inkey:
+    call INKEY
+    cp 'o'
+    jp z, .left
+    cp 'p'
+    jp z, .right
+    cp 'q'
+    jp z, .up
+    cp 'a'
+    jp z, .down
+    cp ' '
+    jp z, .selected
+    cp 13
+    jp z, .selected
+    call ANIMATE_OPTION_BULLET
+    jr .inkey
+.left:
+    ld a, (SELECTED_OPTION)
+    or a
+    jp z, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
+    pop af
+    sub b
+    jp c, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+3:  call INKEY
+    or a
+    jp z, .on_change_gosub
+    jr 3b
+.right:
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    dec c
+    ld a, (SELECTED_OPTION)
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_ROW_OPTION)
+    ld b, a
+    pop af
+    add a, b
+    cp c
+    jp nc, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+4:  call INKEY
+    or a
+    jp z, .on_change_gosub
+    jr 4b
+.up:
+    ld a, (SELECTED_OPTION)
+    or a
+    jp z, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (INCR_COL_OPTION)
+    ld b, a
+    pop af
+    sub b
+    jp c, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+2:  call INKEY
+    or a
+    jp z, .on_change_gosub
+    jr 2b
+.down:
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    dec c
+    ld a, (SELECTED_OPTION)
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
+    push af
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (INCR_COL_OPTION)
+    ld b, a
+    pop af
+    add a, b
+    cp c                        ; selected_option-numoptions
+    jp nc, .inkey
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+3:  call INKEY
+    or a
+    jp z, .on_change_gosub
+    jr 3b
+.selected:
+    ld a, (SELECTED_OPTION)
+    sla a
+    sla a
+    sla a
+    add a, 2                ;Skips to jump address
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+    xor a
+    ld (NUM_OPTIONS), a
+    ld (RETURN_FROM_CHOOSE_CH), a
+5:  call INKEY
+    or a
+    jr nz, 5b
+    ld a, (hl)
+    inc hl
+    or a
+    jp z, OP_GOTO
+    push hl
+.self_a+1:
+    ld hl, 0-0
+    ld a, (CHUNK)
+    ld (ix-1), l
+    ld (ix-2), h
+    ld (ix-3), a
+    ld de, 65536-3    ; ix-3
+    add ix, de
+    pop hl
+    jp OP_GOTO
+.on_change_gosub:
+    ld hl, CHOOSE_CH_RET_ADDRESS
+    ld e, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    ld (ix-1), e
+    ld (ix-2), d
+    ld (ix-3), a
+    ld de, 65536-3    ; ix-3
+    add ix, de
+    jp OP_GOTO
+    ENDIF
+
+;----------------------------------------------------------
+
+    IFNDEF UNUSED_OP_PUSH_OPTION_ST
+OP_PUSH_OPTION_ST:
+    ld de, NUM_OPTIONS
+    ld a, (hl)
+    inc hl
+    or a
+    jr z, .is_zero
+    ld b, a
+1:  inc de
+    djnz 1b
+.is_zero:
+    ld a, (de)
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+;----------------------------------------------------------
 
     IFNDEF UNUSED_OP_TYPERATE
 OP_TYPERATE:
@@ -1801,18 +2010,21 @@ OP_BLIT:
     pop hl
     jp EXEC_LOOP
 
-CPY_SCR_BLK_X     DB 0
-CPY_SCR_BLK_Y     DB 0
-CPY_SCR_BLK_W     DB 0
-CPY_SCR_BLK_H     DB 0
-CPY_SCR_BLK_X_D   DB 0
-CPY_SCR_BLK_Y_D   DB 0
+CPY_SCR_BLK_X     EQU TMP_AREA + 0
+CPY_SCR_BLK_Y     EQU TMP_AREA + 1
+CPY_SCR_BLK_W     EQU TMP_AREA + 2
+CPY_SCR_BLK_H     EQU TMP_AREA + 3
+CPY_SCR_BLK_X_D   EQU TMP_AREA + 4
+CPY_SCR_BLK_Y_D   EQU TMP_AREA + 5
 
     UNDEFINE BLIT_USED
     ENDIF
 ;---------------
 
     IFNDEF UNUSED_OP_FADEOUT
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
 OP_FADEOUT:
     ld c, (hl)
     inc hl
@@ -1825,23 +2037,7 @@ OP_FADEOUT:
     push hl
 
 .fadeout:
-    ; bc: y - x
-    ; de: height - width
-    ld a, b
-    rrca
-    rrca
-    rrca
-    and %00000011
-    add a, %01011000
-    ld h, a
-    ld a, b
-    and %00000111
-    rrca
-    rrca
-    rrca
-    add a, c
-    ld l, a        ; HL -> Attr coordinates
-
+    call GET_ATTR_ADDR
     ld a, 8        ; Num iterations
 3:  ex af, af'
     push hl
@@ -1878,6 +2074,113 @@ OP_FADEOUT:
     pop hl
     jp EXEC_LOOP
     ENDIF
+
+    IFNDEF UNUSED_OP_FILLATTR
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+OP_FILLATTR:
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    ld a, (hl)
+    inc hl
+    push hl
+    ; bc: y - x
+    ; de: height - width
+    ex af, af'
+    call GET_ATTR_ADDR
+    ex af, af'
+
+    ld c, a
+2:  ld b, e        ; width -> B
+    push hl
+1:  ld (hl), c     ; Fill color
+    inc hl
+    djnz 1b
+    pop hl         ; Restore hl
+    ld a, 32       ; next attr line
+    add a, l
+    jr nc, 3f
+    inc h
+3:  ld l, a
+    dec d
+    jr nz, 2b
+
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUTATTR
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+OP_PUTATTR:
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    ld a, (hl)
+    inc hl
+    push hl
+    call GET_ATTR_ADDR
+    ld (hl), a
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_PUTATTR
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+OP_POP_PUTATTR:
+    ;Get Rows
+    POP_INT_STACK   
+    cp 24
+    jr c, 1f
+    ld a, 23
+1:  ld b, a
+    ;Get Cols
+    POP_INT_STACK
+    cp 32
+    jr c, 2f
+    ld a, 31
+2:  ld c, a
+    ld a, (hl)
+    inc hl
+    push hl
+    call GET_ATTR_ADDR
+    ld (hl), a
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFDEF GET_ATTR_ADDR_USED
+GET_ATTR_ADDR:
+    ; bc: y - x
+    ; de: height - width
+    ld a, b
+    rrca
+    rrca
+    rrca
+    and %00000011
+    add a, %01011000
+    ld h, a
+    ld a, b
+    and %00000111
+    rrca
+    rrca
+    rrca
+    add a, c
+    ld l, a        ; HL -> Attr coordinates
+    ret
+    UNDEFINE GET_ATTR_ADDR_USED
+    ENDIF  
 
 ;---------------
     IFNDEF UNUSED_OP_RAMLOAD
@@ -2578,8 +2881,47 @@ OPCODES:
     IFDEF UNUSED_OP_FADEOUT
     DW ERROR_NOP
     ENDIF
+    IFNDEF UNUSED_OP_FILLATTR
+    DW OP_FILLATTR
+    ENDIF
+    IFDEF UNUSED_OP_FILLATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUTATTR
+    DW OP_PUTATTR
+    ENDIF
+    IFDEF UNUSED_OP_PUTATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_PUTATTR
+    DW OP_POP_PUTATTR
+    ENDIF
+    IFDEF UNUSED_OP_POP_PUTATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHOOSE_CH
+    DW OP_CHOOSE_CH
+    ENDIF
+    IFDEF UNUSED_OP_CHOOSE_CH
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_OPTION_ST
+    DW OP_PUSH_OPTION_ST
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_OPTION_ST
+    DW ERROR_NOP
+    ENDIF
 
+    IFDEF USE_256_OPCODES
     REPT 256-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
+    ENDIF
+    IFNDEF USE_256_OPCODES
+    REPT 128-(($-OPCODES)/2)
+    DW ERROR_NOP
+    ENDR
+    ENDIF
+
+    
 

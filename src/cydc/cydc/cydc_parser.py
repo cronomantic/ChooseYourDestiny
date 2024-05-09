@@ -284,10 +284,6 @@ class CydcParser(object):
         "statement : WAITKEY"
         p[0] = ("WAITKEY",)
 
-    def p_statement_choose(self, p):
-        "statement : CHOOSE"
-        p[0] = ("CHOOSE",)
-
     def p_statement_clear(self, p):
         "statement : CLEAR"
         p[0] = ("CLEAR",)
@@ -492,26 +488,7 @@ class CydcParser(object):
             and self._check_byte_value(p[6])
             and self._check_byte_value(p[8])
         ):
-            row = p[4]
-            col = p[2]
-            width = p[6]
-            height = p[8]
-            if row >= 24:
-                row = 23
-            if col >= 32:
-                col = 31
-            if row < 0:
-                row = 0
-            if col < 0:
-                col = 0
-            if width <= 0:
-                width = 1
-            if height <= 0:
-                height = 1
-            if (width + col) > 32:
-                width = 32 - col
-            if (height + row) > 24:
-                height = 24 - row
+            (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
             if isinstance(p[10], int) and isinstance(p[12], int):
                 row_d = p[12]
                 col_d = p[10]
@@ -587,6 +564,30 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_fillattr(self, p):
+        "statement : FILLATTR expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression"
+        if len(p) == 17:
+            if (
+                self._check_byte_value(p[2])
+                and self._check_byte_value(p[4])
+                and self._check_byte_value(p[6])
+                and self._check_byte_value(p[8])
+                and self._check_byte_value(p[10])
+                and self._check_byte_value(p[12])
+                and self._check_byte_value(p[14])
+                and self._check_byte_value(p[16])
+            ):
+                attr = self._check_attr_values(p[10], p[12], p[14], p[16])
+                if attr is not None and isinstance(attr, int):
+                    (row, col, width, height) = self._fix_borders(
+                        p[4], p[2], p[6], p[8]
+                    )
+                    p[0] = ("FILLATTR", col, row, width, height, attr)
+                else:
+                    p[0] = None
+            else:
+                p[0] = None
+
     def p_statement_fadeout(self, p):
         """
         statement : FADEOUT expression COMMA expression COMMA expression COMMA expression
@@ -598,26 +599,7 @@ class CydcParser(object):
                 and self._check_byte_value(p[6])
                 and self._check_byte_value(p[8])
             ):
-                row = p[4]
-                col = p[2]
-                width = p[6]
-                height = p[8]
-                if row >= 24:
-                    row = 23
-                if col >= 32:
-                    col = 31
-                if row < 0:
-                    row = 0
-                if col < 0:
-                    col = 0
-                if width <= 0:
-                    width = 1
-                if height <= 0:
-                    height = 1
-                if (width + col) > 32:
-                    width = 32 - col
-                if (height + row) > 24:
-                    height = 24 - row
+                (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
                 p[0] = ("FADEOUT", col, row, width, height)
             else:
                 p[0] = None
@@ -631,29 +613,100 @@ class CydcParser(object):
                 and self._check_byte_value(p[6])
                 and self._check_byte_value(p[8])
             ):
-                row = p[4]
-                col = p[2]
-                width = p[6]
-                height = p[8]
-                if row >= 24:
-                    row = 23
-                if col >= 32:
-                    col = 31
-                if row < 0:
-                    row = 0
-                if col < 0:
-                    col = 0
-                if width <= 0:
-                    width = 1
-                if height <= 0:
-                    height = 1
-                if (width + col) > 32:
-                    width = 32 - col
-                if (height + row) > 24:
-                    height = 24 - row
+                (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
                 p[0] = ("MARGINS", col, row, width, height)
             else:
                 p[0] = None
+
+    def p_statement_putattr(self, p):
+        "statement : PUTATTR numexpression COMMA numexpression COMMA expression COMMA expression COMMA expression COMMA expression"
+        if len(13):
+            if (
+                self._check_byte_value(p[6])
+                and self._check_byte_value(p[8])
+                and self._check_byte_value(p[10])
+                and self._check_byte_value(p[12])
+            ):
+                attr = self._check_attr_values(p[6], p[8], p[10], p[12])
+                if attr is not None and isinstance(attr, int):
+                    if isinstance(p[2], int) and isinstance(p[4], int):
+                        if self._check_byte_value(p[2]) and self._check_byte_value(
+                            p[4]
+                        ):
+                            row = p[4]
+                            col = p[2]
+                            if row >= 24:
+                                row = 23
+                            if col >= 32:
+                                col = 31
+                            if row < 0:
+                                row = 0
+                            if col < 0:
+                                col = 0
+                            p[0] = ("PUTATTR", col, row, attr)
+                        else:
+                            p[0] = None
+                    elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
+                        t1 = p[2]
+                        t2 = p[4]
+                        if (
+                            (t1[0] == "PUSH_D")
+                            and (t2[0] == "PUSH_D")
+                            and isinstance(t1[1], int)
+                            and isinstance(t2[1], int)
+                        ):
+                            row = t2[1]
+                            col = t1[1]
+                            if self._check_byte_value(row) and self._check_byte_value(
+                                col
+                            ):
+                                if row >= 24:
+                                    row = 23
+                                if col >= 32:
+                                    col = 31
+                                if row < 0:
+                                    row = 0
+                                if col < 0:
+                                    col = 0
+                                p[0] = ("PUTATTR", col, row)
+                            else:
+                                p[0] = None
+                        else:
+                            p[0] = [t1, t2, ("POP_PUTATTR", attr)]
+                    else:
+                        if isinstance(p[2], list):
+                            p[0] = p[2]
+                        elif isinstance(p[2], int):
+                            col = p[2]
+                            if self._check_byte_value(col):
+                                if col >= 32:
+                                    col = 31
+                                if col < 0:
+                                    col = 0
+                                p[0] = [("PUSH_D", col)]
+                            else:
+                                p[0] = None
+                                return None
+                        else:
+                            p[0] = [p[2]]
+                        if isinstance(p[4], list):
+                            p[0] += p[4]
+                        elif isinstance(p[4], int):
+                            row = p[4]
+                            if self._check_byte_value(row):
+                                if row >= 24:
+                                    row = 23
+                                if row < 0:
+                                    row = 0
+                                p[0].append(("PUSH_D", row))
+                            else:
+                                p[0] = None
+                                return None
+                        else:
+                            p[0].append(p[4])
+                        p[0].append(("POP_PUTATTR", attr))
+                else:
+                    p[0] = None
 
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
@@ -925,19 +978,44 @@ class CydcParser(object):
                 p[0] = [p[4]]
             p[0].append(("POP_SET", (p[2], 0)))
 
-    def p_statement_choose_if_wait_goto(self, p):
-        "statement : CHOOSE IF WAIT expression THEN GOTO ID"
-        if self._check_word_value(p[4]):
-            p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0, p[7], 0, 0)
-        else:
-            p[0] = None
-
-    def p_statement_choose_if_wait_gosub(self, p):
-        "statement : CHOOSE IF WAIT expression THEN GOSUB ID"
-        if self._check_word_value(p[4]):
-            p[0] = ("CHOOSE_W", p[4] & 0xFF, (p[4] >> 8) & 0xFF, 0xFF, p[7], 0, 0)
-        else:
-            p[0] = None
+    def p_statement_choose(self, p):
+        """
+        statement : CHOOSE IF WAIT expression THEN GOTO ID
+                  | CHOOSE IF WAIT expression THEN GOSUB ID
+                  | CHOOSE IF CHANGED THEN GOSUB ID
+                  | CHOOSE
+        """
+        if len(p) == 8 and p[3] == "WAIT":
+            if self._check_word_value(p[4]):
+                print(p[6])
+                if p[6] == "GOTO":
+                    p[0] = (
+                        "CHOOSE_W",
+                        p[4] & 0xFF,
+                        (p[4] >> 8) & 0xFF,
+                        0x00,
+                        p[7],
+                        0,
+                        0,
+                    )
+                elif p[6] == "GOSUB":
+                    p[0] = (
+                        "CHOOSE_W",
+                        p[4] & 0xFF,
+                        (p[4] >> 8) & 0xFF,
+                        0xFF,
+                        p[7],
+                        0,
+                        0,
+                    )
+                else:
+                    p[0] = None
+            else:
+                p[0] = None
+        elif len(p) == 7 and p[3] == "CHANGED":
+            p[0] = ("CHOOSE_CH", p[6], 0, 0)
+        elif len(p) == 2:
+            p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
         "statement : OPTION GOTO ID"
@@ -1132,11 +1210,21 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_saveresult_expression(self, p):
+    def p_numexpression_saveresult_expression(self, p):
         "numexpression : SAVERESULT LPAREN RPAREN"
         p[0] = ("PUSH_SAVE_RESULT",)
 
-    def p_statement_random_expression_limit(self, p):
+    def p_numexpression_optionsel(self, p):
+        "numexpression : OPTIONSEL LPAREN RPAREN"
+        if len(p) == 4:
+            p[0] = ("PUSH_OPTION_ST", 1)
+
+    def p_numexpression_numoptions(self, p):
+        "numexpression : NUMOPTIONS LPAREN RPAREN"
+        if len(p) == 4:
+            p[0] = ("PUSH_OPTION_ST", 0)
+
+    def p_numexpression_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
         if self._check_byte_value(p[3]) and self._check_byte_value(p[5]):
             limit = p[5] - p[3]
@@ -1152,16 +1240,18 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_random_expression(self, p):
-        "numexpression : RANDOM LPAREN expression RPAREN"
-        if self._check_byte_value(p[3]):
-            p[0] = ("PUSH_RANDOM", p[3])
-        else:
-            p[0] = None
-
-    def p_statement_random(self, p):
-        "numexpression : RANDOM LPAREN RPAREN"
-        p[0] = ("PUSH_RANDOM", 0)
+    def p_numexpression_random_expression(self, p):
+        """
+        numexpression : RANDOM LPAREN expression RPAREN
+                      | RANDOM LPAREN RPAREN
+        """
+        if len(p) == 5:
+            if self._check_byte_value(p[3]):
+                p[0] = ("PUSH_RANDOM", p[3])
+            else:
+                p[0] = None
+        elif len(p) == 4:
+            p[0] = ("PUSH_RANDOM", 0)
 
     def p_numexpression_inkey_expression(self, p):
         "numexpression : INKEY LPAREN expression RPAREN"
@@ -1286,6 +1376,51 @@ class CydcParser(object):
 
     def _is_valid_var(self, val):
         return isinstance(val, str) or isinstance(val, int)
+
+    def _fix_borders(self, row, col, width, height):
+        (row, height) = self._fix_rows(row, height)
+        (col, width) = self._fix_cols(col, width)
+        return (row, col, width, height)
+
+    def _fix_rows(self, row, height):
+        if row >= 24:
+            row = 23
+        if row < 0:
+            row = 0
+        if height <= 0:
+            height = 1
+        if (height + row) > 24:
+            height = 24 - row
+        return (row, height)
+
+    def _fix_cols(self, col, width):
+        if col >= 32:
+            col = 31
+        if col < 0:
+            col = 0
+        if width <= 0:
+            width = 1
+        if (width + col) > 32:
+            width = 32 - col
+        return (col, width)
+
+    def _check_attr_values(self, ink, paper, bright, flash):
+        error = False
+        if ink < 0 or ink > 7:
+            self.errors.append(f"Invalid Ink value")
+            error = True
+        if paper < 0 or paper > 7:
+            self.errors.append(f"Invalid Paper value")
+            error = True
+        if bright < 0 or bright > 1:
+            self.errors.append(f"Invalid Bright value")
+            error = True
+        if flash < 0 or flash > 1:
+            self.errors.append(f"Invalid Flash value")
+            error = True
+        if error:
+            return None
+        return (flash << 7) | (bright << 6) | (paper << 3) | ink
 
     def _get_hidden_label(self):
         l = f"*LABEL_{self.hidden_label_counter}*"

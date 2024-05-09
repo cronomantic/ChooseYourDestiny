@@ -68,6 +68,12 @@ INCR_COL_OPTION:
     DEFB 1
 CYCLE_OPTION:
     DEFB 0
+RETURN_FROM_CHOOSE_CH:
+    DEFB 0
+CHOOSE_CH_RET_ADDRESS:
+    DEFS 3, 0
+CHOOSE_CH_GOSUB_ADDRESS:
+    DEFS 3, 0
 
 ;--------------------------------------------------------------------------
 ;Print speed
