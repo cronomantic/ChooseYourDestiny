@@ -1392,6 +1392,13 @@ OP_CHOOSE_CH:
     jp OP_GOTO
     ENDIF
 
+    IFNDEF OP_CLEAR_OPTIONS
+OP_CLEAR_OPTIONS:
+    xor a
+    ld (NUM_OPTIONS), a          ;Clear options.
+    jp EXEC_LOOP
+    ENDIF
+
 ;----------------------------------------------------------
 
     IFNDEF UNUSED_OP_PUSH_OPTION_ST
@@ -2023,9 +2030,13 @@ CPY_SCR_BLK_Y_D   EQU TMP_AREA + 5
 ;---------------
 
     IFNDEF UNUSED_OP_FADEOUT
+
     IFNDEF GET_ATTR_ADDR_USED
     DEFINE GET_ATTR_ADDR_USED
     ENDIF
+
+FADEOUT_ITERATIONS              EQU 8
+
 OP_FADEOUT:
     ld c, (hl)
     inc hl
@@ -2036,42 +2047,15 @@ OP_FADEOUT:
     ld d, (hl)
     inc hl
     push hl
-
-.fadeout:
+    ld (FADEOUT_W), de
     call GET_ATTR_ADDR
-    ld a, 8        ; Num iterations
-3:  ex af, af'
-    push hl
-    push de
-2:  ld b, e        ; width -> B
-    push hl
-1:  ld a, (hl)     ; read current attribute; for both PAPER and INK (individually), all three bits are merged into one by OR
-    ld c, a        ; the merged bits will land into "bottom" bit (b0 INK, b3 PAPER)
-    rra                 ; setting those to "1" for non-zero INK/PAPER value
-    or c           ; and "0" for zero INK/PAPER - this will be then subtracted
-    rra                 ; from current attribute
-    or c           ; *here* the bits 0 and 3 are "1" for non-zero INK and PAPER
-    and %00001001   ; extract those bottom INK (+1)/PAPER (+8) bits into A
-    ; subtract that value from current attribute, to decrement INK/PAPER individually
-    sub c           ; A = decrement - attribute
-    neg             ; A = attribute - decrement (new attribute value)
-    ld (hl), a     ; write the darkened attribute value
-    inc hl
-    djnz 1b
-    pop hl         ; Restore hl
-    ld a, 32       ; next attr line
-    add a, l
-    jr nc, 4f
-    inc h
-4:  ld l, a
-    dec d
-    jr nz, 2b
-    pop de
-    pop hl
-    ex af, af'
-    dec a
-    jr nz, 3b
-
+    ld (FADE_OUT_ADDRESS), hl
+    ld a, FADEOUT_ITERATIONS ; Num iterations
+    ld (FADE_OUT_ITERARIONS), a
+1:  halt
+    ld a, (FADE_OUT_ITERARIONS)
+    or a
+    jr nz, 1b
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -2181,7 +2165,7 @@ GET_ATTR_ADDR:
     ld l, a        ; HL -> Attr coordinates
     ret
     UNDEFINE GET_ATTR_ADDR_USED
-    ENDIF  
+    ENDIF
 
 ;---------------
     IFNDEF UNUSED_OP_RAMLOAD
@@ -2910,6 +2894,12 @@ OPCODES:
     DW OP_PUSH_OPTION_ST
     ENDIF
     IFDEF UNUSED_OP_PUSH_OPTION_ST
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CLEAR_OPTIONS
+    DW OP_CLEAR_OPTIONS
+    ENDIF
+    IFDEF UNUSED_OP_CLEAR_OPTIONS
     DW ERROR_NOP
     ENDIF
 
