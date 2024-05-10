@@ -56,7 +56,8 @@ def get_game_id(name=None):
             name += ", 0"
         return f"    DEFB {name}"
     else:
-        return '"' + name[0:15] + '"'
+        name = '"' + name[0:15] + '"'
+        return f"    DEFB {name}"
 
 
 def get_asm_template(filename):
