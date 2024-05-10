@@ -87,7 +87,7 @@ def get_asm_128(
         sfx_asm += "BEEPFX              EQU $0\n"
         sfx_asm += "SFX_ID              EQU BEEPFX+1\n"
     else:
-        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\nBEEPFX:\n" + sfx_asm
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
 
     d = dict(
@@ -158,7 +158,7 @@ def get_asm_48(
         sfx_asm += "BEEPFX              EQU $0\n"
         sfx_asm += "SFX_ID              EQU BEEPFX+1\n"
     else:
-        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\nBEEPFX:\n" + sfx_asm
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
 
     d = dict(

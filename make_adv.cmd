@@ -21,7 +21,7 @@ REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=
 
 REM --------------------------------------
-%~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -l %IMGLINES% -scr %LOAD_SCR% %TARGET%
+%~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -il %IMGLINES% -scr %LOAD_SCR% %TARGET%
 IF ERRORLEVEL 1 GOTO ERROR
 SET GAME=
 SET TARGET=
