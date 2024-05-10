@@ -1014,9 +1014,15 @@ ADJUST_CHAR_POS:
     ld a, 8
     sub c
     call UPDATE_POS       ;Advance to match 8x8 character
-1:  ld a, 8
+1:  ld a, (POS_X)
+    cp $f8
+    jr z, 2f
+    ld a, 8
     jp UPDATE_POS
     ; d = POS_Y, e = POS_X
+2:  xor a
+    jp UPDATE_POS
+
 
 ADJUST_CHAR_POS_NO_ADVANCE:
     ld hl, (POS_X)

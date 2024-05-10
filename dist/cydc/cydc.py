@@ -384,6 +384,9 @@ def main():
             strings.append(text)
             positions.append(pos)
 
+    if args.min_length > args.max_length:
+        sys.exit(_("ERROR: min-length can't be greather than max-length."))
+
     txtComp = CydcTextCompressor(gettext, args.superset_limit, verbose)
     (textBytes, tokenBytes, tokens) = txtComp.compress(
         strings, args.min_length, args.max_length, tokens
@@ -541,7 +544,9 @@ def main():
     except OSError as e2:
         sys.exit(_("ERROR: Error assembling TAP."), e2)
 
-    if asm_size > 16 * 1024:
+    if model == "48k" and (asm_size > 32 * 1024):
+        sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
+    elif model != "48k" and asm_size > 16 * 1024:
         sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
 
     ######################################################################
