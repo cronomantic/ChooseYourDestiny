@@ -166,6 +166,8 @@ class CydcLexer(object):
         "CHANGED": "CHANGED",
         "OPTIONSEL": "OPTIONSEL",
         "NUMOPTIONS": "NUMOPTIONS",
+        "CLEAROPTIONS": "CLEAROPTIONS",
+        "LET": "LET",
     }
 
     # token_list

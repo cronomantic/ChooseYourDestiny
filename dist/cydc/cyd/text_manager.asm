@@ -1123,11 +1123,10 @@ CLEAR_WIN:
     ld bc, (MIN_X)
     ld de, (MAX_X)
     ld (POS_X), bc         ;set to origin of window
-    call CLEAR_RECT
-    xor a
-    ld (NUM_OPTIONS), a          ;Clear options.
-    ret
-
+    ;call CLEAR_RECT
+    ;xor a
+    ;ld (NUM_OPTIONS), a          ;Clear options.
+    ;ret
 CLEAR_RECT:
     push ix
     ld ix, TMP_AREA+4

@@ -230,8 +230,39 @@ ISR:
 
     xor a
     ld (UPDATE_SCR_FLAG), a
-
 .no_screen:
+
+    ld a, (FADE_OUT_ITERARIONS)
+    or a
+    jr z, .no_fadeout
+    ld hl, (FADE_OUT_ADDRESS)
+    ld de, (FADEOUT_W)
+    dec a
+    ld (FADE_OUT_ITERARIONS), a
+2:  ld b, e        ; width -> B
+    push hl
+1:  ld a, (hl)     ; read current attribute; for both PAPER and INK (individually), all three bits are merged into one by OR
+    ld c, a        ; the merged bits will land into "bottom" bit (b0 INK, b3 PAPER)
+    rra                 ; setting those to "1" for non-zero INK/PAPER value
+    or c           ; and "0" for zero INK/PAPER - this will be then subtracted
+    rra                 ; from current attribute
+    or c           ; *here* the bits 0 and 3 are "1" for non-zero INK and PAPER
+    and %00001001   ; extract those bottom INK (+1)/PAPER (+8) bits into A
+    ; subtract that value from current attribute, to decrement INK/PAPER individually
+    sub c           ; A = decrement - attribute
+    neg             ; A = attribute - decrement (new attribute value)
+    ld (hl), a     ; write the darkened attribute value
+    inc hl
+    djnz 1b
+    pop hl         ; Restore hl
+    ld a, 32       ; next attr line
+    add a, l
+    jr nc, 4f
+    inc h
+4:  ld l, a
+    dec d
+    jr nz, 2b   
+.no_fadeout:
 
 VORTEX_PLAYER_ISR:
     ;call vortex tracker here?
