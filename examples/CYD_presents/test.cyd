@@ -1,0 +1,59 @@
+[[  DECLARE 0 AS Contador /* usado en bucles */
+    PAGEPAUSE 1
+    BORDER 0
+    INK 7
+    BRIGHT 0
+    FLASH 0
+    PAPER 0
+    CLEAR : PICTURE 0
+    LET Contador = 0
+    WHILE (@Contador < 22)
+        BLIT 0, 0, 32, 2 AT 0, @Contador
+        LET Contador = @Contador + 2
+    WEND
+    BLIT 0, 2, 32, 2 AT 0, 22
+    WAIT 100
+    /***************/
+    LET Contador = 20
+    WHILE (@Contador > 0)
+        BLIT 0, 2, 32, 2 AT 0, @Contador
+        IF @Contador = 20 THEN
+            BLIT 0, 22, 32, 2 AT 0, 22
+        ELSE IF @Contador = 18 THEN
+            BLIT 0, 20, 32, 2 AT 0, 20
+        ELSE IF @Contador = 16 THEN
+            BLIT 0, 18, 32, 2 AT 0, 18
+        ELSE IF @Contador = 14 THEN
+            BLIT 0, 16, 32, 2 AT 0, 16
+        ELSE IF @Contador = 12 THEN
+            BLIT 0, 14, 32, 2 AT 0, 14
+        ELSE IF @Contador = 10 THEN
+            BLIT 0, 12, 32, 2 AT 0, 12
+        ELSE IF @Contador = 8 THEN
+            BLIT 0, 10, 32, 2 AT 0, 10
+        ELSE IF @Contador = 6 THEN
+            BLIT 0, 8, 32, 2 AT 0, 8
+        ELSE IF @Contador = 4 THEN
+            BLIT 0, 6, 32, 2 AT 0, 6
+        ELSE IF @Contador = 2 THEN
+            BLIT 0, 4, 32, 2 AT 0, 4
+        ELSE IF @Contador = 0 THEN
+            BLIT 0, 2, 32, 2 AT 0, 2
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        ENDIF
+        WAIT 15
+        LET Contador = @Contador - 2
+    WEND
+    /*******************************/
+    WAITKEY
+    END
+]]
