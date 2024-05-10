@@ -21,6 +21,8 @@ FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) $(BEEPFX_ASM_FILENAME)
 
 EXTRA_PARAM = -v -code
 
+# EXTRA_PARAM += -trim
+
 ifneq (,$(wildcard ./charset.json))
 EXTRA_PARAM += -c ./charset.json
 endif

@@ -1,0 +1,124 @@
+[[  DECLARE 0 AS Contador : SET Contador TO 0 /* usado en bucles */
+    PAGEPAUSE 1
+    BORDER 7
+    INK 0
+    BRIGHT 0
+    FLASH 0
+    PAPER 7
+    CLEAR : PICTURE 0 : DISPLAY 1  
+    AT 23,0 : INK 2 ]]Elige Héroe[[ INK 0 ]]
+
+[[ AT 22,2 : OPTION GOTO Opcion1]]El Bárbaro
+[[ AT 22,4 : OPTION GOTO Opcion2]]La Amazona
+[[ AT 22,6 : OPTION GOTO Opcion3]]El Enano
+[[
+    CHOOSE IF CHANGED THEN GOSUB test
+
+    LABEL Opcion1 /*barbaro*/
+    WHILE (@Contador < 16)
+    GOSUB RestauraColorImagenes
+    WAIT 2
+    GOSUB ColoreaBarbaro
+    WAIT 2
+    SET Contador to @Contador+1
+    WEND
+    GOTO Siguiente
+
+    LABEL Opcion2 /*amazona*/
+    WHILE (@Contador < 16)
+    GOSUB RestauraColorImagenes
+    WAIT 2
+    GOSUB ColoreaAmazona
+    WAIT 2
+    SET Contador to @Contador+1
+    WEND
+    GOTO Siguiente
+
+    LABEL Opcion3 /*enano*/  
+    WHILE (@Contador < 16)
+    GOSUB RestauraColorImagenes
+    WAIT 2
+    GOSUB ColoreaEnano
+    WAIT 2
+    SET Contador to @Contador+1
+    WEND
+    LABEL Siguiente
+    WAIT 50 
+    FADEOUT 0,0,16,12 /* fadeout en cuatro secciones, para pantalla completa seria 0,0,32,24 */
+    WAIT 10 
+    FADEOUT 16,0,16,12
+    WAIT 10 
+    FADEOUT 0,12,16,12
+    WAIT 10 
+    FADEOUT 16,12,16,12
+    WAIT 10 
+    /* FADEOUT
+    - Columna inicial.
+    - Fila inicial.
+    - Ancho (en carácteres).
+    - Alto (en carácteres).*/
+    END
+#test
+    AT 0, 23
+    IF OPTIONSEL() = 0 THEN GOSUB TextoBarbaro ENDIF
+    IF OPTIONSEL() = 1 THEN GOSUB TextoAmazona ENDIF
+    IF OPTIONSEL() = 2 THEN GOSUB TextoEnano ENDIF
+    /*
+    PRINT OPTIONSEL() **** MUESTRA EL NUMERO DE OPCION QUE ESTAS ACTUALMENTE ****
+    AT 4, 23
+    PRINT NUMOPTIONS() **** MUESTRA EL TOTAL DE OPCIONES QUE TIENE CHOICE ***
+    */
+    AT 0, 8
+    RETURN
+
+LABEL TextoBarbaro
+GOSUB RestauraColorImagenes
+GOSUB ColoreaBarbaro
+MARGINS 0,17,19,6 : CLEAR : INK 2 ]]AX=BATTLER[[ INK 0]]
+Su madre fue asesinada por Death=adder.
+[[MARGINS 0,0,32,24 :RETURN
+
+LABEL TextoAmazona
+GOSUB RestauraColorImagenes
+GOSUB ColoreaAmazona
+MARGINS 0,17,19,6 : CLEAR : INK 2 ]]TYRIS=FLARE[[ INK 0]]
+Su padre y su madre fueron asesinados por Death=adder.
+[[MARGINS 0,0,32,24 :RETURN
+
+LABEL TextoEnano
+GOSUB RestauraColorImagenes
+GOSUB ColoreaEnano
+MARGINS 0,17,19,6 : CLEAR : INK 2 ]]GILIUS=THUNDERHEAD[[ INK 0]]
+Su hermano fue asesinado por Death=adder.
+[[MARGINS 0,0,32,24 :RETURN
+
+LABEL RestauraColorImagenes
+/* FILLATTR (ver tambien PUTATTR)
+- Columna origen del rectángulo a rellenar.
+- Fila origen del rectángulo a rellenar.
+- Ancho del rectángulo a rellenar.
+- Alto del rectángulo a rellenar.
+- Valor de "tinta" [0-7].
+- Valor de color de fondo [0-7].
+- Valor de brillo [0-1].
+- Valor de parpadeo [0-1].*/
+
+FILLATTR 0,0,13,13,0,7,0,0 /*barbaro*/
+FILLATTR 13,0,8,16,0,7,0,0 /*amazona*/
+FILLATTR 20,8,12,16,0,7,0,0 /*enano*/
+
+RETURN
+
+LABEL ColoreaBarbaro
+FILLATTR 0,0,13,13,1,7,0,0 
+RETURN
+
+LABEL ColoreaAmazona
+FILLATTR 13,0,8,16,1,7,0,0
+RETURN
+
+LABEL ColoreaEnano
+FILLATTR 20,8,12,16,1,7,0,0 /*enano*/
+RETURN
+
+]]
