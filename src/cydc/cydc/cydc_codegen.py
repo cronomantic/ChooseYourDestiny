@@ -141,6 +141,7 @@ class CydcCodegen(object):
         "POP_PUTATTR": 0x6C,
         "CHOOSE_CH": 0x6D,
         "PUSH_OPTION_ST": 0x6E,
+        "CLEAR_OPTIONS": 0x6F,
     }
 
     def __init__(self, gettext):

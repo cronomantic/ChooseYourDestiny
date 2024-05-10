@@ -34,6 +34,10 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [SET \[varID\] TO numexpression](#set-varid-to-numexpression-1)
     - [SET varID TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2)
     - [SET \[varID\] TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2-1)
+    - [LET varID = numexpression](#let-varid--numexpression)
+    - [LET \[varID\] = numexpression](#let-varid--numexpression-1)
+    - [LET varID = {numexpression1, numexpression2,...}](#let-varid--numexpression1-numexpression2)
+    - [LET \[varID\] = {numexpression1, numexpression2,...}](#let-varid--numexpression1-numexpression2-1)
     - [END](#end)
     - [CLEAR](#clear)
     - [CENTER](#center)
@@ -45,6 +49,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
     - [OPTIONSEL()](#optionsel)
     - [NUMOPTIONS()](#numoptions)
+    - [CLEAROPTIONS](#clearoptions)
     - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
@@ -333,7 +338,7 @@ De nuevo, éste es un ejemplo auto explicativo:
 ```
 
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
-Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 32 y siempre que la pantalla no se borre antes, ya que entonces se eliminarán las opciones acumuladas.
+Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 32.
 
 Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
@@ -633,6 +638,22 @@ Asigna el valor de _numexpression1_ a la variable _varID_,  _numexpression2_ a l
 
 Asigna el valor de _numexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _numexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
+### LET varID = numexpression
+
+Asigna el valor de _numexpression_ a la variable _varID_.
+
+### LET [varID] = numexpression
+
+Asigna el valor de _numexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
+
+### LET varID = {numexpression1, numexpression2,...}
+
+Asigna el valor de _numexpression1_ a la variable _varID_,  _numexpression2_ a la variable _varID_+1, y así.
+
+### LET [varID] = {numexpression1, numexpression2,...}
+
+Asigna el valor de _numexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _numexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
+
 ### END
 
 Finaliza la aventura y reinicia el ordenador.
@@ -680,6 +701,10 @@ _Función_ que devuelve la opción actualmente seleccionada en el menú actualme
 ### NUMOPTIONS()
 
 _Función_ que devuelve el número de opciones del menú actualmente activo. Si no tenemos un menú activo, el resultado de esta función está indefinido.
+
+### CLEAROPTIONS
+
+Elimina las opciones almacenadas en el menú.
 
 ### MENUCONFIG numexpression, numexpression
 
@@ -1202,7 +1227,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 - Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
 - Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
-- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`, o puede que se haya borrado inadvertidamente la pantalla, y por tanto, las opciones.
+- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
 - Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
 - Error 5: No hay un módulo de música cargado para reproducir.
 - Error 6: Código de instrucción inválido.

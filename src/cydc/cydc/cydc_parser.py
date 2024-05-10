@@ -288,6 +288,10 @@ class CydcParser(object):
         "statement : CLEAR"
         p[0] = ("CLEAR",)
 
+    def p_statement_clearoptions(self, p):
+        "statement : CLEAROPTIONS"
+        p[0] = ("CLEAR_OPTIONS",)
+
     def p_statement_randomize(self, p):
         "statement : RANDOMIZE"
         p[0] = ("RANDOMIZE",)
@@ -933,7 +937,10 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_set_ind_array(self, p):
-        "statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY"
+        """
+        statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY
+                  | LET LCARET variableID RCARET EQUALS LCURLY numexpressions_list RCURLY
+        """
         if len(p) == 9 and self._is_valid_var(p[3]) and isinstance(p[7], list):
             p[0] = []
             for i, c in enumerate(p[7]):
@@ -947,7 +954,10 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_set_dir_array(self, p):
-        "statement : SET variableID TO LCURLY numexpressions_list RCURLY"
+        """
+        statement : SET variableID TO LCURLY numexpressions_list RCURLY
+                  | LET variableID EQUALS LCURLY numexpressions_list RCURLY
+        """
         if len(p) == 7 and self._is_valid_var(p[2]) and isinstance(p[5], list):
             p[0] = []
             for i, c in enumerate(p[5]):
@@ -961,7 +971,10 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_set_ind(self, p):
-        "statement : SET LCARET variableID RCARET TO numexpression"
+        """
+        statement : SET LCARET variableID RCARET TO numexpression
+                  | LET LCARET variableID RCARET EQUALS numexpression
+        """
         if len(p) == 7 and self._is_valid_var(p[3]):
             if isinstance(p[6], list):
                 p[0] = p[6]
@@ -970,7 +983,10 @@ class CydcParser(object):
             p[0].append(("POP_SET_DI", (p[3], 0)))
 
     def p_statement_set_dir(self, p):
-        "statement : SET variableID TO numexpression"
+        """
+        statement : SET variableID TO numexpression
+                  | LET variableID EQUALS numexpression
+        """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if isinstance(p[4], list):
                 p[0] = p[4]
