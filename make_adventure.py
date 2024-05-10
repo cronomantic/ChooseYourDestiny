@@ -102,7 +102,7 @@ def file_path(string):
 
 
 def main():
-    version = "0.1.0"
+    version = "0.1.1"
     program = "Make Adventure " + version
     exec = "make_adventure"
 
