@@ -114,19 +114,7 @@
     TAB 15
     INK 2
 ]]Tranqui69
-
 [[
-    WAIT 50
-    TAB 2
-    INK 6
-    PAPER 2
-    FLASH 1
-]]Sí, él es el culpable del logotipo...
-[[  
-    FLASH 0
-    INK 7
-    PAPER 0
-    TAB 20
     WAIT 100
     FADEOUT 0, 5, 32, 24-5
     PICTURE 1
