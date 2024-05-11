@@ -857,22 +857,22 @@ Los parámetros, por órden, son:
 - Fila origen del rectángulo a rellenar.
 - Ancho del rectángulo a rellenar.
 - Alto del rectángulo a rellenar.
-- Valor de "tinta" [0-7].
-- Valor de color de fondo [0-7].
-- Valor de brillo [0-1].
-- Valor de parpadeo [0-1].
+- Valor de "tinta". Valores permitidos: 0 al 7.
+- Valor de color de fondo. Valores permitidos: 0 al 7.
+- Valor de brillo. Valores permitidos: 0 ó 1.
+- Valor de parpadeo. Valores permitidos: 0 ó 1.
 
 ### PUTATTR numexpression, numexpression, expression, expression, expression, expression
 
-Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
+Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Para aquellos campos en los que se indique un valor no permitido, el valor que ya existiese en pantalla no resultará alterado. Los píxeles tampoco se alteran.
 Los parámetros, por órden, son:
 
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
-- Valor de "tinta" [0-7].
-- Valor de color de fondo [0-7].
-- Valor de brillo [0-1].
-- Valor de parpadeo [0-1].
+- Valor de "tinta". Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
+- Valor de color de fondo. Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
+- Valor de brillo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
+- Valor de parpadeo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
 
 ### RANDOM(expression)
 
