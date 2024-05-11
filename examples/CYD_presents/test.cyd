@@ -12,7 +12,8 @@
         LET Contador = @Contador + 2
     WEND
     BLIT 0, 2, 32, 2 AT 0, 22
-    WAIT 100
+    /*GOTO test*/
+    WAIT 75
     /***************/
     LET Contador = 20
     WHILE (@Contador > 0)
@@ -54,6 +55,93 @@
         LET Contador = @Contador - 2
     WEND
     /*******************************/
-    WAITKEY
+    AT 8,18
+    INK 6
+    BRIGHT 1
+    ]]CHOOSE  YOUR  DESTINY[[
+    SFX 0
+    AT 12, 20
+    ]]Presenta...[[
+    WAIT 100
+#test
+    FADEOUT 0, 4, 32, 24-4
+    MARGINS 0, 5, 32, 24-5
+    INK 6
+    CLEAR
+    BRIGHT 1
+    TAB 11
+    INK 7
+]]Motor creado por:
+
+[[
+    WAIT 10
+    TAB 14
+    INK 6
+]]Cronomantic
+
+
+[[
+    WAIT 20
+    TAB 10
+    INK 7
+]]Ejemplos creados por:
+
+[[
+    WAIT 10
+    TAB 14
+    INK 4
+]]XimoCompany
+[[
+    WAIT 10
+    TAB 14
+    INK 3
+]]Olbaptramen
+[[
+    WAIT 10
+    TAB 14
+    INK 5
+]]Cronomantic
+
+
+[[
+    WAIT 20
+    TAB 9
+    INK 7
+]]Logotipo diseñado por:
+
+[[
+    WAIT 10
+    TAB 15
+    INK 2
+]]Tranqui69
+
+[[
+    WAIT 50
+    TAB 2
+    INK 6
+    PAPER 2
+    FLASH 1
+]]Sí, él es el culpable del logotipo...
+[[  
+    FLASH 0
+    INK 7
+    PAPER 0
+    TAB 20
+    WAIT 100
+    FADEOUT 0, 5, 32, 24-5
+    PICTURE 1
+    BLIT 0, 4, 32, 24-4 AT 0, 4
+    PICTURE 0
+    WAIT 100
+    LET Contador = 0
+    WHILE (@Contador < 22)
+        BLIT 0, 0, 32, 4 AT 0, @Contador
+        LET Contador = @Contador + 2
+        WAIT 10
+    WEND
+    WAIT 60
+    PAPER 0
+    FADEOUT 0, 0, 32, 24
+    CLEAR
     END
 ]]
