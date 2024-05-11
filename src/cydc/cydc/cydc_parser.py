@@ -624,7 +624,7 @@ class CydcParser(object):
 
     def p_statement_putattr(self, p):
         "statement : PUTATTR numexpression COMMA numexpression COMMA expression COMMA expression COMMA expression COMMA expression"
-        if len(13):
+        if len(p) == 13:
             if (
                 self._check_byte_value(p[6])
                 and self._check_byte_value(p[8])
