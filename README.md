@@ -1,6 +1,6 @@
 # ChooseYourDestiny
 
-![ChooseYourDestiny](./assets/cyddeluxe_small.png)
+![logo](./assets/cyddeluxe_small.png)
 
 An interpreter to run choose-your-own-adventure stories or optional adventures, for the Spectrum +3.
 
