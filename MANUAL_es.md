@@ -29,6 +29,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RETURN](#return)
     - [IF condexpression THEN ... ENDIF](#if-condexpression-then--endif)
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
+    - [IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
     - [SET varID TO numexpression](#set-varid-to-numexpression)
     - [SET \[varID\] TO numexpression](#set-varid-to-numexpression-1)
@@ -405,6 +406,17 @@ Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, 
 
 ```
 
+También tenemos ahora el siguiente sinónimo con `LET varId = numexpression`, de tal forma que los ejemplos anteriores se podrían reescribir así:
+
+```
+[[
+  LET 0 = 1                      /* Ponemos el flag cero a 1 */
+  LET variable = 2               /* Ponemos el flag llamado variable a 2 */
+  LET variable2 = @variable + 2  /* Ponemos el flag llamado variable2 al dos sumado al valor del flag llamado variable */
+  LET variable2 = @variable2 - (@variable + 2)  /* Permite paréntesis */
+]]
+```
+
 Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del carácter `@`**.
 
 Los operandos disponibles son:
@@ -477,6 +489,11 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 - **IF condexpression THEN ... ELSE ... ENDIF**
 
 Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+
+- **IF condexpression THEN ... ELIF condexpression THEN ... ELSE ... ENDIF**
+
+Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 - **WHILE (condexpression) ... WEND**
 
@@ -618,6 +635,11 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 ### IF condexpression THEN ... ELSE ... ENDIF
 
 Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
+
+### IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF
+
+Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 ### WHILE (condexpression) ... WEND
 

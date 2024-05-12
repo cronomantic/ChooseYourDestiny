@@ -23,11 +23,6 @@ SET CYDC_EXTRA_PARAMS=
 REM --------------------------------------
 %~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -il %IMGLINES% -scr %LOAD_SCR% %TARGET%
 IF ERRORLEVEL 1 GOTO ERROR
-SET GAME=
-SET TARGET=
-SET IMGLINES=
-SET LOAD_SCR=
-SET CYDC_EXTRA_PARAMS=
 ECHO ---------------------
 ECHO Success!
 
@@ -51,13 +46,12 @@ CD ..\..
 GOTO END
 
 :ERROR
+ECHO ---------------------
+ECHO Compile error, please check
+PAUSE
+:END
 SET GAME=
 SET TARGET=
 SET IMGLINES=
 SET LOAD_SCR=
 SET CYDC_EXTRA_PARAMS=
-ECHO ---------------------
-ECHO Compile error, please check
-PAUSE
-:END
-
