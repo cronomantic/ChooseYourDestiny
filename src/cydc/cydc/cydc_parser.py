@@ -202,7 +202,7 @@ class CydcParser(object):
     def p_then_statement(self, p):
         """
         then_statement :   THEN if_statement
-                        |  THEN if_subprogram
+                       |   THEN if_subprogram
         """
         if len(p) == 3 and p[2]:
             p[0] = []
@@ -213,16 +213,46 @@ class CydcParser(object):
 
     def p_else_statement(self, p):
         """
-        else_statement :    ELSE if_subprogram
-                        |   ELSE if_statement
-                        |   empty
+        else_statement :   ELSEIF boolexpression then_statement else_statement
+                       |   ELSE if_subprogram
+                       |   ELSE if_statement
+                       |   empty
         """
         p[0] = []
-        if len(p) == 3 and p[2]:
+        if len(p) == 5 and p[1] == "ELSEIF" and p[2] and p[3]:
+            label = self._get_hidden_label()
+            if isinstance(p[2], list):
+                p[0] += p[2]
+                p[0] += [("IF_N_GOTO", label, 0, 0)]
+            else:
+                p[0] += [p[2], ("IF_N_GOTO", label, 0, 0)]
+            if p[4]:
+                label2 = self._get_hidden_label()
+                p[0] += p[3]
+                p[0] += [("GOTO", label2, 0, 0), ("LABEL", label)]
+                p[0] += p[4]
+                p[0] += [("LABEL", label2)]
+            else:
+                p[0] += p[3]
+                p[0] += [("LABEL", label)]
+        elif len(p) == 3 and p[2]:
             if isinstance(p[2], list):
                 p[0] += p[2]
             else:
                 p[0].append(p[2])
+
+    # def p_else_statement(self, p):
+    #     """
+    #     else_statement :   ELSE if_subprogram
+    #                    |   ELSE if_statement
+    #                    |   empty
+    #     """
+    #     p[0] = []
+    #     if len(p) == 3 and p[2]:
+    #         if isinstance(p[2], list):
+    #             p[0] += p[2]
+    #         else:
+    #             p[0].append(p[2])
 
     def p_if_subprogram(self, p):
         """
