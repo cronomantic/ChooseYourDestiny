@@ -110,16 +110,17 @@ CD ..\..
 GOTO END
 
 :ERROR
+ECHO ---------------------
+ECHO Compile error, please check
+PAUSE
+:END
 SET CYDCPARAMS=
 SET GAME=
 SET TARGET=
 SET IMGLINES=
 SET LOAD_SCR=
 SET CYDC_EXTRA_PARAMS=
-ECHO ---------------------
-ECHO Compile error, please check
-PAUSE
-:END
+SET ZESARUXPARAMS=
 REM ----  CLEANING ---- 
 DEL %~dp0\SCRIPT.DAT > nul 2>&1
 DEL %~dp0\DISK > nul 2>&1
