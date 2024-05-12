@@ -2110,11 +2110,16 @@ OP_PUTATTR:
     inc hl
     ld b, (hl)
     inc hl
-    ld a, (hl)
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
     inc hl
     push hl
     call GET_ATTR_ADDR
-    ld (hl), a
+    ld a, (hl)        ;Get attribute
+    and e             ;AND with mask
+    or d              ;OR with new values
+    ld (hl), a        ;Store value again
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -2136,19 +2141,49 @@ OP_POP_PUTATTR:
     jr c, 2f
     ld a, 31
 2:  ld c, a
-    ld a, (hl)
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
     inc hl
     push hl
     call GET_ATTR_ADDR
-    ld (hl), a
+    ld a, (hl)        ;Get attribute
+    and e             ;AND with mask
+    or d              ;OR with new values
+    ld (hl), a        ;Store value again
     pop hl
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_PUSH_GETATTR
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+OP_PUSH_GETATTR:
+    ;Get Rows
+    POP_INT_STACK   
+    cp 24
+    jr c, 1f
+    ld a, 23
+1:  ld b, a
+    ;Get Cols
+    POP_INT_STACK
+    cp 32
+    jr c, 2f
+    ld a, 31
+2:  ld c, a
+    push hl
+    call GET_ATTR_ADDR
+    ld a, (hl)        ;Get attribute
+    PUSH_INT_STACK
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+  
     IFDEF GET_ATTR_ADDR_USED
 GET_ATTR_ADDR:
     ; bc: y - x
-    ; de: height - width
     ld a, b
     rrca
     rrca
@@ -2900,6 +2935,12 @@ OPCODES:
     DW OP_CLEAR_OPTIONS
     ENDIF
     IFDEF UNUSED_OP_CLEAR_OPTIONS
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_GETATTR
+    DW OP_PUSH_GETATTR
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_GETATTR
     DW ERROR_NOP
     ENDIF
 

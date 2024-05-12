@@ -631,8 +631,8 @@ class CydcParser(object):
                 and self._check_byte_value(p[10])
                 and self._check_byte_value(p[12])
             ):
-                attr = self._check_attr_values(p[6], p[8], p[10], p[12])
-                if attr is not None and isinstance(attr, int):
+                attr = self._get_attr_mask(p[6], p[8], p[10], p[12])
+                if attr is not None and isinstance(attr, tuple):
                     if isinstance(p[2], int) and isinstance(p[4], int):
                         if self._check_byte_value(p[2]) and self._check_byte_value(
                             p[4]
@@ -647,7 +647,7 @@ class CydcParser(object):
                                 row = 0
                             if col < 0:
                                 col = 0
-                            p[0] = ("PUTATTR", col, row, attr)
+                            p[0] = ("PUTATTR", col, row, attr[1], attr[0])
                         else:
                             p[0] = None
                     elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
@@ -672,11 +672,11 @@ class CydcParser(object):
                                     row = 0
                                 if col < 0:
                                     col = 0
-                                p[0] = ("PUTATTR", col, row)
+                                p[0] = ("PUTATTR", col, row, attr[1], attr[0])
                             else:
                                 p[0] = None
                         else:
-                            p[0] = [t1, t2, ("POP_PUTATTR", attr)]
+                            p[0] = [t1, t2, ("POP_PUTATTR", attr[1], attr[0])]
                     else:
                         if isinstance(p[2], list):
                             p[0] = p[2]
@@ -708,7 +708,7 @@ class CydcParser(object):
                                 return None
                         else:
                             p[0].append(p[4])
-                        p[0].append(("POP_PUTATTR", attr))
+                        p[0].append(("POP_PUTATTR", attr[1], attr[0]))
                 else:
                     p[0] = None
 
@@ -1212,6 +1212,21 @@ class CydcParser(object):
                 p[0] = [p[2]]
             p[0].append(("POP_PUSH_I",))
 
+    def p_numexpression_get_attr(self, p):
+        "numexpression : GETATTR LPAREN numexpression COMMA numexpression RPAREN"
+        if len(p) == 7 and p[3] and p[5]:
+            if isinstance(p[3], list):
+                p[0] = p[3]
+            else:
+                p[0] = [p[3]]
+            if isinstance(p[5], list):
+                p[0] += p[5]
+            else:
+                p[0] += [p[5]]
+            p[0].append(("PUSH_GET_ATTR",))
+        else:
+            p[0] = None
+
     def p_numexpression_variable_addr(self, p):
         "numexpression : AT_CHAR AT_CHAR variableID"
         if self._is_valid_var(p[3]):
@@ -1437,6 +1452,56 @@ class CydcParser(object):
         if error:
             return None
         return (flash << 7) | (bright << 6) | (paper << 3) | ink
+
+    def _get_attr_mask(self, ink, paper, bright, flash):
+        error = False
+        if ink < 0:
+            self.errors.append(f"Invalid Ink value")
+            error = True
+        if paper < 0:
+            self.errors.append(f"Invalid Paper value")
+            error = True
+        if bright < 0:
+            self.errors.append(f"Invalid Bright value")
+            error = True
+        if flash < 0:
+            self.errors.append(f"Invalid Flash value")
+            error = True
+        if error:
+            return None
+        attr = 0
+        mask = 0
+        if flash not in range(2):
+            attr |= 0
+            mask |= 1
+        else:
+            attr |= flash
+            mask |= 0
+        attr <<= 1
+        mask <<= 1
+        if bright not in range(2):
+            attr |= 0
+            mask |= 1
+        else:
+            attr |= bright
+            mask |= 0
+        attr <<= 3
+        mask <<= 3
+        if paper not in range(8):
+            attr |= 0
+            mask |= 7
+        else:
+            attr |= paper
+            mask |= 0
+        attr <<= 3
+        mask <<= 3
+        if ink not in range(8):
+            attr |= 0
+            mask |= 7
+        else:
+            attr |= ink
+            mask |= 0
+        return (attr, mask)
 
     def _get_hidden_label(self):
         l = f"*LABEL_{self.hidden_label_counter}*"
