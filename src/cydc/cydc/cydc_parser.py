@@ -1007,19 +1007,14 @@ class CydcParser(object):
                   | LET LCARET variableID RCARET EQUALS LCURLY numexpressions_list RCURLY
         """
         if len(p) == 9 and self._is_valid_var(p[3]) and isinstance(p[7], list):
-            if isinstance(p[3], str) and not self._check_symbol(
-                p[3], SymbolType.VARIABLE, p.lexer.lexer.lineno
-            ):
-                p[0] = None
-            else:
-                p[0] = []
-                for i, c in enumerate(p[7]):
-                    if isinstance(c, list):
-                        p[0] += c
-                        p[0].append(("POP_SET_DI", (p[3], i)))
-                    else:
-                        p[0] = None
-                        break
+            p[0] = []
+            for i, c in enumerate(p[7]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET_DI", (p[3], i)))
+                else:
+                    p[0] = None
+                    break
         else:
             p[0] = None
 
@@ -1029,19 +1024,14 @@ class CydcParser(object):
                   | LET variableID EQUALS LCURLY numexpressions_list RCURLY
         """
         if len(p) == 7 and self._is_valid_var(p[2]) and isinstance(p[5], list):
-            if isinstance(p[2], str) and not self._check_symbol(
-                p[2], SymbolType.VARIABLE, p.lexer.lexer.lineno
-            ):
-                p[0] = None
-            else:
-                p[0] = []
-                for i, c in enumerate(p[5]):
-                    if isinstance(c, list):
-                        p[0] += c
-                        p[0].append(("POP_SET", (p[2], i)))
-                    else:
-                        p[0] = None
-                        break
+            p[0] = []
+            for i, c in enumerate(p[5]):
+                if isinstance(c, list):
+                    p[0] += c
+                    p[0].append(("POP_SET", (p[2], i)))
+                else:
+                    p[0] = None
+                    break
         else:
             p[0] = None
 
@@ -1051,16 +1041,11 @@ class CydcParser(object):
                   | LET LCARET variableID RCARET EQUALS numexpression
         """
         if len(p) == 7 and self._is_valid_var(p[3]):
-            if isinstance(p[3], str) and not self._check_symbol(
-                p[3], SymbolType.VARIABLE, p.lexer.lexer.lineno
-            ):
-                p[0] = None
+            if isinstance(p[6], list):
+                p[0] = p[6]
             else:
-                if isinstance(p[6], list):
-                    p[0] = p[6]
-                else:
-                    p[0] = [p[6]]
-                p[0].append(("POP_SET_DI", (p[3], 0)))
+                p[0] = [p[6]]
+            p[0].append(("POP_SET_DI", (p[3], 0)))
 
     def p_statement_set_dir(self, p):
         """
@@ -1068,16 +1053,11 @@ class CydcParser(object):
                   | LET variableID EQUALS numexpression
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
-            if isinstance(p[2], str) and not self._check_symbol(
-                p[2], SymbolType.VARIABLE, p.lexer.lexer.lineno
-            ):
-                p[0] = None
+            if isinstance(p[4], list):
+                p[0] = p[4]
             else:
-                if isinstance(p[4], list):
-                    p[0] = p[4]
-                else:
-                    p[0] = [p[4]]
-                p[0].append(("POP_SET", (p[2], 0)))
+                p[0] = [p[4]]
+            p[0].append(("POP_SET", (p[2], 0)))
 
     def p_statement_choose(self, p):
         """
@@ -1411,9 +1391,7 @@ class CydcParser(object):
                 p[0] = p[1]
             else:
                 p[0] = None
-        elif isinstance(p[1], str) and self._check_symbol(
-            p[1], SymbolType.VARIABLE, p.lexer.lexer.lineno
-        ):
+        elif isinstance(p[1], str):
             p[0] = p[1]
         else:
             p[0] = None
@@ -1596,7 +1574,7 @@ class CydcParser(object):
         return (attr, mask)
 
     def _get_hidden_label(self):
-        l = f"*LABEL_{self.hidden_label_counter}*"
+        l = f"__LABEL_{self.hidden_label_counter}"
         self.hidden_label_counter += 1
         return l
 
@@ -1654,30 +1632,30 @@ class CydcParser(object):
 
         return (code, errors)
 
-    def _check_symbol(self, symbol, expected_type, lineno):
-        if symbol in self.symbols.keys():
-            s = self.symbols[symbol]
-            if s[0] == expected_type:
-                return True
-            else:
-                if s[0] == SymbolType.LABEL:
-                    self.errors.append(
-                        f"The variable '{symbol}' on line {lineno} is not valid. Already declared as a label."
-                    )
-                elif s[0] == SymbolType.VARIABLE:
-                    self.errors.append(
-                        f"The label '{symbol}' on line {lineno} is not valid. Already declared as a variable."
-                    )
-                else:
-                    self.errors.append(
-                        f"The symbol '{symbol}' on line {lineno} is not valid."
-                    )
-                return False
-        else:
-            self.errors.append(
-                f"The symbol '{symbol}' on line {lineno} does not exists."
-            )
-            return False
+    # def _check_symbol(self, symbol, expected_type, lineno):
+    #     if symbol in self.symbols.keys():
+    #         s = self.symbols[symbol]
+    #         if s[0] == expected_type:
+    #             return True
+    #         else:
+    #             if s[0] == SymbolType.LABEL:
+    #                 self.errors.append(
+    #                     f"The variable '{symbol}' on line {lineno} is not valid. Already declared as a label."
+    #                 )
+    #             elif s[0] == SymbolType.VARIABLE:
+    #                 self.errors.append(
+    #                     f"The label '{symbol}' on line {lineno} is not valid. Already declared as a variable."
+    #                 )
+    #             else:
+    #                 self.errors.append(
+    #                     f"The symbol '{symbol}' on line {lineno} is not valid."
+    #                 )
+    #             return False
+    #     else:
+    #         self.errors.append(
+    #             f"The symbol '{symbol}' on line {lineno} does not exists."
+    #         )
+    #         return False
 
     def _create_symbol(self, symbol, type, lineno):
         if symbol in self.symbols.keys():
