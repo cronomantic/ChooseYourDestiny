@@ -24,14 +24,22 @@
 
 from ply import yacc as yacc
 from cydc_lexer import CydcLexer
+from enum import Enum
+
+
+class SymbolType(Enum):
+    LABEL = 1
+    VARIABLE = 2
 
 
 class CydcParser(object):
+
     def __init__(self):
         self.lexer = CydcLexer()
         self.tokens = self.lexer.get_tokens()
         self.parser = None
-        self.errors = []
+        self.errors = list()
+        self.symbols = dict()
         self.hidden_label_counter = 0
 
     precedence = (
@@ -296,7 +304,10 @@ class CydcParser(object):
 
     def p_statement_short_label(self, p):
         "statement : SHORT_LABEL"
-        p[0] = ("LABEL", p[1])
+        if self._create_symbol(p[1], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("LABEL", p[1])
+        else:
+            p[0] = None
 
     def p_statement_end(self, p):
         "statement : END"
@@ -336,7 +347,10 @@ class CydcParser(object):
 
     def p_statement_label(self, p):
         "statement : LABEL ID"
-        p[0] = ("LABEL", p[2])
+        if self._create_symbol(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("LABEL", p[2])
+        else:
+            p[0] = None
 
     def p_statement_backspace(self, p):
         """
@@ -344,7 +358,7 @@ class CydcParser(object):
                   | BACKSPACE
         """
         if len(p) == 3 and p[2]:
-            if self._check_byte_value(p[2]):
+            if self._check_byte_value(p[2], p.lexer.lexer.lineno):
                 p[0] = ("BACKSPACE", p[2])
             else:
                 p[0] = None
@@ -357,7 +371,7 @@ class CydcParser(object):
                   | NEWLINE
         """
         if len(p) == 3 and p[2]:
-            if self._check_byte_value(p[2]):
+            if self._check_byte_value(p[2], p.lexer.lexer.lineno):
                 p[0] = ("NEWLINE", p[2])
             else:
                 p[0] = None
@@ -366,14 +380,14 @@ class CydcParser(object):
 
     def p_statement_tab(self, p):
         "statement : TAB expression"
-        if self._check_byte_value(p[2]):
+        if self._check_byte_value(p[2], p.lexer.lexer.lineno):
             p[0] = ("TAB", p[2])
         else:
             p[0] = None
 
     def p_statement_page_pause(self, p):
         "statement : PAGEPAUSE expression"
-        if self._check_byte_value(p[2]):
+        if self._check_byte_value(p[2], p.lexer.lexer.lineno):
             p[0] = ("PAGEPAUSE", p[2])
         else:
             p[0] = None
@@ -495,21 +509,21 @@ class CydcParser(object):
 
     def p_statement_wait(self, p):
         "statement : WAIT expression"
-        if self._check_word_value(p[2]):
+        if self._check_word_value(p[2], p.lexer.lexer.lineno):
             p[0] = ("WAIT", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
         else:
             p[0] = None
 
     def p_statement_pause(self, p):
         "statement : PAUSE expression"
-        if self._check_word_value(p[2]):
+        if self._check_word_value(p[2], p.lexer.lexer.lineno):
             p[0] = ("PAUSE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
         else:
             p[0] = None
 
     def p_statement_typerate(self, p):
         "statement : TYPERATE expression"
-        if self._check_word_value(p[2]):
+        if self._check_word_value(p[2], p.lexer.lexer.lineno):
             p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
         else:
             p[0] = None
@@ -517,16 +531,18 @@ class CydcParser(object):
     def p_statement_blit(self, p):
         "statement : BLIT expression COMMA expression COMMA expression COMMA expression AT numexpression COMMA numexpression"
         if (
-            self._check_byte_value(p[2])
-            and self._check_byte_value(p[4])
-            and self._check_byte_value(p[6])
-            and self._check_byte_value(p[8])
+            self._check_byte_value(p[2], p.lexer.lexer.lineno)
+            and self._check_byte_value(p[4], p.lexer.lexer.lineno)
+            and self._check_byte_value(p[6], p.lexer.lexer.lineno)
+            and self._check_byte_value(p[8], p.lexer.lexer.lineno)
         ):
             (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
             if isinstance(p[10], int) and isinstance(p[12], int):
                 row_d = p[12]
                 col_d = p[10]
-                if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                if self._check_byte_value(
+                    row_d, p.lexer.lexer.lineno
+                ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
                     if row_d >= 24:
                         row_d = 23
                     if col_d >= 32:
@@ -549,7 +565,9 @@ class CydcParser(object):
                 ):
                     row_d = t2[1]
                     col_d = t1[1]
-                    if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                    if self._check_byte_value(
+                        row_d, p.lexer.lexer.lineno
+                    ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
                         if row_d >= 24:
                             row_d = 23
                         if col_d >= 32:
@@ -568,7 +586,7 @@ class CydcParser(object):
                     p[0] = p[10]
                 elif isinstance(p[10], int):
                     col_d = p[10]
-                    if self._check_byte_value(col_d):
+                    if self._check_byte_value(col_d, p.lexer.lexer.lineno):
                         if col_d >= 32:
                             col_d = 31
                         if col_d < 0:
@@ -583,7 +601,7 @@ class CydcParser(object):
                     p[0] += p[12]
                 elif isinstance(p[12], int):
                     row_d = p[12]
-                    if self._check_byte_value(row_d):
+                    if self._check_byte_value(row_d, p.lexer.lexer.lineno):
                         if row_d >= 24:
                             row_d = 23
                         if row_d < 0:
@@ -602,16 +620,18 @@ class CydcParser(object):
         "statement : FILLATTR expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression"
         if len(p) == 17:
             if (
-                self._check_byte_value(p[2])
-                and self._check_byte_value(p[4])
-                and self._check_byte_value(p[6])
-                and self._check_byte_value(p[8])
-                and self._check_byte_value(p[10])
-                and self._check_byte_value(p[12])
-                and self._check_byte_value(p[14])
-                and self._check_byte_value(p[16])
+                self._check_byte_value(p[2], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[14], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[16], p.lexer.lexer.lineno)
             ):
-                attr = self._check_attr_values(p[10], p[12], p[14], p[16])
+                attr = self._check_attr_values(
+                    p[10], p[12], p[14], p[16], p.lexer.lexer.lineno
+                )
                 if attr is not None and isinstance(attr, int):
                     (row, col, width, height) = self._fix_borders(
                         p[4], p[2], p[6], p[8]
@@ -628,10 +648,10 @@ class CydcParser(object):
         """
         if len(p) == 9:
             if (
-                self._check_byte_value(p[2])
-                and self._check_byte_value(p[4])
-                and self._check_byte_value(p[6])
-                and self._check_byte_value(p[8])
+                self._check_byte_value(p[2], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
             ):
                 (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
                 p[0] = ("FADEOUT", col, row, width, height)
@@ -642,10 +662,10 @@ class CydcParser(object):
         "statement : MARGINS expression COMMA expression COMMA expression COMMA expression"
         if len(p) == 9:
             if (
-                self._check_byte_value(p[2])
-                and self._check_byte_value(p[4])
-                and self._check_byte_value(p[6])
-                and self._check_byte_value(p[8])
+                self._check_byte_value(p[2], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
             ):
                 (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
                 p[0] = ("MARGINS", col, row, width, height)
@@ -656,17 +676,19 @@ class CydcParser(object):
         "statement : PUTATTR numexpression COMMA numexpression COMMA expression COMMA expression COMMA expression COMMA expression"
         if len(p) == 13:
             if (
-                self._check_byte_value(p[6])
-                and self._check_byte_value(p[8])
-                and self._check_byte_value(p[10])
-                and self._check_byte_value(p[12])
+                self._check_byte_value(p[6], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
             ):
-                attr = self._get_attr_mask(p[6], p[8], p[10], p[12])
+                attr = self._get_attr_mask(
+                    p[6], p[8], p[10], p[12], p.lexer.lexer.lineno
+                )
                 if attr is not None and isinstance(attr, tuple):
                     if isinstance(p[2], int) and isinstance(p[4], int):
-                        if self._check_byte_value(p[2]) and self._check_byte_value(
-                            p[4]
-                        ):
+                        if self._check_byte_value(
+                            p[2], p.lexer.lexer.lineno
+                        ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
                             row = p[4]
                             col = p[2]
                             if row >= 24:
@@ -691,9 +713,9 @@ class CydcParser(object):
                         ):
                             row = t2[1]
                             col = t1[1]
-                            if self._check_byte_value(row) and self._check_byte_value(
-                                col
-                            ):
+                            if self._check_byte_value(
+                                row, p.lexer.lexer.lineno
+                            ) and self._check_byte_value(col, p.lexer.lexer.lineno):
                                 if row >= 24:
                                     row = 23
                                 if col >= 32:
@@ -712,7 +734,7 @@ class CydcParser(object):
                             p[0] = p[2]
                         elif isinstance(p[2], int):
                             col = p[2]
-                            if self._check_byte_value(col):
+                            if self._check_byte_value(col, p.lexer.lexer.lineno):
                                 if col >= 32:
                                     col = 31
                                 if col < 0:
@@ -727,7 +749,7 @@ class CydcParser(object):
                             p[0] += p[4]
                         elif isinstance(p[4], int):
                             row = p[4]
-                            if self._check_byte_value(row):
+                            if self._check_byte_value(row, p.lexer.lexer.lineno):
                                 if row >= 24:
                                     row = 23
                                 if row < 0:
@@ -745,7 +767,9 @@ class CydcParser(object):
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
         if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            if self._check_byte_value(
+                p[2], p.lexer.lexer.lineno
+            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
                 row = p[4]
                 col = p[2]
                 if row >= 24:
@@ -770,7 +794,9 @@ class CydcParser(object):
             ):
                 row = t2[1]
                 col = t1[1]
-                if self._check_byte_value(row) and self._check_byte_value(col):
+                if self._check_byte_value(
+                    row, p.lexer.lexer.lineno
+                ) and self._check_byte_value(col, p.lexer.lexer.lineno):
                     if row >= 24:
                         row = 23
                     if col >= 32:
@@ -789,7 +815,7 @@ class CydcParser(object):
                 p[0] = p[2]
             elif isinstance(p[2], int):
                 col = p[2]
-                if self._check_byte_value(col):
+                if self._check_byte_value(col, p.lexer.lexer.lineno):
                     if col >= 32:
                         col = 31
                     if col < 0:
@@ -804,7 +830,7 @@ class CydcParser(object):
                 p[0] += p[4]
             elif isinstance(p[4], int):
                 row = p[4]
-                if self._check_byte_value(row):
+                if self._check_byte_value(row, p.lexer.lexer.lineno):
                     if row >= 24:
                         row = 23
                     if row < 0:
@@ -820,7 +846,9 @@ class CydcParser(object):
     def p_statement_menuconfig(self, p):
         "statement : MENUCONFIG numexpression COMMA numexpression"
         if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+            if self._check_byte_value(
+                p[2], p.lexer.lexer.lineno
+            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
                 row_d = p[4]
                 col_d = p[2]
                 if row_d >= 32:
@@ -845,7 +873,9 @@ class CydcParser(object):
             ):
                 row_d = t2[1]
                 col_d = t1[1]
-                if self._check_byte_value(row_d) and self._check_byte_value(col_d):
+                if self._check_byte_value(
+                    row_d, p.lexer.lexer.lineno
+                ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
                     if row_d >= 32:
                         row_d = 31
                     if col_d >= 32:
@@ -864,7 +894,7 @@ class CydcParser(object):
                 p[0] = p[2]
             elif isinstance(p[2], int):
                 col = p[2]
-                if self._check_byte_value(col_d):
+                if self._check_byte_value(col_d, p.lexer.lexer.lineno):
                     if col_d >= 32:
                         col_d = 31
                     if col_d < 0:
@@ -879,7 +909,7 @@ class CydcParser(object):
                 p[0] += p[4]
             elif isinstance(p[4], int):
                 row_d = p[4]
-                if self._check_byte_value(row_d):
+                if self._check_byte_value(row_d, p.lexer.lexer.lineno):
                     if row_d >= 32:
                         row_d = 31
                     if row_d < 0:
@@ -899,7 +929,7 @@ class CydcParser(object):
                   | SAVE numexpression
         """
         if len(p) == 7 and p[2] and self._is_valid_var(p[4]):
-            if self._check_byte_value(p[6]):
+            if self._check_byte_value(p[6], p.lexer.lexer.lineno):
                 if isinstance(p[2], list):
                     p[0] = p[2]
                 else:
@@ -927,7 +957,7 @@ class CydcParser(object):
                   | RAMLOAD
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
-            if self._check_byte_value(p[4]):
+            if self._check_byte_value(p[4], p.lexer.lexer.lineno):
                 p[0] = ("RAMLOAD", (p[2], 0), p[4])
             else:
                 p[0] = None
@@ -943,7 +973,7 @@ class CydcParser(object):
                   | RAMSAVE
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
-            if self._check_byte_value(p[4]):
+            if self._check_byte_value(p[4], p.lexer.lexer.lineno):
                 p[0] = ("RAMSAVE", (p[2], 0), p[4])
             else:
                 p[0] = None
@@ -954,15 +984,20 @@ class CydcParser(object):
 
     def p_statement_repchar(self, p):
         "statement : REPCHAR expression COMMA expression"
-        if self._check_byte_value(p[2]) and self._check_byte_value(p[4]):
+        if self._check_byte_value(
+            p[2], p.lexer.lexer.lineno
+        ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
             p[0] = ("REPCHAR", p[2], p[4])
         else:
             p[0] = None
 
     def p_statement_declare(self, p):
         "statement : DECLARE expression AS ID"
-        if self._check_byte_value(p[2]):
-            p[0] = ("DECLARE", p[2], p[4])
+        if self._check_byte_value(p[2], p.lexer.lexer.lineno):
+            if self._create_symbol(p[4], SymbolType.VARIABLE, p.lexer.lexer.lineno):
+                p[0] = ("DECLARE", p[2], p[4])
+            else:
+                p[0] = None
         else:
             p[0] = None
 
@@ -972,14 +1007,19 @@ class CydcParser(object):
                   | LET LCARET variableID RCARET EQUALS LCURLY numexpressions_list RCURLY
         """
         if len(p) == 9 and self._is_valid_var(p[3]) and isinstance(p[7], list):
-            p[0] = []
-            for i, c in enumerate(p[7]):
-                if isinstance(c, list):
-                    p[0] += c
-                    p[0].append(("POP_SET_DI", (p[3], i)))
-                else:
-                    p[0] = None
-                    break
+            if isinstance(p[3], str) and not self._check_symbol(
+                p[3], SymbolType.VARIABLE, p.lexer.lexer.lineno
+            ):
+                p[0] = None
+            else:
+                p[0] = []
+                for i, c in enumerate(p[7]):
+                    if isinstance(c, list):
+                        p[0] += c
+                        p[0].append(("POP_SET_DI", (p[3], i)))
+                    else:
+                        p[0] = None
+                        break
         else:
             p[0] = None
 
@@ -989,14 +1029,19 @@ class CydcParser(object):
                   | LET variableID EQUALS LCURLY numexpressions_list RCURLY
         """
         if len(p) == 7 and self._is_valid_var(p[2]) and isinstance(p[5], list):
-            p[0] = []
-            for i, c in enumerate(p[5]):
-                if isinstance(c, list):
-                    p[0] += c
-                    p[0].append(("POP_SET", (p[2], i)))
-                else:
-                    p[0] = None
-                    break
+            if isinstance(p[2], str) and not self._check_symbol(
+                p[2], SymbolType.VARIABLE, p.lexer.lexer.lineno
+            ):
+                p[0] = None
+            else:
+                p[0] = []
+                for i, c in enumerate(p[5]):
+                    if isinstance(c, list):
+                        p[0] += c
+                        p[0].append(("POP_SET", (p[2], i)))
+                    else:
+                        p[0] = None
+                        break
         else:
             p[0] = None
 
@@ -1006,11 +1051,16 @@ class CydcParser(object):
                   | LET LCARET variableID RCARET EQUALS numexpression
         """
         if len(p) == 7 and self._is_valid_var(p[3]):
-            if isinstance(p[6], list):
-                p[0] = p[6]
+            if isinstance(p[3], str) and not self._check_symbol(
+                p[3], SymbolType.VARIABLE, p.lexer.lexer.lineno
+            ):
+                p[0] = None
             else:
-                p[0] = [p[6]]
-            p[0].append(("POP_SET_DI", (p[3], 0)))
+                if isinstance(p[6], list):
+                    p[0] = p[6]
+                else:
+                    p[0] = [p[6]]
+                p[0].append(("POP_SET_DI", (p[3], 0)))
 
     def p_statement_set_dir(self, p):
         """
@@ -1018,11 +1068,16 @@ class CydcParser(object):
                   | LET variableID EQUALS numexpression
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
-            if isinstance(p[4], list):
-                p[0] = p[4]
+            if isinstance(p[2], str) and not self._check_symbol(
+                p[2], SymbolType.VARIABLE, p.lexer.lexer.lineno
+            ):
+                p[0] = None
             else:
-                p[0] = [p[4]]
-            p[0].append(("POP_SET", (p[2], 0)))
+                if isinstance(p[4], list):
+                    p[0] = p[4]
+                else:
+                    p[0] = [p[4]]
+                p[0].append(("POP_SET", (p[2], 0)))
 
     def p_statement_choose(self, p):
         """
@@ -1032,7 +1087,7 @@ class CydcParser(object):
                   | CHOOSE
         """
         if len(p) == 8 and p[3] == "WAIT":
-            if self._check_word_value(p[4]):
+            if self._check_word_value(p[4], p.lexer.lexer.lineno):
                 print(p[6])
                 if p[6] == "GOTO":
                     p[0] = (
@@ -1287,7 +1342,9 @@ class CydcParser(object):
 
     def p_numexpression_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
-        if self._check_byte_value(p[3]) and self._check_byte_value(p[5]):
+        if self._check_byte_value(
+            p[3], p.lexer.lexer.lineno
+        ) and self._check_byte_value(p[5], p.lexer.lexer.lineno):
             limit = p[5] - p[3]
             if limit <= 0 or limit > 255:
                 self.errors.append(f"Invalid values on RANDOM({p[3]}, {p[5]})")
@@ -1307,7 +1364,7 @@ class CydcParser(object):
                       | RANDOM LPAREN RPAREN
         """
         if len(p) == 5:
-            if self._check_byte_value(p[3]):
+            if self._check_byte_value(p[3], p.lexer.lexer.lineno):
                 p[0] = ("PUSH_RANDOM", p[3])
             else:
                 p[0] = None
@@ -1316,7 +1373,7 @@ class CydcParser(object):
 
     def p_numexpression_inkey_expression(self, p):
         "numexpression : INKEY LPAREN expression RPAREN"
-        if self._check_byte_value(p[3]):
+        if self._check_byte_value(p[3], p.lexer.lexer.lineno):
             p[0] = ("PUSH_INKEY", p[3])
         else:
             p[0] = None
@@ -1339,7 +1396,7 @@ class CydcParser(object):
 
     def p_numexpression_expression(self, p):
         "numexpression : expression"
-        if self._check_byte_value(p[1]):
+        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
             p[0] = ("PUSH_D", p[1])
         else:
             p[0] = None
@@ -1350,12 +1407,16 @@ class CydcParser(object):
                     | ID
         """
         if isinstance(p[1], int):
-            if self._check_byte_value(p[1]):
+            if self._check_byte_value(p[1], p.lexer.lexer.lineno):
                 p[0] = p[1]
             else:
                 p[0] = None
-        else:
+        elif isinstance(p[1], str) and self._check_symbol(
+            p[1], SymbolType.VARIABLE, p.lexer.lexer.lineno
+        ):
             p[0] = p[1]
+        else:
+            p[0] = None
 
     def p_expression_binop(self, p):
         """
@@ -1397,7 +1458,7 @@ class CydcParser(object):
         if p:
             msg = f"Syntax error at line {p.lineno}: {p.value}"
         else:
-            msg = "Syntax error at EOF"
+            msg = "Syntax error"
         self.errors.append(msg)
 
     def build(self):
@@ -1409,7 +1470,8 @@ class CydcParser(object):
             self.errors.append("Parser not build.")
             return None
         else:
-            self.errors = []
+            self.symbols.clear()
+            self.errors.clear()
             self.hidden_label_counter = 0
             cinput, cerrors = self._code_text_reversal(input)
             self.errors += cerrors
@@ -1423,15 +1485,15 @@ class CydcParser(object):
             s += str(t) + ";"
         print(s)
 
-    def _check_byte_value(self, val):
-        if val not in range(256):
-            self.errors.append(f"Invalid byte value {val}")
+    def _check_byte_value(self, val, lineno):
+        if not isinstance(val, int) or val not in range(256):
+            self.errors.append(f"Invalid byte value {val} on line {lineno}")
             return False
         return True
 
-    def _check_word_value(self, val):
-        if val not in range(64 * 1024):
-            self.errors.append(f"Invalid word value {val}")
+    def _check_word_value(self, val, lineno):
+        if not isinstance(val, int) or val not in range(64 * 1024):
+            self.errors.append(f"Invalid word value {val} on line {lineno}")
             return False
         return True
 
@@ -1465,37 +1527,37 @@ class CydcParser(object):
             width = 32 - col
         return (col, width)
 
-    def _check_attr_values(self, ink, paper, bright, flash):
+    def _check_attr_values(self, ink, paper, bright, flash, lineno):
         error = False
         if ink < 0 or ink > 7:
-            self.errors.append(f"Invalid Ink value")
+            self.errors.append(f"Invalid Ink value on line {lineno}")
             error = True
         if paper < 0 or paper > 7:
-            self.errors.append(f"Invalid Paper value")
+            self.errors.append(f"Invalid Paper value on line {lineno}")
             error = True
         if bright < 0 or bright > 1:
-            self.errors.append(f"Invalid Bright value")
+            self.errors.append(f"Invalid Bright value on line {lineno}")
             error = True
         if flash < 0 or flash > 1:
-            self.errors.append(f"Invalid Flash value")
+            self.errors.append(f"Invalid Flash value on line {lineno}")
             error = True
         if error:
             return None
         return (flash << 7) | (bright << 6) | (paper << 3) | ink
 
-    def _get_attr_mask(self, ink, paper, bright, flash):
+    def _get_attr_mask(self, ink, paper, bright, flash, lineno):
         error = False
         if ink < 0:
-            self.errors.append(f"Invalid Ink value")
+            self.errors.append(f"Invalid Ink value on line {lineno}")
             error = True
         if paper < 0:
-            self.errors.append(f"Invalid Paper value")
+            self.errors.append(f"Invalid Paper value on line {lineno}")
             error = True
         if bright < 0:
-            self.errors.append(f"Invalid Bright value")
+            self.errors.append(f"Invalid Bright value on line {lineno}")
             error = True
         if flash < 0:
-            self.errors.append(f"Invalid Flash value")
+            self.errors.append(f"Invalid Flash value on line {lineno}")
             error = True
         if error:
             return None
@@ -1591,3 +1653,47 @@ class CydcParser(object):
             errors.append(f"Invalid code closure on line {last_c_line} at {last_c_pos}")
 
         return (code, errors)
+
+    def _check_symbol(self, symbol, expected_type, lineno):
+        if symbol in self.symbols.keys():
+            s = self.symbols[symbol]
+            if s[0] == expected_type:
+                return True
+            else:
+                if s[0] == SymbolType.LABEL:
+                    self.errors.append(
+                        f"The variable '{symbol}' on line {lineno} is not valid. Already declared as a label."
+                    )
+                elif s[0] == SymbolType.VARIABLE:
+                    self.errors.append(
+                        f"The label '{symbol}' on line {lineno} is not valid. Already declared as a variable."
+                    )
+                else:
+                    self.errors.append(
+                        f"The symbol '{symbol}' on line {lineno} is not valid."
+                    )
+                return False
+        else:
+            self.errors.append(
+                f"The symbol '{symbol}' on line {lineno} does not exists."
+            )
+            return False
+
+    def _create_symbol(self, symbol, type, lineno):
+        if symbol in self.symbols.keys():
+            if type == SymbolType.LABEL:
+                self.errors.append(
+                    f"Label '{symbol}' on line {lineno} was already declared before."
+                )
+            elif type == SymbolType.VARIABLE:
+                self.errors.append(
+                    f"Variable '{symbol}' on line {lineno} was already declared before."
+                )
+            else:
+                self.errors.append(
+                    f"Symbol '{symbol}' on line {lineno} was already declared before."
+                )
+            return False
+        else:
+            self.symbols[symbol] = (type, lineno)
+            return True
