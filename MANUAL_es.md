@@ -4,7 +4,7 @@
 
 El programa es un compilador e intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y libro juegos, para el Spectrum 48, 128, +2 y +3.
 
-Consiste una máquina virtual que va interpretando "tokens" que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
+Consiste una máquina virtual que va interpretando comandos que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
@@ -1161,9 +1161,19 @@ CYDC_EXTRA_PARAMS=
 
 Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos:
 
-En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
+- En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
 
-En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
+- En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
+
+- En la carpeta `examples\guess_the_number` hay un ejemplo de uso para menús de múltiples columnas.
+
+- En la carpeta `examples\input_test` se muestra cómo leer desde el teclado y el uso de la indirección para simular arrays.
+
+- En la carpeta `examples\blit` se muestra el uso del comando `BLIT`, con ejemplos progresivamente más avanzados en `examples\blit_island`, `examples\Rocky_Horror_Show` y `examples\CYD_presents`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+
+- En la carpeta `examples\Golden_Axe_select_character` podrás aprender sobre los comandos `FILLATTR` y `CHOOSE IF CHANGED...`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+
+Para probarlos en vivo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
 
 ---
 
