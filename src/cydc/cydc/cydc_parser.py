@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2023 Sergio Chico
+# Copyright (c) 2024 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +51,7 @@ class CydcParser(object):
             "LESS_THAN",
             "MORE_THAN",
         ),
+        ("left", "SHIFT_L", "SHIFT_R"),
         ("left", "PLUS", "MINUS"),
         ("left", "TIMES", "DIVIDE"),
         ("left", "OR_B"),
@@ -516,46 +517,42 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_blit(self, p):
-        "statement : BLIT expression COMMA expression COMMA expression COMMA expression AT numexpression COMMA numexpression"
+        "statement : BLIT numexpression COMMA numexpression COMMA numexpression COMMA numexpression AT numexpression COMMA numexpression"
         if len(p) == 13:
             if (
-                self._check_byte_value(p[2], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
+                isinstance(p[2], tuple)
+                and isinstance(p[4], tuple)
+                and isinstance(p[6], tuple)
+                and isinstance(p[8], tuple)
             ):
-                (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
-                if isinstance(p[10], int) and isinstance(p[12], int):
-                    row_d = p[12]
-                    col_d = p[10]
-                    if self._check_byte_value(
-                        row_d, p.lexer.lexer.lineno
-                    ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                        if row_d >= 24:
-                            row_d = 23
-                        if col_d >= 32:
-                            col_d = 31
-                        if row_d < 0:
-                            row_d = 0
-                        if col_d < 0:
-                            col_d = 0
-                        p[0] = ("BLIT", col, row, width, height, col_d, row_d)
-                    else:
-                        p[0] = None
-                elif isinstance(p[10], tuple) and isinstance(p[12], tuple):
-                    t1 = p[10]
-                    t2 = p[12]
-                    if (
-                        (t1[0] == "PUSH_D")
-                        and (t2[0] == "PUSH_D")
-                        and isinstance(t1[1], int)
-                        and isinstance(t2[1], int)
-                    ):
-                        row_d = t2[1]
-                        col_d = t1[1]
-                        if self._check_byte_value(
-                            row_d, p.lexer.lexer.lineno
-                        ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
+                t1 = p[2]
+                t2 = p[4]
+                t3 = p[6]
+                t4 = p[8]
+                if (
+                    (t1[0] == "PUSH_D")
+                    and (t2[0] == "PUSH_D")
+                    and (t3[0] == "PUSH_D")
+                    and (t4[0] == "PUSH_D")
+                    and isinstance(t1[1], int)
+                    and isinstance(t2[1], int)
+                    and isinstance(t3[1], int)
+                    and isinstance(t4[1], int)
+                ):
+                    (row, col, width, height) = self._fix_borders(
+                        t2[1], t1[1], t3[1], t4[1]
+                    )
+                    if isinstance(p[10], tuple) and isinstance(p[12], tuple):
+                        t1 = p[10]
+                        t2 = p[12]
+                        if (
+                            (t1[0] == "PUSH_D")
+                            and (t2[0] == "PUSH_D")
+                            and isinstance(t1[1], int)
+                            and isinstance(t2[1], int)
+                        ):
+                            row_d = t2[1]
+                            col_d = t1[1]
                             if row_d >= 24:
                                 row_d = 23
                             if col_d >= 32:
@@ -566,43 +563,69 @@ class CydcParser(object):
                                 col_d = 0
                             p[0] = ("BLIT", col, row, width, height, col_d, row_d)
                         else:
-                            p[0] = None
+                            p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
                     else:
-                        p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
-                else:
-                    if isinstance(p[10], list):
-                        p[0] = p[10]
-                    elif isinstance(p[10], int):
-                        col_d = p[10]
-                        if self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                            if col_d >= 32:
-                                col_d = 31
-                            if col_d < 0:
-                                col_d = 0
-                            p[0] = [("PUSH_D", col_d)]
+                        if isinstance(p[10], list):
+                            p[0] = p[10]
                         else:
-                            p[0] = None
-                            return None
+                            p[0] = [p[10]]
+                        if isinstance(p[12], list):
+                            p[0] += p[12]
+                        else:
+                            p[0] += [p[12]]
+                        p[0] += [("POP_BLIT", col, row, width, height)]
+                else:
+                    if isinstance(p[2], list):
+                        p[0] = p[2]
                     else:
-                        p[0] = [p[10]]
+                        p[0] = [p[2]]
+                    if isinstance(p[4], list):
+                        p[0] += p[4]
+                    else:
+                        p[0] += [p[4]]
+                    if isinstance(p[6], list):
+                        p[0] += p[6]
+                    else:
+                        p[0] += [p[6]]
+                    if isinstance(p[8], list):
+                        p[0] += p[8]
+                    else:
+                        p[0] += [p[8]]
+                    if isinstance(p[10], list):
+                        p[0] += p[10]
+                    else:
+                        p[0] += [p[10]]
                     if isinstance(p[12], list):
                         p[0] += p[12]
-                    elif isinstance(p[12], int):
-                        row_d = p[12]
-                        if self._check_byte_value(row_d, p.lexer.lexer.lineno):
-                            if row_d >= 24:
-                                row_d = 23
-                            if row_d < 0:
-                                row_d = 0
-                            p[0].append(("PUSH_D", row_d))
-                        else:
-                            p[0] = None
-                            return None
                     else:
-                        p[0].append(p[12])
-                    p[0].append(("POP_BLIT", col, row, width, height))
+                        p[0] += [p[12]]
+                    p[0] += [("POP_ALL_BLIT",)]
             else:
-                p[0] = None
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                if isinstance(p[10], list):
+                    p[0] += p[10]
+                else:
+                    p[0] += [p[10]]
+                if isinstance(p[12], list):
+                    p[0] += p[12]
+                else:
+                    p[0] += [p[12]]
+                p[0] += [("POP_ALL_BLIT",)]
 
     def p_statement_fillattr(self, p):
         "statement : FILLATTR expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression"
@@ -673,242 +696,106 @@ class CydcParser(object):
                     p[6], p[8], p[10], p[12], p.lexer.lexer.lineno
                 )
                 if attr is not None and isinstance(attr, tuple):
-                    if isinstance(p[2], int) and isinstance(p[4], int):
-                        if self._check_byte_value(
-                            p[2], p.lexer.lexer.lineno
-                        ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                            row = p[4]
-                            col = p[2]
-                            if row >= 24:
-                                row = 23
+                    col = None
+                    row = None
+                    if isinstance(p[2], tuple):
+                        t1 = p[2]
+                        if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                            col = t1[1]
                             if col >= 32:
                                 col = 31
-                            if row < 0:
-                                row = 0
                             if col < 0:
                                 col = 0
-                            p[0] = ("PUTATTR", col, row, attr[1], attr[0])
-                        else:
-                            p[0] = None
-                    elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-                        t1 = p[2]
+                    if isinstance(p[4], tuple):
                         t2 = p[4]
-                        if (
-                            (t1[0] == "PUSH_D")
-                            and (t2[0] == "PUSH_D")
-                            and isinstance(t1[1], int)
-                            and isinstance(t2[1], int)
-                        ):
+                        if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
                             row = t2[1]
-                            col = t1[1]
-                            if self._check_byte_value(
-                                row, p.lexer.lexer.lineno
-                            ) and self._check_byte_value(col, p.lexer.lexer.lineno):
-                                if row >= 24:
-                                    row = 23
-                                if col >= 32:
-                                    col = 31
-                                if row < 0:
-                                    row = 0
-                                if col < 0:
-                                    col = 0
-                                p[0] = ("PUTATTR", col, row, attr[1], attr[0])
-                            else:
-                                p[0] = None
-                        else:
-                            p[0] = [t1, t2, ("POP_PUTATTR", attr[1], attr[0])]
+                            if row >= 24:
+                                row = 23
+                            if row < 0:
+                                row = 0
+                    if col is not None and row is not None:
+                        p[0] = ("PUTATTR", col, row, attr[1], attr[0])
                     else:
                         if isinstance(p[2], list):
                             p[0] = p[2]
-                        elif isinstance(p[2], int):
-                            col = p[2]
-                            if self._check_byte_value(col, p.lexer.lexer.lineno):
-                                if col >= 32:
-                                    col = 31
-                                if col < 0:
-                                    col = 0
-                                p[0] = [("PUSH_D", col)]
-                            else:
-                                p[0] = None
-                                return None
                         else:
                             p[0] = [p[2]]
                         if isinstance(p[4], list):
                             p[0] += p[4]
-                        elif isinstance(p[4], int):
-                            row = p[4]
-                            if self._check_byte_value(row, p.lexer.lexer.lineno):
-                                if row >= 24:
-                                    row = 23
-                                if row < 0:
-                                    row = 0
-                                p[0].append(("PUSH_D", row))
-                            else:
-                                p[0] = None
-                                return None
                         else:
-                            p[0].append(p[4])
-                        p[0].append(("POP_PUTATTR", attr[1], attr[0]))
+                            p[0] += [p[4]]
+                        p[0] += [("POP_PUTATTR", attr[1], attr[0])]
                 else:
                     p[0] = None
 
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
-        if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(
-                p[2], p.lexer.lexer.lineno
-            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                row = p[4]
-                col = p[2]
-                if row >= 24:
-                    row = 23
-                if col >= 32:
-                    col = 31
-                if row < 0:
-                    row = 0
-                if col < 0:
-                    col = 0
-                p[0] = ("AT", col, row)
+        if len(p) == 5:
+            col_d = None
+            row_d = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col_d = t1[1]
+                    if col_d >= 32:
+                        col_d = 31
+                    if col_d < 0:
+                        col_d = 0
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    row_d = t2[1]
+                    if row_d >= 24:
+                        row_d = 23
+                    if row_d < 0:
+                        row_d = 0
+            if col_d is not None and row_d is not None:
+                p[0] = ("AT", col_d, row_d)
             else:
-                p[0] = None
-        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-            t1 = p[2]
-            t2 = p[4]
-            if (
-                (t1[0] == "PUSH_D")
-                and (t2[0] == "PUSH_D")
-                and isinstance(t1[1], int)
-                and isinstance(t2[1], int)
-            ):
-                row = t2[1]
-                col = t1[1]
-                if self._check_byte_value(
-                    row, p.lexer.lexer.lineno
-                ) and self._check_byte_value(col, p.lexer.lexer.lineno):
-                    if row >= 24:
-                        row = 23
-                    if col >= 32:
-                        col = 31
-                    if row < 0:
-                        row = 0
-                    if col < 0:
-                        col = 0
-                    p[0] = ("AT", col, row)
+                if isinstance(p[2], list):
+                    p[0] = p[2]
                 else:
-                    p[0] = None
-            else:
-                p[0] = [t1, t2, ("POP_AT",)]
-        else:
-            if isinstance(p[2], list):
-                p[0] = p[2]
-            elif isinstance(p[2], int):
-                col = p[2]
-                if self._check_byte_value(col, p.lexer.lexer.lineno):
-                    if col >= 32:
-                        col = 31
-                    if col < 0:
-                        col = 0
-                    p[0] = [("PUSH_D", col)]
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
                 else:
-                    p[0] = None
-                    return None
-            else:
-                p[0] = [p[2]]
-            if isinstance(p[4], list):
-                p[0] += p[4]
-            elif isinstance(p[4], int):
-                row = p[4]
-                if self._check_byte_value(row, p.lexer.lexer.lineno):
-                    if row >= 24:
-                        row = 23
-                    if row < 0:
-                        row = 0
-                    p[0].append(("PUSH_D", row))
-                else:
-                    p[0] = None
-                    return None
-            else:
-                p[0].append(p[4])
-            p[0].append(("POP_AT",))
+                    p[0] += [p[4]]
+                p[0] += [("POP_AT",)]
 
     def p_statement_menuconfig(self, p):
         "statement : MENUCONFIG numexpression COMMA numexpression"
-        if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(
-                p[2], p.lexer.lexer.lineno
-            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                row_d = p[4]
-                col_d = p[2]
-                if row_d >= 32:
-                    row_d = 31
-                if col_d >= 32:
-                    col_d = 31
-                if row_d < 0:
-                    row_d = 0
-                if col_d < 0:
-                    col_d = 0
+        if len(p) == 5:
+            col_d = None
+            row_d = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col_d = t1[1]
+                    if col_d >= 32:
+                        col_d = 31
+                    if col_d < 0:
+                        col_d = 0
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    row_d = t2[1]
+                    if row_d >= 32:
+                        row_d = 31
+                    if row_d < 0:
+                        row_d = 0
+            if col_d is not None and row_d is not None:
                 p[0] = ("MENUCONFIG", col_d, row_d)
             else:
-                p[0] = None
-        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-            t1 = p[2]
-            t2 = p[4]
-            if (
-                (t1[0] == "PUSH_D")
-                and (t2[0] == "PUSH_D")
-                and isinstance(t1[1], int)
-                and isinstance(t2[1], int)
-            ):
-                row_d = t2[1]
-                col_d = t1[1]
-                if self._check_byte_value(
-                    row_d, p.lexer.lexer.lineno
-                ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                    if row_d >= 32:
-                        row_d = 31
-                    if col_d >= 32:
-                        col_d = 31
-                    if row_d < 0:
-                        row_d = 0
-                    if col_d < 0:
-                        col_d = 0
-                    p[0] = ("MENUCONFIG", col_d, row_d)
+                if isinstance(p[2], list):
+                    p[0] = p[2]
                 else:
-                    p[0] = None
-            else:
-                p[0] = [t1, t2, ("POP_MENUCONFIG",)]
-        else:
-            if isinstance(p[2], list):
-                p[0] = p[2]
-            elif isinstance(p[2], int):
-                col = p[2]
-                if self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                    if col_d >= 32:
-                        col_d = 31
-                    if col_d < 0:
-                        col_d = 0
-                    p[0] = [("PUSH_D", col_d)]
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
                 else:
-                    p[0] = None
-                    return None
-            else:
-                p[0] = [p[2]]
-            if isinstance(p[4], list):
-                p[0] += p[4]
-            elif isinstance(p[4], int):
-                row_d = p[4]
-                if self._check_byte_value(row_d, p.lexer.lexer.lineno):
-                    if row_d >= 32:
-                        row_d = 31
-                    if row_d < 0:
-                        row_d = 0
-                    p[0].append(("PUSH_D", row_d))
-                else:
-                    p[0] = None
-                    return None
-            else:
-                p[0].append(p[4])
-            p[0].append(("POP_MENUCONFIG",))
+                    p[0] += [p[4]]
+                p[0] += [("POP_MENUCONFIG",)]
 
     def p_statement_save(self, p):
         """
@@ -1187,6 +1074,8 @@ class CydcParser(object):
                   | numexpression MINUS numexpression
                   | numexpression AND_B numexpression
                   | numexpression OR_B numexpression
+                  | numexpression SHIFT_L numexpression
+                  | numexpression SHIFT_R numexpression
         """
         if len(p) == 4 and p[1] and p[3]:
             p[0] = []
@@ -1208,6 +1097,10 @@ class CydcParser(object):
                 p[0].append(("AND",))
             elif p[2] == "|":
                 p[0].append(("OR",))
+            elif p[2] == "<<":
+                p[0].append(("SHIFT_L",))
+            elif p[2] == ">>":
+                p[0].append(("SHIFT_R",))
 
     def p_numexpression_min(self, p):
         """
@@ -1390,6 +1283,10 @@ class CydcParser(object):
                   | expression MINUS expression
                   | expression TIMES expression
                   | expression DIVIDE expression
+                  | expression AND_B expression
+                  | expression OR_B expression
+                  | expression SHIFT_L expression
+                  | expression SHIFT_R expression
         """
         if p[2] == "+":
             p[0] = p[1] + p[3]
@@ -1399,6 +1296,14 @@ class CydcParser(object):
             p[0] = p[1] * p[3]
         elif p[2] == "/":
             p[0] = p[1] / p[3]
+        elif p[2] == "&":
+            p[0] = p[1] & p[3]
+        elif p[2] == "|":
+            p[0] = p[1] | p[3]
+        elif p[2] == "<<":
+            p[0] = p[1] << p[3]
+        elif p[2] == ">>":
+            p[0] = p[1] >> p[3]
 
     def p_expression_group(self, p):
         "expression : LPAREN expression RPAREN"
@@ -1406,6 +1311,10 @@ class CydcParser(object):
 
     def p_expression_number(self, p):
         "expression : number"
+        p[0] = p[1]
+
+    def p_expression_bin_number(self, p):
+        "number : BIN_NUMBER"
         p[0] = p[1]
 
     def p_expression_hex_number(self, p):
