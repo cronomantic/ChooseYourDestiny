@@ -1836,7 +1836,36 @@ OP_MENUCONFIG:
     ENDIF
 
 ;-------------------------------------------------------
-    IFNDEF UNUSED_OP_POP_BLIT
+
+    IFNDEF UNUSED_OP_POP_ALL_BLIT   
+OP_POP_ALL_BLIT:
+    push hl
+    ld b, (ix+0)               ; GET Y
+    inc ix
+    ld c, (ix+0)               ; GET X
+    inc ix
+    push bc
+    ld (CPY_SCR_BLK_X_D), bc
+    ld d, (ix+0)               ; GET H
+    inc ix
+    ld e, (ix+0)               ; GET W
+    inc ix
+    ld b, (ix+0)               ; GET YO
+    inc ix
+    ld c, (ix+0)               ; GET XO
+    inc ix
+    call POS_ADJUST
+    call RECT_ADJUST
+    ld (CPY_SCR_BLK_X), bc
+    ld (CPY_SCR_BLK_W), de
+    pop bc
+    jr 2f
+    IFNDEF BLIT_USED
+    DEFINE BLIT_USED
+    ENDIF
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_BLIT   
 OP_POP_BLIT:
     ld de, CPY_SCR_BLK_X
     ldi
@@ -1849,7 +1878,9 @@ OP_POP_BLIT:
     inc ix
     ld (CPY_SCR_BLK_X_D), bc
     jr 1f
+    IFNDEF BLIT_USED
     DEFINE BLIT_USED
+    ENDIF
     ENDIF
 
     IFNDEF UNUSED_OP_BLIT
@@ -1862,32 +1893,23 @@ OP_BLIT:
     ldi
     ldi
     ld bc, (CPY_SCR_BLK_X_D)
-    DEFINE USED_BLIT
+    IFNDEF BLIT_USED
+    DEFINE BLIT_USED
+    ENDIF
     ENDIF
 
     IFDEF BLIT_USED 
 1:  ld de, (CPY_SCR_BLK_W)
     push hl
-    ld a, c
-    cp 32
-    jp nc, .endBlit
-    ld a, b
-    cp 24
-    jp nc, .endBlit
+2:  call POS_CHECK
+    jp c, .endBlit
+    call RECT_ADJUST
+    ld a, d
+    or a
+    jp z, .endBlit
     ld a, e
-    add a, c
-    cp 32
-    jr c, 3f
-    ld a, 32
-    sub c
-    ld e, a
-3:  ld a, d
-    add a, b
-    cp 24
-    jr c, 4f
-    ld a, 24
-    sub b
-    ld d, a
+    or a
+    jp z, .endBlit
 4:  ld (CPY_SCR_BLK_W), de
     ld (CPY_SCR_BLK_X_D), bc
     
@@ -2130,17 +2152,12 @@ OP_PUTATTR:
     ENDIF
 OP_POP_PUTATTR:
     ;Get Rows
-    POP_INT_STACK   
-    cp 24
-    jr c, 1f
-    ld a, 23
-1:  ld b, a
+    ld b, (ix+0)
+    inc ix
     ;Get Cols
-    POP_INT_STACK
-    cp 32
-    jr c, 2f
-    ld a, 31
-2:  ld c, a
+    ld c, (ix+0)
+    inc ix
+    call POS_ADJUST
     ld e, (hl)
     inc hl
     ld d, (hl)
@@ -2161,17 +2178,12 @@ OP_POP_PUTATTR:
     ENDIF
 OP_PUSH_GETATTR:
     ;Get Rows
-    POP_INT_STACK   
-    cp 24
-    jr c, 1f
-    ld a, 23
-1:  ld b, a
+    ld b, (ix+0)
+    inc ix
     ;Get Cols
-    POP_INT_STACK
-    cp 32
-    jr c, 2f
-    ld a, 31
-2:  ld c, a
+    ld c, (ix+0)
+    inc ix
+    call POS_ADJUST
     push hl
     call GET_ATTR_ADDR
     ld a, (hl)        ;Get attribute
@@ -2254,6 +2266,37 @@ OP_POP_SLOT_SAVE:
 OP_PUSH_SAVE_RESULT:
     ld a, (LAST_SAVE_RESULT)
     PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+;-------------------------------------------------------
+    IFNDEF UNUSED_OP_SHIFT_R
+OP_SHIFT_R:
+    ; p2 = A, p1 = C
+    ld a, (ix+0)
+    ld c, (ix+1)
+    or a
+    jr z, 1f
+    ld b, a
+2:  srl c
+    djnz 2b
+1:  inc ix
+    ld (ix+0), c
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_SHIFT_L
+OP_SHIFT_L:
+    ; p2 = A, p1 = C
+    ld a, (ix+0)
+    ld c, (ix+1)
+    or a
+    jr z, 1f
+    ld b, a
+2:  sla c
+    djnz 2b
+1:  inc ix
+    ld (ix+0), c
     jp EXEC_LOOP
     ENDIF
 
@@ -2943,6 +2986,25 @@ OPCODES:
     IFDEF UNUSED_OP_PUSH_GETATTR
     DW ERROR_NOP
     ENDIF
+    IFNDEF UNUSED_OP_POP_ALL_BLIT
+    DW OP_POP_ALL_BLIT
+    ENDIF
+    IFDEF UNUSED_OP_POP_ALL_BLIT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SHIFT_R
+    DW OP_SHIFT_R
+    ENDIF
+    IFDEF UNUSED_OP_SHIFT_R
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SHIFT_L
+    DW OP_SHIFT_L
+    ENDIF
+    IFDEF UNUSED_OP_SHIFT_L
+    DW ERROR_NOP
+    ENDIF
+
 
     IFDEF USE_256_OPCODES
     REPT 256-(($-OPCODES)/2)
