@@ -1498,9 +1498,3 @@ RECT_ADJUST:
     sub b
     ld d, a
     ret
-
-SET_ATTR_FROM_PARAM:
-    ld a, d
-    
-    
-    ret

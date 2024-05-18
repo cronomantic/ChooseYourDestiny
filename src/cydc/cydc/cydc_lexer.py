@@ -163,6 +163,8 @@ class CydcLexer(object):
         "FADEOUT": "FADEOUT",
         "FILLATTR": "FILLATTR",
         "PUTATTR": "PUTATTR",
+        "ATTRVAL": "ATTRVAL",
+        "ATTRMASK": "ATTRMASK",
         "CHANGED": "CHANGED",
         "OPTIONSEL": "OPTIONSEL",
         "NUMOPTIONS": "NUMOPTIONS",

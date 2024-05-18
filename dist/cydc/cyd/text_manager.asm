@@ -1453,3 +1453,48 @@ CLEAR_RECT:
 ;    add hl, de ; This always sets Carry = 0
 ;    pop de
 ;    ret
+
+; TODO: Use this for more things...
+
+
+POS_CHECK:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    ret c
+    ld a, 31
+    cp c
+    ret
+
+POS_ADJUST:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    jr nc, 1f
+    ld b, a
+1:  ld a, 31
+    cp c
+    ret nc
+    ld c, a
+    ret
+
+RECT_ADJUST:
+    ; B = Y, C = X
+    ; D = Height, E = Width
+    ld a, e
+    add a, c
+    jr c, 4f
+    cp 32
+    jr c, 1f
+4:  ld a, 32
+    sub c
+    ld e, a
+1:  ld a, d
+    add a, b
+    jr c, 3f
+    cp 24
+    ret c
+3:  ld a, 24
+    sub b
+    ld d, a
+    ret
