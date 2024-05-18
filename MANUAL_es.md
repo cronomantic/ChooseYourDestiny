@@ -78,7 +78,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
     - [FILLATTR expression, expression, expression, expression, expression, expression, expression, expression](#fillattr-expression-expression-expression-expression-expression-expression-expression-expression)
     - [PUTATTR numexpression, numexpression, expression, expression, expression, expression](#putattr-numexpression-numexpression-expression-expression-expression-expression)
-    - [GETATTR numexpression, numexpression](#getattr-numexpression-numexpression)
+    - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -897,7 +897,7 @@ Los parámetros, por órden, son:
 - Valor de brillo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
 - Valor de parpadeo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
 
-### GETATTR numexpression, numexpression
+### GETATTR (numexpression, numexpression)
 
 _Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla. Al contrario que `PUTATTR` o `FILLATTR`, los atributos están condensados en un sólo byte, que es el valor que se recupera de la memoria de vídeo del Spectrum.
 
