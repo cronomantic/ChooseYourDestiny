@@ -21,6 +21,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Asignaciones e indirección](#asignaciones-e-indirección)
   - [Listado de comandos](#listado-de-comandos)
     - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v07)
+    - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v09)
     - [LABEL ID](#label-id)
     - [#ID](#id)
     - [DECLARE expression AS ID](#declare-expression-as-id)
@@ -69,16 +70,19 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [SFX numexpression](#sfx-numexpression)
     - [PICTURE numexpression](#picture-numexpression)
     - [DISPLAY numexpression](#display-numexpression)
-    - [BLIT expression, expression, expression, expression AT numexpression, numexpression](#blit-expression-expression-expression-expression-at-numexpression-numexpression)
+    - [BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression](#blit-numexpression-numexpression-numexpression-numexpression-at-numexpression-numexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
-    - [FILLATTR expression, expression, expression, expression, expression, expression, expression, expression](#fillattr-expression-expression-expression-expression-expression-expression-expression-expression)
-    - [PUTATTR numexpression, numexpression, expression, expression, expression, expression](#putattr-numexpression-numexpression-expression-expression-expression-expression)
-    - [GETATTR numexpression, numexpression](#getattr-numexpression-numexpression)
+    - [FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression](#fillattr-numexpression-numexpression-numexpression-numexpression-numexpression)
+    - [PUTATTR numexpression, numexpression AT numexpression, numexpression](#putattr-numexpression-numexpression-at-numexpression-numexpression)
+    - [PUTATTR numexpression AT numexpression, numexpression](#putattr-numexpression-at-numexpression-numexpression)
+    - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
+    - [ATTRVAL (expression COMMA expression COMMA expression COMMA expression)](#attrval-expression-comma-expression-comma-expression-comma-expression)
+    - [ATTRMASK (expression COMMA expression COMMA expression COMMA expression)](#attrmask-expression-comma-expression-comma-expression-comma-expression)
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -600,6 +604,15 @@ Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y l
 | `IF condexpression OPTION GOTO ID`  | `IF condexpression OPTION GOTO ID ENDIF`  |
 | `IF condexpression OPTION GOSUB ID` | `IF condexpression OPTION GOSUB ID ENDIF` |
 
+### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**
+
+Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
+
+| Comando obsoleto                                          | Sustituir por...                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------ |
+| `FILLATTR x, y, width, height, ink, paper, bright, flash` | `FILLATTR x, y, width, height, ATTRVAL(ink, paper, bright, flash)` |
+| `PUTATTR x, y, ink, paper, bright, flash`                 | `PUTATTR ATTRVAL(ink, paper, bright, flash), AT (x, y)`            |
+
 ---
 
 Este es listado completo de comandos:
@@ -811,7 +824,7 @@ Muestra el contenido actual del buffer en pantalla.
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
-### BLIT expression, expression, expression, expression AT numexpression, numexpression
+### BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression
 
 Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
@@ -871,7 +884,7 @@ Los parámetros, por orden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
-### FILLATTR expression, expression, expression, expression, expression, expression, expression, expression
+### FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression
 
 Rellenamos en pantalla un rectángulo con un valor de atributos determinado. Los píxeles no se alteran.
 Los parámetros, por órden, son:
@@ -880,31 +893,49 @@ Los parámetros, por órden, son:
 - Fila origen del rectángulo a rellenar.
 - Ancho del rectángulo a rellenar.
 - Alto del rectángulo a rellenar.
-- Valor de "tinta". Valores permitidos: 0 al 7.
-- Valor de color de fondo. Valores permitidos: 0 al 7.
-- Valor de brillo. Valores permitidos: 0 ó 1.
-- Valor de parpadeo. Valores permitidos: 0 ó 1.
+- Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
-### PUTATTR numexpression, numexpression, expression, expression, expression, expression
+### PUTATTR numexpression, numexpression AT numexpression, numexpression
 
-Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Para aquellos campos en los que se indique un valor no permitido, el valor que ya existiese en pantalla no resultará alterado. Los píxeles tampoco se alteran.
+Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
 Los parámetros, por órden, son:
 
+- Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
+- Máscara a aplicar sobre los atributos ya existentes en pantalla. Si el bit es cero, conservamos el de la pantalla, y si es uno usamos el nuevo valor.
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
-- Valor de "tinta". Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de color de fondo. Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de brillo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de parpadeo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
 
-### GETATTR numexpression, numexpression
+### PUTATTR numexpression AT numexpression, numexpression
 
-_Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla. Al contrario que `PUTATTR` o `FILLATTR`, los atributos están condensados en un sólo byte, que es el valor que se recupera de la memoria de vídeo del Spectrum.
+Equivalente a `PUTATTR numexpression, 0xFF AT numexpression, numexpression`
+
+### GETATTR (numexpression, numexpression)
+
+_Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla, en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
 Los parámetros, por órden, son:
-
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
+
+### ATTRVAL (expression COMMA expression COMMA expression COMMA expression)
+
+_Función_ que devuelve el valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta), utilizado en los comandos `PUTATTR` y `FILLATTR`.
+
+Los parámetros, por órden, son:
+- Color de tinta (0 a 7).
+- Color de fondo (0 a 7).
+- Uso de brillo (0 ó 1).
+- Uso de parpadeo (0 ó 1).
+
+### ATTRMASK (expression COMMA expression COMMA expression COMMA expression)
+
+_Función_ que devuelve un valor de máscara, utilizado en los comandos `PUTATTR` y `FILLATTR`.
+
+Los parámetros, por órden, son:
+- Máscara de tinta. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de fondo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de brillo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de parpadeo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
 
 ### RANDOM(expression)
 
