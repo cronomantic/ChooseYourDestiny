@@ -2082,9 +2082,37 @@ OP_FADEOUT:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_POP_FILLATTR:
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+    IFNDEF FILLATTR_USED
+    DEFINE FILLATTR_USED
+    ENDIF
+OP_POP_FILLATTR:
+    push hl
+    ;Get Height
+    ld h, (ix+0)
+    ;Get Width
+    ld l, (ix+1)
+    ;Get Rows
+    ld b, (ix+2)
+    ;Get Cols
+    ld c, (ix+3)
+    ;Get Attr
+    ld a, (ix+4)
+    ld de, 5
+    add ix, de
+    ex de, hl
+    jr FILLATTR
+    ENDIF
+
     IFNDEF UNUSED_OP_FILLATTR
     IFNDEF GET_ATTR_ADDR_USED
     DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+    IFNDEF FILLATTR_USED
+    DEFINE FILLATTR_USED
     ENDIF
 OP_FILLATTR:
     ld c, (hl)
@@ -2098,9 +2126,15 @@ OP_FILLATTR:
     ld a, (hl)
     inc hl
     push hl
+    ENDIF
+    
+    IFDEF FILLATTR_USED
     ; bc: y - x
     ; de: height - width
+FILLATTR:
     ex af, af'
+    call POS_ADJUST
+    call RECT_ADJUST
     call GET_ATTR_ADDR
     ex af, af'
 
@@ -2124,8 +2158,8 @@ OP_FILLATTR:
     ENDIF
 
     IFNDEF UNUSED_OP_PUTATTR
-    IFNDEF GET_ATTR_ADDR_USED
-    DEFINE GET_ATTR_ADDR_USED
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
     ENDIF
 OP_PUTATTR:
     ld c, (hl)
@@ -2137,25 +2171,21 @@ OP_PUTATTR:
     ld d, (hl)
     inc hl
     push hl
-    call GET_ATTR_ADDR
-    ld a, (hl)        ;Get attribute
-    and e             ;AND with mask
-    or d              ;OR with new values
-    ld (hl), a        ;Store value again
+    call PUT_ATTR
     pop hl
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_POP_PUTATTR
-    IFNDEF GET_ATTR_ADDR_USED
-    DEFINE GET_ATTR_ADDR_USED
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
     ENDIF
 OP_POP_PUTATTR:
     ;Get Rows
     ld b, (ix+0)
-    inc ix
     ;Get Cols
-    ld c, (ix+0)
+    ld c, (ix+1)
+    inc ix
     inc ix
     call POS_ADJUST
     ld e, (hl)
@@ -2163,13 +2193,48 @@ OP_POP_PUTATTR:
     ld d, (hl)
     inc hl
     push hl
-    call GET_ATTR_ADDR
-    ld a, (hl)        ;Get attribute
-    and e             ;AND with mask
-    or d              ;OR with new values
-    ld (hl), a        ;Store value again
+    call PUT_ATTR
     pop hl
     jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_ALL_PUTATTR
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
+    ENDIF
+OP_POP_ALL_PUTATTR:
+    ;Get Rows
+    ld b, (ix+0)
+    ;Get Cols
+    ld c, (ix+1)
+    call POS_ADJUST
+    ;Get mask
+    ld e, (ix+2)
+    ;Get Attr
+    ld d, (ix+3)
+    push hl
+    call PUT_ATTR
+    ld de, 4
+    add ix, de
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFDEF PUT_ATTR_USED
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+PUT_ATTR:
+    call GET_ATTR_ADDR
+    ld a, d
+    and e
+    ld d, a
+    ld a, e
+    cpl
+    and (hl)        ;AND with mask
+    or d              ;OR with new values
+    ld (hl), a        ;Store value again
+    ret
     ENDIF
 
     IFNDEF UNUSED_OP_PUSH_GETATTR
@@ -2191,7 +2256,6 @@ OP_PUSH_GETATTR:
     pop hl
     jp EXEC_LOOP
     ENDIF
-
   
     IFDEF GET_ATTR_ADDR_USED
 GET_ATTR_ADDR:
@@ -3004,6 +3068,19 @@ OPCODES:
     IFDEF UNUSED_OP_SHIFT_L
     DW ERROR_NOP
     ENDIF
+    IFNDEF UNUSED_OP_POP_ALL_PUTATTR
+    DW OP_POP_ALL_PUTATTR
+    ENDIF
+    IFDEF UNUSED_OP_POP_ALL_PUTATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_FILLATTR
+    DW OP_POP_FILLATTR
+    ENDIF
+    IFDEF UNUSED_OP_POP_FILLATTR
+    DW ERROR_NOP
+    ENDIF
+
 
 
     IFDEF USE_256_OPCODES
