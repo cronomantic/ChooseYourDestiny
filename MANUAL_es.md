@@ -376,6 +376,8 @@ Los comandos disponibles están descritos en su [sección](#comandos) correspond
 
 ## Flags y expresiones numéricas
 
+Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
+
 Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "flags" indistintamente a lo largo de este documento.
 
 Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el carácter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
@@ -429,7 +431,9 @@ Los operandos disponibles son:
 - Resta: `SET variable TO @variable - 2`
 - "AND" binario: `SET variable TO @variable & 2`
 - "OR" binario: `SET variable TO @variable | 2`
-- "NOT binario o complemento de bits: `SET variable TO !@variable`
+- "NOT" binario o complemento de bits: `SET variable TO !@variable`
+- Desplazamiento de bits a la izquierda: `SET variable TO @variable << 2`
+- Desplazamiento de bits a la derecha: `SET variable TO @variable >> 2`
 
 El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
 
@@ -1264,6 +1268,16 @@ Para facilitar la tarea de creación de un juego de caracteres alternativo, se h
 ## Códigos de error
 
 La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.  
+
+Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
+
+- Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
+- Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
+- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
+- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
+- Error 5: No hay un módulo de música cargado para reproducir.
+- Error 6: Código de instrucción inválido.
+
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
 - Error 0: Drive not ready
@@ -1296,15 +1310,6 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 
 La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 
-Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
-
-- Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
-- Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
-- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
-- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
-- Error 5: No hay un módulo de música cargado para reproducir.
-- Error 6: Código de instrucción inválido.
-
 ---
 
 ## F.A.Q
@@ -1322,8 +1327,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
-- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
+- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
 ---
