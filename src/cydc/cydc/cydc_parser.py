@@ -628,30 +628,63 @@ class CydcParser(object):
                 p[0] += [("POP_ALL_BLIT",)]
 
     def p_statement_fillattr(self, p):
-        "statement : FILLATTR expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression"
-        if len(p) == 17:
+        "statement : FILLATTR numexpression COMMA numexpression COMMA numexpression COMMA numexpression COMMA numexpression"
+        if len(p) == 11:
+            col = None
+            row = None
+            width = None
+            height = None
+            attr = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col = t1[1]
+            if isinstance(p[4], tuple):
+                t1 = p[4]
+                if (t1[1] == "PUSH_D") and isinstance(t1[1], int):
+                    row = t1[1]
+            if isinstance(p[6], tuple):
+                t1 = p[6]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    width = t1[1]
+            if isinstance(p[8], tuple):
+                t1 = p[8]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    height = t1[1]
+            if isinstance(p[10], tuple):
+                t1 = p[10]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
             if (
-                self._check_byte_value(p[2], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[14], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[16], p.lexer.lexer.lineno)
+                col is not None
+                and row is not None
+                and width is not None
+                and height is not None
+                and attr is not None
             ):
-                attr = self._check_attr_values(
-                    p[10], p[12], p[14], p[16], p.lexer.lexer.lineno
-                )
-                if attr is not None and isinstance(attr, int):
-                    (row, col, width, height) = self._fix_borders(
-                        p[4], p[2], p[6], p[8]
-                    )
-                    p[0] = ("FILLATTR", col, row, width, height, attr)
-                else:
-                    p[0] = None
+                p[0] = ("FILLATTR", col, row, width, height, attr)
             else:
-                p[0] = None
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                if isinstance(p[10], list):
+                    p[0] += p[10]
+                else:
+                    p[0] += [p[10]]
+                p[0] += [("POP_FILLATTR",)]
 
     def p_statement_fadeout(self, p):
         """
@@ -684,50 +717,106 @@ class CydcParser(object):
                 p[0] = None
 
     def p_statement_putattr(self, p):
-        "statement : PUTATTR numexpression COMMA numexpression COMMA expression COMMA expression COMMA expression COMMA expression"
-        if len(p) == 13:
-            if (
-                self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
-            ):
-                attr = self._get_attr_mask(
-                    p[6], p[8], p[10], p[12], p.lexer.lexer.lineno
-                )
-                if attr is not None and isinstance(attr, tuple):
-                    col = None
-                    row = None
-                    if isinstance(p[2], tuple):
-                        t1 = p[2]
-                        if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-                            col = t1[1]
-                            if col >= 32:
-                                col = 31
-                            if col < 0:
-                                col = 0
-                    if isinstance(p[4], tuple):
-                        t2 = p[4]
-                        if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
-                            row = t2[1]
-                            if row >= 24:
-                                row = 23
-                            if row < 0:
-                                row = 0
-                    if col is not None and row is not None:
-                        p[0] = ("PUTATTR", col, row, attr[1], attr[0])
-                    else:
-                        if isinstance(p[2], list):
-                            p[0] = p[2]
-                        else:
-                            p[0] = [p[2]]
-                        if isinstance(p[4], list):
-                            p[0] += p[4]
-                        else:
-                            p[0] += [p[4]]
-                        p[0] += [("POP_PUTATTR", attr[1], attr[0])]
+        """
+        statement : PUTATTR numexpression COMMA numexpression AT numexpression COMMA numexpression
+                  | PUTATTR numexpression AT numexpression COMMA numexpression
+        """
+        if len(p) == 9:
+            attr = None
+            mask = None
+            row = None
+            col = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    mask = t2[1]
+            if isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    col = t3[1]
+            if isinstance(p[8], tuple):
+                t4 = p[8]
+                if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
+                    row = t4[1]
+            if attr is not None and mask is not None:
+                if row is not None and col is not None:
+                    p[0] = ("PUTATTR", col, row, mask, attr)
                 else:
-                    p[0] = None
+                    if isinstance(p[6], list):
+                        p[0] = p[6]
+                    else:
+                        p[0] = [p[6]]
+                    if isinstance(p[8], list):
+                        p[0] += p[8]
+                    else:
+                        p[0] += [p[8]]
+                    p[0] += [("POP_PUTATTR", mask, attr)]
+            else:
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] = [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                p[0] += [("POP_ALL_PUTATTR",)]
+        elif len(p) == 7:
+            attr = None
+            row = None
+            col = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    col = t2[1]
+            if isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    row = t3[1]
+            if attr is not None:
+                if row is not None and col is not None:
+                    p[0] = ("PUTATTR", col, row, 0xFF, attr)
+                else:
+                    if isinstance(p[4], list):
+                        p[0] = p[4]
+                    else:
+                        p[0] = [p[4]]
+                    if isinstance(p[6], list):
+                        p[0] += p[6]
+                    else:
+                        p[0] += [p[6]]
+                    p[0] += [("POP_PUTATTR", 0xFF, attr)]
+            else:
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                p[0] += [("PUSH_D", 0xFF)]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] = [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                p[0] += [("POP_ALL_PUTATTR",)]
 
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
@@ -1201,6 +1290,36 @@ class CydcParser(object):
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 0)
 
+    def p_numexpression_attrval_expression(self, p):
+        "numexpression : ATTRVAL LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+        if len(p) == 11:
+            if (
+                self._check_byte_value(p[3], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[5], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[7], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[9], p.lexer.lexer.lineno)
+            ):
+                attr = self._check_attr_values(p[3], p[5], p[7], p[9])
+                if attr is not None:
+                    p[0] = ("PUSH_D", attr)
+                else:
+                    p[0] = None
+
+    def p_numexpression_attrmask_expression(self, p):
+        "numexpression : ATTRMASK LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+        if len(p) == 11:
+            if (
+                self._check_byte_value(p[3], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[5], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[7], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[9], p.lexer.lexer.lineno)
+            ):
+                mask = self._get_attr_mask(p[3], p[5], p[7], p[9])
+                if mask is not None:
+                    p[0] = ("PUSH_D", mask)
+                else:
+                    p[0] = None
+
     def p_numexpression_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
         if self._check_byte_value(
@@ -1422,53 +1541,25 @@ class CydcParser(object):
 
     def _get_attr_mask(self, ink, paper, bright, flash, lineno):
         error = False
-        if ink < 0:
+        if ink not in range(2):
             self.errors.append(f"Invalid Ink value on line {lineno}")
             error = True
-        if paper < 0:
+        if paper not in range(2):
             self.errors.append(f"Invalid Paper value on line {lineno}")
             error = True
-        if bright < 0:
+        if bright not in range(2):
             self.errors.append(f"Invalid Bright value on line {lineno}")
             error = True
-        if flash < 0:
+        if flash not in range(2):
             self.errors.append(f"Invalid Flash value on line {lineno}")
             error = True
         if error:
             return None
-        attr = 0
-        mask = 0
-        if flash not in range(2):
-            attr |= 0
-            mask |= 1
-        else:
-            attr |= flash
-            mask |= 0
-        attr <<= 1
-        mask <<= 1
-        if bright not in range(2):
-            attr |= 0
-            mask |= 1
-        else:
-            attr |= bright
-            mask |= 0
-        attr <<= 3
-        mask <<= 3
-        if paper not in range(8):
-            attr |= 0
-            mask |= 7
-        else:
-            attr |= paper
-            mask |= 0
-        attr <<= 3
-        mask <<= 3
-        if ink not in range(8):
-            attr |= 0
-            mask |= 7
-        else:
-            attr |= ink
-            mask |= 0
-        return (attr, mask)
+        if paper != 0:
+            paper = 7
+        if ink != 0:
+            ink |= 7
+        return (flash << 7) | (bright << 6) | (paper << 3) | ink
 
     def _get_hidden_label(self):
         l = f"__LABEL_{self.hidden_label_counter}"
