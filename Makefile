@@ -70,7 +70,7 @@ else
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
 	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) $(TAP_TARGET) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 endif
 endif
 
