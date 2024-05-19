@@ -40,6 +40,7 @@ class CydcParser(object):
         self.parser = None
         self.errors = list()
         self.symbols = dict()
+        self.symbols_used = dict()
         self.hidden_label_counter = 0
 
     precedence = (
@@ -292,7 +293,7 @@ class CydcParser(object):
 
     def p_statement_short_label(self, p):
         "statement : SHORT_LABEL"
-        if self._create_symbol(p[1], SymbolType.LABEL, p.lexer.lexer.lineno):
+        if self._declare_symbol(p[1], SymbolType.LABEL, p.lexer.lexer.lineno):
             p[0] = ("LABEL", p[1])
         else:
             p[0] = None
@@ -327,15 +328,21 @@ class CydcParser(object):
 
     def p_statement_goto(self, p):
         "statement : GOTO ID"
-        p[0] = ("GOTO", p[2], 0, 0)
+        if self._symbol_usage(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("GOTO", p[2], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_gosub(self, p):
         "statement : GOSUB ID"
-        p[0] = ("GOSUB", p[2], 0, 0)
+        if self._symbol_usage(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("GOSUB", p[2], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_label(self, p):
         "statement : LABEL ID"
-        if self._create_symbol(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+        if self._declare_symbol(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
             p[0] = ("LABEL", p[2])
         else:
             p[0] = None
@@ -958,7 +965,7 @@ class CydcParser(object):
     def p_statement_declare(self, p):
         "statement : DECLARE expression AS ID"
         if self._check_byte_value(p[2], p.lexer.lexer.lineno):
-            if self._create_symbol(p[4], SymbolType.VARIABLE, p.lexer.lexer.lineno):
+            if self._declare_symbol(p[4], SymbolType.VARIABLE, p.lexer.lexer.lineno):
                 p[0] = ("DECLARE", p[2], p[4])
             else:
                 p[0] = None
@@ -1031,8 +1038,9 @@ class CydcParser(object):
                   | CHOOSE
         """
         if len(p) == 8 and p[3] == "WAIT":
-            if self._check_word_value(p[4], p.lexer.lexer.lineno):
-                print(p[6])
+            if self._check_word_value(
+                p[4], p.lexer.lexer.lineno
+            ) and self._symbol_usage(p[7], SymbolType.LABEL, p.lexer.lexer.lineno):
                 if p[6] == "GOTO":
                     p[0] = (
                         "CHOOSE_W",
@@ -1058,17 +1066,26 @@ class CydcParser(object):
             else:
                 p[0] = None
         elif len(p) == 7 and p[3] == "CHANGED":
-            p[0] = ("CHOOSE_CH", p[6], 0, 0)
+            if self._symbol_usage(p[6], SymbolType.LABEL, p.lexer.lexer.lineno):
+                p[0] = ("CHOOSE_CH", p[6], 0, 0)
+            else:
+                p[0] = None
         elif len(p) == 2:
             p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
         "statement : OPTION GOTO ID"
-        p[0] = ("OPTION", 0, p[3], 0, 0)
+        if self._symbol_usage(p[3], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("OPTION", 0, p[3], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_option_gosub(self, p):
         "statement : OPTION GOSUB ID"
-        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+        if self._symbol_usage(p[3], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+        else:
+            p[0] = None
 
     def p_numexpressions_list(self, p):
         """
@@ -1299,7 +1316,7 @@ class CydcParser(object):
                 and self._check_byte_value(p[7], p.lexer.lexer.lineno)
                 and self._check_byte_value(p[9], p.lexer.lexer.lineno)
             ):
-                attr = self._check_attr_values(p[3], p[5], p[7], p[9])
+                attr = self._check_attr_values(p[3], p[5], p[7], p[9], p.lexer.lexer.lineno)
                 if attr is not None:
                     p[0] = ("PUSH_D", attr)
                 else:
@@ -1314,7 +1331,7 @@ class CydcParser(object):
                 and self._check_byte_value(p[7], p.lexer.lexer.lineno)
                 and self._check_byte_value(p[9], p.lexer.lexer.lineno)
             ):
-                mask = self._get_attr_mask(p[3], p[5], p[7], p[9])
+                mask = self._get_attr_mask(p[3], p[5], p[7], p[9], p.lexer.lexer.lineno)
                 if mask is not None:
                     p[0] = ("PUSH_D", mask)
                 else:
@@ -1392,7 +1409,10 @@ class CydcParser(object):
             else:
                 p[0] = None
         elif isinstance(p[1], str):
-            p[0] = p[1]
+            if self._symbol_usage(p[1], SymbolType.VARIABLE, p.lexer.lexer.lineno):
+                p[0] = p[1]
+            else:
+                p[0] = None
         else:
             p[0] = None
 
@@ -1465,13 +1485,17 @@ class CydcParser(object):
             return None
         else:
             self.symbols.clear()
+            self.symbols_used.clear()
             self.errors.clear()
             self.hidden_label_counter = 0
             cinput, cerrors = self._code_text_reversal(input)
             self.errors += cerrors
             if len(self.errors) > 0:
                 return []
-            return self.parser.parse(cinput, lexer=self.lexer)
+            parse_result = self.parser.parse(cinput, lexer=self.lexer)
+            if not self._check_symbols():
+                return []
+            return parse_result
 
     def debug_p(self, p):
         s = ""
@@ -1645,13 +1669,13 @@ class CydcParser(object):
     #         )
     #         return False
 
-    def _create_symbol(self, symbol, type, lineno):
+    def _declare_symbol(self, symbol, symbol_type, lineno):
         if symbol in self.symbols.keys():
-            if type == SymbolType.LABEL:
+            if symbol_type == SymbolType.LABEL:
                 self.errors.append(
                     f"Label '{symbol}' on line {lineno} was already declared before."
                 )
-            elif type == SymbolType.VARIABLE:
+            elif symbol_type == SymbolType.VARIABLE:
                 self.errors.append(
                     f"Variable '{symbol}' on line {lineno} was already declared before."
                 )
@@ -1661,5 +1685,67 @@ class CydcParser(object):
                 )
             return False
         else:
-            self.symbols[symbol] = (type, lineno)
+            self.symbols[symbol] = (symbol_type, lineno)
             return True
+
+    def _symbol_usage(self, symbol, symbol_type, lineno):
+        if symbol in self.symbols_used.keys():
+            s = self.symbols_used[symbol]
+            if s[0] == symbol_type:
+                s[1].append(lineno)
+                self.symbols_used[symbol] = s
+                return True
+            else:
+                if symbol_type == SymbolType.LABEL:
+                    self.errors.append(
+                        f"Label '{symbol}' on line {lineno} was already used as variable."
+                    )
+                elif symbol_type == SymbolType.VARIABLE:
+                    self.errors.append(
+                        f"Variable '{symbol}' on line {lineno} was already used as label."
+                    )
+                else:
+                    self.errors.append(
+                        f"Symbol '{symbol}' on line {lineno} was already used in other context."
+                    )
+                return False
+        else:
+            self.symbols_used[symbol] = (symbol_type, [lineno])
+            return True
+
+    def _check_symbols(self):
+        res = True
+        for symbol in self.symbols_used.keys():
+            symbol_type, lines = self.symbols_used[symbol]
+            lines_str = ", ".join([str(i) for i in lines])
+            if symbol not in self.symbols.keys():
+                if symbol_type == SymbolType.LABEL:
+                    self.errors.append(
+                        f"Label '{symbol}' on lines {lines_str} is not declared."
+                    )
+                elif symbol_type == SymbolType.VARIABLE:
+                    self.errors.append(
+                        f"Variable '{symbol}' on lines {lines_str} is not declared."
+                    )
+                else:
+                    self.errors.append(
+                        f"Symbol '{symbol}' on lines {lines_str} is not declared."
+                    )
+                res = False
+            else:
+                s = self.symbols[symbol]
+                if s[0] != symbol_type:
+                    if symbol_type == SymbolType.LABEL:
+                        self.errors.append(
+                            f"Label '{symbol}' on lines {lines_str} was already declared as variable on {s[1]}."
+                        )
+                    elif symbol_type == SymbolType.VARIABLE:
+                        self.errors.append(
+                            f"Variable '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
+                    else:
+                        self.errors.append(
+                            f"Symbol '{symbol}' on lines {lines_str} was already declared with another type on {s[1]}."
+                        )
+                    res = False
+        return res

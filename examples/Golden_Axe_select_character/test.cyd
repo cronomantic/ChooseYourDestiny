@@ -103,22 +103,22 @@ LABEL RestauraColorImagenes
 - Valor de brillo [0-1].
 - Valor de parpadeo [0-1].*/
 
-FILLATTR 0,0,13,13,0,7,0,0 /*barbaro*/
-FILLATTR 13,0,8,16,0,7,0,0 /*amazona*/
-FILLATTR 20,8,12,16,0,7,0,0 /*enano*/
+FILLATTR 0,0,13,13,ATTRVAL(0,7,0,0) /*barbaro*/
+FILLATTR 13,0,8,16,ATTRVAL(0,7,0,0) /*amazona*/
+FILLATTR 20,8,12,16,ATTRVAL(0,7,0,0) /*enano*/
 
 RETURN
 
 LABEL ColoreaBarbaro
-FILLATTR 0,0,13,13,1,7,0,0 
+FILLATTR 0,0,13,13,ATTRVAL(1,7,0,0)
 RETURN
 
 LABEL ColoreaAmazona
-FILLATTR 13,0,8,16,1,7,0,0
+FILLATTR 13,0,8,16,ATTRVAL(1,7,0,0)
 RETURN
 
 LABEL ColoreaEnano
-FILLATTR 20,8,12,16,1,7,0,0 /*enano*/
+FILLATTR 20,8,12,16,ATTRVAL(1,7,0,0) /*enano*/
 RETURN
 
 ]]

@@ -1,11 +1,1 @@
-Write your own adventure here!
-[[
-    LET 0 = 0b010101
-    LET 0 = @0 << 2
-    PRINT @0
-    NEWLINE
-    LET 0 = @0 >> 2
-    PRINT @0
-    NEWLINE
-    WAITKEY
-]]
+Make your adventure here.[[WAITKEY]]
