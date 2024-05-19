@@ -1316,7 +1316,9 @@ class CydcParser(object):
                 and self._check_byte_value(p[7], p.lexer.lexer.lineno)
                 and self._check_byte_value(p[9], p.lexer.lexer.lineno)
             ):
-                attr = self._check_attr_values(p[3], p[5], p[7], p[9], p.lexer.lexer.lineno)
+                attr = self._check_attr_values(
+                    p[3], p[5], p[7], p[9], p.lexer.lexer.lineno
+                )
                 if attr is not None:
                     p[0] = ("PUSH_D", attr)
                 else:
@@ -1749,3 +1751,13 @@ class CydcParser(object):
                         )
                     res = False
         return res
+
+    def print_symbols(self):
+        for symbol in self.symbols.keys():
+            s = self.symbols[symbol]
+            if s[0] == SymbolType.LABEL:
+                print(f"- Label '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.VARIABLE:
+                print(f"- Variable '{symbol}' declared on line {s[1]}.")
+            else:
+                print(f"- Symbol '{symbol}' declared on line {s[1]}.")

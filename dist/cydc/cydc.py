@@ -365,6 +365,9 @@ def main():
     parser = CydcParser()
     parser.build()
     code = parser.parse(text)
+    if verbose:
+        print(_("Symbols:"))
+        parser.print_symbols()
     if len(parser.errors) > 0:
         for e in parser.errors:
             print("ERROR:" + e)
