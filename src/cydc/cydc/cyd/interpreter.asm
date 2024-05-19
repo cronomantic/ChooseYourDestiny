@@ -2091,16 +2091,16 @@ OP_FADEOUT:
     ENDIF
 OP_POP_FILLATTR:
     push hl
-    ;Get Height
-    ld h, (ix+0)
-    ;Get Width
-    ld l, (ix+1)
-    ;Get Rows
-    ld b, (ix+2)
-    ;Get Cols
-    ld c, (ix+3)
     ;Get Attr
-    ld a, (ix+4)
+    ld a, (ix+0)
+    ;Get Height
+    ld h, (ix+1)
+    ;Get Width
+    ld l, (ix+2)
+    ;Get Rows
+    ld b, (ix+3)
+    ;Get Cols
+    ld c, (ix+4)
     ld de, 5
     add ix, de
     ex de, hl
@@ -2162,8 +2162,10 @@ FILLATTR:
     DEFINE PUT_ATTR_USED
     ENDIF
 OP_PUTATTR:
+    ;Get Rows
     ld c, (hl)
     inc hl
+    ;Get Cols
     ld b, (hl)
     inc hl
     ld e, (hl)
@@ -2188,8 +2190,10 @@ OP_POP_PUTATTR:
     inc ix
     inc ix
     call POS_ADJUST
+    ;Get mask
     ld e, (hl)
     inc hl
+    ;Get Attr
     ld d, (hl)
     inc hl
     push hl
