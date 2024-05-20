@@ -1352,11 +1352,11 @@ class CydcParser(object):
 
     def p_numexpression_xpos(self, p):
         "numexpression : XPOS LPAREN RPAREN"
-        p[0] = ("PUSH_YPOS",)
+        p[0] = ("PUSH_XPOS",)
 
     def p_numexpression_ypos(self, p):
         "numexpression : YPOS LPAREN RPAREN"
-        p[0] = ("PUSH_XPOS",)
+        p[0] = ("PUSH_YPOS",)
 
     def p_numexpression_isdisk(self, p):
         "numexpression : ISDISK LPAREN RPAREN"
