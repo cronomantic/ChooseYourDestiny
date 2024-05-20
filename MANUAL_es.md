@@ -90,8 +90,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [INKEY()](#inkey)
     - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
     - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
-    - [POSY()](#posy)
-    - [POSX()](#posx)
+    - [YPOS()](#ypos)
+    - [XPOS()](#xpos)
     - [RANDOMIZE](#randomize)
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
@@ -969,11 +969,11 @@ _Función_ que acota el valor del primer parámetro al mínimo indicado por el s
 
 _Función_ que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
-### POSY()
+### YPOS()
 
 _Función_ que devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
 
-### POSX()
+### XPOS()
 
 _Función_ que devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
