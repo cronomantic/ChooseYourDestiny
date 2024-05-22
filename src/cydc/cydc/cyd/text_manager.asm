@@ -27,6 +27,13 @@ INIT_WIN:
     call GET_CHARACTER_WIDTH
     ld (WIDTH_BACKSPACE), a
 
+    ld bc, WINDOWS_END-WINDOWS-1
+    ld hl, WINDOWS
+    ld de, WINDOWS+1
+    xor a
+    ld (hl), a
+    ldir
+
     ;Init other variables
     ld de, NUM_OPTIONS
     ld bc, .end_data-.data
@@ -1456,9 +1463,6 @@ CLEAR_RECT:
 ;    add hl, de ; This always sets Carry = 0
 ;    pop de
 ;    ret
-
-; TODO: Use this for more things...
-
 
 POS_CHECK:
     ; B = Y, C = X

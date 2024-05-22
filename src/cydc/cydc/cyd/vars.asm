@@ -86,6 +86,7 @@ PRT_INTERVAL:
 
 CURR_WINDOW:
     DEFB 0
+
 ; X is in pixels, y in chars
 POS_X:
     DEFB 0
@@ -168,6 +169,7 @@ MAXWINDOWS EQU 8
 
 WINDOWS:
     DEFS MAXWINDOWS*8,0
+WINDOWS_END:
 ;--------------------------------------------------
     ;INCLUDE "VTII10bG_vars.asm"
 
