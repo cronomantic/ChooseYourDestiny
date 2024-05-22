@@ -523,6 +523,13 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_window(self, p):
+        "statement : WINDOW expression"
+        if len(p) == 3 and self._check_byte_value(p[2], p.lexer.lexer.lineno):
+            p[0] = ("WINDOW", p[2] & 0x07)
+        else:
+            p[0] = None
+
     def p_statement_blit(self, p):
         "statement : BLIT numexpression COMMA numexpression COMMA numexpression COMMA numexpression AT numexpression COMMA numexpression"
         if len(p) == 13:
