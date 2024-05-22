@@ -148,6 +148,8 @@ class CydcCodegen(object):
         "SHIFT_L": 0x73,
         "POP_ALL_PUTATTR": 0x74,
         "POP_FILLATTR": 0x75,
+        "POP_VAL_OPTION": 0x76,
+        "WINDOW": 0x77,
     }
 
     def __init__(self, gettext):

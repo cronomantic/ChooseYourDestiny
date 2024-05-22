@@ -763,9 +763,7 @@ OP_OPTION:
     ld a, 2
     jp SYS_ERROR
 .option_ok:
-    push af                    ;Adding the current position of the cursor
     push hl                    ;Store pointer
-    push af
     call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
     push de
     push de                    ; ; d = POS_Y, e = POS_X
@@ -774,7 +772,7 @@ OP_OPTION:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-    pop af
+    ld a, (NUM_OPTIONS)
     sla a
     sla a
     sla a
@@ -784,15 +782,60 @@ OP_OPTION:
     inc hl
     ld (hl), d
     inc hl
+    ld a, (NUM_OPTIONS)    
+    ld (hl), a             ;Storing num option as default value
+    inc hl
+    inc a
+    ld (NUM_OPTIONS), a   ;Increment options
     ex de, hl              ;Move option table address to DE
     pop hl
     ldi                    ;Copy Address to address table
     ldi
     ldi
     ldi
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_VAL_OPTION
+OP_POP_VAL_OPTION:
+    ld a, (NUM_OPTIONS)
+    cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
+    jr c,.option_ok
+    ld a, 2
+    jp SYS_ERROR
+.option_ok:
+    push hl                    ;Store pointer
+    call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
+    push de
+    push de                    ; ; d = POS_Y, e = POS_X
+    ld a, NO_SELECTED_BULLET
+    call GET_CHARACTER_POINTER  ;Get character pointer
+    pop de
+    call PUT_8X8_CHAR           ; Print the character
+    pop de
+    ld a, (NUM_OPTIONS)
+    push af
+    sla a
+    sla a
+    sla a
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+    ld (hl), e             ;Store screen pos
+    inc hl
+    ld (hl), d
+    inc hl
     pop af
     inc a
     ld (NUM_OPTIONS), a   ;Increment options
+    POP_INT_STACK
+    ld (hl), a             ;Storing value from stack
+    inc hl
+    ex de, hl              ;Move option table address to DE
+    pop hl
+    ldi                    ;Copy Address to address table
+    ldi
+    ldi
+    ldi
     jp EXEC_LOOP
     ENDIF
 
@@ -894,14 +937,13 @@ OP_PAUSE:
     IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
     ld (.self_a), hl
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
     or a
     jp nz, .options         ; No options available
     ld a, 3
     jp SYS_ERROR
-
 .options:
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
@@ -928,7 +970,7 @@ OP_CHOOSE:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -952,7 +994,7 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -972,7 +1014,7 @@ OP_CHOOSE:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -996,7 +1038,7 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1022,6 +1064,9 @@ OP_CHOOSE:
 5:  call INKEY
     or a
     jr nz, 5b
+    ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
     ld a, (hl)
     inc hl
     or a
@@ -1059,7 +1104,7 @@ OP_CHOOSE_W:
  
     pop de           ;Restore timeout
     
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
     or a
@@ -1099,7 +1144,7 @@ OP_CHOOSE_W:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -1123,7 +1168,7 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1143,7 +1188,7 @@ OP_CHOOSE_W:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -1167,7 +1212,7 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1191,7 +1236,10 @@ OP_CHOOSE_W:
     add a, 2
     ld l, a
     ld h, HIGH OPTIONS_TABLE
-3:  ld c, (hl)               ;C= if is GOSUB
+3:  ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
+    ld c, (hl)               ;C= if is GOSUB
     inc hl
     xor a
     ld (NUM_OPTIONS), a
@@ -1230,7 +1278,7 @@ OP_CHOOSE_CH:
     ldi
     ldi
     ldi
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a        ;Resets selected option
     ld (.self_a), hl
     jp .on_change_gosub 
@@ -1266,7 +1314,7 @@ OP_CHOOSE_CH:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -1290,7 +1338,7 @@ OP_CHOOSE_CH:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1310,7 +1358,7 @@ OP_CHOOSE_CH:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -1334,7 +1382,7 @@ OP_CHOOSE_CH:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1361,6 +1409,9 @@ OP_CHOOSE_CH:
 5:  call INKEY
     or a
     jr nz, 5b
+    ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
     ld a, (hl)
     inc hl
     or a
@@ -1819,19 +1870,20 @@ OP_PUSH_IS_DISK:
 OP_POP_MENUCONFIG:
     ld b, (ix+0)
     ld c, (ix+1)
-    inc ix
-    inc ix
-    ld (INCR_ROW_OPTION), bc
+    ld a, (ix+2)
+    ld de, 3
+    add ix, de
+    ld (INCR_X_OPTION), bc
+    ld (DEFAULT_OPTION), a
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_MENUCONFIG
 OP_MENUCONFIG:
-    ld c, (hl)
-    inc hl
-    ld b, (hl)
-    inc hl
-    ld (INCR_ROW_OPTION), bc
+    ld de, INCR_X_OPTION
+    ldi
+    ldi
+    ldi
     jp EXEC_LOOP
     ENDIF
 
@@ -2369,6 +2421,27 @@ OP_SHIFT_L:
     ENDIF
 
 ;-------------------------------------------------------
+    IFNDEF UNUSED_OP_WINDOW
+    ; TODO:
+OP_WINDOW:
+    push hl
+    ld a, (CURR_WINDOW)
+    ld de, WINDOWS
+    sla a
+    sla a
+    sla a
+    add a, e
+    jr nc, 1f
+    inc d
+1:  ld e, a
+    ld hl, POS_X
+    ld bc, 6
+    ldir
+    pop hl
+    ld a, (hl)
+    inc hl
+    jp EXEC_LOOP
+    ENDIF
 
 /*
     IFNDEF UNUSED_OP_EXTERN
@@ -3084,8 +3157,18 @@ OPCODES:
     IFDEF UNUSED_OP_POP_FILLATTR
     DW ERROR_NOP
     ENDIF
-
-
+    IFNDEF UNUSED_OP_POP_VAL_OPTION
+    DW OP_POP_VAL_OPTION
+    ENDIF
+    IFDEF UNUSED_OP_POP_VAL_OPTION
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_WINDOW
+    DW OP_WINDOW
+    ENDIF
+    IFDEF UNUSED_OP_WINDOW
+    DW ERROR_NOP
+    ENDIF
 
     IFDEF USE_256_OPCODES
     REPT 256-(($-OPCODES)/2)
