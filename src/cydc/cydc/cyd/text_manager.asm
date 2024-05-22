@@ -38,11 +38,14 @@ INIT_WIN:
     DEFB 0
     DEFB 0
     DEFB 0
+    DEFB 0
     DEFB 1
+    DEFB 0
     DEFB 0
     DEFB 0
     DEFS 6, 0
     DEFW 1
+    DEFB 0
     DEFB 0
     DEFB 0
     DEFB 0
