@@ -166,12 +166,14 @@ class CydcLexer(object):
         "ATTRVAL": "ATTRVAL",
         "ATTRMASK": "ATTRMASK",
         "CHANGED": "CHANGED",
+        "VALOPTIONSEL": "VALOPTIONSEL",
         "OPTIONSEL": "OPTIONSEL",
         "NUMOPTIONS": "NUMOPTIONS",
         "CLEAROPTIONS": "CLEAROPTIONS",
         "GETATTR": "GETATTR",
         "LET": "LET",
         "ELSEIF": "ELSEIF",
+        "VALUE":"VALUE",
     }
 
     # token_list
