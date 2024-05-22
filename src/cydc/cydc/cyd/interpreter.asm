@@ -2425,11 +2425,9 @@ OP_SHIFT_L:
     ; TODO:
 OP_WINDOW:
     push hl
+    push hl
     ld a, (CURR_WINDOW)
     ld de, WINDOWS
-    sla a
-    sla a
-    sla a
     add a, e
     jr nc, 1f
     inc d
@@ -2437,11 +2435,30 @@ OP_WINDOW:
     ld hl, POS_X
     ld bc, 6
     ldir
+    ld a, (ATTR_P)
+    ld (de), a
     pop hl
     ld a, (hl)
+    and 7
+    sla a
+    sla a
+    sla a
+    ld (CURR_WINDOW), a
+    ld hl, WINDOWS
+    add a, l
+    jr nc, 1f
+    inc h
+1:  ld l, a
+    ld de, POS_X
+    ld bc, 6
+    ldir
+    ld a, (hl)
+    ld (ATTR_P), a
+    pop hl
     inc hl
     jp EXEC_LOOP
     ENDIF
+
 
 /*
     IFNDEF UNUSED_OP_EXTERN
