@@ -166,7 +166,7 @@ class CydcLexer(object):
         "ATTRVAL": "ATTRVAL",
         "ATTRMASK": "ATTRMASK",
         "CHANGED": "CHANGED",
-        "VALOPTIONSEL": "VALOPTIONSEL",
+        "OPTIONVAL": "OPTIONVAL",
         "OPTIONSEL": "OPTIONSEL",
         "NUMOPTIONS": "NUMOPTIONS",
         "CLEAROPTIONS": "CLEAROPTIONS",
