@@ -1348,8 +1348,8 @@ class CydcParser(object):
         "numexpression : SAVERESULT LPAREN RPAREN"
         p[0] = ("PUSH_SAVE_RESULT",)
 
-    def p_numexpression_valoptionsel(self, p):
-        "numexpression : VALOPTIONSEL LPAREN RPAREN"
+    def p_numexpression_optionval(self, p):
+        "numexpression : OPTIONVAL LPAREN RPAREN"
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 2)
 
