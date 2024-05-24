@@ -54,6 +54,7 @@ INIT_WIN:
     DEFB 0
     DEFB 1
     DEFB 0
+    DEFB 1
     DEFB 0
     DEFB 0
     DEFS 6, 0
@@ -725,7 +726,12 @@ WAIT_NEXT_PAGE:
 
 PRINT_SELECTED_OPTION_BULLET:
     push af
-    ld bc, (POS_X)
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr nz, 1f
+    pop af
+    ret
+1:  ld bc, (POS_X)
     ld a, (SELECTED_OPTION)
     sla a
     sla a

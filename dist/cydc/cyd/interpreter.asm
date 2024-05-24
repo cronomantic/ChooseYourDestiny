@@ -1868,19 +1868,21 @@ OP_PUSH_IS_DISK:
 
     IFNDEF UNUSED_OP_POP_MENUCONFIG
 OP_POP_MENUCONFIG:
-    ld b, (ix+0)
-    ld c, (ix+1)
-    ld a, (ix+2)
-    ld de, 3
-    add ix, de
+    ld d, (ix+0)
+    ld e, (ix+1)
+    ld b, (ix+2)
+    ld c, (ix+3)
     ld (INCR_X_OPTION), bc
-    ld (DEFAULT_OPTION), a
+    ld (DEFAULT_OPTION), de
+    ld de, 4
+    add ix, de
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_MENUCONFIG
 OP_MENUCONFIG:
     ld de, INCR_X_OPTION
+    ldi
     ldi
     ldi
     ldi
