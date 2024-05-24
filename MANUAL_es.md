@@ -55,6 +55,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [NUMOPTIONS()](#numoptions)
     - [OPTIONVAL()](#optionval)
     - [CLEAROPTIONS](#clearoptions)
+    - [MENUCONFIG numexpression, numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression-numexpression)
     - [MENUCONFIG numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression)
     - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
@@ -762,19 +763,24 @@ _Función_ que devuelve el valor asignado a la opción seleccionada y aceptada e
 
 Elimina las opciones almacenadas en el menú.
 
-### MENUCONFIG numexpression, numexpression, numexpression
+### MENUCONFIG numexpression, numexpression, numexpression, numexpression
 
 Configura el menú de opciones.
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
 - El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. Empieza a contar desde cero, el cual es el valor por defecto.
+- El cuarto parámetro, si es cero no muestra el icono de selección y si es distinto de cero, lo muestra.
 
-El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0`.
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`.
+
+### MENUCONFIG numexpression, numexpression, numexpression
+
+Si se omite el cuarto parámetro, `MENUCONFIG x,y,d` equivale a `MENUCONFIG x,y,d,1`.
 
 ### MENUCONFIG numexpression, numexpression
 
-Por compatibilidad, si se omite el tercer parámetro, se asume que es cero. De tal manera que `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0`.
+Si se omiten el tercer parámetro y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
 
 ### CHAR numexpression
 
