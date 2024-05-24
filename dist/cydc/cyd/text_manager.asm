@@ -1,7 +1,7 @@
 ; 
 ; MIT License
 ; 
-; Copyright (c) 2023 Sergio Chico
+; Copyright (c) 2024 Sergio Chico
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,19 @@ INIT_WIN:
     call GET_CHARACTER_WIDTH
     ld (WIDTH_BACKSPACE), a
 
+    ld a, MAXWINDOWS
+    ld de, WINDOWS
+1:  ex af, af'
+    ld bc, .end_data-.win_data
+    ld hl, .win_data
+    ldir
+    ld a, (ATTR_P)
+    ld (de), a
+    inc de
+    ex af, af'
+    dec a
+    jr nz, 1b
+
     ;Init other variables
     ld de, NUM_OPTIONS
     ld bc, .end_data-.data
@@ -38,11 +51,15 @@ INIT_WIN:
     DEFB 0
     DEFB 0
     DEFB 0
+    DEFB 0
     DEFB 1
+    DEFB 0
     DEFB 0
     DEFB 0
     DEFS 6, 0
     DEFW 1
+    DEFB 0
+.win_data:
     DEFB 0
     DEFB 0
     DEFB 0
@@ -1123,21 +1140,91 @@ SET_BACKSPACE_MARGINS_WIDTH:
     ld (MAX_X_BACKSPACE), a
     ret
 
+
+;----------------------------------------------------
+
+POS_CHECK:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    ret c
+    ld a, 31
+    cp c
+    ret
+
+POS_ADJUST:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    jr nc, 1f
+    ld b, a
+1:  ld a, 31
+    cp c
+    ret nc
+    ld c, a
+    ret
+
+RECT_ADJUST:
+    ; B = Y, C = X
+    ; D = Height, E = Width
+    ld a, e
+    add a, c
+    jr c, 4f
+    cp 32
+    jr c, 1f
+4:  ld a, 32
+    sub c
+    ld e, a
+1:  ld a, d
+    add a, b
+    jr c, 3f
+    cp 24
+    ret c
+3:  ld a, 24
+    sub b
+    ld d, a
+    ret
 ;-----------------------------------------------------
 
 CLEAR_WIN:
     ld bc, (MIN_X)
     ld de, (MAX_X)
     ld (POS_X), bc         ;set to origin of window
-    ;call CLEAR_RECT
-    ;xor a
-    ;ld (NUM_OPTIONS), a          ;Clear options.
-    ;ret
-CLEAR_RECT:
     push ix
     ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    call CLEAR_RECT
+    ;xor a
+    ;ld (NUM_OPTIONS), a          ;Clear options.
+    pop ix
+    ret
 
-    ld (ix-2), b           ; YPOS
+/*
+SCROLL_WIN:
+    push ix
+    ld bc, (MIN_X)
+    ld de, (MAX_X)
+    ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    ld c, (ix-1)   ; XPOS
+    ld b, (ix-2)   ; YPOS
+    ld d, (ix-3)   ; Width
+    ld e, (ix-4)   ; Height
+    call SCROLL_UP
+    ; b=row, c=col
+    ; d=width, e=height
+    ld a, (ix-2)   ; YPOS
+    add a, (ix-4)  ; Height
+    dec a
+    ld (ix-2), a
+    ld (ix-4), 1
+    call CLEAR_RECT
+    pop ix
+    ret    
+*/
+
+CALCULATE_RECT:
+    ld (ix-2), b         ; YPOS
 
     srl c
     srl c
@@ -1147,19 +1234,21 @@ CLEAR_RECT:
     srl e
     srl e
 
-    ld (ix-1), c          ; XPOS
+    ld (ix-1), c         ; XPOS
 
     ld a, e
     sub c
     inc a
-    ld (ix-3), a          ;Width
+    ld (ix-3), a         ;Width
 
     ld a, d
     sub b
     ld d, a
     inc a
     ld (ix-4), a        ; Height
+    ret
 
+CLEAR_RECT:
     ld      a,(ix-2)   ; ypos
     rrca
     rrca
@@ -1254,247 +1343,175 @@ CLEAR_RECT:
 
 .clearbox_row_skip:
     djnz .clearbox_outer_loop
-    pop ix
     ret
+
+/*
 ;----------------------------------------------------
-
-
-;----------------------------------------------------
-;' scrolls the window defined by (row, col, width, height) 1 cell up
-;WIN_SCROLL_UP:
-;    ld bc, (MIN_X)
-;    ld de, (MAX_X)
-;
-;    srl c
-;    srl c
-;    srl c
-;
-;    srl e
-;    srl e
-;    srl e
-;
-;    ld a, e
-;    sub c
-;    inc a
-;    ex af, af'
-;
-;    ld a, d
-;    sub b
-;    ld d, a
-;    inc a
-;
-;    ld e, a
-;    ex af, af'
-;    ld d, a
-;
-;
-;    ; b=row, c=col
-;    ; d=width, e=height
-;
-;    ld a, e
-;    or a
-;    ret z
-;    or d
-;    ret z
-;
-;    push bc
-;    push de
-;
-;    ld a,b
-;    and 18h
-;    ld h,a
-;    ld a,b
-;    and 07h
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,c
-;    ld l,a   ;HL=top-left window address in bitmap coord
-;    ld bc, SCR_PXL
-;    add hl, bc
-;    ld a,e
-;    ld c, d  ; c = width
-;    ld d, h
-;    ld e, l
-;    dec a
-;    jr z, .CleanLast
-;    add a,a
-;    add a,a
-;    add a,a
-;    ld b, a  ; b = 8 * (height - 1)
-;
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    call PIXEL_DOWN
-;
-;.BucleScans:
-;    push bc
-;    push de
-;    push hl
-;    ld b, 0
-;    ldir
-;    pop hl
-;    pop de
-;    pop bc
-;    call PIXEL_DOWN
-;    ex de, hl
-;    call PIXEL_DOWN
-;    ex de, hl
-;    djnz .BucleScans
-;
-;.CleanLast:
-;    ex de,hl
-;    pop de
-;    ld b, 8
-;    ld c, d
-;    push de
-;
-;.CleanLastLoop:
-;    push bc
-;    push hl
-;    ld (hl), 0
-;    dec c
-;    jr z, .EndCleanScan
-;    ld d, h
-;    ld e, l
-;    inc de
-;    ld b, 0
-;    ldir
-;
-;.EndCleanScan:
-;    pop hl
-;    pop bc
-;    inc h
-;    djnz .CleanLastLoop
-;
-;.ScrollAttrs:
-;    pop de
-;    pop bc
-;    ld l,b
-;    ld h,0
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    ld a,l
-;    add a,c
-;    ld l,a
-;    ld a,h
-;    ld h,a    ;HL=top-left address in attr coords
-;    ld bc, SCR_ATT
-;    add hl, bc
-;    ld b,e
-;    dec b
-;    ret z
-;
-;.BucleAttrs:
-;    push bc
-;    push de
-;    push hl
-;    ld b,0
-;    ld c,d
-;    ex de,hl
-;    ld hl,32
-;    add hl,de
-;    ldir
-;    pop hl
-;    ld de,32
-;    add hl,de
-;    pop de
-;    pop bc
-;    djnz .BucleAttrs
-;    ret
-;;-----------------------------------
-;; Pixel Down
-;;
-;; Adjusts screen address HL to move one pixel down in the display.
-;; (0,0) is located at the top left corner of the screen.
-;;
-;; enter: HL = valid screen address
-;; exit : Carry = moved off screen
-;;        Carry'= moved off current cell (needs ATTR update)
-;;        HL = moves one pixel down
-;; used : AF, HL
-;PIXEL_DOWN:
-;    push de
-;    ld de, SCR_PXL
-;    or a
-;    sbc hl, de
-;    inc h
-;    ld a,h
-;    and $07
-;    jr nz, .leave
-;    scf         ;  Sets carry on F', which flags ATTR must be updated
-;    ex af, af'
-;    ld a,h
-;    sub $08
-;    ld h,a
-;    ld a,l
-;    add a,$20
-;    ld l,a
-;    jr nc, .leave
-;    ld a,h
-;    add a,$08
-;    ld h,a
-;    cp $19     ; carry = 0 => Out of screen
-;    jr c, .leave ; returns if out of screen
-;    ccf
-;    pop de
-;    ret
-;.leave:
-;    add hl, de ; This always sets Carry = 0
-;    pop de
-;    ret
-
-; TODO: Use this for more things...
-
-
-POS_CHECK:
-    ; B = Y, C = X
-    ld a, 23
-    cp b
-    ret c
-    ld a, 31
-    cp c
-    ret
-
-POS_ADJUST:
-    ; B = Y, C = X
-    ld a, 23
-    cp b
-    jr nc, 1f
-    ld b, a
-1:  ld a, 31
-    cp c
-    ret nc
-    ld c, a
-    ret
-
-RECT_ADJUST:
-    ; B = Y, C = X
-    ; D = Height, E = Width
+; scrolls the window defined by (row, col, width, height) 1 cell up
+SCROLL_UP:
+    ; b=row, c=col
+    ; d=width, e=height
     ld a, e
-    add a, c
-    jr c, 4f
-    cp 32
-    jr c, 1f
-4:  ld a, 32
-    sub c
-    ld e, a
-1:  ld a, d
-    add a, b
-    jr c, 3f
-    cp 24
-    ret c
-3:  ld a, 24
-    sub b
-    ld d, a
+    or a
+    ret z
+    or d
+    ret z
+
+    push bc
+    push de
+
+    ld a,b
+    and 18h
+    ld h,a
+    ld a,b
+    and 07h
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,c
+    ld l,a   ;HL=top-left window address in bitmap coord
+    ld bc, SCR_PXL
+    add hl, bc
+    ld a,e
+    ld c, d  ; c = width
+    ld d, h
+    ld e, l
+    dec a
+    jr z, .CleanLast
+    add a,a
+    add a,a
+    add a,a
+    ld b, a  ; b = 8 * (height - 1)
+
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    call PIXEL_DOWN
+
+.BucleScans:
+    push bc
+    push de
+    push hl
+    ld b, 0
+    ldir
+    pop hl
+    pop de
+    pop bc
+    call PIXEL_DOWN
+    ex de, hl
+    call PIXEL_DOWN
+    ex de, hl
+    djnz .BucleScans
+
+.CleanLast:
+    ex de,hl
+    pop de
+    ld b, 8
+    ld c, d
+    push de
+
+.CleanLastLoop:
+    push bc
+    push hl
+    ld (hl), 0
+    dec c
+    jr z, .EndCleanScan
+    ld d, h
+    ld e, l
+    inc de
+    ld b, 0
+    ldir
+
+.EndCleanScan:
+    pop hl
+    pop bc
+    inc h
+    djnz .CleanLastLoop
+
+.ScrollAttrs:
+    pop de
+    pop bc
+    ld l,b
+    ld h,0
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld a,l
+    add a,c
+    ld l,a
+    ld a,h
+    ld h,a    ;HL=top-left address in attr coords
+    ld bc, SCR_ATT
+    add hl, bc
+    ld b,e
+    dec b
+    ret z
+
+.BucleAttrs:
+    push bc
+    push de
+    push hl
+    ld b,0
+    ld c,d
+    ex de,hl
+    ld hl,32
+    add hl,de
+    ldir
+    pop hl
+    ld de,32
+    add hl,de
+    pop de
+    pop bc
+    djnz .BucleAttrs
     ret
+;-----------------------------------
+; Pixel Down
+;
+; Adjusts screen address HL to move one pixel down in the display.
+; (0,0) is located at the top left corner of the screen.
+;
+; enter: HL = valid screen address
+; exit : Carry = moved off screen
+;        Carry'= moved off current cell (needs ATTR update)
+;        HL = moves one pixel down
+; used : AF, HL
+PIXEL_DOWN:
+    push de
+    ld de, SCR_PXL
+    or a
+    sbc hl, de
+    inc h
+    ld a,h
+    and $07
+    jr nz, .leave
+    scf         ;  Sets carry on F', which flags ATTR must be updated
+    ex af, af'
+    ld a,h
+    sub $08
+    ld h,a
+    ld a,l
+    add a,$20
+    ld l,a
+    jr nc, .leave
+    ld a,h
+    add a,$08
+    ld h,a
+    cp $19     ; carry = 0 => Out of screen
+    jr c, .leave ; returns if out of screen
+    ccf
+    pop de
+    ret
+.leave:
+    add hl, de ; This always sets Carry = 0
+    pop de
+    ret
+;-------------------------------
+*/
