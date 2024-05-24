@@ -523,6 +523,13 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_window(self, p):
+        "statement : WINDOW expression"
+        if len(p) == 3 and self._check_byte_value(p[2], p.lexer.lexer.lineno):
+            p[0] = ("WINDOW", p[2] & 0x07)
+        else:
+            p[0] = None
+
     def p_statement_blit(self, p):
         "statement : BLIT numexpression COMMA numexpression COMMA numexpression COMMA numexpression AT numexpression COMMA numexpression"
         if len(p) == 13:
@@ -860,10 +867,14 @@ class CydcParser(object):
                 p[0] += [("POP_AT",)]
 
     def p_statement_menuconfig(self, p):
-        "statement : MENUCONFIG numexpression COMMA numexpression"
-        if len(p) == 5:
+        """
+        statement : MENUCONFIG numexpression COMMA numexpression COMMA numexpression
+                  | MENUCONFIG numexpression COMMA numexpression
+        """
+        if len(p) in [7, 5]:
             col_d = None
             row_d = None
+            init_d = None
             if isinstance(p[2], tuple):
                 t1 = p[2]
                 if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
@@ -880,8 +891,16 @@ class CydcParser(object):
                         row_d = 31
                     if row_d < 0:
                         row_d = 0
-            if col_d is not None and row_d is not None:
-                p[0] = ("MENUCONFIG", col_d, row_d)
+            if len(p) == 5:
+                init_d = 0
+            elif isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    init_d = t3[1]
+                    if init_d >= 32:
+                        init_d = 0
+            if col_d is not None and row_d is not None and init_d is not None:
+                p[0] = ("MENUCONFIG", col_d, row_d, init_d)
             else:
                 if isinstance(p[2], list):
                     p[0] = p[2]
@@ -891,6 +910,12 @@ class CydcParser(object):
                     p[0] += p[4]
                 else:
                     p[0] += [p[4]]
+                if init_d is not None and isinstance(init_d, int):
+                    p[0] += [("PUSH_D", init_d)]
+                elif isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
                 p[0] += [("POP_MENUCONFIG",)]
 
     def p_statement_save(self, p):
@@ -1074,15 +1099,41 @@ class CydcParser(object):
             p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
-        "statement : OPTION GOTO ID"
-        if self._symbol_usage(p[3], SymbolType.LABEL, p.lexer.lexer.lineno):
+        """
+        statement : OPTION VALUE LPAREN numexpression RPAREN GOTO ID
+                  | OPTION GOTO ID
+        """
+        if len(p) == 8 and self._symbol_usage(
+            p[7], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0] += [("POP_VAL_OPTION", 0, p[7], 0, 0)]
+        elif len(p) == 4 and self._symbol_usage(
+            p[3], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
             p[0] = ("OPTION", 0, p[3], 0, 0)
         else:
             p[0] = None
 
     def p_statement_option_gosub(self, p):
-        "statement : OPTION GOSUB ID"
-        if self._symbol_usage(p[3], SymbolType.LABEL, p.lexer.lexer.lineno):
+        """
+        statement : OPTION VALUE LPAREN numexpression RPAREN GOSUB ID
+                  | OPTION GOSUB ID
+        """
+        if len(p) == 8 and self._symbol_usage(
+            p[7], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0] += [("POP_VAL_OPTION", 0xFF, p[7], 0, 0)]
+        elif len(p) == 4 and self._symbol_usage(
+            p[3], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
             p[0] = ("OPTION", 0xFF, p[3], 0, 0)
         else:
             p[0] = None
@@ -1296,6 +1347,11 @@ class CydcParser(object):
     def p_numexpression_saveresult_expression(self, p):
         "numexpression : SAVERESULT LPAREN RPAREN"
         p[0] = ("PUSH_SAVE_RESULT",)
+
+    def p_numexpression_optionval(self, p):
+        "numexpression : OPTIONVAL LPAREN RPAREN"
+        if len(p) == 4:
+            p[0] = ("PUSH_OPTION_ST", 2)
 
     def p_numexpression_optionsel(self, p):
         "numexpression : OPTIONSEL LPAREN RPAREN"

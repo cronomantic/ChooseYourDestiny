@@ -46,12 +46,16 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [WAITKEY](#waitkey)
     - [OPTION GOTO ID](#option-goto-id)
     - [OPTION GOSUB ID](#option-gosub-id)
+    - [OPTION VALUE(numexpression) GOTO ID](#option-valuenumexpression-goto-id)
+    - [OPTION VALUE(numexpression) GOSUB ID](#option-valuenumexpression-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
     - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
     - [OPTIONSEL()](#optionsel)
     - [NUMOPTIONS()](#numoptions)
+    - [OPTIONVAL()](#optionval)
     - [CLEAROPTIONS](#clearoptions)
+    - [MENUCONFIG numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression)
     - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
@@ -712,11 +716,19 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo. Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
 
 ### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
+
+### OPTION VALUE(numexpression) GOTO ID
+
+Funciona igual que `OPTION GOTO ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
+
+### OPTION VALUE(numexpression) GOSUB ID
+
+Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
 
 ### CHOOSE
 
@@ -742,18 +754,27 @@ _Función_ que devuelve la opción actualmente seleccionada en el menú actualme
 
 _Función_ que devuelve el número de opciones del menú actualmente activo. Si no tenemos un menú activo, el resultado de esta función está indefinido.
 
+### OPTIONVAL()
+
+_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, solo se actualiza cuando la opción es elegida.
+
 ### CLEAROPTIONS
 
 Elimina las opciones almacenadas en el menú.
 
-### MENUCONFIG numexpression, numexpression
+### MENUCONFIG numexpression, numexpression, numexpression
 
-Configura el desplazamiento por el menú de opciones.
+Configura el menú de opciones.
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
+- El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. Empieza a contar desde cero, el cual es el valor por defecto.
 
-El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1`.
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0`.
+
+### MENUCONFIG numexpression, numexpression
+
+Por compatibilidad, si se omite el tercer parámetro, se asume que es cero. De tal manera que `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0`.
 
 ### CHAR numexpression
 
@@ -918,6 +939,7 @@ Equivalente a `PUTATTR numexpression, 0xFF AT numexpression, numexpression`
 _Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla, en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
 Los parámetros, por órden, son:
+
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
 
@@ -926,6 +948,7 @@ Los parámetros, por órden, son:
 _Función_ que devuelve el valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta), utilizado en los comandos `PUTATTR` y `FILLATTR`.
 
 Los parámetros, por órden, son:
+
 - Color de tinta (0 a 7).
 - Color de fondo (0 a 7).
 - Uso de brillo (0 ó 1).
@@ -936,6 +959,7 @@ Los parámetros, por órden, son:
 _Función_ que devuelve un valor de máscara, utilizado en los comandos `PUTATTR` y `FILLATTR`.
 
 Los parámetros, por órden, son:
+
 - Máscara de tinta. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
 - Máscara de fondo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
 - Máscara de brillo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.

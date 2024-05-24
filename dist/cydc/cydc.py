@@ -359,6 +359,7 @@ def main():
         font.loadCharset(jsonCharset)
 
     ######################################################################
+
     if verbose:
         print(_("Parsing code..."))
 
@@ -372,6 +373,7 @@ def main():
         for e in parser.errors:
             print("ERROR:" + e)
         sys.exit(1)
+    
     ######################################################################
 
     if verbose:
