@@ -868,13 +868,15 @@ class CydcParser(object):
 
     def p_statement_menuconfig(self, p):
         """
-        statement : MENUCONFIG numexpression COMMA numexpression COMMA numexpression
+        statement : MENUCONFIG numexpression COMMA numexpression COMMA numexpression COMMA numexpression
+                  | MENUCONFIG numexpression COMMA numexpression COMMA numexpression
                   | MENUCONFIG numexpression COMMA numexpression
         """
-        if len(p) in [7, 5]:
+        if len(p) in [9, 7, 5]:
             col_d = None
             row_d = None
             init_d = None
+            show_d = None
             if isinstance(p[2], tuple):
                 t1 = p[2]
                 if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
@@ -899,8 +901,19 @@ class CydcParser(object):
                     init_d = t3[1]
                     if init_d >= 32:
                         init_d = 0
-            if col_d is not None and row_d is not None and init_d is not None:
-                p[0] = ("MENUCONFIG", col_d, row_d, init_d)
+            if len(p) in [5, 7]:
+                show_d = 1
+            elif isinstance(p[8], tuple):
+                t4 = p[8]
+                if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
+                    show_d = t4[1]
+            if (
+                col_d is not None
+                and row_d is not None
+                and init_d is not None
+                and show_d is not None
+            ):
+                p[0] = ("MENUCONFIG", col_d, row_d, init_d, show_d)
             else:
                 if isinstance(p[2], list):
                     p[0] = p[2]
@@ -916,6 +929,12 @@ class CydcParser(object):
                     p[0] += p[6]
                 else:
                     p[0] += [p[6]]
+                if show_d is not None and isinstance(show_d, int):
+                    p[0] += [("PUSH_D", show_d)]
+                elif isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
                 p[0] += [("POP_MENUCONFIG",)]
 
     def p_statement_save(self, p):
