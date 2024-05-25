@@ -757,7 +757,7 @@ _Función_ que devuelve el número de opciones del menú actualmente activo. Si 
 
 ### OPTIONVAL()
 
-_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, solo se actualiza cuando la opción es elegida.
+_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, sólo se actualiza cuando una opción es elegida y se sale del menú.
 
 ### CLEAROPTIONS
 
@@ -765,14 +765,14 @@ Elimina las opciones almacenadas en el menú.
 
 ### MENUCONFIG numexpression, numexpression, numexpression, numexpression
 
-Configura el menú de opciones.
+Configura el menú de opciones. Los parñametros que se pueden configurar son los siguientes:
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
-- El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. Empieza a contar desde cero, el cual es el valor por defecto.
+- El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. El valor por defecto es cero (la primera opción registrada).
 - El cuarto parámetro, si es cero no muestra el icono de selección y si es distinto de cero, lo muestra.
 
-El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`.
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`. Si se cambia la configuración para un menú, es recomendable hacerlo antes de situar las opciones.
 
 ### MENUCONFIG numexpression, numexpression, numexpression
 

@@ -764,6 +764,9 @@ OP_OPTION:
     jp SYS_ERROR
 .option_ok:
     push hl                    ;Store pointer
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr z, 1f
     call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
     push de
     push de                    ; ; d = POS_Y, e = POS_X
@@ -772,7 +775,7 @@ OP_OPTION:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-    ld a, (NUM_OPTIONS)
+1:  ld a, (NUM_OPTIONS)
     sla a
     sla a
     sla a
@@ -805,6 +808,9 @@ OP_POP_VAL_OPTION:
     jp SYS_ERROR
 .option_ok:
     push hl                    ;Store pointer
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr z, 1f
     call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
     push de
     push de                    ; ; d = POS_Y, e = POS_X
@@ -813,7 +819,7 @@ OP_POP_VAL_OPTION:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-    ld a, (NUM_OPTIONS)
+1:  ld a, (NUM_OPTIONS)
     push af
     sla a
     sla a
