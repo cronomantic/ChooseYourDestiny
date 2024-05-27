@@ -104,6 +104,8 @@ MAX_X:
     DEFB 255
 MAX_Y:
     DEFB 23
+PRINTED_LINES:
+    DEFB 0
 
 CHUNK:
     DEFB 0
