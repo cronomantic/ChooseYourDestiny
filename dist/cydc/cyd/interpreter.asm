@@ -884,6 +884,8 @@ OP_WAITKEY:
 2:  call INKEY
     or a
     jr nz, 2b
+    ;xor a
+    ld (PRINTED_LINES), a
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -936,6 +938,8 @@ OP_PAUSE:
 2:  call INKEY
     or a
     jr nz, 2b
+    ;xor a
+    ld (PRINTED_LINES), a
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -2458,7 +2462,7 @@ OP_WINDOW:
     inc h
 1:  ld l, a
     ld de, POS_X
-    ld bc, 6
+    ld bc, 7
     ldir
     ld a, (hl)
     ld (ATTR_P), a

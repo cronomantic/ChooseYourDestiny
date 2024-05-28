@@ -84,7 +84,7 @@ CHOOSE_CH_GOSUB_ADDRESS:
 ;--------------------------------------------------------------------------
 ;Print speed
 PRT_INTERVAL:
-    DEFW 1
+    DEFW 0
 
 CURR_WINDOW:
     DEFB 0

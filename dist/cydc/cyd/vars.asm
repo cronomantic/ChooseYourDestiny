@@ -84,7 +84,7 @@ CHOOSE_CH_GOSUB_ADDRESS:
 ;--------------------------------------------------------------------------
 ;Print speed
 PRT_INTERVAL:
-    DEFW 1
+    DEFW 0
 
 CURR_WINDOW:
     DEFB 0
@@ -104,6 +104,8 @@ MAX_X:
     DEFB 255
 MAX_Y:
     DEFB 23
+PRINTED_LINES:
+    DEFB 0
 
 CHUNK:
     DEFB 0
