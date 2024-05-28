@@ -58,7 +58,7 @@ INIT_WIN:
     DEFB 0
     DEFB 0
     DEFS 6, 0
-    DEFW 1
+    DEFW 0
     DEFB 0
 .win_data:
     DEFB 0
@@ -700,10 +700,11 @@ PUT_VAR_CHAR:
 
     ; Typing pause
     ld hl, (PRT_INTERVAL)
-.t4: dec hl
+.t4: 
     ld a, h
     or l
     ret z
+    dec hl
     jr .t4
 
 .MASK:

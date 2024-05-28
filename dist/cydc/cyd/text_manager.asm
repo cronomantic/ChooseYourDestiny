@@ -58,7 +58,7 @@ INIT_WIN:
     DEFB 0
     DEFB 0
     DEFS 6, 0
-    DEFW 1
+    DEFW 0
     DEFB 0
 .win_data:
     DEFB 0
@@ -67,6 +67,7 @@ INIT_WIN:
     DEFB 0
     DEFB 255
     DEFB 23
+    DEFB 0
 .end_data:
 
 ; The border color is on A
@@ -319,6 +320,8 @@ SET_MARGINS:
     pop bc
     ex (sp), hl
     exx
+    xor a
+    ld (PRINTED_LINES), a
     ret
 
 
@@ -406,6 +409,8 @@ SET_CURSOR:
     pop bc
     ex (sp), hl
     exx
+    xor a
+    ld (PRINTED_LINES), a
     ret
 
 
@@ -431,6 +436,45 @@ GET_CHARACTER_WIDTH:
     ld a, (bc)
     ret
 
+;TODO:
+CRLF:
+    push ix
+    ld ix, POS_X
+    ld a, (ix+2)
+    ld (ix+0), a
+    inc (ix+1)
+.CHECK_NEXT_LINE:
+    ld a, (WAIT_NEW_SCREEN)
+    or a
+    jr z, 2f
+    ld a, (ix+5)
+    sub (ix+3)
+    jr z, 2f
+    inc (ix+6)
+    ld b, a
+    ld a, (ix+6)
+    cp b
+    jr c, 2f        ;(printedLines >= (cwinH - 1))
+    ld a, (ix+5)
+    cp (ix+1)       ; MAXY-POSY
+    jr nc, 3f
+    ld a, (ix+3)
+    ld (ix+0), a
+    dec (ix+1)
+    call SCROLL_WIN
+3:  call WAIT_NEXT_PAGE
+    ld (ix+6), 0
+    ld a, (ix+3)
+    ld (ix+0), a
+2:  ld a, (ix+5)
+    cp (ix+1)      ;MAXY-POSY
+    jr nc, 1f
+    dec (ix+1)
+    call SCROLL_WIN
+1:  pop ix
+    ret
+
+
 ;    Entry param : A = Character width of character
 ;    Output: H = Y for next char
 ;            L = X for next char
@@ -450,6 +494,15 @@ UPDATE_POS:
 .new_l:
     ld a, 1
     ld (SKIP_SPACES), a ;NEWLINE DONE
+    call CRLF
+    ld hl, (POS_X)
+    ld d, h        ; Save new position in DE
+    ld e, l
+.s_mod+1:          ; If we jump to next line, the next pos_x must be updated
+    ld a, 0-0      ; The parameter is self_modified here
+    add a, l       ; add the width of the character to the next position
+    ld l, a        ; Update POS_X
+/*
     ld bc, (MIN_X) ; b = MIN_Y, c = MIN_X
     ld l, c        ; Set X = MIN_X
     inc h          ; Increment Y
@@ -475,11 +528,11 @@ UPDATE_POS:
     add a, l       ; add the width of the character to the next position
     ld l, a        ; Update POS_X
     ; POS_X should never be zero in this case
+*/
 .upd_pos:
     ld (POS_X), hl ; Update next position
-.tmp_ret:
     ret
-ENDP
+
 
 PUT_VAR_CHAR:
 
@@ -647,10 +700,11 @@ PUT_VAR_CHAR:
 
     ; Typing pause
     ld hl, (PRT_INTERVAL)
-.t4: dec hl
+.t4: 
     ld a, h
     or l
     ret z
+    dec hl
     jr .t4
 
 .MASK:
@@ -663,28 +717,6 @@ PUT_VAR_CHAR:
     DEFB %00000011  ;CPL =>  %11111100
     DEFB %00000001  ;CPL =>  %11111110
 
-
-; Carriage return
-; Uses: A & C
-CRLF:
-    ld a, (MIN_X)
-    ld (POS_X), a
-    ld a, (POS_Y)
-    inc a
-    ld c, a
-    ld a, (MAX_Y)
-    cp c              ; MAX_Y-Y
-    jr nc, .t1        ; MAX_Y >= Y
-    jp CLEAR_WIN
-.t1:
-    jr nz, .t2
-    ld a, (WAIT_NEW_SCREEN)
-    or a
-    jp nz, WAIT_NEXT_PAGE   ; MAX_Y = Y
-.t2:
-    ld a, c
-    ld (POS_Y), a
-    ret
 
 CENTER:
     ld a, (MIN_X)
@@ -699,7 +731,7 @@ CENTER:
 WAIT_NEXT_PAGE:
     call CENTER
     ld de, (POS_X)
-    inc d
+    ;inc d
 .loop:
     call INKEY
     cp 13
@@ -721,7 +753,10 @@ WAIT_NEXT_PAGE:
     call INKEY
     or a
     jr nz, .keyp
-    jp CLEAR_WIN 
+    call CLEAR_LINE
+    ld a, (MIN_X)
+    ld (POS_X), a
+    ret
 
 
 PRINT_SELECTED_OPTION_BULLET:
@@ -1119,6 +1154,9 @@ BACKSPACE:
     cp b                      ; Compare with MIN_Y
     jr c, .noBacktrack        ; IF Y < MIN_Y, do nothing
     ld d, a                   ; Store the new position Y
+    ld a, (PRINTED_LINES)
+    dec a
+    ld (PRINTED_LINES), a
     ld a, (MAX_X_BACKSPACE)   ; Sets X to the right side (MAX_X)
     jr 1b                     ; substract again
 .noLeftBorder:
@@ -1200,12 +1238,12 @@ CLEAR_WIN:
     ld ix, TMP_AREA+4
     call CALCULATE_RECT
     call CLEAR_RECT
-    ;xor a
+    xor a
     ;ld (NUM_OPTIONS), a          ;Clear options.
+    ld (PRINTED_LINES), a
     pop ix
     ret
 
-/*
 SCROLL_WIN:
     push ix
     ld bc, (MIN_X)
@@ -1219,15 +1257,25 @@ SCROLL_WIN:
     call SCROLL_UP
     ; b=row, c=col
     ; d=width, e=height
-    ld a, (ix-2)   ; YPOS
-    add a, (ix-4)  ; Height
-    dec a
+    ld a, (MAX_Y)
     ld (ix-2), a
     ld (ix-4), 1
     call CLEAR_RECT
     pop ix
-    ret    
-*/
+    ret
+
+CLEAR_LINE:
+    push ix
+    ld bc, (MIN_X)
+    ld de, (MAX_X)
+    ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    ld a, (POS_Y)
+    ld (ix-2), a
+    ld (ix-4), 1
+    call CLEAR_RECT
+    pop ix
+    ret
 
 CALCULATE_RECT:
     ld (ix-2), b         ; YPOS
@@ -1351,7 +1399,7 @@ CLEAR_RECT:
     djnz .clearbox_outer_loop
     ret
 
-/*
+
 ;----------------------------------------------------
 ; scrolls the window defined by (row, col, width, height) 1 cell up
 SCROLL_UP:
@@ -1520,4 +1568,4 @@ PIXEL_DOWN:
     pop de
     ret
 ;-------------------------------
-*/
+
