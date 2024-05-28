@@ -772,7 +772,8 @@ Configura el menú de opciones. Los parñametros que se pueden configurar son lo
 - El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. El valor por defecto es cero (la primera opción registrada).
 - El cuarto parámetro, si es cero no muestra el icono de selección y si es distinto de cero, lo muestra.
 
-El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`. Si se cambia la configuración para un menú, es recomendable hacerlo antes de situar las opciones.
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`.
+**Si se cambia la configuración para un menú, es recomendable hacerlo lo primero, antes de situar las opciones.**
 
 ### MENUCONFIG numexpression, numexpression, numexpression
 
@@ -881,7 +882,7 @@ Igual que `WAIT`, pero con la salvedad de que el jugador puede abortar la pausa 
 
 ### TYPERATE expression
 
-Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 1, máximo 65535.
+Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 0, máximo 65535.
 
 ### MARGINS expression, expression, expression, expression
 
