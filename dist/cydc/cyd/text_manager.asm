@@ -736,7 +736,9 @@ WAIT_NEXT_PAGE:
     call INKEY
     cp 13
     jr z, .keyp
-    cp 32
+    cp ' '
+    jr z, .keyp
+    cp 'm'
     jr z, .keyp
 
     ld a, (CYCLE_OPTION)
