@@ -89,7 +89,7 @@ DIST_FILES = [
     "dist/cydc_cli.py",
 ]
 DIST_FILES_WIN32 = [
-    "MakeAdv.bat",  # This will be deprecated
+    #"MakeAdv.bat",  # This will be deprecated
     "make_adv.cmd",
     "tools/mkp3fs.exe",
     "tools/sjasmplus.exe",

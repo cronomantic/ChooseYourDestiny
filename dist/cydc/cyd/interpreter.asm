@@ -859,7 +859,9 @@ OP_WAITKEY:
 1:  call INKEY
     cp 13
     jr z, .keyp
-    cp 32
+    cp 'm'
+    jp z, .keyp
+    cp ' '
     jp z, .keyp
 .animate_bullet:
     push de
@@ -909,8 +911,10 @@ OP_PAUSE:
 1:  call INKEY
     cp 13
     jr z, .keyp
-    cp 32
-    jr z, .keyp
+    cp 'm'
+    jp z, .keyp
+    cp ' '
+    jp z, .keyp
     ld bc, (DOWN_COUNTER)
     ld a, b
     or c
@@ -968,6 +972,8 @@ OP_CHOOSE:
     cp 'a'
     jp z, .down
     cp ' '
+    jp z, .selected
+    cp 'm'
     jp z, .selected
     cp 13
     jp z, .selected
@@ -1137,6 +1143,8 @@ OP_CHOOSE_W:
     cp 'a'
     jp z, .down
     cp ' '
+    jp z, .selected
+    cp 'm'
     jp z, .selected
     cp 13
     jp z, .selected
@@ -1312,6 +1320,8 @@ OP_CHOOSE_CH:
     cp 'a'
     jp z, .down
     cp ' '
+    jp z, .selected
+    cp 'm'
     jp z, .selected
     cp 13
     jp z, .selected
