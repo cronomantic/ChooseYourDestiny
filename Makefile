@@ -1,4 +1,5 @@
-NAME:=test
+#NAME:=delerict
+NAME:=menu_text
 CYD_FILENAME:=$(NAME).cyd
 
 TAP_TARGET:=48k
@@ -17,7 +18,8 @@ SCR_LIST := $(shell find ./IMAGES -type f -iregex '\.\/IMAGES\/[0-9][0-9][0-9].s
 CSC_LIST := $(SCR_LIST:%.scr=%.csc)
 PT3_LIST := $(shell find ./TRACKS -type f -iregex '\.\/TRACKS\/[0-9][0-9][0-9].pt3')
 
-FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) $(BEEPFX_ASM_FILENAME)
+FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) 
+#$(BEEPFX_ASM_FILENAME)
 
 EXTRA_PARAM = -v -code
 
