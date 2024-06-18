@@ -2444,7 +2444,7 @@ OP_SHIFT_L:
 
 ;-------------------------------------------------------
     IFNDEF UNUSED_OP_WINDOW
-    ; TODO:
+    ;TODO Testing...
 OP_WINDOW:
     push hl
     push hl
@@ -2481,6 +2481,22 @@ OP_WINDOW:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_CHARSET
+    ; TODO: Add charset to Window?
+OP_CHARSET:
+    ld a, (hl)
+    inc hl
+    push hl
+    or a
+    jr z, 1f
+    ld a, $80                ;If <> 0, sets offset to 128
+1:  ld (CHARSET_OFFSET), a
+    add a, $20               ;Space
+    call GET_CHARACTER_WIDTH
+    ld (WIDTH_BACKSPACE), a
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
 
 /*
     IFNDEF UNUSED_OP_EXTERN
@@ -3206,6 +3222,12 @@ OPCODES:
     DW OP_WINDOW
     ENDIF
     IFDEF UNUSED_OP_WINDOW
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHARSET
+    DW OP_CHARSET
+    ENDIF
+    IFDEF UNUSED_OP_CHARSET
     DW ERROR_NOP
     ENDIF
 
