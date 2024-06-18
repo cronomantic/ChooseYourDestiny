@@ -68,6 +68,7 @@ INIT_WIN:
     DEFB 255
     DEFB 23
     DEFB 0
+    DEFB 0
 .end_data:
 
 ; The border color is on A
@@ -533,9 +534,13 @@ UPDATE_POS:
     ld (POS_X), hl ; Update next position
     ret
 
+; Test if using alternate charset
+PUT_VAR_CHAR_WITH_CHARSET_OFFSET:
+    ld c, a
+    ld a, (CHARSET_OFFSET)
+    add a, c
 
 PUT_VAR_CHAR:
-
     call GET_CHARACTER_POINTER
     push hl        ; Store address to character
 
@@ -856,7 +861,7 @@ PRINT_STR:
     cp 32         ; Space
     jr z, .space
     push hl
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     xor a
     ld (SKIP_SPACES), a      ; Disable space skip after a non-space character
     pop hl
@@ -871,7 +876,7 @@ PRINT_STR:
     push bc
     push hl
     ld a, 32
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     ld a, (SKIP_SPACES)  ;Skip space after auto-carriage return
     or a
     jr z, .no_backstep ; Space is not printed in this case
@@ -1167,7 +1172,7 @@ BACKSPACE:
     ld (POS_X), de            ; Update new screen position
     push de
     ld a, $20                 ; Clear the new position
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     pop de                    ; Step back again
     ld (POS_X), de
     ret
@@ -1570,4 +1575,3 @@ PIXEL_DOWN:
     pop de
     ret
 ;-------------------------------
-

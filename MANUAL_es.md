@@ -97,6 +97,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
     - [YPOS()](#ypos)
     - [XPOS()](#xpos)
+    - [WINDOW expression](#window-expression)
     - [RANDOMIZE](#randomize)
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
@@ -1008,6 +1009,11 @@ _Función_ que devuelve la fila actual en la que se encuentra el cursor en coord
 
 _Función_ que devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
+### WINDOW expression
+
+Se cambia a la ventana indicada por el parámetro y se soporta hasta 8 ventanas (desde 0 a 7). Por defecto, se comienza en la ventana 0.
+Un aviso importante es que las "ventanas" de CYD no son como las ventanas de Windows o MAC, más bien es un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales.
+
 ### RANDOMIZE
 
 Inicializa el generador de números aleatorios. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Lo que hace este comando es inicializar el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad.
@@ -1267,8 +1273,10 @@ Los carácteres propios del castellano, corresponden a las siguientes posiciones
 | 'ú'      | 25       |
 | 'ñ'      | 26       |
 | 'Ñ'      | 27       |
-| 'ü'      | 28       |
-| 'Ü'      | 29       |
+| 'ç'      | 28       |
+| 'Ç'      | 29       |
+| 'ü'      | 30       |
+| 'Ü'      | 31       |
 
 Los caracteres por encima del valor 127 (empezando desde cero) son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
