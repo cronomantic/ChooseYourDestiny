@@ -175,6 +175,7 @@ class CydcLexer(object):
         "ELSEIF": "ELSEIF",
         "VALUE":"VALUE",
         "WINDOW":"WINDOW",
+        "CHARSET":"CHARSET",
     }
 
     # token_list
