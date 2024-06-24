@@ -1552,7 +1552,8 @@ OP_POP_CHAR:
     UNDEFINE UNUSED_OP_REPCHAR
     ENDIF
 OP_TAB:
-    ld a, 32 
+    ld a, (CHARSET_OFFSET)
+    add a, $20
     jr OP_TAB2
     ENDIF
 
@@ -2444,7 +2445,6 @@ OP_SHIFT_L:
 
 ;-------------------------------------------------------
     IFNDEF UNUSED_OP_WINDOW
-    ;TODO Testing...
 OP_WINDOW:
     push hl
     push hl
@@ -2455,7 +2455,7 @@ OP_WINDOW:
     inc d
 1:  ld e, a
     ld hl, POS_X
-    ld bc, 6
+    ld bc, 7
     ldir
     ld a, (ATTR_P)
     ld (de), a

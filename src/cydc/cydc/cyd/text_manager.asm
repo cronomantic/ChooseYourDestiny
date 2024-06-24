@@ -60,6 +60,7 @@ INIT_WIN:
     DEFS 6, 0
     DEFW 0
     DEFB 0
+    DEFB 0
 .win_data:
     DEFB 0
     DEFB 0
@@ -67,7 +68,6 @@ INIT_WIN:
     DEFB 0
     DEFB 255
     DEFB 23
-    DEFB 0
     DEFB 0
 .end_data:
 
