@@ -1552,7 +1552,8 @@ OP_POP_CHAR:
     UNDEFINE UNUSED_OP_REPCHAR
     ENDIF
 OP_TAB:
-    ld a, 32 
+    ld a, (CHARSET_OFFSET)
+    add a, $20
     jr OP_TAB2
     ENDIF
 
@@ -2444,7 +2445,6 @@ OP_SHIFT_L:
 
 ;-------------------------------------------------------
     IFNDEF UNUSED_OP_WINDOW
-    ; TODO:
 OP_WINDOW:
     push hl
     push hl
@@ -2455,7 +2455,7 @@ OP_WINDOW:
     inc d
 1:  ld e, a
     ld hl, POS_X
-    ld bc, 6
+    ld bc, 7
     ldir
     ld a, (ATTR_P)
     ld (de), a
@@ -2481,6 +2481,22 @@ OP_WINDOW:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_CHARSET
+    ; TODO: Add charset to Window?
+OP_CHARSET:
+    ld a, (hl)
+    inc hl
+    push hl
+    or a
+    jr z, 1f
+    ld a, $80                ;If <> 0, sets offset to 128
+1:  ld (CHARSET_OFFSET), a
+    add a, $20               ;Space
+    call GET_CHARACTER_WIDTH
+    ld (WIDTH_BACKSPACE), a
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
 
 /*
     IFNDEF UNUSED_OP_EXTERN
@@ -3206,6 +3222,12 @@ OPCODES:
     DW OP_WINDOW
     ENDIF
     IFDEF UNUSED_OP_WINDOW
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHARSET
+    DW OP_CHARSET
+    ENDIF
+    IFDEF UNUSED_OP_CHARSET
     DW ERROR_NOP
     ENDIF
 

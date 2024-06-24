@@ -150,6 +150,7 @@ class CydcCodegen(object):
         "POP_FILLATTR": 0x75,
         "POP_VAL_OPTION": 0x76,
         "WINDOW": 0x77,
+        "CHARSET": 0x78,
     }
 
     def __init__(self, gettext):
