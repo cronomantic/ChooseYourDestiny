@@ -89,6 +89,9 @@ PRT_INTERVAL:
 CURR_WINDOW:
     DEFB 0
 
+CHARSET_OFFSET:
+    DEFB 0
+
 ; X is in pixels, y in chars
 POS_X:
     DEFB 0
@@ -105,8 +108,6 @@ MAX_X:
 MAX_Y:
     DEFB 23
 PRINTED_LINES:
-    DEFB 0
-CHARSET_OFFSET:
     DEFB 0
 
 CHUNK:

@@ -98,6 +98,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [YPOS()](#ypos)
     - [XPOS()](#xpos)
     - [WINDOW expression](#window-expression)
+    - [CHARSET expression](#charset-expression)
     - [RANDOMIZE](#randomize)
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
@@ -1011,8 +1012,12 @@ _Función_ que devuelve la columna actual en la que se encuentra el cursor en co
 
 ### WINDOW expression
 
-Se cambia a la ventana indicada por el parámetro y se soporta hasta 8 ventanas (desde 0 a 7). Por defecto, se comienza en la ventana 0.
-Un aviso importante es que las "ventanas" de CYD no son como las ventanas de Windows o MAC, más bien es un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales.
+Se cambia a la "ventana" indicada por el parámetro y se soporta hasta 8 ventanas (desde 0 a 7). Por defecto, la ventana inicial es la 0.
+Las "ventanas" de CYD son un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales. Esto permite tener diferentes áreas de texto independientes en pantalla simultáneamente sin tener que estar cambiando márgenes y la posición del cursor continuamente para pasar de un área a otra. Ten en cuenta que si se solapan ventanas el contenido de una ventana no se conserva si se sobreescribe con en otra ventana.
+
+### CHARSET expression
+
+Cambia el juego de carácteres empleado al imprimir textos. Con el parámetro a cero, se usa el juego inferior (caracteres del 0 al 127), y con un valor distinto de cero, se usa el juego superior (caracteres del 128 al 255). Recuerda que los caracteres del 0 al 32 y del 127 al 143 no son imprimibles. Esta instrucción no afecta a REPCHAR y CHAR.
 
 ### RANDOMIZE
 
@@ -1251,34 +1256,32 @@ Para probarlos en vivo, simplemente habría que copiar los ficheros y directorio
 
 ## Juego de caracteres
 
-El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
-El juego de caracteres por defecto incluido tiene un tamaño 6x8, excepto los caracteres del 127 al 143, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
+El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho de 1 a 8 píxeles. El juego de caracteres por defecto incluido tiene un tamaño 6x8, junto con un juego alternativo de tamaño 4x8 a partir del carácter 144. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
-Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).  
-Los carácteres propios del castellano, corresponden a las siguientes posiciones:
+Los carácteres corresponden con el ASCII estándar, excepto los carácteres propios del castellano, que corresponden a las siguientes posiciones para los dos juegos de caracteres:
 
-| Carácter | Posición |
-| -------- | -------- |
-| 'ª'      | 16       |
-| '¡'      | 17       |
-| '¿'      | 18       |
-| '«'      | 19       |
-| '»'      | 20       |
-| 'á'      | 21       |
-| 'é'      | 22       |
-| 'í'      | 23       |
-| 'ó'      | 24       |
-| 'ú'      | 25       |
-| 'ñ'      | 26       |
-| 'Ñ'      | 27       |
-| 'ç'      | 28       |
-| 'Ç'      | 29       |
-| 'ü'      | 30       |
-| 'Ü'      | 31       |
+| Carácter | Posición 6x8 | Posición 4x8 |
+| -------- | ------------ | ------------ |
+| 'ª'      | 16           | 144          |
+| '¡'      | 17           | 145          |
+| '¿'      | 18           | 146          |
+| '«'      | 19           | 147          |
+| '»'      | 20           | 148          |
+| 'á'      | 21           | 149          |
+| 'é'      | 22           | 150          |
+| 'í'      | 23           | 151          |
+| 'ó'      | 24           | 152          |
+| 'ú'      | 25           | 153          |
+| 'ñ'      | 26           | 154          |
+| 'Ñ'      | 27           | 155          |
+| 'ç'      | 28           | 156          |
+| 'Ç'      | 29           | 157          |
+| 'ü'      | 30           | 158          |
+| 'Ü'      | 31           | 159          |
 
-Los caracteres por encima del valor 127 (empezando desde cero) son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
+Los caracteres por encima del valor 127 (empezando desde cero) hasta el 143 (ambos incluidos) son especiales. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
 - El carácter 127 es el carácter usado cuando una opción no está seleccionada en un menú. (En rojo en la captura inferior)
 - Los caracteres del 128 al 135 forman el ciclo de animación de una opción seleccionada en un menú. (En verde en la captura inferior)
