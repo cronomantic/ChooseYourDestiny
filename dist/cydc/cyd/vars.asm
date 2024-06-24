@@ -89,6 +89,9 @@ PRT_INTERVAL:
 CURR_WINDOW:
     DEFB 0
 
+CHARSET_OFFSET:
+    DEFB 0
+
 ; X is in pixels, y in chars
 POS_X:
     DEFB 0
