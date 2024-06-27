@@ -24,7 +24,7 @@
 ;
 
 
-    DEFINE RELEASE "0.8"
+    DEFINE RELEASE "0.9"
 
     DEFINE IS_PLUS3 0
 
@@ -345,21 +345,14 @@ EXEC_LOOP:
     ld d, HIGH OPCODES
     ld e, (hl)                ; Loads instruction
     sla e
-    IFDEF USE_256_OPCODES
-    jr nc, 1f
-    inc d
-    ENDIF
-    IFNDEF USE_256_OPCODES
-    jp c, ERROR_NOP
-    ENDIF
-1:  inc hl
-    ld a, (de)
-    ld (.smod), a
-    inc de
-    ld a, (de)
-    ld (.smod+1), a
-.smod+1:
-    jp OP_END
+    ex de, hl
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    push bc
+    ex de, hl
+    inc hl
+    ret
 
     ;Close file
 END_PROGRAM:

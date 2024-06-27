@@ -21,6 +21,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Asignaciones e indirección](#asignaciones-e-indirección)
   - [Listado de comandos](#listado-de-comandos)
     - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v07)
+    - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v09)
     - [LABEL ID](#label-id)
     - [#ID](#id)
     - [DECLARE expression AS ID](#declare-expression-as-id)
@@ -45,12 +46,17 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [WAITKEY](#waitkey)
     - [OPTION GOTO ID](#option-goto-id)
     - [OPTION GOSUB ID](#option-gosub-id)
+    - [OPTION VALUE(numexpression) GOTO ID](#option-valuenumexpression-goto-id)
+    - [OPTION VALUE(numexpression) GOSUB ID](#option-valuenumexpression-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
     - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
     - [OPTIONSEL()](#optionsel)
     - [NUMOPTIONS()](#numoptions)
+    - [OPTIONVAL()](#optionval)
     - [CLEAROPTIONS](#clearoptions)
+    - [MENUCONFIG numexpression, numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression-numexpression)
+    - [MENUCONFIG numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression)
     - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
     - [CHAR numexpression](#char-numexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
@@ -69,16 +75,25 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [SFX numexpression](#sfx-numexpression)
     - [PICTURE numexpression](#picture-numexpression)
     - [DISPLAY numexpression](#display-numexpression)
-    - [BLIT expression, expression, expression, expression AT numexpression, numexpression](#blit-expression-expression-expression-expression-at-numexpression-numexpression)
+    - [BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression](#blit-numexpression-numexpression-numexpression-numexpression-at-numexpression-numexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
+<<<<<<< HEAD
     - [FILLATTR expression, expression, expression, expression, expression, expression, expression, expression](#fillattr-expression-expression-expression-expression-expression-expression-expression-expression)
     - [PUTATTR numexpression, numexpression, expression, expression, expression, expression](#putattr-numexpression-numexpression-expression-expression-expression-expression)
     - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
+=======
+    - [FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression](#fillattr-numexpression-numexpression-numexpression-numexpression-numexpression)
+    - [PUTATTR numexpression, numexpression AT numexpression, numexpression](#putattr-numexpression-numexpression-at-numexpression-numexpression)
+    - [PUTATTR numexpression AT numexpression, numexpression](#putattr-numexpression-at-numexpression-numexpression)
+    - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
+    - [ATTRVAL (expression COMMA expression COMMA expression COMMA expression)](#attrval-expression-comma-expression-comma-expression-comma-expression)
+    - [ATTRMASK (expression COMMA expression COMMA expression COMMA expression)](#attrmask-expression-comma-expression-comma-expression-comma-expression)
+>>>>>>> Attr
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -88,6 +103,11 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
     - [YPOS()](#ypos)
     - [XPOS()](#xpos)
+<<<<<<< HEAD
+=======
+    - [WINDOW expression](#window-expression)
+    - [CHARSET expression](#charset-expression)
+>>>>>>> Attr
     - [RANDOMIZE](#randomize)
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
@@ -372,6 +392,8 @@ Los comandos disponibles están descritos en su [sección](#comandos) correspond
 
 ## Flags y expresiones numéricas
 
+Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
+
 Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "flags" indistintamente a lo largo de este documento.
 
 Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el carácter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
@@ -425,7 +447,9 @@ Los operandos disponibles son:
 - Resta: `SET variable TO @variable - 2`
 - "AND" binario: `SET variable TO @variable & 2`
 - "OR" binario: `SET variable TO @variable | 2`
-- "NOT binario o complemento de bits: `SET variable TO !@variable`
+- "NOT" binario o complemento de bits: `SET variable TO !@variable`
+- Desplazamiento de bits a la izquierda: `SET variable TO @variable << 2`
+- Desplazamiento de bits a la derecha: `SET variable TO @variable >> 2`
 
 El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
 
@@ -600,6 +624,15 @@ Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y l
 | `IF condexpression OPTION GOTO ID`  | `IF condexpression OPTION GOTO ID ENDIF`  |
 | `IF condexpression OPTION GOSUB ID` | `IF condexpression OPTION GOSUB ID ENDIF` |
 
+### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**
+
+Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
+
+| Comando obsoleto                                          | Sustituir por...                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------ |
+| `FILLATTR x, y, width, height, ink, paper, bright, flash` | `FILLATTR x, y, width, height, ATTRVAL(ink, paper, bright, flash)` |
+| `PUTATTR x, y, ink, paper, bright, flash`                 | `PUTATTR ATTRVAL(ink, paper, bright, flash), AT (x, y)`            |
+
 ---
 
 Este es listado completo de comandos:
@@ -695,11 +728,19 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo. Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
 
 ### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
+
+### OPTION VALUE(numexpression) GOTO ID
+
+Funciona igual que `OPTION GOTO ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
+
+### OPTION VALUE(numexpression) GOSUB ID
+
+Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
 
 ### CHOOSE
 
@@ -725,18 +766,33 @@ _Función_ que devuelve la opción actualmente seleccionada en el menú actualme
 
 _Función_ que devuelve el número de opciones del menú actualmente activo. Si no tenemos un menú activo, el resultado de esta función está indefinido.
 
+### OPTIONVAL()
+
+_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, sólo se actualiza cuando una opción es elegida y se sale del menú.
+
 ### CLEAROPTIONS
 
 Elimina las opciones almacenadas en el menú.
 
-### MENUCONFIG numexpression, numexpression
+### MENUCONFIG numexpression, numexpression, numexpression, numexpression
 
-Configura el desplazamiento por el menú de opciones.
+Configura el menú de opciones. Los parñametros que se pueden configurar son los siguientes:
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
+- El tercer parámetro es la opción que se seleccionará al principio cuando se inicie el menú con `CHOOSE`. El valor por defecto es cero (la primera opción registrada).
+- El cuarto parámetro, si es cero no muestra el icono de selección y si es distinto de cero, lo muestra.
 
-El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1`.
+El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`.
+**Si se cambia la configuración para un menú, es recomendable hacerlo lo primero, antes de situar las opciones.**
+
+### MENUCONFIG numexpression, numexpression, numexpression
+
+Si se omite el cuarto parámetro, `MENUCONFIG x,y,d` equivale a `MENUCONFIG x,y,d,1`.
+
+### MENUCONFIG numexpression, numexpression
+
+Si se omiten el tercer parámetro y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
 
 ### CHAR numexpression
 
@@ -811,7 +867,7 @@ Muestra el contenido actual del buffer en pantalla.
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
-### BLIT expression, expression, expression, expression AT numexpression, numexpression
+### BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression
 
 Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
@@ -837,7 +893,7 @@ Igual que `WAIT`, pero con la salvedad de que el jugador puede abortar la pausa 
 
 ### TYPERATE expression
 
-Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 1, máximo 65535.
+Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 0, máximo 65535.
 
 ### MARGINS expression, expression, expression, expression
 
@@ -871,7 +927,7 @@ Los parámetros, por orden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
-### FILLATTR expression, expression, expression, expression, expression, expression, expression, expression
+### FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression
 
 Rellenamos en pantalla un rectángulo con un valor de atributos determinado. Los píxeles no se alteran.
 Los parámetros, por órden, son:
@@ -880,31 +936,56 @@ Los parámetros, por órden, son:
 - Fila origen del rectángulo a rellenar.
 - Ancho del rectángulo a rellenar.
 - Alto del rectángulo a rellenar.
-- Valor de "tinta". Valores permitidos: 0 al 7.
-- Valor de color de fondo. Valores permitidos: 0 al 7.
-- Valor de brillo. Valores permitidos: 0 ó 1.
-- Valor de parpadeo. Valores permitidos: 0 ó 1.
+- Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
-### PUTATTR numexpression, numexpression, expression, expression, expression, expression
+### PUTATTR numexpression, numexpression AT numexpression, numexpression
 
-Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Para aquellos campos en los que se indique un valor no permitido, el valor que ya existiese en pantalla no resultará alterado. Los píxeles tampoco se alteran.
+Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
 Los parámetros, por órden, son:
 
+- Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
+- Máscara a aplicar sobre los atributos ya existentes en pantalla. Si el bit es cero, conservamos el de la pantalla, y si es uno usamos el nuevo valor.
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
-- Valor de "tinta". Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de color de fondo. Valores permitidos: 0 al 7. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de brillo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
-- Valor de parpadeo. Valores permitidos: 0 ó 1. Si se indica otro valor, este valor del atributo no se modificará.
+
+<<<<<<< HEAD
+### GETATTR (numexpression, numexpression)
+=======
+### PUTATTR numexpression AT numexpression, numexpression
+>>>>>>> Attr
+
+Equivalente a `PUTATTR numexpression, 0xFF AT numexpression, numexpression`
 
 ### GETATTR (numexpression, numexpression)
 
-_Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla. Al contrario que `PUTATTR` o `FILLATTR`, los atributos están condensados en un sólo byte, que es el valor que se recupera de la memoria de vídeo del Spectrum.
+_Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla, en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
 Los parámetros, por órden, son:
 
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
+
+### ATTRVAL (expression COMMA expression COMMA expression COMMA expression)
+
+_Función_ que devuelve el valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta), utilizado en los comandos `PUTATTR` y `FILLATTR`.
+
+Los parámetros, por órden, son:
+
+- Color de tinta (0 a 7).
+- Color de fondo (0 a 7).
+- Uso de brillo (0 ó 1).
+- Uso de parpadeo (0 ó 1).
+
+### ATTRMASK (expression COMMA expression COMMA expression COMMA expression)
+
+_Función_ que devuelve un valor de máscara, utilizado en los comandos `PUTATTR` y `FILLATTR`.
+
+Los parámetros, por órden, son:
+
+- Máscara de tinta. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de fondo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de brillo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
+- Máscara de parpadeo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
 
 ### RANDOM(expression)
 
@@ -941,6 +1022,15 @@ _Función_ que devuelve la fila actual en la que se encuentra el cursor en coord
 ### XPOS()
 
 _Función_ que devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
+
+### WINDOW expression
+
+Se cambia a la "ventana" indicada por el parámetro y se soporta hasta 8 ventanas (desde 0 a 7). Por defecto, la ventana inicial es la 0.
+Las "ventanas" de CYD son un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales. Esto permite tener diferentes áreas de texto independientes en pantalla simultáneamente sin tener que estar cambiando márgenes y la posición del cursor continuamente para pasar de un área a otra. Ten en cuenta que si se solapan ventanas el contenido de una ventana no se conserva si se sobreescribe con en otra ventana.
+
+### CHARSET expression
+
+Cambia el juego de carácteres empleado al imprimir textos. Con el parámetro a cero, se usa el juego inferior (caracteres del 0 al 127), y con un valor distinto de cero, se usa el juego superior (caracteres del 128 al 255). Recuerda que los caracteres del 0 al 32 y del 127 al 143 no son imprimibles. Esta instrucción no afecta a REPCHAR y CHAR.
 
 ### RANDOMIZE
 
@@ -1179,32 +1269,32 @@ Para probarlos en vivo, simplemente habría que copiar los ficheros y directorio
 
 ## Juego de caracteres
 
-El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho.  
-El juego de caracteres por defecto incluido tiene un tamaño 6x8, excepto los caracteres del 127 al 143, que son especiales (ver más adelante) y tienen un tamaño 8x8. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
+El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho de 1 a 8 píxeles. El juego de caracteres por defecto incluido tiene un tamaño 6x8, junto con un juego alternativo de tamaño 4x8 a partir del carácter 144. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
-Los carácteres corresponden con el ASCII estándar, excepto los extendidos (mayor o igual que 128 hasta 255) y los de control (menores que 32).  
-Los carácteres propios del castellano, corresponden a las siguientes posiciones:
+Los carácteres corresponden con el ASCII estándar, excepto los carácteres propios del castellano, que corresponden a las siguientes posiciones para los dos juegos de caracteres:
 
-| Carácter | Posición |
-| -------- | -------- |
-| 'ª'      | 16       |
-| '¡'      | 17       |
-| '¿'      | 18       |
-| '«'      | 19       |
-| '»'      | 20       |
-| 'á'      | 21       |
-| 'é'      | 22       |
-| 'í'      | 23       |
-| 'ó'      | 24       |
-| 'ú'      | 25       |
-| 'ñ'      | 26       |
-| 'Ñ'      | 27       |
-| 'ü'      | 28       |
-| 'Ü'      | 29       |
+| Carácter | Posición 6x8 | Posición 4x8 |
+| -------- | ------------ | ------------ |
+| 'ª'      | 16           | 144          |
+| '¡'      | 17           | 145          |
+| '¿'      | 18           | 146          |
+| '«'      | 19           | 147          |
+| '»'      | 20           | 148          |
+| 'á'      | 21           | 149          |
+| 'é'      | 22           | 150          |
+| 'í'      | 23           | 151          |
+| 'ó'      | 24           | 152          |
+| 'ú'      | 25           | 153          |
+| 'ñ'      | 26           | 154          |
+| 'Ñ'      | 27           | 155          |
+| 'ç'      | 28           | 156          |
+| 'Ç'      | 29           | 157          |
+| 'ü'      | 30           | 158          |
+| 'Ü'      | 31           | 159          |
 
-Los caracteres por encima del valor 127 (empezando desde cero) son especiales, como ya se ha indicado. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
+Los caracteres por encima del valor 127 (empezando desde cero) hasta el 143 (ambos incluidos) son especiales. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
 - El carácter 127 es el carácter usado cuando una opción no está seleccionada en un menú. (En rojo en la captura inferior)
 - Los caracteres del 128 al 135 forman el ciclo de animación de una opción seleccionada en un menú. (En verde en la captura inferior)
@@ -1233,6 +1323,16 @@ Para facilitar la tarea de creación de un juego de caracteres alternativo, se h
 ## Códigos de error
 
 La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.  
+
+Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
+
+- Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
+- Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
+- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
+- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
+- Error 5: No hay un módulo de música cargado para reproducir.
+- Error 6: Código de instrucción inválido.
+
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
 - Error 0: Drive not ready
@@ -1265,15 +1365,6 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 
 La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 
-Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
-
-- Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
-- Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
-- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
-- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
-- Error 5: No hay un módulo de música cargado para reproducir.
-- Error 6: Código de instrucción inválido.
-
 ---
 
 ## F.A.Q
@@ -1291,8 +1382,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
-- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
+- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
 
 ---

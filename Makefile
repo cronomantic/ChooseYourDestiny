@@ -1,4 +1,5 @@
-NAME:=test
+#NAME:=delerict
+NAME:=menu_text
 CYD_FILENAME:=$(NAME).cyd
 
 TAP_TARGET:=48k
@@ -17,7 +18,8 @@ SCR_LIST := $(shell find ./IMAGES -type f -iregex '\.\/IMAGES\/[0-9][0-9][0-9].s
 CSC_LIST := $(SCR_LIST:%.scr=%.csc)
 PT3_LIST := $(shell find ./TRACKS -type f -iregex '\.\/TRACKS\/[0-9][0-9][0-9].pt3')
 
-FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) $(BEEPFX_ASM_FILENAME)
+FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST) 
+#$(BEEPFX_ASM_FILENAME)
 
 EXTRA_PARAM = -v -code
 
@@ -70,7 +72,7 @@ else
 ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
 	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 else
-	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(CYD_FILENAME) $(TAP_TARGET) $(ASM) $(MKP3FS) .
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -csc ./IMAGES -pt3 ./TRACKS $(TAP_TARGET) $(CYD_FILENAME) $(ASM) $(MKP3FS) .
 endif
 endif
 
