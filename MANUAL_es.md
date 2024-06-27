@@ -82,18 +82,12 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
     - [AT numexpression, numexpression](#at-numexpression-numexpression)
-<<<<<<< HEAD
-    - [FILLATTR expression, expression, expression, expression, expression, expression, expression, expression](#fillattr-expression-expression-expression-expression-expression-expression-expression-expression)
-    - [PUTATTR numexpression, numexpression, expression, expression, expression, expression](#putattr-numexpression-numexpression-expression-expression-expression-expression)
-    - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
-=======
     - [FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression](#fillattr-numexpression-numexpression-numexpression-numexpression-numexpression)
     - [PUTATTR numexpression, numexpression AT numexpression, numexpression](#putattr-numexpression-numexpression-at-numexpression-numexpression)
     - [PUTATTR numexpression AT numexpression, numexpression](#putattr-numexpression-at-numexpression-numexpression)
     - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
     - [ATTRVAL (expression COMMA expression COMMA expression COMMA expression)](#attrval-expression-comma-expression-comma-expression-comma-expression)
     - [ATTRMASK (expression COMMA expression COMMA expression COMMA expression)](#attrmask-expression-comma-expression-comma-expression-comma-expression)
->>>>>>> Attr
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -103,11 +97,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
     - [YPOS()](#ypos)
     - [XPOS()](#xpos)
-<<<<<<< HEAD
-=======
     - [WINDOW expression](#window-expression)
     - [CHARSET expression](#charset-expression)
->>>>>>> Attr
     - [RANDOMIZE](#randomize)
     - [TRACK numexpression](#track-numexpression)
     - [PLAY numexpression](#play-numexpression)
@@ -948,11 +939,7 @@ Los parámetros, por órden, son:
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
 
-<<<<<<< HEAD
-### GETATTR (numexpression, numexpression)
-=======
 ### PUTATTR numexpression AT numexpression, numexpression
->>>>>>> Attr
 
 Equivalente a `PUTATTR numexpression, 0xFF AT numexpression, numexpression`
 
