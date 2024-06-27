@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2023 Sergio Chico
+# Copyright (c) 2024 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@ class CydcParser(object):
         self.parser = None
         self.errors = list()
         self.symbols = dict()
+        self.symbols_used = dict()
         self.hidden_label_counter = 0
 
     precedence = (
@@ -51,6 +52,7 @@ class CydcParser(object):
             "LESS_THAN",
             "MORE_THAN",
         ),
+        ("left", "SHIFT_L", "SHIFT_R"),
         ("left", "PLUS", "MINUS"),
         ("left", "TIMES", "DIVIDE"),
         ("left", "OR_B"),
@@ -291,7 +293,7 @@ class CydcParser(object):
 
     def p_statement_short_label(self, p):
         "statement : SHORT_LABEL"
-        if self._create_symbol(p[1], SymbolType.LABEL, p.lexer.lexer.lineno):
+        if self._declare_symbol(p[1], SymbolType.LABEL, p.lexer.lexer.lineno):
             p[0] = ("LABEL", p[1])
         else:
             p[0] = None
@@ -326,15 +328,21 @@ class CydcParser(object):
 
     def p_statement_goto(self, p):
         "statement : GOTO ID"
-        p[0] = ("GOTO", p[2], 0, 0)
+        if self._symbol_usage(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("GOTO", p[2], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_gosub(self, p):
         "statement : GOSUB ID"
-        p[0] = ("GOSUB", p[2], 0, 0)
+        if self._symbol_usage(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+            p[0] = ("GOSUB", p[2], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_label(self, p):
         "statement : LABEL ID"
-        if self._create_symbol(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
+        if self._declare_symbol(p[2], SymbolType.LABEL, p.lexer.lexer.lineno):
             p[0] = ("LABEL", p[2])
         else:
             p[0] = None
@@ -515,47 +523,57 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_window(self, p):
+        "statement : WINDOW expression"
+        if len(p) == 3 and self._check_byte_value(p[2], p.lexer.lexer.lineno):
+            p[0] = ("WINDOW", p[2] & 0x07)
+        else:
+            p[0] = None
+
+    def p_statement_charset(self, p):
+        "statement : CHARSET expression"
+        if len(p) == 3 and self._check_byte_value(p[2], p.lexer.lexer.lineno):
+            p[0] = ("CHARSET", p[2])
+        else:
+            p[0] = None
+
     def p_statement_blit(self, p):
-        "statement : BLIT expression COMMA expression COMMA expression COMMA expression AT numexpression COMMA numexpression"
+        "statement : BLIT numexpression COMMA numexpression COMMA numexpression COMMA numexpression AT numexpression COMMA numexpression"
         if len(p) == 13:
             if (
-                self._check_byte_value(p[2], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
+                isinstance(p[2], tuple)
+                and isinstance(p[4], tuple)
+                and isinstance(p[6], tuple)
+                and isinstance(p[8], tuple)
             ):
-                (row, col, width, height) = self._fix_borders(p[4], p[2], p[6], p[8])
-                if isinstance(p[10], int) and isinstance(p[12], int):
-                    row_d = p[12]
-                    col_d = p[10]
-                    if self._check_byte_value(
-                        row_d, p.lexer.lexer.lineno
-                    ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                        if row_d >= 24:
-                            row_d = 23
-                        if col_d >= 32:
-                            col_d = 31
-                        if row_d < 0:
-                            row_d = 0
-                        if col_d < 0:
-                            col_d = 0
-                        p[0] = ("BLIT", col, row, width, height, col_d, row_d)
-                    else:
-                        p[0] = None
-                elif isinstance(p[10], tuple) and isinstance(p[12], tuple):
-                    t1 = p[10]
-                    t2 = p[12]
-                    if (
-                        (t1[0] == "PUSH_D")
-                        and (t2[0] == "PUSH_D")
-                        and isinstance(t1[1], int)
-                        and isinstance(t2[1], int)
-                    ):
-                        row_d = t2[1]
-                        col_d = t1[1]
-                        if self._check_byte_value(
-                            row_d, p.lexer.lexer.lineno
-                        ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
+                t1 = p[2]
+                t2 = p[4]
+                t3 = p[6]
+                t4 = p[8]
+                if (
+                    (t1[0] == "PUSH_D")
+                    and (t2[0] == "PUSH_D")
+                    and (t3[0] == "PUSH_D")
+                    and (t4[0] == "PUSH_D")
+                    and isinstance(t1[1], int)
+                    and isinstance(t2[1], int)
+                    and isinstance(t3[1], int)
+                    and isinstance(t4[1], int)
+                ):
+                    (row, col, width, height) = self._fix_borders(
+                        t2[1], t1[1], t3[1], t4[1]
+                    )
+                    if isinstance(p[10], tuple) and isinstance(p[12], tuple):
+                        t1 = p[10]
+                        t2 = p[12]
+                        if (
+                            (t1[0] == "PUSH_D")
+                            and (t2[0] == "PUSH_D")
+                            and isinstance(t1[1], int)
+                            and isinstance(t2[1], int)
+                        ):
+                            row_d = t2[1]
+                            col_d = t1[1]
                             if row_d >= 24:
                                 row_d = 23
                             if col_d >= 32:
@@ -566,69 +584,128 @@ class CydcParser(object):
                                 col_d = 0
                             p[0] = ("BLIT", col, row, width, height, col_d, row_d)
                         else:
-                            p[0] = None
+                            p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
                     else:
-                        p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
-                else:
-                    if isinstance(p[10], list):
-                        p[0] = p[10]
-                    elif isinstance(p[10], int):
-                        col_d = p[10]
-                        if self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                            if col_d >= 32:
-                                col_d = 31
-                            if col_d < 0:
-                                col_d = 0
-                            p[0] = [("PUSH_D", col_d)]
+                        if isinstance(p[10], list):
+                            p[0] = p[10]
                         else:
-                            p[0] = None
-                            return None
+                            p[0] = [p[10]]
+                        if isinstance(p[12], list):
+                            p[0] += p[12]
+                        else:
+                            p[0] += [p[12]]
+                        p[0] += [("POP_BLIT", col, row, width, height)]
+                else:
+                    if isinstance(p[2], list):
+                        p[0] = p[2]
                     else:
-                        p[0] = [p[10]]
+                        p[0] = [p[2]]
+                    if isinstance(p[4], list):
+                        p[0] += p[4]
+                    else:
+                        p[0] += [p[4]]
+                    if isinstance(p[6], list):
+                        p[0] += p[6]
+                    else:
+                        p[0] += [p[6]]
+                    if isinstance(p[8], list):
+                        p[0] += p[8]
+                    else:
+                        p[0] += [p[8]]
+                    if isinstance(p[10], list):
+                        p[0] += p[10]
+                    else:
+                        p[0] += [p[10]]
                     if isinstance(p[12], list):
                         p[0] += p[12]
-                    elif isinstance(p[12], int):
-                        row_d = p[12]
-                        if self._check_byte_value(row_d, p.lexer.lexer.lineno):
-                            if row_d >= 24:
-                                row_d = 23
-                            if row_d < 0:
-                                row_d = 0
-                            p[0].append(("PUSH_D", row_d))
-                        else:
-                            p[0] = None
-                            return None
                     else:
-                        p[0].append(p[12])
-                    p[0].append(("POP_BLIT", col, row, width, height))
+                        p[0] += [p[12]]
+                    p[0] += [("POP_ALL_BLIT",)]
             else:
-                p[0] = None
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                if isinstance(p[10], list):
+                    p[0] += p[10]
+                else:
+                    p[0] += [p[10]]
+                if isinstance(p[12], list):
+                    p[0] += p[12]
+                else:
+                    p[0] += [p[12]]
+                p[0] += [("POP_ALL_BLIT",)]
 
     def p_statement_fillattr(self, p):
-        "statement : FILLATTR expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression"
-        if len(p) == 17:
+        "statement : FILLATTR numexpression COMMA numexpression COMMA numexpression COMMA numexpression COMMA numexpression"
+        if len(p) == 11:
+            col = None
+            row = None
+            width = None
+            height = None
+            attr = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col = t1[1]
+            if isinstance(p[4], tuple):
+                t1 = p[4]
+                if (t1[1] == "PUSH_D") and isinstance(t1[1], int):
+                    row = t1[1]
+            if isinstance(p[6], tuple):
+                t1 = p[6]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    width = t1[1]
+            if isinstance(p[8], tuple):
+                t1 = p[8]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    height = t1[1]
+            if isinstance(p[10], tuple):
+                t1 = p[10]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
             if (
-                self._check_byte_value(p[2], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[4], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[14], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[16], p.lexer.lexer.lineno)
+                col is not None
+                and row is not None
+                and width is not None
+                and height is not None
+                and attr is not None
             ):
-                attr = self._check_attr_values(
-                    p[10], p[12], p[14], p[16], p.lexer.lexer.lineno
-                )
-                if attr is not None and isinstance(attr, int):
-                    (row, col, width, height) = self._fix_borders(
-                        p[4], p[2], p[6], p[8]
-                    )
-                    p[0] = ("FILLATTR", col, row, width, height, attr)
-                else:
-                    p[0] = None
+                p[0] = ("FILLATTR", col, row, width, height, attr)
             else:
-                p[0] = None
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                if isinstance(p[10], list):
+                    p[0] += p[10]
+                else:
+                    p[0] += [p[10]]
+                p[0] += [("POP_FILLATTR",)]
 
     def p_statement_fadeout(self, p):
         """
@@ -661,254 +738,211 @@ class CydcParser(object):
                 p[0] = None
 
     def p_statement_putattr(self, p):
-        "statement : PUTATTR numexpression COMMA numexpression COMMA expression COMMA expression COMMA expression COMMA expression"
-        if len(p) == 13:
-            if (
-                self._check_byte_value(p[6], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[8], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[10], p.lexer.lexer.lineno)
-                and self._check_byte_value(p[12], p.lexer.lexer.lineno)
-            ):
-                attr = self._get_attr_mask(
-                    p[6], p[8], p[10], p[12], p.lexer.lexer.lineno
-                )
-                if attr is not None and isinstance(attr, tuple):
-                    if isinstance(p[2], int) and isinstance(p[4], int):
-                        if self._check_byte_value(
-                            p[2], p.lexer.lexer.lineno
-                        ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                            row = p[4]
-                            col = p[2]
-                            if row >= 24:
-                                row = 23
-                            if col >= 32:
-                                col = 31
-                            if row < 0:
-                                row = 0
-                            if col < 0:
-                                col = 0
-                            p[0] = ("PUTATTR", col, row, attr[1], attr[0])
-                        else:
-                            p[0] = None
-                    elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-                        t1 = p[2]
-                        t2 = p[4]
-                        if (
-                            (t1[0] == "PUSH_D")
-                            and (t2[0] == "PUSH_D")
-                            and isinstance(t1[1], int)
-                            and isinstance(t2[1], int)
-                        ):
-                            row = t2[1]
-                            col = t1[1]
-                            if self._check_byte_value(
-                                row, p.lexer.lexer.lineno
-                            ) and self._check_byte_value(col, p.lexer.lexer.lineno):
-                                if row >= 24:
-                                    row = 23
-                                if col >= 32:
-                                    col = 31
-                                if row < 0:
-                                    row = 0
-                                if col < 0:
-                                    col = 0
-                                p[0] = ("PUTATTR", col, row, attr[1], attr[0])
-                            else:
-                                p[0] = None
-                        else:
-                            p[0] = [t1, t2, ("POP_PUTATTR", attr[1], attr[0])]
-                    else:
-                        if isinstance(p[2], list):
-                            p[0] = p[2]
-                        elif isinstance(p[2], int):
-                            col = p[2]
-                            if self._check_byte_value(col, p.lexer.lexer.lineno):
-                                if col >= 32:
-                                    col = 31
-                                if col < 0:
-                                    col = 0
-                                p[0] = [("PUSH_D", col)]
-                            else:
-                                p[0] = None
-                                return None
-                        else:
-                            p[0] = [p[2]]
-                        if isinstance(p[4], list):
-                            p[0] += p[4]
-                        elif isinstance(p[4], int):
-                            row = p[4]
-                            if self._check_byte_value(row, p.lexer.lexer.lineno):
-                                if row >= 24:
-                                    row = 23
-                                if row < 0:
-                                    row = 0
-                                p[0].append(("PUSH_D", row))
-                            else:
-                                p[0] = None
-                                return None
-                        else:
-                            p[0].append(p[4])
-                        p[0].append(("POP_PUTATTR", attr[1], attr[0]))
+        """
+        statement : PUTATTR numexpression COMMA numexpression AT numexpression COMMA numexpression
+                  | PUTATTR numexpression AT numexpression COMMA numexpression
+        """
+        if len(p) == 9:
+            attr = None
+            mask = None
+            row = None
+            col = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    mask = t2[1]
+            if isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    col = t3[1]
+            if isinstance(p[8], tuple):
+                t4 = p[8]
+                if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
+                    row = t4[1]
+            if attr is not None and mask is not None:
+                if row is not None and col is not None:
+                    p[0] = ("PUTATTR", col, row, mask, attr)
                 else:
-                    p[0] = None
+                    if isinstance(p[6], list):
+                        p[0] = p[6]
+                    else:
+                        p[0] = [p[6]]
+                    if isinstance(p[8], list):
+                        p[0] += p[8]
+                    else:
+                        p[0] += [p[8]]
+                    p[0] += [("POP_PUTATTR", mask, attr)]
+            else:
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] += [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] = [p[6]]
+                if isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                p[0] += [("POP_ALL_PUTATTR",)]
+        elif len(p) == 7:
+            attr = None
+            row = None
+            col = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    attr = t1[1]
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    col = t2[1]
+            if isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    row = t3[1]
+            if attr is not None:
+                if row is not None and col is not None:
+                    p[0] = ("PUTATTR", col, row, 0xFF, attr)
+                else:
+                    if isinstance(p[4], list):
+                        p[0] = p[4]
+                    else:
+                        p[0] = [p[4]]
+                    if isinstance(p[6], list):
+                        p[0] += p[6]
+                    else:
+                        p[0] += [p[6]]
+                    p[0] += [("POP_PUTATTR", 0xFF, attr)]
+            else:
+                if isinstance(p[2], list):
+                    p[0] = p[2]
+                else:
+                    p[0] = [p[2]]
+                p[0] += [("PUSH_D", 0xFF)]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
+                else:
+                    p[0] = [p[4]]
+                if isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                p[0] += [("POP_ALL_PUTATTR",)]
 
     def p_statement_at(self, p):
         "statement : AT numexpression COMMA numexpression"
-        if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(
-                p[2], p.lexer.lexer.lineno
-            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                row = p[4]
-                col = p[2]
-                if row >= 24:
-                    row = 23
-                if col >= 32:
-                    col = 31
-                if row < 0:
-                    row = 0
-                if col < 0:
-                    col = 0
-                p[0] = ("AT", col, row)
+        if len(p) == 5:
+            col_d = None
+            row_d = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col_d = t1[1]
+                    if col_d >= 32:
+                        col_d = 31
+                    if col_d < 0:
+                        col_d = 0
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    row_d = t2[1]
+                    if row_d >= 24:
+                        row_d = 23
+                    if row_d < 0:
+                        row_d = 0
+            if col_d is not None and row_d is not None:
+                p[0] = ("AT", col_d, row_d)
             else:
-                p[0] = None
-        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-            t1 = p[2]
-            t2 = p[4]
-            if (
-                (t1[0] == "PUSH_D")
-                and (t2[0] == "PUSH_D")
-                and isinstance(t1[1], int)
-                and isinstance(t2[1], int)
-            ):
-                row = t2[1]
-                col = t1[1]
-                if self._check_byte_value(
-                    row, p.lexer.lexer.lineno
-                ) and self._check_byte_value(col, p.lexer.lexer.lineno):
-                    if row >= 24:
-                        row = 23
-                    if col >= 32:
-                        col = 31
-                    if row < 0:
-                        row = 0
-                    if col < 0:
-                        col = 0
-                    p[0] = ("AT", col, row)
+                if isinstance(p[2], list):
+                    p[0] = p[2]
                 else:
-                    p[0] = None
-            else:
-                p[0] = [t1, t2, ("POP_AT",)]
-        else:
-            if isinstance(p[2], list):
-                p[0] = p[2]
-            elif isinstance(p[2], int):
-                col = p[2]
-                if self._check_byte_value(col, p.lexer.lexer.lineno):
-                    if col >= 32:
-                        col = 31
-                    if col < 0:
-                        col = 0
-                    p[0] = [("PUSH_D", col)]
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
                 else:
-                    p[0] = None
-                    return None
-            else:
-                p[0] = [p[2]]
-            if isinstance(p[4], list):
-                p[0] += p[4]
-            elif isinstance(p[4], int):
-                row = p[4]
-                if self._check_byte_value(row, p.lexer.lexer.lineno):
-                    if row >= 24:
-                        row = 23
-                    if row < 0:
-                        row = 0
-                    p[0].append(("PUSH_D", row))
-                else:
-                    p[0] = None
-                    return None
-            else:
-                p[0].append(p[4])
-            p[0].append(("POP_AT",))
+                    p[0] += [p[4]]
+                p[0] += [("POP_AT",)]
 
     def p_statement_menuconfig(self, p):
-        "statement : MENUCONFIG numexpression COMMA numexpression"
-        if isinstance(p[2], int) and isinstance(p[4], int):
-            if self._check_byte_value(
-                p[2], p.lexer.lexer.lineno
-            ) and self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                row_d = p[4]
-                col_d = p[2]
-                if row_d >= 32:
-                    row_d = 31
-                if col_d >= 32:
-                    col_d = 31
-                if row_d < 0:
-                    row_d = 0
-                if col_d < 0:
-                    col_d = 0
-                p[0] = ("MENUCONFIG", col_d, row_d)
-            else:
-                p[0] = None
-        elif isinstance(p[2], tuple) and isinstance(p[4], tuple):
-            t1 = p[2]
-            t2 = p[4]
+        """
+        statement : MENUCONFIG numexpression COMMA numexpression COMMA numexpression COMMA numexpression
+                  | MENUCONFIG numexpression COMMA numexpression COMMA numexpression
+                  | MENUCONFIG numexpression COMMA numexpression
+        """
+        if len(p) in [9, 7, 5]:
+            col_d = None
+            row_d = None
+            init_d = None
+            show_d = None
+            if isinstance(p[2], tuple):
+                t1 = p[2]
+                if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
+                    col_d = t1[1]
+                    if col_d >= 32:
+                        col_d = 31
+                    if col_d < 0:
+                        col_d = 0
+            if isinstance(p[4], tuple):
+                t2 = p[4]
+                if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
+                    row_d = t2[1]
+                    if row_d >= 32:
+                        row_d = 31
+                    if row_d < 0:
+                        row_d = 0
+            if len(p) == 5:
+                init_d = 0
+            elif isinstance(p[6], tuple):
+                t3 = p[6]
+                if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
+                    init_d = t3[1]
+                    if init_d >= 32:
+                        init_d = 0
+            if len(p) in [5, 7]:
+                show_d = 1
+            elif isinstance(p[8], tuple):
+                t4 = p[8]
+                if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
+                    show_d = t4[1]
             if (
-                (t1[0] == "PUSH_D")
-                and (t2[0] == "PUSH_D")
-                and isinstance(t1[1], int)
-                and isinstance(t2[1], int)
+                col_d is not None
+                and row_d is not None
+                and init_d is not None
+                and show_d is not None
             ):
-                row_d = t2[1]
-                col_d = t1[1]
-                if self._check_byte_value(
-                    row_d, p.lexer.lexer.lineno
-                ) and self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                    if row_d >= 32:
-                        row_d = 31
-                    if col_d >= 32:
-                        col_d = 31
-                    if row_d < 0:
-                        row_d = 0
-                    if col_d < 0:
-                        col_d = 0
-                    p[0] = ("MENUCONFIG", col_d, row_d)
-                else:
-                    p[0] = None
+                p[0] = ("MENUCONFIG", col_d, row_d, init_d, show_d)
             else:
-                p[0] = [t1, t2, ("POP_MENUCONFIG",)]
-        else:
-            if isinstance(p[2], list):
-                p[0] = p[2]
-            elif isinstance(p[2], int):
-                col = p[2]
-                if self._check_byte_value(col_d, p.lexer.lexer.lineno):
-                    if col_d >= 32:
-                        col_d = 31
-                    if col_d < 0:
-                        col_d = 0
-                    p[0] = [("PUSH_D", col_d)]
+                if isinstance(p[2], list):
+                    p[0] = p[2]
                 else:
-                    p[0] = None
-                    return None
-            else:
-                p[0] = [p[2]]
-            if isinstance(p[4], list):
-                p[0] += p[4]
-            elif isinstance(p[4], int):
-                row_d = p[4]
-                if self._check_byte_value(row_d, p.lexer.lexer.lineno):
-                    if row_d >= 32:
-                        row_d = 31
-                    if row_d < 0:
-                        row_d = 0
-                    p[0].append(("PUSH_D", row_d))
+                    p[0] = [p[2]]
+                if isinstance(p[4], list):
+                    p[0] += p[4]
                 else:
-                    p[0] = None
-                    return None
-            else:
-                p[0].append(p[4])
-            p[0].append(("POP_MENUCONFIG",))
+                    p[0] += [p[4]]
+                if init_d is not None and isinstance(init_d, int):
+                    p[0] += [("PUSH_D", init_d)]
+                elif isinstance(p[6], list):
+                    p[0] += p[6]
+                else:
+                    p[0] += [p[6]]
+                if show_d is not None and isinstance(show_d, int):
+                    p[0] += [("PUSH_D", show_d)]
+                elif isinstance(p[8], list):
+                    p[0] += p[8]
+                else:
+                    p[0] += [p[8]]
+                p[0] += [("POP_MENUCONFIG",)]
 
     def p_statement_save(self, p):
         """
@@ -982,7 +1016,7 @@ class CydcParser(object):
     def p_statement_declare(self, p):
         "statement : DECLARE expression AS ID"
         if self._check_byte_value(p[2], p.lexer.lexer.lineno):
-            if self._create_symbol(p[4], SymbolType.VARIABLE, p.lexer.lexer.lineno):
+            if self._declare_symbol(p[4], SymbolType.VARIABLE, p.lexer.lexer.lineno):
                 p[0] = ("DECLARE", p[2], p[4])
             else:
                 p[0] = None
@@ -1055,8 +1089,9 @@ class CydcParser(object):
                   | CHOOSE
         """
         if len(p) == 8 and p[3] == "WAIT":
-            if self._check_word_value(p[4], p.lexer.lexer.lineno):
-                print(p[6])
+            if self._check_word_value(
+                p[4], p.lexer.lexer.lineno
+            ) and self._symbol_usage(p[7], SymbolType.LABEL, p.lexer.lexer.lineno):
                 if p[6] == "GOTO":
                     p[0] = (
                         "CHOOSE_W",
@@ -1082,17 +1117,52 @@ class CydcParser(object):
             else:
                 p[0] = None
         elif len(p) == 7 and p[3] == "CHANGED":
-            p[0] = ("CHOOSE_CH", p[6], 0, 0)
+            if self._symbol_usage(p[6], SymbolType.LABEL, p.lexer.lexer.lineno):
+                p[0] = ("CHOOSE_CH", p[6], 0, 0)
+            else:
+                p[0] = None
         elif len(p) == 2:
             p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
-        "statement : OPTION GOTO ID"
-        p[0] = ("OPTION", 0, p[3], 0, 0)
+        """
+        statement : OPTION VALUE LPAREN numexpression RPAREN GOTO ID
+                  | OPTION GOTO ID
+        """
+        if len(p) == 8 and self._symbol_usage(
+            p[7], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0] += [("POP_VAL_OPTION", 0, p[7], 0, 0)]
+        elif len(p) == 4 and self._symbol_usage(
+            p[3], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            p[0] = ("OPTION", 0, p[3], 0, 0)
+        else:
+            p[0] = None
 
     def p_statement_option_gosub(self, p):
-        "statement : OPTION GOSUB ID"
-        p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+        """
+        statement : OPTION VALUE LPAREN numexpression RPAREN GOSUB ID
+                  | OPTION GOSUB ID
+        """
+        if len(p) == 8 and self._symbol_usage(
+            p[7], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = p[4]
+            else:
+                p[0] = [p[4]]
+            p[0] += [("POP_VAL_OPTION", 0xFF, p[7], 0, 0)]
+        elif len(p) == 4 and self._symbol_usage(
+            p[3], SymbolType.LABEL, p.lexer.lexer.lineno
+        ):
+            p[0] = ("OPTION", 0xFF, p[3], 0, 0)
+        else:
+            p[0] = None
 
     def p_numexpressions_list(self, p):
         """
@@ -1187,6 +1257,8 @@ class CydcParser(object):
                   | numexpression MINUS numexpression
                   | numexpression AND_B numexpression
                   | numexpression OR_B numexpression
+                  | numexpression SHIFT_L numexpression
+                  | numexpression SHIFT_R numexpression
         """
         if len(p) == 4 and p[1] and p[3]:
             p[0] = []
@@ -1208,6 +1280,10 @@ class CydcParser(object):
                 p[0].append(("AND",))
             elif p[2] == "|":
                 p[0].append(("OR",))
+            elif p[2] == "<<":
+                p[0].append(("SHIFT_L",))
+            elif p[2] == ">>":
+                p[0].append(("SHIFT_R",))
 
     def p_numexpression_min(self, p):
         """
@@ -1298,6 +1374,11 @@ class CydcParser(object):
         "numexpression : SAVERESULT LPAREN RPAREN"
         p[0] = ("PUSH_SAVE_RESULT",)
 
+    def p_numexpression_optionval(self, p):
+        "numexpression : OPTIONVAL LPAREN RPAREN"
+        if len(p) == 4:
+            p[0] = ("PUSH_OPTION_ST", 2)
+
     def p_numexpression_optionsel(self, p):
         "numexpression : OPTIONSEL LPAREN RPAREN"
         if len(p) == 4:
@@ -1307,6 +1388,38 @@ class CydcParser(object):
         "numexpression : NUMOPTIONS LPAREN RPAREN"
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 0)
+
+    def p_numexpression_attrval_expression(self, p):
+        "numexpression : ATTRVAL LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+        if len(p) == 11:
+            if (
+                self._check_byte_value(p[3], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[5], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[7], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[9], p.lexer.lexer.lineno)
+            ):
+                attr = self._check_attr_values(
+                    p[3], p[5], p[7], p[9], p.lexer.lexer.lineno
+                )
+                if attr is not None:
+                    p[0] = ("PUSH_D", attr)
+                else:
+                    p[0] = None
+
+    def p_numexpression_attrmask_expression(self, p):
+        "numexpression : ATTRMASK LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+        if len(p) == 11:
+            if (
+                self._check_byte_value(p[3], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[5], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[7], p.lexer.lexer.lineno)
+                and self._check_byte_value(p[9], p.lexer.lexer.lineno)
+            ):
+                mask = self._get_attr_mask(p[3], p[5], p[7], p[9], p.lexer.lexer.lineno)
+                if mask is not None:
+                    p[0] = ("PUSH_D", mask)
+                else:
+                    p[0] = None
 
     def p_numexpression_random_expression_limit(self, p):
         "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
@@ -1380,7 +1493,10 @@ class CydcParser(object):
             else:
                 p[0] = None
         elif isinstance(p[1], str):
-            p[0] = p[1]
+            if self._symbol_usage(p[1], SymbolType.VARIABLE, p.lexer.lexer.lineno):
+                p[0] = p[1]
+            else:
+                p[0] = None
         else:
             p[0] = None
 
@@ -1390,6 +1506,10 @@ class CydcParser(object):
                   | expression MINUS expression
                   | expression TIMES expression
                   | expression DIVIDE expression
+                  | expression AND_B expression
+                  | expression OR_B expression
+                  | expression SHIFT_L expression
+                  | expression SHIFT_R expression
         """
         if p[2] == "+":
             p[0] = p[1] + p[3]
@@ -1399,6 +1519,14 @@ class CydcParser(object):
             p[0] = p[1] * p[3]
         elif p[2] == "/":
             p[0] = p[1] / p[3]
+        elif p[2] == "&":
+            p[0] = p[1] & p[3]
+        elif p[2] == "|":
+            p[0] = p[1] | p[3]
+        elif p[2] == "<<":
+            p[0] = p[1] << p[3]
+        elif p[2] == ">>":
+            p[0] = p[1] >> p[3]
 
     def p_expression_group(self, p):
         "expression : LPAREN expression RPAREN"
@@ -1406,6 +1534,10 @@ class CydcParser(object):
 
     def p_expression_number(self, p):
         "expression : number"
+        p[0] = p[1]
+
+    def p_expression_bin_number(self, p):
+        "number : BIN_NUMBER"
         p[0] = p[1]
 
     def p_expression_hex_number(self, p):
@@ -1437,13 +1569,17 @@ class CydcParser(object):
             return None
         else:
             self.symbols.clear()
+            self.symbols_used.clear()
             self.errors.clear()
             self.hidden_label_counter = 0
             cinput, cerrors = self._code_text_reversal(input)
             self.errors += cerrors
             if len(self.errors) > 0:
                 return []
-            return self.parser.parse(cinput, lexer=self.lexer)
+            parse_result = self.parser.parse(cinput, lexer=self.lexer)
+            if not self._check_symbols():
+                return []
+            return parse_result
 
     def debug_p(self, p):
         s = ""
@@ -1513,53 +1649,25 @@ class CydcParser(object):
 
     def _get_attr_mask(self, ink, paper, bright, flash, lineno):
         error = False
-        if ink < 0:
+        if ink not in range(2):
             self.errors.append(f"Invalid Ink value on line {lineno}")
             error = True
-        if paper < 0:
+        if paper not in range(2):
             self.errors.append(f"Invalid Paper value on line {lineno}")
             error = True
-        if bright < 0:
+        if bright not in range(2):
             self.errors.append(f"Invalid Bright value on line {lineno}")
             error = True
-        if flash < 0:
+        if flash not in range(2):
             self.errors.append(f"Invalid Flash value on line {lineno}")
             error = True
         if error:
             return None
-        attr = 0
-        mask = 0
-        if flash not in range(2):
-            attr |= 0
-            mask |= 1
-        else:
-            attr |= flash
-            mask |= 0
-        attr <<= 1
-        mask <<= 1
-        if bright not in range(2):
-            attr |= 0
-            mask |= 1
-        else:
-            attr |= bright
-            mask |= 0
-        attr <<= 3
-        mask <<= 3
-        if paper not in range(8):
-            attr |= 0
-            mask |= 7
-        else:
-            attr |= paper
-            mask |= 0
-        attr <<= 3
-        mask <<= 3
-        if ink not in range(8):
-            attr |= 0
-            mask |= 7
-        else:
-            attr |= ink
-            mask |= 0
-        return (attr, mask)
+        if paper != 0:
+            paper = 7
+        if ink != 0:
+            ink |= 7
+        return (flash << 7) | (bright << 6) | (paper << 3) | ink
 
     def _get_hidden_label(self):
         l = f"__LABEL_{self.hidden_label_counter}"
@@ -1645,13 +1753,13 @@ class CydcParser(object):
     #         )
     #         return False
 
-    def _create_symbol(self, symbol, type, lineno):
+    def _declare_symbol(self, symbol, symbol_type, lineno):
         if symbol in self.symbols.keys():
-            if type == SymbolType.LABEL:
+            if symbol_type == SymbolType.LABEL:
                 self.errors.append(
                     f"Label '{symbol}' on line {lineno} was already declared before."
                 )
-            elif type == SymbolType.VARIABLE:
+            elif symbol_type == SymbolType.VARIABLE:
                 self.errors.append(
                     f"Variable '{symbol}' on line {lineno} was already declared before."
                 )
@@ -1661,5 +1769,77 @@ class CydcParser(object):
                 )
             return False
         else:
-            self.symbols[symbol] = (type, lineno)
+            self.symbols[symbol] = (symbol_type, lineno)
             return True
+
+    def _symbol_usage(self, symbol, symbol_type, lineno):
+        if symbol in self.symbols_used.keys():
+            s = self.symbols_used[symbol]
+            if s[0] == symbol_type:
+                s[1].append(lineno)
+                self.symbols_used[symbol] = s
+                return True
+            else:
+                if symbol_type == SymbolType.LABEL:
+                    self.errors.append(
+                        f"Label '{symbol}' on line {lineno} was already used as variable."
+                    )
+                elif symbol_type == SymbolType.VARIABLE:
+                    self.errors.append(
+                        f"Variable '{symbol}' on line {lineno} was already used as label."
+                    )
+                else:
+                    self.errors.append(
+                        f"Symbol '{symbol}' on line {lineno} was already used in other context."
+                    )
+                return False
+        else:
+            self.symbols_used[symbol] = (symbol_type, [lineno])
+            return True
+
+    def _check_symbols(self):
+        res = True
+        for symbol in self.symbols_used.keys():
+            symbol_type, lines = self.symbols_used[symbol]
+            lines_str = ", ".join([str(i) for i in lines])
+            if symbol not in self.symbols.keys():
+                if symbol_type == SymbolType.LABEL:
+                    self.errors.append(
+                        f"Label '{symbol}' on lines {lines_str} is not declared."
+                    )
+                elif symbol_type == SymbolType.VARIABLE:
+                    self.errors.append(
+                        f"Variable '{symbol}' on lines {lines_str} is not declared."
+                    )
+                else:
+                    self.errors.append(
+                        f"Symbol '{symbol}' on lines {lines_str} is not declared."
+                    )
+                res = False
+            else:
+                s = self.symbols[symbol]
+                if s[0] != symbol_type:
+                    if symbol_type == SymbolType.LABEL:
+                        self.errors.append(
+                            f"Label '{symbol}' on lines {lines_str} was already declared as variable on {s[1]}."
+                        )
+                    elif symbol_type == SymbolType.VARIABLE:
+                        self.errors.append(
+                            f"Variable '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
+                    else:
+                        self.errors.append(
+                            f"Symbol '{symbol}' on lines {lines_str} was already declared with another type on {s[1]}."
+                        )
+                    res = False
+        return res
+
+    def print_symbols(self):
+        for symbol in self.symbols.keys():
+            s = self.symbols[symbol]
+            if s[0] == SymbolType.LABEL:
+                print(f"- Label '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.VARIABLE:
+                print(f"- Variable '{symbol}' declared on line {s[1]}.")
+            else:
+                print(f"- Symbol '{symbol}' declared on line {s[1]}.")
