@@ -24,7 +24,7 @@
 ;
 
 
-    DEFINE RELEASE "0.8"
+    DEFINE RELEASE "0.9"
 
     DEFINE IS_PLUS3 0
 
