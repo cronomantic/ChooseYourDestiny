@@ -1,7 +1,7 @@
 ; 
 ; MIT License
 ; 
-; Copyright (c) 2023 Sergio Chico
+; Copyright (c) 2024 Sergio Chico
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,19 @@ INIT_WIN:
     call GET_CHARACTER_WIDTH
     ld (WIDTH_BACKSPACE), a
 
+    ld a, MAXWINDOWS
+    ld de, WINDOWS
+1:  ex af, af'
+    ld bc, .end_data-.win_data
+    ld hl, .win_data
+    ldir
+    ld a, (ATTR_P)
+    ld (de), a
+    inc de
+    ex af, af'
+    dec a
+    jr nz, 1b
+
     ;Init other variables
     ld de, NUM_OPTIONS
     ld bc, .end_data-.data
@@ -38,17 +51,24 @@ INIT_WIN:
     DEFB 0
     DEFB 0
     DEFB 0
+    DEFB 0
+    DEFB 1
+    DEFB 0
     DEFB 1
     DEFB 0
     DEFB 0
     DEFS 6, 0
-    DEFW 1
+    DEFW 0
+    DEFB 0
+    DEFB 0
+.win_data:
     DEFB 0
     DEFB 0
     DEFB 0
     DEFB 0
     DEFB 255
     DEFB 23
+    DEFB 0
 .end_data:
 
 ; The border color is on A
@@ -301,6 +321,8 @@ SET_MARGINS:
     pop bc
     ex (sp), hl
     exx
+    xor a
+    ld (PRINTED_LINES), a
     ret
 
 
@@ -388,6 +410,8 @@ SET_CURSOR:
     pop bc
     ex (sp), hl
     exx
+    xor a
+    ld (PRINTED_LINES), a
     ret
 
 
@@ -413,6 +437,45 @@ GET_CHARACTER_WIDTH:
     ld a, (bc)
     ret
 
+;TODO:
+CRLF:
+    push ix
+    ld ix, POS_X
+    ld a, (ix+2)
+    ld (ix+0), a
+    inc (ix+1)
+.CHECK_NEXT_LINE:
+    ld a, (WAIT_NEW_SCREEN)
+    or a
+    jr z, 2f
+    ld a, (ix+5)
+    sub (ix+3)
+    jr z, 2f
+    inc (ix+6)
+    ld b, a
+    ld a, (ix+6)
+    cp b
+    jr c, 2f        ;(printedLines >= (cwinH - 1))
+    ld a, (ix+5)
+    cp (ix+1)       ; MAXY-POSY
+    jr nc, 3f
+    ld a, (ix+3)
+    ld (ix+0), a
+    dec (ix+1)
+    call SCROLL_WIN
+3:  call WAIT_NEXT_PAGE
+    ld (ix+6), 0
+    ld a, (ix+3)
+    ld (ix+0), a
+2:  ld a, (ix+5)
+    cp (ix+1)      ;MAXY-POSY
+    jr nc, 1f
+    dec (ix+1)
+    call SCROLL_WIN
+1:  pop ix
+    ret
+
+
 ;    Entry param : A = Character width of character
 ;    Output: H = Y for next char
 ;            L = X for next char
@@ -432,6 +495,15 @@ UPDATE_POS:
 .new_l:
     ld a, 1
     ld (SKIP_SPACES), a ;NEWLINE DONE
+    call CRLF
+    ld hl, (POS_X)
+    ld d, h        ; Save new position in DE
+    ld e, l
+.s_mod+1:          ; If we jump to next line, the next pos_x must be updated
+    ld a, 0-0      ; The parameter is self_modified here
+    add a, l       ; add the width of the character to the next position
+    ld l, a        ; Update POS_X
+/*
     ld bc, (MIN_X) ; b = MIN_Y, c = MIN_X
     ld l, c        ; Set X = MIN_X
     inc h          ; Increment Y
@@ -457,14 +529,18 @@ UPDATE_POS:
     add a, l       ; add the width of the character to the next position
     ld l, a        ; Update POS_X
     ; POS_X should never be zero in this case
+*/
 .upd_pos:
     ld (POS_X), hl ; Update next position
-.tmp_ret:
     ret
-ENDP
+
+; Test if using alternate charset
+PUT_VAR_CHAR_WITH_CHARSET_OFFSET:
+    ld c, a
+    ld a, (CHARSET_OFFSET)
+    add a, c
 
 PUT_VAR_CHAR:
-
     call GET_CHARACTER_POINTER
     push hl        ; Store address to character
 
@@ -629,10 +705,11 @@ PUT_VAR_CHAR:
 
     ; Typing pause
     ld hl, (PRT_INTERVAL)
-.t4: dec hl
+.t4: 
     ld a, h
     or l
     ret z
+    dec hl
     jr .t4
 
 .MASK:
@@ -645,28 +722,6 @@ PUT_VAR_CHAR:
     DEFB %00000011  ;CPL =>  %11111100
     DEFB %00000001  ;CPL =>  %11111110
 
-
-; Carriage return
-; Uses: A & C
-CRLF:
-    ld a, (MIN_X)
-    ld (POS_X), a
-    ld a, (POS_Y)
-    inc a
-    ld c, a
-    ld a, (MAX_Y)
-    cp c              ; MAX_Y-Y
-    jr nc, .t1        ; MAX_Y >= Y
-    jp CLEAR_WIN
-.t1:
-    jr nz, .t2
-    ld a, (WAIT_NEW_SCREEN)
-    or a
-    jp nz, WAIT_NEXT_PAGE   ; MAX_Y = Y
-.t2:
-    ld a, c
-    ld (POS_Y), a
-    ret
 
 CENTER:
     ld a, (MIN_X)
@@ -681,12 +736,14 @@ CENTER:
 WAIT_NEXT_PAGE:
     call CENTER
     ld de, (POS_X)
-    inc d
+    ;inc d
 .loop:
     call INKEY
     cp 13
     jr z, .keyp
-    cp 32
+    cp ' '
+    jr z, .keyp
+    cp 'm'
     jr z, .keyp
 
     ld a, (CYCLE_OPTION)
@@ -703,12 +760,20 @@ WAIT_NEXT_PAGE:
     call INKEY
     or a
     jr nz, .keyp
-    jp CLEAR_WIN 
+    call CLEAR_LINE
+    ld a, (MIN_X)
+    ld (POS_X), a
+    ret
 
 
 PRINT_SELECTED_OPTION_BULLET:
     push af
-    ld bc, (POS_X)
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr nz, 1f
+    pop af
+    ret
+1:  ld bc, (POS_X)
     ld a, (SELECTED_OPTION)
     sla a
     sla a
@@ -796,7 +861,7 @@ PRINT_STR:
     cp 32         ; Space
     jr z, .space
     push hl
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     xor a
     ld (SKIP_SPACES), a      ; Disable space skip after a non-space character
     pop hl
@@ -811,7 +876,7 @@ PRINT_STR:
     push bc
     push hl
     ld a, 32
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     ld a, (SKIP_SPACES)  ;Skip space after auto-carriage return
     or a
     jr z, .no_backstep ; Space is not printed in this case
@@ -1096,6 +1161,9 @@ BACKSPACE:
     cp b                      ; Compare with MIN_Y
     jr c, .noBacktrack        ; IF Y < MIN_Y, do nothing
     ld d, a                   ; Store the new position Y
+    ld a, (PRINTED_LINES)
+    dec a
+    ld (PRINTED_LINES), a
     ld a, (MAX_X_BACKSPACE)   ; Sets X to the right side (MAX_X)
     jr 1b                     ; substract again
 .noLeftBorder:
@@ -1104,7 +1172,7 @@ BACKSPACE:
     ld (POS_X), de            ; Update new screen position
     push de
     ld a, $20                 ; Clear the new position
-    call PUT_VAR_CHAR
+    call PUT_VAR_CHAR_WITH_CHARSET_OFFSET
     pop de                    ; Step back again
     ld (POS_X), de
     ret
@@ -1123,21 +1191,101 @@ SET_BACKSPACE_MARGINS_WIDTH:
     ld (MAX_X_BACKSPACE), a
     ret
 
+
+;----------------------------------------------------
+
+POS_CHECK:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    ret c
+    ld a, 31
+    cp c
+    ret
+
+POS_ADJUST:
+    ; B = Y, C = X
+    ld a, 23
+    cp b
+    jr nc, 1f
+    ld b, a
+1:  ld a, 31
+    cp c
+    ret nc
+    ld c, a
+    ret
+
+RECT_ADJUST:
+    ; B = Y, C = X
+    ; D = Height, E = Width
+    ld a, e
+    add a, c
+    jr c, 4f
+    cp 32
+    jr c, 1f
+4:  ld a, 32
+    sub c
+    ld e, a
+1:  ld a, d
+    add a, b
+    jr c, 3f
+    cp 24
+    ret c
+3:  ld a, 24
+    sub b
+    ld d, a
+    ret
 ;-----------------------------------------------------
 
 CLEAR_WIN:
     ld bc, (MIN_X)
     ld de, (MAX_X)
     ld (POS_X), bc         ;set to origin of window
-    ;call CLEAR_RECT
-    ;xor a
-    ;ld (NUM_OPTIONS), a          ;Clear options.
-    ;ret
-CLEAR_RECT:
     push ix
     ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    call CLEAR_RECT
+    xor a
+    ;ld (NUM_OPTIONS), a          ;Clear options.
+    ld (PRINTED_LINES), a
+    pop ix
+    ret
 
-    ld (ix-2), b           ; YPOS
+SCROLL_WIN:
+    push ix
+    ld bc, (MIN_X)
+    ld de, (MAX_X)
+    ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    ld c, (ix-1)   ; XPOS
+    ld b, (ix-2)   ; YPOS
+    ld d, (ix-3)   ; Width
+    ld e, (ix-4)   ; Height
+    call SCROLL_UP
+    ; b=row, c=col
+    ; d=width, e=height
+    ld a, (MAX_Y)
+    ld (ix-2), a
+    ld (ix-4), 1
+    call CLEAR_RECT
+    pop ix
+    ret
+
+CLEAR_LINE:
+    push ix
+    ld bc, (MIN_X)
+    ld de, (MAX_X)
+    ld ix, TMP_AREA+4
+    call CALCULATE_RECT
+    ld a, (POS_Y)
+    ld (ix-2), a
+    ld (ix-4), 1
+    call CLEAR_RECT
+    pop ix
+    ret
+
+CALCULATE_RECT:
+    ld (ix-2), b         ; YPOS
 
     srl c
     srl c
@@ -1147,19 +1295,21 @@ CLEAR_RECT:
     srl e
     srl e
 
-    ld (ix-1), c          ; XPOS
+    ld (ix-1), c         ; XPOS
 
     ld a, e
     sub c
     inc a
-    ld (ix-3), a          ;Width
+    ld (ix-3), a         ;Width
 
     ld a, d
     sub b
     ld d, a
     inc a
     ld (ix-4), a        ; Height
+    ret
 
+CLEAR_RECT:
     ld      a,(ix-2)   ; ypos
     rrca
     rrca
@@ -1254,202 +1404,174 @@ CLEAR_RECT:
 
 .clearbox_row_skip:
     djnz .clearbox_outer_loop
-    pop ix
     ret
-;----------------------------------------------------
 
 
 ;----------------------------------------------------
-;' scrolls the window defined by (row, col, width, height) 1 cell up
-;WIN_SCROLL_UP:
-;    ld bc, (MIN_X)
-;    ld de, (MAX_X)
+; scrolls the window defined by (row, col, width, height) 1 cell up
+SCROLL_UP:
+    ; b=row, c=col
+    ; d=width, e=height
+    ld a, e
+    or a
+    ret z
+    or d
+    ret z
+
+    push bc
+    push de
+
+    ld a,b
+    and 18h
+    ld h,a
+    ld a,b
+    and 07h
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,c
+    ld l,a   ;HL=top-left window address in bitmap coord
+    ld bc, SCR_PXL
+    add hl, bc
+    ld a,e
+    ld c, d  ; c = width
+    ld d, h
+    ld e, l
+    dec a
+    jr z, .CleanLast
+    add a,a
+    add a,a
+    add a,a
+    ld b, a  ; b = 8 * (height - 1)
+
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    inc h
+    call PIXEL_DOWN
+
+.BucleScans:
+    push bc
+    push de
+    push hl
+    ld b, 0
+    ldir
+    pop hl
+    pop de
+    pop bc
+    call PIXEL_DOWN
+    ex de, hl
+    call PIXEL_DOWN
+    ex de, hl
+    djnz .BucleScans
+
+.CleanLast:
+    ex de,hl
+    pop de
+    ld b, 8
+    ld c, d
+    push de
+
+.CleanLastLoop:
+    push bc
+    push hl
+    ld (hl), 0
+    dec c
+    jr z, .EndCleanScan
+    ld d, h
+    ld e, l
+    inc de
+    ld b, 0
+    ldir
+
+.EndCleanScan:
+    pop hl
+    pop bc
+    inc h
+    djnz .CleanLastLoop
+
+.ScrollAttrs:
+    pop de
+    pop bc
+    ld l,b
+    ld h,0
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld a,l
+    add a,c
+    ld l,a
+    ld a,h
+    ld h,a    ;HL=top-left address in attr coords
+    ld bc, SCR_ATT
+    add hl, bc
+    ld b,e
+    dec b
+    ret z
+
+.BucleAttrs:
+    push bc
+    push de
+    push hl
+    ld b,0
+    ld c,d
+    ex de,hl
+    ld hl,32
+    add hl,de
+    ldir
+    pop hl
+    ld de,32
+    add hl,de
+    pop de
+    pop bc
+    djnz .BucleAttrs
+    ret
+;-----------------------------------
+; Pixel Down
 ;
-;    srl c
-;    srl c
-;    srl c
+; Adjusts screen address HL to move one pixel down in the display.
+; (0,0) is located at the top left corner of the screen.
 ;
-;    srl e
-;    srl e
-;    srl e
-;
-;    ld a, e
-;    sub c
-;    inc a
-;    ex af, af'
-;
-;    ld a, d
-;    sub b
-;    ld d, a
-;    inc a
-;
-;    ld e, a
-;    ex af, af'
-;    ld d, a
-;
-;
-;    ; b=row, c=col
-;    ; d=width, e=height
-;
-;    ld a, e
-;    or a
-;    ret z
-;    or d
-;    ret z
-;
-;    push bc
-;    push de
-;
-;    ld a,b
-;    and 18h
-;    ld h,a
-;    ld a,b
-;    and 07h
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,a
-;    add a,c
-;    ld l,a   ;HL=top-left window address in bitmap coord
-;    ld bc, SCR_PXL
-;    add hl, bc
-;    ld a,e
-;    ld c, d  ; c = width
-;    ld d, h
-;    ld e, l
-;    dec a
-;    jr z, .CleanLast
-;    add a,a
-;    add a,a
-;    add a,a
-;    ld b, a  ; b = 8 * (height - 1)
-;
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    inc h
-;    call PIXEL_DOWN
-;
-;.BucleScans:
-;    push bc
-;    push de
-;    push hl
-;    ld b, 0
-;    ldir
-;    pop hl
-;    pop de
-;    pop bc
-;    call PIXEL_DOWN
-;    ex de, hl
-;    call PIXEL_DOWN
-;    ex de, hl
-;    djnz .BucleScans
-;
-;.CleanLast:
-;    ex de,hl
-;    pop de
-;    ld b, 8
-;    ld c, d
-;    push de
-;
-;.CleanLastLoop:
-;    push bc
-;    push hl
-;    ld (hl), 0
-;    dec c
-;    jr z, .EndCleanScan
-;    ld d, h
-;    ld e, l
-;    inc de
-;    ld b, 0
-;    ldir
-;
-;.EndCleanScan:
-;    pop hl
-;    pop bc
-;    inc h
-;    djnz .CleanLastLoop
-;
-;.ScrollAttrs:
-;    pop de
-;    pop bc
-;    ld l,b
-;    ld h,0
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    add hl,hl
-;    ld a,l
-;    add a,c
-;    ld l,a
-;    ld a,h
-;    ld h,a    ;HL=top-left address in attr coords
-;    ld bc, SCR_ATT
-;    add hl, bc
-;    ld b,e
-;    dec b
-;    ret z
-;
-;.BucleAttrs:
-;    push bc
-;    push de
-;    push hl
-;    ld b,0
-;    ld c,d
-;    ex de,hl
-;    ld hl,32
-;    add hl,de
-;    ldir
-;    pop hl
-;    ld de,32
-;    add hl,de
-;    pop de
-;    pop bc
-;    djnz .BucleAttrs
-;    ret
-;;-----------------------------------
-;; Pixel Down
-;;
-;; Adjusts screen address HL to move one pixel down in the display.
-;; (0,0) is located at the top left corner of the screen.
-;;
-;; enter: HL = valid screen address
-;; exit : Carry = moved off screen
-;;        Carry'= moved off current cell (needs ATTR update)
-;;        HL = moves one pixel down
-;; used : AF, HL
-;PIXEL_DOWN:
-;    push de
-;    ld de, SCR_PXL
-;    or a
-;    sbc hl, de
-;    inc h
-;    ld a,h
-;    and $07
-;    jr nz, .leave
-;    scf         ;  Sets carry on F', which flags ATTR must be updated
-;    ex af, af'
-;    ld a,h
-;    sub $08
-;    ld h,a
-;    ld a,l
-;    add a,$20
-;    ld l,a
-;    jr nc, .leave
-;    ld a,h
-;    add a,$08
-;    ld h,a
-;    cp $19     ; carry = 0 => Out of screen
-;    jr c, .leave ; returns if out of screen
-;    ccf
-;    pop de
-;    ret
-;.leave:
-;    add hl, de ; This always sets Carry = 0
-;    pop de
-;    ret
+; enter: HL = valid screen address
+; exit : Carry = moved off screen
+;        Carry'= moved off current cell (needs ATTR update)
+;        HL = moves one pixel down
+; used : AF, HL
+PIXEL_DOWN:
+    push de
+    ld de, SCR_PXL
+    or a
+    sbc hl, de
+    inc h
+    ld a,h
+    and $07
+    jr nz, .leave
+    scf         ;  Sets carry on F', which flags ATTR must be updated
+    ex af, af'
+    ld a,h
+    sub $08
+    ld h,a
+    ld a,l
+    add a,$20
+    ld l,a
+    jr nc, .leave
+    ld a,h
+    add a,$08
+    ld h,a
+    cp $19     ; carry = 0 => Out of screen
+    jr c, .leave ; returns if out of screen
+    ccf
+    pop de
+    ret
+.leave:
+    add hl, de ; This always sets Carry = 0
+    pop de
+    ret
+;-------------------------------

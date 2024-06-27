@@ -62,9 +62,15 @@ NUM_OPTIONS:
     DEFB 0
 SELECTED_OPTION:
     DEFB 0
-INCR_ROW_OPTION:
+SELECTED_OPTION_VALUE:
     DEFB 0
-INCR_COL_OPTION:
+INCR_X_OPTION:
+    DEFB 0
+INCR_Y_OPTION:
+    DEFB 1
+DEFAULT_OPTION:
+    DEFB 0
+OPTION_BULLET_ENABLED:
     DEFB 1
 CYCLE_OPTION:
     DEFB 0
@@ -78,7 +84,14 @@ CHOOSE_CH_GOSUB_ADDRESS:
 ;--------------------------------------------------------------------------
 ;Print speed
 PRT_INTERVAL:
-    DEFW 1
+    DEFW 0
+
+CURR_WINDOW:
+    DEFB 0
+
+CHARSET_OFFSET:
+    DEFB 0
+
 ; X is in pixels, y in chars
 POS_X:
     DEFB 0
@@ -94,6 +107,8 @@ MAX_X:
     DEFB 255
 MAX_Y:
     DEFB 23
+PRINTED_LINES:
+    DEFB 0
 
 CHUNK:
     DEFB 0
@@ -155,8 +170,13 @@ SAVE_FLAGS:
 SAVE_CHECKSUM:
     DEFW 0
 SAVE_END:
-
 SAVE_SIZE EQU SAVE_END-SAVE_START
+
+MAXWINDOWS EQU 8
+
+WINDOWS:
+    DEFS MAXWINDOWS*8,0
+WINDOWS_END:
 ;--------------------------------------------------
     ;INCLUDE "VTII10bG_vars.asm"
 

@@ -763,9 +763,10 @@ OP_OPTION:
     ld a, 2
     jp SYS_ERROR
 .option_ok:
-    push af                    ;Adding the current position of the cursor
     push hl                    ;Store pointer
-    push af
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr z, 1f
     call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
     push de
     push de                    ; ; d = POS_Y, e = POS_X
@@ -774,7 +775,7 @@ OP_OPTION:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-    pop af
+1:  ld a, (NUM_OPTIONS)
     sla a
     sla a
     sla a
@@ -784,15 +785,63 @@ OP_OPTION:
     inc hl
     ld (hl), d
     inc hl
+    ld a, (NUM_OPTIONS)    
+    ld (hl), a             ;Storing num option as default value
+    inc hl
+    inc a
+    ld (NUM_OPTIONS), a   ;Increment options
     ex de, hl              ;Move option table address to DE
     pop hl
     ldi                    ;Copy Address to address table
     ldi
     ldi
     ldi
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_VAL_OPTION
+OP_POP_VAL_OPTION:
+    ld a, (NUM_OPTIONS)
+    cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
+    jr c,.option_ok
+    ld a, 2
+    jp SYS_ERROR
+.option_ok:
+    push hl                    ;Store pointer
+    ld a, (OPTION_BULLET_ENABLED)
+    or a
+    jr z, 1f
+    call ADJUST_CHAR_POS  ;Advance to the best position for printing the choice
+    push de
+    push de                    ; ; d = POS_Y, e = POS_X
+    ld a, NO_SELECTED_BULLET
+    call GET_CHARACTER_POINTER  ;Get character pointer
+    pop de
+    call PUT_8X8_CHAR           ; Print the character
+    pop de
+1:  ld a, (NUM_OPTIONS)
+    push af
+    sla a
+    sla a
+    sla a
+    ld l, a
+    ld h, HIGH OPTIONS_TABLE
+    ld (hl), e             ;Store screen pos
+    inc hl
+    ld (hl), d
+    inc hl
     pop af
     inc a
     ld (NUM_OPTIONS), a   ;Increment options
+    POP_INT_STACK
+    ld (hl), a             ;Storing value from stack
+    inc hl
+    ex de, hl              ;Move option table address to DE
+    pop hl
+    ldi                    ;Copy Address to address table
+    ldi
+    ldi
+    ldi
     jp EXEC_LOOP
     ENDIF
 
@@ -810,7 +859,9 @@ OP_WAITKEY:
 1:  call INKEY
     cp 13
     jr z, .keyp
-    cp 32
+    cp 'm'
+    jp z, .keyp
+    cp ' '
     jp z, .keyp
 .animate_bullet:
     push de
@@ -835,6 +886,8 @@ OP_WAITKEY:
 2:  call INKEY
     or a
     jr nz, 2b
+    ;xor a
+    ld (PRINTED_LINES), a
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -858,8 +911,10 @@ OP_PAUSE:
 1:  call INKEY
     cp 13
     jr z, .keyp
-    cp 32
-    jr z, .keyp
+    cp 'm'
+    jp z, .keyp
+    cp ' '
+    jp z, .keyp
     ld bc, (DOWN_COUNTER)
     ld a, b
     or c
@@ -887,6 +942,8 @@ OP_PAUSE:
 2:  call INKEY
     or a
     jr nz, 2b
+    ;xor a
+    ld (PRINTED_LINES), a
     pop hl
     jp EXEC_LOOP
     ENDIF
@@ -894,14 +951,13 @@ OP_PAUSE:
     IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
     ld (.self_a), hl
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
     or a
     jp nz, .options         ; No options available
     ld a, 3
     jp SYS_ERROR
-
 .options:
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
@@ -917,6 +973,8 @@ OP_CHOOSE:
     jp z, .down
     cp ' '
     jp z, .selected
+    cp 'm'
+    jp z, .selected
     cp 13
     jp z, .selected
     call ANIMATE_OPTION_BULLET
@@ -928,7 +986,7 @@ OP_CHOOSE:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -952,7 +1010,7 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -972,7 +1030,7 @@ OP_CHOOSE:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -996,7 +1054,7 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1022,6 +1080,9 @@ OP_CHOOSE:
 5:  call INKEY
     or a
     jr nz, 5b
+    ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
     ld a, (hl)
     inc hl
     or a
@@ -1059,7 +1120,7 @@ OP_CHOOSE_W:
  
     pop de           ;Restore timeout
     
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
     or a
@@ -1083,6 +1144,8 @@ OP_CHOOSE_W:
     jp z, .down
     cp ' '
     jp z, .selected
+    cp 'm'
+    jp z, .selected
     cp 13
     jp z, .selected
     ld bc, (DOWN_COUNTER)
@@ -1099,7 +1162,7 @@ OP_CHOOSE_W:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -1123,7 +1186,7 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1143,7 +1206,7 @@ OP_CHOOSE_W:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -1167,7 +1230,7 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1191,7 +1254,10 @@ OP_CHOOSE_W:
     add a, 2
     ld l, a
     ld h, HIGH OPTIONS_TABLE
-3:  ld c, (hl)               ;C= if is GOSUB
+3:  ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
+    ld c, (hl)               ;C= if is GOSUB
     inc hl
     xor a
     ld (NUM_OPTIONS), a
@@ -1230,7 +1296,7 @@ OP_CHOOSE_CH:
     ldi
     ldi
     ldi
-    xor a
+    ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a        ;Resets selected option
     ld (.self_a), hl
     jp .on_change_gosub 
@@ -1255,6 +1321,8 @@ OP_CHOOSE_CH:
     jp z, .down
     cp ' '
     jp z, .selected
+    cp 'm'
+    jp z, .selected
     cp 13
     jp z, .selected
     call ANIMATE_OPTION_BULLET
@@ -1266,7 +1334,7 @@ OP_CHOOSE_CH:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     sub b
@@ -1290,7 +1358,7 @@ OP_CHOOSE_CH:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_ROW_OPTION)
+    ld a, (INCR_X_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1310,7 +1378,7 @@ OP_CHOOSE_CH:
     push af
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     sub b
@@ -1334,7 +1402,7 @@ OP_CHOOSE_CH:
     call PRINT_SELECTED_OPTION_BULLET
     ld a, (NUM_OPTIONS)
     ld c, a
-    ld a, (INCR_COL_OPTION)
+    ld a, (INCR_Y_OPTION)
     ld b, a
     pop af
     add a, b
@@ -1361,6 +1429,9 @@ OP_CHOOSE_CH:
 5:  call INKEY
     or a
     jr nz, 5b
+    ld a, (hl)      ;Store selected option value
+    inc hl
+    ld (SELECTED_OPTION_VALUE), a 
     ld a, (hl)
     inc hl
     or a
@@ -1481,7 +1552,8 @@ OP_POP_CHAR:
     UNDEFINE UNUSED_OP_REPCHAR
     ENDIF
 OP_TAB:
-    ld a, 32 
+    ld a, (CHARSET_OFFSET)
+    add a, $20
     jr OP_TAB2
     ENDIF
 
@@ -1817,26 +1889,58 @@ OP_PUSH_IS_DISK:
 
     IFNDEF UNUSED_OP_POP_MENUCONFIG
 OP_POP_MENUCONFIG:
-    ld b, (ix+0)
-    ld c, (ix+1)
-    inc ix
-    inc ix
-    ld (INCR_ROW_OPTION), bc
+    ld d, (ix+0)
+    ld e, (ix+1)
+    ld b, (ix+2)
+    ld c, (ix+3)
+    ld (INCR_X_OPTION), bc
+    ld (DEFAULT_OPTION), de
+    ld de, 4
+    add ix, de
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_MENUCONFIG
 OP_MENUCONFIG:
-    ld c, (hl)
-    inc hl
-    ld b, (hl)
-    inc hl
-    ld (INCR_ROW_OPTION), bc
+    ld de, INCR_X_OPTION
+    ldi
+    ldi
+    ldi
+    ldi
     jp EXEC_LOOP
     ENDIF
 
 ;-------------------------------------------------------
-    IFNDEF UNUSED_OP_POP_BLIT
+
+    IFNDEF UNUSED_OP_POP_ALL_BLIT   
+OP_POP_ALL_BLIT:
+    push hl
+    ld b, (ix+0)               ; GET Y
+    inc ix
+    ld c, (ix+0)               ; GET X
+    inc ix
+    push bc
+    ld (CPY_SCR_BLK_X_D), bc
+    ld d, (ix+0)               ; GET H
+    inc ix
+    ld e, (ix+0)               ; GET W
+    inc ix
+    ld b, (ix+0)               ; GET YO
+    inc ix
+    ld c, (ix+0)               ; GET XO
+    inc ix
+    call POS_ADJUST
+    call RECT_ADJUST
+    ld (CPY_SCR_BLK_X), bc
+    ld (CPY_SCR_BLK_W), de
+    pop bc
+    jr 2f
+    IFNDEF BLIT_USED
+    DEFINE BLIT_USED
+    ENDIF
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_BLIT   
 OP_POP_BLIT:
     ld de, CPY_SCR_BLK_X
     ldi
@@ -1849,7 +1953,9 @@ OP_POP_BLIT:
     inc ix
     ld (CPY_SCR_BLK_X_D), bc
     jr 1f
+    IFNDEF BLIT_USED
     DEFINE BLIT_USED
+    ENDIF
     ENDIF
 
     IFNDEF UNUSED_OP_BLIT
@@ -1862,32 +1968,23 @@ OP_BLIT:
     ldi
     ldi
     ld bc, (CPY_SCR_BLK_X_D)
-    DEFINE USED_BLIT
+    IFNDEF BLIT_USED
+    DEFINE BLIT_USED
+    ENDIF
     ENDIF
 
     IFDEF BLIT_USED 
 1:  ld de, (CPY_SCR_BLK_W)
     push hl
-    ld a, c
-    cp 32
-    jp nc, .endBlit
-    ld a, b
-    cp 24
-    jp nc, .endBlit
+2:  call POS_CHECK
+    jp c, .endBlit
+    call RECT_ADJUST
+    ld a, d
+    or a
+    jp z, .endBlit
     ld a, e
-    add a, c
-    cp 32
-    jr c, 3f
-    ld a, 32
-    sub c
-    ld e, a
-3:  ld a, d
-    add a, b
-    cp 24
-    jr c, 4f
-    ld a, 24
-    sub b
-    ld d, a
+    or a
+    jp z, .endBlit
 4:  ld (CPY_SCR_BLK_W), de
     ld (CPY_SCR_BLK_X_D), bc
     
@@ -2060,9 +2157,37 @@ OP_FADEOUT:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_POP_FILLATTR:
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+    IFNDEF FILLATTR_USED
+    DEFINE FILLATTR_USED
+    ENDIF
+OP_POP_FILLATTR:
+    push hl
+    ;Get Attr
+    ld a, (ix+0)
+    ;Get Height
+    ld h, (ix+1)
+    ;Get Width
+    ld l, (ix+2)
+    ;Get Rows
+    ld b, (ix+3)
+    ;Get Cols
+    ld c, (ix+4)
+    ld de, 5
+    add ix, de
+    ex de, hl
+    jr FILLATTR
+    ENDIF
+
     IFNDEF UNUSED_OP_FILLATTR
     IFNDEF GET_ATTR_ADDR_USED
     DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+    IFNDEF FILLATTR_USED
+    DEFINE FILLATTR_USED
     ENDIF
 OP_FILLATTR:
     ld c, (hl)
@@ -2076,9 +2201,15 @@ OP_FILLATTR:
     ld a, (hl)
     inc hl
     push hl
+    ENDIF
+    
+    IFDEF FILLATTR_USED
     ; bc: y - x
     ; de: height - width
+FILLATTR:
     ex af, af'
+    call POS_ADJUST
+    call RECT_ADJUST
     call GET_ATTR_ADDR
     ex af, af'
 
@@ -2102,12 +2233,14 @@ OP_FILLATTR:
     ENDIF
 
     IFNDEF UNUSED_OP_PUTATTR
-    IFNDEF GET_ATTR_ADDR_USED
-    DEFINE GET_ATTR_ADDR_USED
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
     ENDIF
 OP_PUTATTR:
+    ;Get Rows
     ld c, (hl)
     inc hl
+    ;Get Cols
     ld b, (hl)
     inc hl
     ld e, (hl)
@@ -2115,44 +2248,72 @@ OP_PUTATTR:
     ld d, (hl)
     inc hl
     push hl
-    call GET_ATTR_ADDR
-    ld a, (hl)        ;Get attribute
-    and e             ;AND with mask
-    or d              ;OR with new values
-    ld (hl), a        ;Store value again
+    call PUT_ATTR
     pop hl
     jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_POP_PUTATTR
-    IFNDEF GET_ATTR_ADDR_USED
-    DEFINE GET_ATTR_ADDR_USED
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
     ENDIF
 OP_POP_PUTATTR:
     ;Get Rows
-    POP_INT_STACK   
-    cp 24
-    jr c, 1f
-    ld a, 23
-1:  ld b, a
+    ld b, (ix+0)
     ;Get Cols
-    POP_INT_STACK
-    cp 32
-    jr c, 2f
-    ld a, 31
-2:  ld c, a
+    ld c, (ix+1)
+    inc ix
+    inc ix
+    call POS_ADJUST
+    ;Get mask
     ld e, (hl)
     inc hl
+    ;Get Attr
     ld d, (hl)
     inc hl
     push hl
-    call GET_ATTR_ADDR
-    ld a, (hl)        ;Get attribute
-    and e             ;AND with mask
-    or d              ;OR with new values
-    ld (hl), a        ;Store value again
+    call PUT_ATTR
     pop hl
     jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_ALL_PUTATTR
+    IFNDEF PUT_ATTR_USED
+    DEFINE PUT_ATTR_USED
+    ENDIF
+OP_POP_ALL_PUTATTR:
+    ;Get Rows
+    ld b, (ix+0)
+    ;Get Cols
+    ld c, (ix+1)
+    call POS_ADJUST
+    ;Get mask
+    ld e, (ix+2)
+    ;Get Attr
+    ld d, (ix+3)
+    push hl
+    call PUT_ATTR
+    ld de, 4
+    add ix, de
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFDEF PUT_ATTR_USED
+    IFNDEF GET_ATTR_ADDR_USED
+    DEFINE GET_ATTR_ADDR_USED
+    ENDIF
+PUT_ATTR:
+    call GET_ATTR_ADDR
+    ld a, d
+    and e
+    ld d, a
+    ld a, e
+    cpl
+    and (hl)        ;AND with mask
+    or d              ;OR with new values
+    ld (hl), a        ;Store value again
+    ret
     ENDIF
 
     IFNDEF UNUSED_OP_PUSH_GETATTR
@@ -2161,17 +2322,12 @@ OP_POP_PUTATTR:
     ENDIF
 OP_PUSH_GETATTR:
     ;Get Rows
-    POP_INT_STACK   
-    cp 24
-    jr c, 1f
-    ld a, 23
-1:  ld b, a
+    ld b, (ix+0)
+    inc ix
     ;Get Cols
-    POP_INT_STACK
-    cp 32
-    jr c, 2f
-    ld a, 31
-2:  ld c, a
+    ld c, (ix+0)
+    inc ix
+    call POS_ADJUST
     push hl
     call GET_ATTR_ADDR
     ld a, (hl)        ;Get attribute
@@ -2179,7 +2335,6 @@ OP_PUSH_GETATTR:
     pop hl
     jp EXEC_LOOP
     ENDIF
-
   
     IFDEF GET_ATTR_ADDR_USED
 GET_ATTR_ADDR:
@@ -2258,6 +2413,90 @@ OP_PUSH_SAVE_RESULT:
     ENDIF
 
 ;-------------------------------------------------------
+    IFNDEF UNUSED_OP_SHIFT_R
+OP_SHIFT_R:
+    ; p2 = A, p1 = C
+    ld a, (ix+0)
+    ld c, (ix+1)
+    or a
+    jr z, 1f
+    ld b, a
+2:  srl c
+    djnz 2b
+1:  inc ix
+    ld (ix+0), c
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_SHIFT_L
+OP_SHIFT_L:
+    ; p2 = A, p1 = C
+    ld a, (ix+0)
+    ld c, (ix+1)
+    or a
+    jr z, 1f
+    ld b, a
+2:  sla c
+    djnz 2b
+1:  inc ix
+    ld (ix+0), c
+    jp EXEC_LOOP
+    ENDIF
+
+;-------------------------------------------------------
+    IFNDEF UNUSED_OP_WINDOW
+OP_WINDOW:
+    push hl
+    push hl
+    ld a, (CURR_WINDOW)
+    ld de, WINDOWS
+    add a, e
+    jr nc, 1f
+    inc d
+1:  ld e, a
+    ld hl, POS_X
+    ld bc, 7
+    ldir
+    ld a, (ATTR_P)
+    ld (de), a
+    pop hl
+    ld a, (hl)
+    and 7
+    sla a
+    sla a
+    sla a
+    ld (CURR_WINDOW), a
+    ld hl, WINDOWS
+    add a, l
+    jr nc, 1f
+    inc h
+1:  ld l, a
+    ld de, POS_X
+    ld bc, 7
+    ldir
+    ld a, (hl)
+    ld (ATTR_P), a
+    pop hl
+    inc hl
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_CHARSET
+    ; TODO: Add charset to Window?
+OP_CHARSET:
+    ld a, (hl)
+    inc hl
+    push hl
+    or a
+    jr z, 1f
+    ld a, $80                ;If <> 0, sets offset to 128
+1:  ld (CHARSET_OFFSET), a
+    add a, $20               ;Space
+    call GET_CHARACTER_WIDTH
+    ld (WIDTH_BACKSPACE), a
+    pop hl
+    jp EXEC_LOOP
+    ENDIF
 
 /*
     IFNDEF UNUSED_OP_EXTERN
@@ -2941,6 +3180,54 @@ OPCODES:
     DW OP_PUSH_GETATTR
     ENDIF
     IFDEF UNUSED_OP_PUSH_GETATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_ALL_BLIT
+    DW OP_POP_ALL_BLIT
+    ENDIF
+    IFDEF UNUSED_OP_POP_ALL_BLIT
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SHIFT_R
+    DW OP_SHIFT_R
+    ENDIF
+    IFDEF UNUSED_OP_SHIFT_R
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_SHIFT_L
+    DW OP_SHIFT_L
+    ENDIF
+    IFDEF UNUSED_OP_SHIFT_L
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_ALL_PUTATTR
+    DW OP_POP_ALL_PUTATTR
+    ENDIF
+    IFDEF UNUSED_OP_POP_ALL_PUTATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_FILLATTR
+    DW OP_POP_FILLATTR
+    ENDIF
+    IFDEF UNUSED_OP_POP_FILLATTR
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_VAL_OPTION
+    DW OP_POP_VAL_OPTION
+    ENDIF
+    IFDEF UNUSED_OP_POP_VAL_OPTION
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_WINDOW
+    DW OP_WINDOW
+    ENDIF
+    IFDEF UNUSED_OP_WINDOW
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_CHARSET
+    DW OP_CHARSET
+    ENDIF
+    IFDEF UNUSED_OP_CHARSET
     DW ERROR_NOP
     ENDIF
 

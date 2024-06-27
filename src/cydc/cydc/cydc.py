@@ -81,7 +81,7 @@ def file_path(string):
 def main():
     """Main function"""
 
-    version = "0.6.1"
+    version = "0.9.0"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -359,16 +359,21 @@ def main():
         font.loadCharset(jsonCharset)
 
     ######################################################################
+
     if verbose:
         print(_("Parsing code..."))
 
     parser = CydcParser()
     parser.build()
     code = parser.parse(text)
+    if verbose:
+        print(_("Symbols:"))
+        parser.print_symbols()
     if len(parser.errors) > 0:
         for e in parser.errors:
             print("ERROR:" + e)
         sys.exit(1)
+    
     ######################################################################
 
     if verbose:
