@@ -163,13 +163,19 @@ class CydcLexer(object):
         "FADEOUT": "FADEOUT",
         "FILLATTR": "FILLATTR",
         "PUTATTR": "PUTATTR",
+        "ATTRVAL": "ATTRVAL",
+        "ATTRMASK": "ATTRMASK",
         "CHANGED": "CHANGED",
+        "OPTIONVAL": "OPTIONVAL",
         "OPTIONSEL": "OPTIONSEL",
         "NUMOPTIONS": "NUMOPTIONS",
         "CLEAROPTIONS": "CLEAROPTIONS",
         "GETATTR": "GETATTR",
         "LET": "LET",
         "ELSEIF": "ELSEIF",
+        "VALUE":"VALUE",
+        "WINDOW":"WINDOW",
+        "CHARSET":"CHARSET",
     }
 
     # token_list
@@ -180,8 +186,16 @@ class CydcLexer(object):
         "NEWLINE_CHAR",
         "ERROR_TEXT",
     ]
-    tokens += ["SHORT_LABEL", "DEC_NUMBER", "HEX_NUMBER", "ID", "AT_CHAR", "COMMA"]
-    tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS"]
+    tokens += [
+        "SHORT_LABEL",
+        "BIN_NUMBER",
+        "DEC_NUMBER",
+        "HEX_NUMBER",
+        "ID",
+        "AT_CHAR",
+        "COMMA",
+    ]
+    tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "SHIFT_L", "SHIFT_R"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
@@ -235,6 +249,8 @@ class CydcLexer(object):
     t_NOT_EQUALS = r"<>"
     t_LESS_EQUALS = r"<="
     t_MORE_EQUALS = r">="
+    t_SHIFT_L = r"<<"
+    t_SHIFT_R = r">>"
     t_LESS_THAN = r"<"
     t_MORE_THAN = r">"
     t_NOT_B = r"!"
@@ -259,6 +275,15 @@ class CydcLexer(object):
         t.type = self.reserved.get(
             t.value.upper(), "SHORT_LABEL"
         )  # Check for reserved words
+        return t
+
+    def t_BIN_NUMBER(self, t):
+        r"0[bB][01]+|$[01]+"
+        try:
+            t.value = int(t.value, 0)
+        except ValueError:
+            print("Integer value too large %d", t.value)
+            t.value = 0
         return t
 
     def t_HEX_NUMBER(self, t):
