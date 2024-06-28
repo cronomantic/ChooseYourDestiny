@@ -1,5 +1,4 @@
-#NAME:=delerict
-NAME:=menu_text
+NAME:=test
 CYD_FILENAME:=$(NAME).cyd
 
 TAP_TARGET:=48k
