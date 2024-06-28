@@ -1,0 +1,42 @@
+[[/* La ventana por defecto es la cero */  
+  MARGINS 0, 0, 16, 12
+  INK 2
+  CLEAR
+  WINDOW 1
+  MARGINS 16, 0, 16, 12
+  INK 6
+  CLEAR
+  WINDOW 2
+  MARGINS 0, 12, 16, 12
+  INK 4
+  CLEAR
+  WINDOW 3
+  MARGINS 16, 12, 16, 12
+  INK 5
+  CLEAR
+  WINDOW 0
+]]Esto es la ventana 0
+[[
+  WINDOW 1
+]]Esto es la ventana 1
+[[
+  WINDOW 2
+]]Esto es la ventana 2
+[[
+  WINDOW 3
+]]Esto es la ventana 3
+[[
+  WINDOW 0
+]]Volvemos a la ventana 0
+[[
+  WINDOW 1
+]]Volvemos a la ventana 1
+[[
+  WINDOW 2
+]]Volvemos a la ventana 2
+[[
+  WINDOW 3
+]]Volvemos a la ventana 3
+[[
+  WAITKEY
+  END]]
