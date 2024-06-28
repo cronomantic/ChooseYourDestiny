@@ -1250,6 +1250,8 @@ Dispones de una serie de ejemplos para comprobar las capacidades del motor y apr
 
 - En la carpeta `examples\Golden_Axe_select_character` podrás aprender sobre los comandos `FILLATTR` y `CHOOSE IF CHANGED...`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
 
+- En la carpeta `examples\windows` tienes un ejemplo sencillo que ilustra el uso del comando `WINDOW`.
+
 Para probarlos en vivo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
 
 ---
