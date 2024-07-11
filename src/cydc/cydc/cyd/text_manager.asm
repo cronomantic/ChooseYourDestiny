@@ -831,6 +831,9 @@ PRINT_STR:
     cp 32
     jr z, .end_loop2
     push bc
+    ld c, a
+    ld a, (CHARSET_OFFSET)
+    add a, c
     call GET_CHARACTER_WIDTH
     pop bc
     add a, c
