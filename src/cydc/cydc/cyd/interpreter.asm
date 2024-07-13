@@ -1605,6 +1605,7 @@ OP_BACKSPACE:
 OP_SFX_D:
     ld e, (hl)
     inc hl
+    push ix
     push hl
     ld a, BEEPFX_AVAILABLE
     or a
@@ -1615,6 +1616,7 @@ OP_SFX_D:
     call BEEPFX
 
 1:  pop hl
+    pop ix
     jp EXEC_LOOP
     ENDIF
 
@@ -1622,6 +1624,7 @@ OP_SFX_D:
 OP_SFX_I:
     ld e, (hl)
     inc hl
+    push ix
     push hl
     ld a, BEEPFX_AVAILABLE
     or a
@@ -1633,6 +1636,7 @@ OP_SFX_I:
     call BEEPFX
 
 1:  pop hl
+    pop ix
     jp EXEC_LOOP
     ENDIF
 
@@ -1644,7 +1648,9 @@ OP_POP_SFX:
     or a
     jr z, 1f
     ld (SFX_ID), a
+    push ix
     call BEEPFX
+    pop ix
 1:  pop hl
     jp EXEC_LOOP
     ENDIF
@@ -1657,7 +1663,9 @@ OP_TRACK_D:
     IFDEF USE_VORTEX
     di
     push hl
+    push ix
     call LOAD_MUSIC
+    pop ix
     pop hl
     ei
     ENDIF
@@ -1673,7 +1681,9 @@ OP_TRACK_I:
     IFDEF USE_VORTEX
     di
     push hl
+    push ix
     call LOAD_MUSIC
+    pop ix
     pop hl
     ei
     ENDIF
@@ -1686,7 +1696,9 @@ OP_POP_TRACK:
     IFDEF USE_VORTEX
     di
     push hl
+    push ix
     call LOAD_MUSIC
+    pop ix
     pop hl
     ei
     ENDIF
