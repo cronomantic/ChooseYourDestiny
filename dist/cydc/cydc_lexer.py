@@ -173,9 +173,9 @@ class CydcLexer(object):
         "GETATTR": "GETATTR",
         "LET": "LET",
         "ELSEIF": "ELSEIF",
-        "VALUE":"VALUE",
-        "WINDOW":"WINDOW",
-        "CHARSET":"CHARSET",
+        "VALUE": "VALUE",
+        "WINDOW": "WINDOW",
+        "CHARSET": "CHARSET",
     }
 
     # token_list
@@ -369,10 +369,9 @@ class CydcLexer(object):
                         char = self.unicode_subtitute_chars[ord(char)]
                     else:
                         char = ord(char)
-
             elif char == "\n":
                 char = ord("\r")
-            else:
+            if not isinstance(char, int):
                 char = ord(char)
             new_string += chr(char)
         return new_string
