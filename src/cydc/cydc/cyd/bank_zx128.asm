@@ -58,3 +58,23 @@ RESET_SYS:
     EX (SP), HL
     RET
 
+SET_DEFAULT_BANKS:
+    LD A, (PLUS3_DOS_BANK678)
+    LD L, A
+    AND %00000111
+    LD H, A
+    LD A, L
+    AND %11111000
+    OR %00000100                  ;Rom 2/3 selection (+3dos / 48 basic)
+    LD BC,$1FFD                   ;BC=1FFD
+    OUT (C), A                     ;update port
+    LD (PLUS3_DOS_BANK678), A
+
+    LD A, (PLUS3_DOS_BANKM)
+    LD L, A
+    AND %11101000                 ;Change only bank bits
+    OR %00010000                  ;Set ROM 48K & Bank 0
+    LD B, $7F                     ;BC=7FFD
+    OUT (C), A                    ;update port
+    LD (PLUS3_DOS_BANKM), A
+    RET
