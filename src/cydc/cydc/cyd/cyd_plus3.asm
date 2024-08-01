@@ -66,6 +66,7 @@ MDLADDR 		EQU $C000
     ld a, high ISR_TABLE      ; load interrupt service routine
     ld i, a
     im 2
+    call SET_DEFAULT_BANKS
     ei
 
     ;Disable CAPS_LOCK
@@ -82,7 +83,6 @@ MDLADDR 		EQU $C000
     call INK
     call INIT_WIN
     call CLS_BUFFER
-
     call SET_RND_SEED
 
     jp START_LOADING
@@ -406,9 +406,14 @@ START_LOADING:
     ld (TOKENS_ADDR), hl
 
     ld ix, INT_STACK_ADDR     ;Set internal Stack
+    
 
     xor a
     call LOAD_CHUNK         ;Loads first CHUNK
+
+    ;This is a quick and dirty fix (TODO: to be replaced).
+    call INIT_WIN
+
     ld hl, CHUNK_ADDR       ;Start the CHUNK
     ; HL current pointer,
 EXEC_LOOP:
