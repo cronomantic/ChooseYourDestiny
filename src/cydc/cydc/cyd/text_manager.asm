@@ -459,13 +459,13 @@ CRLF:
     ld a, (ix+5)
     cp (ix+1)       ; MAXY-POSY
     jr nc, 3f
-    ld a, (ix+3)
+    ld a, (ix+2)
     ld (ix+0), a
     dec (ix+1)
     call SCROLL_WIN
 3:  call WAIT_NEXT_PAGE
     ld (ix+6), 0
-    ld a, (ix+3)
+    ld a, (ix+2)
     ld (ix+0), a
 2:  ld a, (ix+5)
     cp (ix+1)      ;MAXY-POSY
