@@ -33,6 +33,8 @@ START_INTERPRETER:
 
 INT_STACK_ADDR EQU $8000
 
+
+
     ;Clear data area
     xor a
     ld hl, START_VARS
@@ -46,6 +48,10 @@ INT_STACK_ADDR EQU $8000
     ld a, high ISR_TABLE      ; load interrupt service routine
     ld i, a
     im 2
+
+    IFDEF IS_128_TAPE
+    call SET_DEFAULT_BANKS
+    ENDIF
     ei
 
     ;Disable CAPS_LOCK
@@ -62,7 +68,6 @@ INT_STACK_ADDR EQU $8000
     call INK
     call INIT_WIN
     call CLS_BUFFER
-
     call SET_RND_SEED
 
     jp START_LOADING
