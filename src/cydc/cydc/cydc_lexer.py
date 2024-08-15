@@ -176,6 +176,8 @@ class CydcLexer(object):
         "VALUE": "VALUE",
         "WINDOW": "WINDOW",
         "CHARSET": "CHARSET",
+        "CONST": "CONST",
+        # "DATA": "DATA"
     }
 
     # token_list

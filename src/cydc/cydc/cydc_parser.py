@@ -30,6 +30,8 @@ from enum import Enum
 class SymbolType(Enum):
     LABEL = 1
     VARIABLE = 2
+    CONSTANT = 3
+    DATA = 4
 
 
 class CydcParser(object):
@@ -956,7 +958,7 @@ class CydcParser(object):
                     p[0] = p[2]
                 else:
                     p[0] = [p[2]]
-                p[0].append(("POP_SLOT_SAVE", (p[4], 0), p[6]))
+                p[0].append(("POP_SLOT_SAVE", ("VARIABLE", p[4], 0), p[6]))
             else:
                 p[0] = None
         elif len(p) == 5 and p[2] and self._is_valid_var(p[4]):
@@ -964,7 +966,7 @@ class CydcParser(object):
                 p[0] = p[2]
             else:
                 p[0] = [p[2]]
-            p[0].append(("POP_SLOT_SAVE", (p[4], 0), 0))
+            p[0].append(("POP_SLOT_SAVE", ("VARIABLE", p[4], 0), 0))
         elif len(p) == 3 and p[2]:
             if isinstance(p[2], list):
                 p[0] = p[2]
@@ -980,11 +982,11 @@ class CydcParser(object):
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                p[0] = ("RAMLOAD", (p[2], 0), p[4])
+                p[0] = ("RAMLOAD", ("VARIABLE", p[2], 0), p[4])
             else:
                 p[0] = None
         elif len(p) == 3 and self._is_valid_var(p[2]):
-            p[0] = ("RAMLOAD", (p[2], 0), 0)
+            p[0] = ("RAMLOAD", ("VARIABLE", p[2], 0), 0)
         elif len(p) == 2:
             p[0] = ("RAMLOAD", 0, 0)
 
@@ -996,11 +998,11 @@ class CydcParser(object):
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                p[0] = ("RAMSAVE", (p[2], 0), p[4])
+                p[0] = ("RAMSAVE", ("VARIABLE", p[2], 0), p[4])
             else:
                 p[0] = None
         elif len(p) == 3 and self._is_valid_var(p[2]):
-            p[0] = ("RAMSAVE", (p[2], 0), 0)
+            p[0] = ("RAMSAVE", ("VARIABLE", p[2], 0), 0)
         elif len(p) == 2:
             p[0] = ("RAMSAVE", 0, 0)
 
@@ -1023,6 +1025,20 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_constant_ID(self, p):
+        """
+        statement : CONST ID EQUALS constexpression
+        """
+        if len(p) == 5 and self._declare_symbol(
+            p[2], SymbolType.CONSTANT, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = p[0] = ("CONST", p[2], p[4])
+            else:
+                p[0] = p[0] = ("CONST", p[2], [p[4]])
+        else:
+            p[0] = None
+
     def p_statement_set_ind_array(self, p):
         """
         statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY
@@ -1033,7 +1049,7 @@ class CydcParser(object):
             for i, c in enumerate(p[7]):
                 if isinstance(c, list):
                     p[0] += c
-                    p[0].append(("POP_SET_DI", (p[3], i)))
+                    p[0].append(("POP_SET_DI", ("VARIABLE", p[3], i)))
                 else:
                     p[0] = None
                     break
@@ -1050,7 +1066,7 @@ class CydcParser(object):
             for i, c in enumerate(p[5]):
                 if isinstance(c, list):
                     p[0] += c
-                    p[0].append(("POP_SET", (p[2], i)))
+                    p[0].append(("POP_SET", ("VARIABLE", p[2], i)))
                 else:
                     p[0] = None
                     break
@@ -1067,7 +1083,7 @@ class CydcParser(object):
                 p[0] = p[6]
             else:
                 p[0] = [p[6]]
-            p[0].append(("POP_SET_DI", (p[3], 0)))
+            p[0].append(("POP_SET_DI", ("VARIABLE", p[3], 0)))
 
     def p_statement_set_dir(self, p):
         """
@@ -1079,7 +1095,7 @@ class CydcParser(object):
                 p[0] = p[4]
             else:
                 p[0] = [p[4]]
-            p[0].append(("POP_SET", (p[2], 0)))
+            p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
     def p_statement_choose(self, p):
         """
@@ -1359,14 +1375,14 @@ class CydcParser(object):
     def p_numexpression_variable_addr(self, p):
         "numexpression : AT_CHAR AT_CHAR variableID"
         if self._is_valid_var(p[3]):
-            p[0] = ("PUSH_D", (p[3], 0))
+            p[0] = ("PUSH_D", ("VARIABLE", p[3], 0))
         else:
             p[0] = None
 
     def p_numexpression_variable(self, p):
         "numexpression : AT_CHAR variableID"
         if self._is_valid_var(p[2]):
-            p[0] = ("PUSH_I", (p[2], 0))
+            p[0] = ("PUSH_I", ("VARIABLE", p[2], 0))
         else:
             p[0] = None
 
@@ -1476,9 +1492,19 @@ class CydcParser(object):
         p[0] = ("PUSH_IS_DISK",)
 
     def p_numexpression_expression(self, p):
-        "numexpression : expression"
-        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
-            p[0] = ("PUSH_D", p[1])
+        """
+        numexpression   : constexpression
+                        | expression
+        """
+        if isinstance(p[1], int):
+            if self._check_byte_value(p[1], p.lexer.lexer.lineno):
+                p[0] = ("PUSH_D", p[1])
+            else:
+                p[0] = None
+        elif isinstance(p[1], list):
+            p[0] = ("PUSH_D", ("CONSTANT", p[1]))
+        elif isinstance(p[1], tuple):
+            p[0] = ("PUSH_D", ("CONSTANT", [p[1]]))
         else:
             p[0] = None
 
@@ -1497,6 +1523,71 @@ class CydcParser(object):
                 p[0] = p[1]
             else:
                 p[0] = None
+        else:
+            p[0] = None
+
+    # def p_expressions_list(self, p):
+    #    """
+    #    expressions_list  : expressions_list COMMA expression
+    #                      | expression
+    #    """
+    #    if len(p) == 2 and p[1]:
+    #        p[0] = []
+    #        if isinstance(p[1], list):
+    #            p[0].append(p[1])
+    #        else:
+    #            p[0].append([p[1]])
+    #    elif len(p) == 4:
+    #        p[0] = p[1]
+    #        if not p[0]:
+    #            p[0] = []
+    #        if p[3]:
+    #            if isinstance(p[3], list):
+    #                p[0].append(p[3])
+    #            else:
+    #                p[0].append([p[3]])
+
+    def p_constexpression_binop(self, p):
+        """
+        constexpression : constexpression PLUS constexpression
+                        | constexpression MINUS constexpression
+                        | constexpression TIMES constexpression
+                        | constexpression DIVIDE constexpression
+                        | constexpression AND_B constexpression
+                        | constexpression OR_B constexpression
+                        | constexpression SHIFT_L constexpression
+                        | constexpression SHIFT_R constexpression
+        """
+        if len(p) == 4 and p[1] and p[3]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+            p[0].append(("C_" + p[2],))
+
+    def p_constexpression_group(self, p):
+        "constexpression : LPAREN constexpression RPAREN"
+        p[0] = p[2]
+
+    def p_constexpression_expression(self, p):
+        "constexpression : expression"
+        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
+            p[0] = ("C_VAL", p[1])
+        else:
+            p[0] = None
+
+    def p_constexpression_constant(self, p):
+        "constexpression : ID"
+        if self._is_valid_const(p[1]) and self._symbol_usage(
+            p[1], SymbolType.CONSTANT, p.lexer.lexer.lineno
+        ):
+            p[0] = ("C_REPL", p[1])
         else:
             p[0] = None
 
@@ -1601,6 +1692,9 @@ class CydcParser(object):
 
     def _is_valid_var(self, val):
         return isinstance(val, str) or isinstance(val, int)
+
+    def _is_valid_const(self, val):
+        return isinstance(val, str)
 
     def _fix_borders(self, row, col, width, height):
         (row, height) = self._fix_rows(row, height)
@@ -1763,6 +1857,14 @@ class CydcParser(object):
                 self.errors.append(
                     f"Variable '{symbol}' on line {lineno} was already declared before."
                 )
+            elif symbol_type == SymbolType.CONSTANT:
+                self.errors.append(
+                    f"Constant '{symbol}' on line {lineno} was already declared before."
+                )
+            elif symbol_type == SymbolType.DATA:
+                self.errors.append(
+                    f"Data array '{symbol}' on line {lineno} was already declared before."
+                )
             else:
                 self.errors.append(
                     f"Symbol '{symbol}' on line {lineno} was already declared before."
@@ -1788,6 +1890,14 @@ class CydcParser(object):
                     self.errors.append(
                         f"Variable '{symbol}' on line {lineno} was already used as label."
                     )
+                elif symbol_type == SymbolType.CONSTANT:
+                    self.errors.append(
+                        f"Constant '{symbol}' on line {lineno} was already used as label."
+                    )
+                elif symbol_type == SymbolType.DATA:
+                    self.errors.append(
+                        f"Data array '{symbol}' on line {lineno} was already used as label."
+                    )
                 else:
                     self.errors.append(
                         f"Symbol '{symbol}' on line {lineno} was already used in other context."
@@ -1811,6 +1921,14 @@ class CydcParser(object):
                     self.errors.append(
                         f"Variable '{symbol}' on lines {lines_str} is not declared."
                     )
+                elif symbol_type == SymbolType.CONSTANT:
+                    self.errors.append(
+                        f"Constant '{symbol}' on lines {lines_str} is not declared."
+                    )
+                elif symbol_type == SymbolType.DATA:
+                    self.errors.append(
+                        f"Data arrat '{symbol}' on lines {lines_str} is not declared."
+                    )
                 else:
                     self.errors.append(
                         f"Symbol '{symbol}' on lines {lines_str} is not declared."
@@ -1827,6 +1945,14 @@ class CydcParser(object):
                         self.errors.append(
                             f"Variable '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
                         )
+                    elif symbol_type == SymbolType.CONSTANT:
+                        self.errors.append(
+                            f"Constant '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
+                    elif symbol_type == SymbolType.DATA:
+                        self.errors.append(
+                            f"Data array '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
                     else:
                         self.errors.append(
                             f"Symbol '{symbol}' on lines {lines_str} was already declared with another type on {s[1]}."
@@ -1841,5 +1967,9 @@ class CydcParser(object):
                 print(f"- Label '{symbol}' declared on line {s[1]}.")
             elif s[0] == SymbolType.VARIABLE:
                 print(f"- Variable '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.CONSTANT:
+                print(f"- CONSTANT '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.DATA:
+                print(f"- Data Array '{symbol}' declared on line {s[1]}.")
             else:
                 print(f"- Symbol '{symbol}' declared on line {s[1]}.")
