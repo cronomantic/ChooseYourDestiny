@@ -44,6 +44,8 @@ class CydcLexer(object):
                 b"\xFA",
                 b"\xF1",
                 b"\xD1",
+                b"\xE7",
+                b"\xC7",
                 b"\xFC",
                 b"\xDC",
             )
