@@ -42,9 +42,28 @@ zesarux %ZESARUXPARAMS% --machine 48k ..\..\%GAME%.TAP
 )
 SET ZESARUXPARAMS=
 CD ..\..
-)
 GOTO END
+)
 
+
+if EXIST %~dp0\tools\jSpeccy\jSpeccy.jar (
+cd %~dp0\tools\jSpeccy
+SET JSPECCYPARAMS=-z 3 --fastload --no-confirm-actions
+if "%TARGET%"=="plus3" (
+jSpeccy.jar ..\..\%GAME%.TAP -m plus3 %JSPECCYPARAMS%
+)
+if "%TARGET%"=="128k" (
+jSpeccy.jar ..\..\%GAME%.TAP -m sp128k %JSPECCYPARAMS%
+)
+if "%TARGET%"=="48k" (
+jSpeccy.jar ..\..\%GAME%.TAP -m sp48k -%JSPECCYPARAMS%
+)
+SET JSPECCYPARAMS=
+CD ..\..
+GOTO END
+)
+
+GOTO END
 :ERROR
 ECHO ---------------------
 ECHO Compile error, please check
