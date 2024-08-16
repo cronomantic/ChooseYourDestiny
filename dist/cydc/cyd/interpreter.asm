@@ -2510,6 +2510,154 @@ OP_CHARSET:
     jp EXEC_LOOP
     ENDIF
 
+    IFNDEF UNUSED_OP_SKIP_ARRAY
+OP_SKIP_ARRAY:
+    ld d, 0
+    ld e, (hl)
+    inc hl
+    inc de
+    add hl, de
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_VAL_ARRAY
+OP_PUSH_VAL_ARRAY:
+    ld c, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push hl
+    ld a, (CHUNK)
+    cp c       ; If the CHUNK is the same...
+    jr z, .same_CHUNK
+    push af
+    ld a, c
+    push de
+    call LOAD_CHUNK
+    pop de
+    call .push_val_array
+    pop af
+    call LOAD_CHUNK
+    jr 1f
+.same_CHUNK:
+    call .push_val_array
+1:  pop hl
+    jp EXEC_LOOP
+.push_val_array:
+    ld a, (de)            ;Get size-1
+    inc de
+    ld h, 0
+    ld l, (ix+0)          ;Get offset
+    cp l                  ;test if offset > (size-1) (A-C)
+    jr nc, 2f
+    ;Error, array out of bounds
+    ld a, 7
+    jp SYS_ERROR
+2:  add hl, de
+    ld a, (hl)
+    ld (ix+0), a
+    ret
+    ENDIF
+
+    IFNDEF UNUSED_OP_POP_VAL_ARRAY
+OP_POP_VAL_ARRAY:
+    ld c, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push hl
+    ld a, (CHUNK)
+    cp c       ; If the CHUNK is the same...
+    jr z, .same_CHUNK
+    push af
+    ld a, c
+    push de
+    call LOAD_CHUNK
+    pop de
+    call .pop_val_array
+    pop af
+    call LOAD_CHUNK
+    jr 1f
+.same_CHUNK:
+    call .pop_val_array
+1:  pop hl
+    jp EXEC_LOOP
+.pop_val_array:
+    ld a, (de)            ;Get size-1
+    inc de
+    ld h, 0
+    ld l, (ix+0)          ;Get offset
+    ld a, (ix+1)          ;Get value
+    cp l                  ;test if offset > (size-1) (A-C)
+    jr nc, 2f
+    ;Error, array out of bounds
+    ld a, 7
+    jp SYS_ERROR
+2:  add hl, de
+    ld (hl), a
+    inc ix
+    ld (ix+0), a
+    ret
+   ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_LEN_ARRAY
+OP_PUSH_LEN_ARRAY:
+    ld c, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push hl
+    ld a, (CHUNK)
+    cp c       ; If the CHUNK is the same...
+    jr z, .same_CHUNK
+    push af
+    ld a, c
+    push de
+    call LOAD_CHUNK
+    pop de
+    call .push_len_array
+    pop af
+    call LOAD_CHUNK
+    pop hl
+    jp EXEC_LOOP
+.same_CHUNK:
+    call .push_len_array
+    jp EXEC_LOOP
+.push_len_array:
+    ld a, (de)
+    PUSH_INT_STACK
+    ret
+    ENDIF
+
+/*
+    MACRO OP_2PARAM_GET_STACK
+    ld c, (ix+0)
+    ld a, (ix+1)
+    ENDM
+    
+    MACRO OP_2PARAM_STORE_STACK
+    inc ix
+    ld (ix+0), a
+    jp EXEC_LOOP
+    ENDM
+
+    MACRO POP_INT_STACK
+    ld a, (ix+0)
+    inc ix
+    ENDM
+
+    MACRO PUSH_INT_STACK
+    dec ix
+    ld (ix+0), a
+    ENDM
+*/
+
 /*
     IFNDEF UNUSED_OP_EXTERN
 OP_EXTERN:
@@ -3242,6 +3390,31 @@ OPCODES:
     IFDEF UNUSED_OP_CHARSET
     DW ERROR_NOP
     ENDIF
+    IFNDEF UNUSED_OP_SKIP_ARRAY
+    DW OP_SKIP_ARRAY
+    ENDIF
+    IFDEF UNUSED_OP_SKIP_ARRAY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_VAL_ARRAY
+    DW OP_PUSH_VAL_ARRAY
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_VAL_ARRAY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_POP_VAL_ARRAY
+    DW OP_POP_VAL_ARRAY
+    ENDIF
+    IFDEF UNUSED_OP_POP_VAL_ARRAY
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_LEN_ARRAY
+    DW OP_PUSH_LEN_ARRAY
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_LEN_ARRAY
+    DW ERROR_NOP
+    ENDIF
+
 
     IFDEF USE_256_OPCODES
     REPT 256-(($-OPCODES)/2)
