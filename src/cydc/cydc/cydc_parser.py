@@ -181,13 +181,6 @@ class CydcParser(object):
                 else:
                     p[0].append(p[2])
 
-    def p_loop_empty(self, p):
-        """
-        loop_empty : loop_empty NEWLINE_CHAR
-                    | empty
-        """
-        pass
-
     def p_if_statement(self, p):
         """
         if_statement :  IF boolexpression then_statement else_statement ENDIF
@@ -1057,7 +1050,9 @@ class CydcParser(object):
         statement : SET ID LPAREN varexpression RPAREN TO varexpression
                   | LET ID LPAREN varexpression RPAREN EQUALS varexpression
         """
-        if len(p) == 8 and self._symbol_usage(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno):
+        if len(p) == 8 and self._symbol_usage(
+            p[2], SymbolType.ARRAY, p.lexer.lexer.lineno
+        ):
             if isinstance(p[4], list):
                 p[0] = p[7]
             else:
@@ -1213,7 +1208,11 @@ class CydcParser(object):
 
     def p_varexpressions_list(self, p):
         """
-        varexpressions_list : varexpressions_list COMMA varexpression
+        varexpressions_list : varexpressions_list COMMA nl_varexpression
+                            | varexpressions_list COMMA varexpression_nl
+                            | varexpressions_list COMMA varexpression
+                            | nl_varexpression
+                            | varexpression_nl
                             | varexpression
         """
         if len(p) == 2 and p[1]:
@@ -1231,6 +1230,27 @@ class CydcParser(object):
                     p[0].append(p[3])
                 else:
                     p[0].append([p[3]])
+
+    def p_nl_varexpression(self, p):
+        """
+        nl_varexpression    : NEWLINE_CHAR varexpression_nl
+                            | NEWLINE_CHAR varexpression
+                            | NEWLINE_CHAR
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[2]:
+            p[0] = p[2]
+
+    def p_varexpression_nl(self, p):
+        """
+        varexpression_nl    : varexpression NEWLINE_CHAR
+                            | NEWLINE_CHAR
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[1]:
+            p[0] = p[1]
 
     def p_boolexpression_binop(self, p):
         """
@@ -1546,7 +1566,6 @@ class CydcParser(object):
         "varexpression : ISDISK LPAREN RPAREN"
         p[0] = ("PUSH_IS_DISK",)
 
-
     def p_varexpression_expression(self, p):
         """
         varexpression  : constexpression
@@ -1578,8 +1597,12 @@ class CydcParser(object):
 
     def p_constexpressions_list(self, p):
         """
-        constexpressions_list    : constexpressions_list COMMA constexpression
-                                 | constexpression
+        constexpressions_list   : constexpressions_list COMMA nl_constexpression
+                                | constexpressions_list COMMA constexpression_nl
+                                | constexpressions_list COMMA constexpression
+                                | nl_constexpression
+                                | constexpression_nl
+                                | constexpression
         """
         if len(p) == 2 and p[1]:
             p[0] = []
@@ -1596,6 +1619,27 @@ class CydcParser(object):
                     p[0].append(p[3])
                 else:
                     p[0].append([p[3]])
+
+    def p_nl_constexpression(self, p):
+        """
+        nl_constexpression  : NEWLINE_CHAR constexpression_nl
+                            | NEWLINE_CHAR constexpression
+                            | NEWLINE_CHAR
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[2]:
+            p[0] = p[2]
+
+    def p_constexpression_nl(self, p):
+        """
+        constexpression_nl  : constexpression NEWLINE_CHAR
+                            | NEWLINE_CHAR
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[1]:
+            p[0] = p[1]
 
     def p_constexpression_binop(self, p):
         """
@@ -1688,6 +1732,13 @@ class CydcParser(object):
     def p_expression_dec_number(self, p):
         "number : DEC_NUMBER"
         p[0] = p[1]
+
+    def p_loop_empty(self, p):
+        """
+        loop_empty : loop_empty NEWLINE_CHAR
+                   | empty
+        """
+        pass
 
     def p_empty(self, p):
         "empty :"
