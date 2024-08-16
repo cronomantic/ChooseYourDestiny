@@ -32,22 +32,22 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
     - [IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
-    - [SET varID TO numexpression](#set-varid-to-numexpression)
-    - [SET \[varID\] TO numexpression](#set-varid-to-numexpression-1)
-    - [SET varID TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2)
-    - [SET \[varID\] TO {numexpression1, numexpression2,...}](#set-varid-to-numexpression1-numexpression2-1)
-    - [LET varID = numexpression](#let-varid--numexpression)
-    - [LET \[varID\] = numexpression](#let-varid--numexpression-1)
-    - [LET varID = {numexpression1, numexpression2,...}](#let-varid--numexpression1-numexpression2)
-    - [LET \[varID\] = {numexpression1, numexpression2,...}](#let-varid--numexpression1-numexpression2-1)
+    - [SET varID TO varexpression](#set-varid-to-varexpression)
+    - [SET \[varID\] TO varexpression](#set-varid-to-varexpression-1)
+    - [SET varID TO {varexpression1, varexpression2,...}](#set-varid-to-varexpression1-varexpression2)
+    - [SET \[varID\] TO {varexpression1, varexpression2,...}](#set-varid-to-varexpression1-varexpression2-1)
+    - [LET varID = varexpression](#let-varid--varexpression)
+    - [LET \[varID\] = varexpression](#let-varid--varexpression-1)
+    - [LET varID = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2)
+    - [LET \[varID\] = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2-1)
     - [END](#end)
     - [CLEAR](#clear)
     - [CENTER](#center)
     - [WAITKEY](#waitkey)
     - [OPTION GOTO ID](#option-goto-id)
     - [OPTION GOSUB ID](#option-gosub-id)
-    - [OPTION VALUE(numexpression) GOTO ID](#option-valuenumexpression-goto-id)
-    - [OPTION VALUE(numexpression) GOSUB ID](#option-valuenumexpression-gosub-id)
+    - [OPTION VALUE(varexpression) GOTO ID](#option-valuevarexpression-goto-id)
+    - [OPTION VALUE(varexpression) GOSUB ID](#option-valuevarexpression-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
     - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
@@ -55,37 +55,37 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [NUMOPTIONS()](#numoptions)
     - [OPTIONVAL()](#optionval)
     - [CLEAROPTIONS](#clearoptions)
-    - [MENUCONFIG numexpression, numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression-numexpression)
-    - [MENUCONFIG numexpression, numexpression, numexpression](#menuconfig-numexpression-numexpression-numexpression)
-    - [MENUCONFIG numexpression, numexpression](#menuconfig-numexpression-numexpression)
-    - [CHAR numexpression](#char-numexpression)
+    - [MENUCONFIG varexpression, varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression-varexpression)
+    - [MENUCONFIG varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression)
+    - [MENUCONFIG varexpression, varexpression](#menuconfig-varexpression-varexpression)
+    - [CHAR varexpression](#char-varexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
-    - [PRINT numexpression](#print-numexpression)
+    - [PRINT varexpression](#print-varexpression)
     - [PAGEPAUSE expression](#pagepause-expression)
-    - [INK numexpression](#ink-numexpression)
-    - [PAPER numexpression](#paper-numexpression)
-    - [BORDER numexpression](#border-numexpression)
-    - [BRIGHT numexpression](#bright-numexpression)
-    - [FLASH numexpression](#flash-numexpression)
+    - [INK varexpression](#ink-varexpression)
+    - [PAPER varexpression](#paper-varexpression)
+    - [BORDER varexpression](#border-varexpression)
+    - [BRIGHT varexpression](#bright-varexpression)
+    - [FLASH varexpression](#flash-varexpression)
     - [NEWLINE expression](#newline-expression)
     - [NEWLINE](#newline)
     - [BACKSPACE expression](#backspace-expression)
     - [BACKSPACE](#backspace)
-    - [SFX numexpression](#sfx-numexpression)
-    - [PICTURE numexpression](#picture-numexpression)
-    - [DISPLAY numexpression](#display-numexpression)
-    - [BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression](#blit-numexpression-numexpression-numexpression-numexpression-at-numexpression-numexpression)
+    - [SFX varexpression](#sfx-varexpression)
+    - [PICTURE varexpression](#picture-varexpression)
+    - [DISPLAY varexpression](#display-varexpression)
+    - [BLIT varexpression, varexpression, varexpression, varexpression AT varexpression, varexpression](#blit-varexpression-varexpression-varexpression-varexpression-at-varexpression-varexpression)
     - [WAIT expression](#wait-expression)
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
     - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
-    - [AT numexpression, numexpression](#at-numexpression-numexpression)
-    - [FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression](#fillattr-numexpression-numexpression-numexpression-numexpression-numexpression)
-    - [PUTATTR numexpression, numexpression AT numexpression, numexpression](#putattr-numexpression-numexpression-at-numexpression-numexpression)
-    - [PUTATTR numexpression AT numexpression, numexpression](#putattr-numexpression-at-numexpression-numexpression)
-    - [GETATTR (numexpression, numexpression)](#getattr-numexpression-numexpression)
+    - [AT varexpression, varexpression](#at-varexpression-varexpression)
+    - [FILLATTR varexpression, varexpression, varexpression, varexpression, varexpression](#fillattr-varexpression-varexpression-varexpression-varexpression-varexpression)
+    - [PUTATTR varexpression, varexpression AT varexpression, varexpression](#putattr-varexpression-varexpression-at-varexpression-varexpression)
+    - [PUTATTR varexpression AT varexpression, varexpression](#putattr-varexpression-at-varexpression-varexpression)
+    - [GETATTR (varexpression, varexpression)](#getattr-varexpression-varexpression)
     - [ATTRVAL (expression COMMA expression COMMA expression COMMA expression)](#attrval-expression-comma-expression-comma-expression-comma-expression)
     - [ATTRMASK (expression COMMA expression COMMA expression COMMA expression)](#attrmask-expression-comma-expression-comma-expression-comma-expression)
     - [RANDOM(expression)](#randomexpression)
@@ -93,28 +93,29 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RANDOM(expression, expression)](#randomexpression-expression)
     - [INKEY(expression)](#inkeyexpression)
     - [INKEY()](#inkey)
-    - [MIN(numexpression,numexpression)](#minnumexpressionnumexpression)
-    - [MAX(numexpression,numexpression)](#maxnumexpressionnumexpression)
+    - [MIN(varexpression,varexpression)](#minvarexpressionvarexpression)
+    - [MAX(varexpression,varexpression)](#maxvarexpressionvarexpression)
     - [YPOS()](#ypos)
     - [XPOS()](#xpos)
     - [WINDOW expression](#window-expression)
     - [CHARSET expression](#charset-expression)
     - [RANDOMIZE](#randomize)
-    - [TRACK numexpression](#track-numexpression)
-    - [PLAY numexpression](#play-numexpression)
-    - [LOOP numexpression](#loop-numexpression)
+    - [TRACK varexpression](#track-varexpression)
+    - [PLAY varexpression](#play-varexpression)
+    - [LOOP varexpression](#loop-varexpression)
     - [RAMSAVE varID, expression](#ramsave-varid-expression)
     - [RAMSAVE varID](#ramsave-varid)
     - [RAMSAVE](#ramsave)
     - [RAMLOAD varID, expression](#ramload-varid-expression)
     - [RAMLOAD varID](#ramload-varid)
     - [RAMLOAD](#ramload)
-    - [SAVE numexpression, varId, expression](#save-numexpression-varid-expression)
-    - [SAVE numexpression, varId](#save-numexpression-varid)
-    - [SAVE numexpression](#save-numexpression)
-    - [LOAD numexpression](#load-numexpression)
+    - [SAVE varexpression, varId, expression](#save-varexpression-varid-expression)
+    - [SAVE varexpression, varId](#save-varexpression-varid)
+    - [SAVE varexpression](#save-varexpression)
+    - [LOAD varexpression](#load-varexpression)
     - [SAVERESULT()](#saveresult)
     - [ISDISK()](#isdisk)
+    - [LASTPOS(ID)](#lastposid)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
   - [Melodías](#melodías)
@@ -407,7 +408,7 @@ DECLARE 10 AS OtroNombre
 
 Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar el flag 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
 
-Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, de la siguiente manera:
+Para asignar valores a un flag, usamos el comando `SET varId TO varexpression`, de la siguiente manera:
 
 ```
 [[
@@ -419,7 +420,7 @@ Para asignar valores a un flag, usamos el comando `SET varId TO numexpression`, 
 
 ```
 
-También tenemos ahora el siguiente sinónimo con `LET varId = numexpression`, de tal forma que los ejemplos anteriores se podrían reescribir así:
+También tenemos ahora el siguiente sinónimo con `LET varId = varexpression`, de tal forma que los ejemplos anteriores se podrían reescribir así:
 
 ```
 [[
@@ -472,8 +473,8 @@ Por último, hay una serie de comandos especiales llamados **funciones**. Estos 
 - **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
 - **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
 - **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
-- **MIN(numexpression,numexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
-- **MAX(numexpression,numexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+- **MIN(varexpression,varexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
+- **MAX(varexpression,varexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
 - **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 
@@ -600,7 +601,7 @@ Antes de describir los comandos, vamos a hablar resumidamente de la leyenda util
 
 - **ID** es un identificador y es una cadena de cifras, letras o subrayado. No se admiten letras acentuadas ni la ñ.
 - **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
-- **numexpression**, expresión numérica tal y como es descrita en su [sección](#flags-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
+- **varexpression**, expresión numérica tal y como es descrita en su [sección](#flags-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
 - **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
 - **varID**, identificador de variable, puede ser una _expression_ si usamos su índice numérico o un _ID_ si lo hemos declarado así con `DECLARE`.
 
@@ -669,37 +670,37 @@ verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso 
 
 Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
-### SET varID TO numexpression
+### SET varID TO varexpression
 
-Asigna el valor de _numexpression_ a la variable _varID_.
+Asigna el valor de _varexpression_ a la variable _varID_.
 
-### SET [varID] TO numexpression
+### SET [varID] TO varexpression
 
-Asigna el valor de _numexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
+Asigna el valor de _varexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
 
-### SET varID TO {numexpression1, numexpression2,...}
+### SET varID TO {varexpression1, varexpression2,...}
 
-Asigna el valor de _numexpression1_ a la variable _varID_,  _numexpression2_ a la variable _varID_+1, y así.
+Asigna el valor de _varexpression1_ a la variable _varID_,  _varexpression2_ a la variable _varID_+1, y así.
 
-### SET [varID] TO {numexpression1, numexpression2,...}
+### SET [varID] TO {varexpression1, varexpression2,...}
 
-Asigna el valor de _numexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _numexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
+Asigna el valor de _varexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _varexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
-### LET varID = numexpression
+### LET varID = varexpression
 
-Asigna el valor de _numexpression_ a la variable _varID_.
+Asigna el valor de _varexpression_ a la variable _varID_.
 
-### LET [varID] = numexpression
+### LET [varID] = varexpression
 
-Asigna el valor de _numexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
+Asigna el valor de _varexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
 
-### LET varID = {numexpression1, numexpression2,...}
+### LET varID = {varexpression1, varexpression2,...}
 
-Asigna el valor de _numexpression1_ a la variable _varID_,  _numexpression2_ a la variable _varID_+1, y así.
+Asigna el valor de _varexpression1_ a la variable _varID_,  _varexpression2_ a la variable _varID_+1, y así.
 
-### LET [varID] = {numexpression1, numexpression2,...}
+### LET [varID] = {varexpression1, varexpression2,...}
 
-Asigna el valor de _numexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _numexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
+Asigna el valor de _varexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _varexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
 ### END
 
@@ -725,18 +726,18 @@ Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si con
 
 Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo.Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
 
-### OPTION VALUE(numexpression) GOTO ID
+### OPTION VALUE(varexpression) GOTO ID
 
 Funciona igual que `OPTION GOTO ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
 
-### OPTION VALUE(numexpression) GOSUB ID
+### OPTION VALUE(varexpression) GOSUB ID
 
 Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que será lo que devuelva `OPTIONVAL()` si resulta la opción elegida en el menú.
 
 ### CHOOSE
 
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
-La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-numexpression-numexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A**. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
+La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A**. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
 Recuerda que si se borra la pantalla antes de este comando, perderás las opciones y dará un error de sistema.
 
@@ -765,7 +766,7 @@ _Función_ que devuelve el valor asignado a la opción seleccionada y aceptada e
 
 Elimina las opciones almacenadas en el menú.
 
-### MENUCONFIG numexpression, numexpression, numexpression, numexpression
+### MENUCONFIG varexpression, varexpression, varexpression, varexpression
 
 Configura el menú de opciones. Los parñametros que se pueden configurar son los siguientes:
 
@@ -777,15 +778,15 @@ Configura el menú de opciones. Los parñametros que se pueden configurar son lo
 El comportamiento al iniciarse el intérprete es como si se hubiese ejecutado `MENUCONFIG 0,1,0,1`.
 **Si se cambia la configuración para un menú, es recomendable hacerlo lo primero, antes de situar las opciones.**
 
-### MENUCONFIG numexpression, numexpression, numexpression
+### MENUCONFIG varexpression, varexpression, varexpression
 
 Si se omite el cuarto parámetro, `MENUCONFIG x,y,d` equivale a `MENUCONFIG x,y,d,1`.
 
-### MENUCONFIG numexpression, numexpression
+### MENUCONFIG varexpression, varexpression
 
 Si se omiten el tercer parámetro y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
 
-### CHAR numexpression
+### CHAR varexpression
 
 Imprime el carácter indicando con su número correspondiente.
 
@@ -797,7 +798,7 @@ Imprime el carácter indicado en el primer parámetro tantas veces como número 
 
 Imprime tantos espacios como los indicados en el parámetro. Es el equivalente a `REPCHAR 32, expression`, pero ocupa menos memoria.
 
-### PRINT numexpression
+### PRINT varexpression
 
 Imprime el valor numérico indicado.
 
@@ -805,23 +806,23 @@ Imprime el valor numérico indicado.
 
 Controla si al rellenar el área de texto actual, debe solicitar continuar al jugador, presentando un icono animado de espera (parámetro \<> 0) ó hace un borrado de pantalla y sigue imprimiendo (parámetro = 0).
 
-### INK numexpression
+### INK varexpression
 
 Define el valor del color de los caracteres (tinta). Valores de 0-7, correspondientes a los colores del Spectrum.
 
-### PAPER numexpression
+### PAPER varexpression
 
 Define el valor del color del fondo (papel). Valores de 0-7, correspondientes a los colores del Spectrum.
 
-### BORDER numexpression
+### BORDER varexpression
 
 Define el color del borde, valores 0-7.
 
-### BRIGHT numexpression
+### BRIGHT varexpression
 
 Activa o desactiva el brillo (0 desactivado, 1 activado).
 
-### FLASH numexpression
+### FLASH varexpression
 
 Activa o desactiva el parpadeo (0 desactivado, 1 activado).
 
@@ -842,23 +843,23 @@ Hay que tener en cuenta que si se usan carácteres de distintos tamaños al del 
 
 Equivalente a `BACKSPACE 1`.
 
-### SFX numexpression
+### SFX varexpression
 
 Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
-### PICTURE numexpression
+### PICTURE varexpression
 
 Carga en el buffer la imagen indicada como parámetro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
-### DISPLAY numexpression
+### DISPLAY varexpression
 
 Muestra el contenido actual del buffer en pantalla.  
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
-### BLIT numexpression, numexpression, numexpression, numexpression AT numexpression, numexpression
+### BLIT varexpression, varexpression, varexpression, varexpression AT varexpression, varexpression
 
 Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
@@ -908,7 +909,7 @@ Hace un fundido en negro en el área de pantalla definida por los parámetros qu
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
-### AT numexpression, numexpression
+### AT varexpression, varexpression
 
 Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
 Los parámetros, por orden, son:
@@ -918,7 +919,7 @@ Los parámetros, por orden, son:
 
 Las posiciones se asumen en tamaño de carácter 8x8.
 
-### FILLATTR numexpression, numexpression, numexpression, numexpression, numexpression
+### FILLATTR varexpression, varexpression, varexpression, varexpression, varexpression
 
 Rellenamos en pantalla un rectángulo con un valor de atributos determinado. Los píxeles no se alteran.
 Los parámetros, por órden, son:
@@ -929,7 +930,7 @@ Los parámetros, por órden, son:
 - Alto del rectángulo a rellenar.
 - Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
-### PUTATTR numexpression, numexpression AT numexpression, numexpression
+### PUTATTR varexpression, varexpression AT varexpression, varexpression
 
 Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
 Los parámetros, por órden, son:
@@ -939,11 +940,11 @@ Los parámetros, por órden, son:
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
 
-### PUTATTR numexpression AT numexpression, numexpression
+### PUTATTR varexpression AT varexpression, varexpression
 
-Equivalente a `PUTATTR numexpression, 0xFF AT numexpression, numexpression`
+Equivalente a `PUTATTR varexpression, 0xFF AT varexpression, varexpression`
 
-### GETATTR (numexpression, numexpression)
+### GETATTR (varexpression, varexpression)
 
 _Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla, en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
@@ -994,11 +995,11 @@ _Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero
 
 _Función_ que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada. Es equivalente a `INKEY(0)`
 
-### MIN(numexpression,numexpression)
+### MIN(varexpression,varexpression)
 
 _Función_ que acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
-### MAX(numexpression,numexpression)
+### MAX(varexpression,varexpression)
 
 _Función_ que acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 
@@ -1023,15 +1024,15 @@ Cambia el juego de carácteres empleado al imprimir textos. Con el parámetro a 
 
 Inicializa el generador de números aleatorios. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Lo que hace este comando es inicializar el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad.
 
-### TRACK numexpression
+### TRACK varexpression
 
 Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobrescribirá.
 
-### PLAY numexpression
+### PLAY varexpression
 
 Si el parámetro es distinto de cero y la música está desactivada, reproduce la pista musical cargada. Si está en ese momento reproduciendo, y se pasa 0 como parámetro, para la reproducción.
 
-### LOOP numexpression
+### LOOP varexpression
 
 Establece si al acabar la pista musical cargada en ese momento, se repite de nuevo o no. Un valor 0 significa falso y distinto de cero, verdadero.
 
@@ -1059,7 +1060,7 @@ Es el equivalente a `RAMLOAD varId, 0`, es decir, copia todas las variables desd
 
 Es el equivalente a `RAMLOAD 0, 0`, es decir, copia todas las variables desde el almacén temporal.
 
-### SAVE numexpression, varId, expression
+### SAVE varexpression, varId, expression
 
 Salva una serie de variables en cinta o disco.  El primer parámetro indica el número de fichero a guardar, el segundo parámetro es la variable inicial del rango de variables que se guardará el fichero, y el tercero en número de variables a guardar en ese rango (si es cero, se considera como 256).
 Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
@@ -1069,15 +1070,15 @@ Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE
   
 El resultado de la operación se puede consultar con la función `SAVERESULT()`.
 
-### SAVE numexpression, varId
+### SAVE varexpression, varId
 
-Es el equivalente a `SAVE numexpression, varId, 0`, es decir, guarda todas las variables desde el segundo parámetro hasta el final.
+Es el equivalente a `SAVE varexpression, varId, 0`, es decir, guarda todas las variables desde el segundo parámetro hasta el final.
 
-### SAVE numexpression
+### SAVE varexpression
 
-Es el equivalente a `SAVE numexpression, 0, 0`, es decir, guarda todas las variables
+Es el equivalente a `SAVE varexpression, 0, 0`, es decir, guarda todas las variables
 
-### LOAD numexpression
+### LOAD varexpression
 
 Carga una serie de variables desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
 
@@ -1101,6 +1102,10 @@ Con cualquier otro valor, el resultado está indefinido.
 ### ISDISK()
 
 _Función_ que devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso contrario.
+
+### LASTPOS(ID)
+
+_Función_ que devuelve la última posición accessible del array dado.
 
 ---
 

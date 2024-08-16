@@ -151,12 +151,18 @@ class CydcCodegen(object):
         "POP_VAL_OPTION": 0x76,
         "WINDOW": 0x77,
         "CHARSET": 0x78,
+        "SKIP_ARRAY": 0x79,
+        "PUSH_VAL_ARRAY": 0x7A,
+        "POP_VAL_ARRAY": 0x7B,
+        "PUSH_LEN_ARRAY": 0x7C,
     }
 
     def __init__(self, gettext):
         self._ = gettext.gettext
         self.symbols = {}
         self.variables = {}
+        self.constants = {}
+        self.arrays = {}
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
@@ -339,6 +345,8 @@ class CydcCodegen(object):
         code_tmp = []
         labels = {}
         variables = {}
+        constants = {}
+        arrays = {}
         offset = 0
         bank = 0
         for t in code:
@@ -349,16 +357,83 @@ class CydcCodegen(object):
                     sys.exit(
                         self._(f"ERROR: Label {q} is already declared as variable")
                     )
+                elif constants.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Label {q} is already declared as constant")
+                    )
+                elif arrays.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
                 elif labels.get(q) is None:
                     labels[q] = (bank, offset)  # Add to symbol table
                 else:
                     sys.exit(self._(f"ERROR: Label {q} declared two times!"))
+            elif opcode == "ARRAY":
+                p = t[2]  # get constant list
+                q = t[1]  # get symbol
+                if variables.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Array {q} is already declared as variable")
+                    )
+                elif labels.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Array {q} is already declared as label"))
+                elif constants.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Array {q} is already declared as constant")
+                    )
+                elif arrays.get(q) is None:
+                    # if we have not space on the current bank, change to the next
+                    if (len(p) + 3 + offset + 4) >= self._get_bank_size(bank):
+                        bank += 1
+                        offset = 0  # reset offset counter
+                        code_tmp += [
+                            self.opcodes["GOTO"],
+                            bank,
+                        ] + self._convert_address(offset, bank)
+                        # Jump to next bank
+                        code_banks.append(code_tmp)  # add new bank
+                        code_tmp = []
+                    arrays[q] = (
+                        bank,
+                        offset + 1,
+                    )  # Add to symbol table (skipping the SKIP_ARRAY opcode)
+                    c = [self.opcodes.get("SKIP_ARRAY"), len(p) - 1] + p
+                    code_tmp += c
+                    offset += len(c)
+                else:
+                    sys.exit(self._(f"ERROR: Array {q} declared two times!"))
+            elif opcode == "CONST":
+                p = t[2]  # get value
+                q = t[1]  # get symbol
+                if variables.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Constant {q} is already declared as variable")
+                    )
+                elif labels.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Constant {q} is already declared as label")
+                    )
+                elif arrays.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Constant {q} is already declared as array")
+                    )
+                elif constants.get(q) is None:
+                    constants[q] = p  # Add to symbol table
+                else:
+                    sys.exit(self._(f"ERROR: Constant {q} declared two times!"))
             elif opcode == "DECLARE":
                 p = t[1]  # get variable number
                 q = t[2]  # get symbol
                 if labels.get(q) is not None:
                     sys.exit(
                         self._(f"ERROR: Variable {q} is already declared as label")
+                    )
+                elif constants.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Variable {q} is already declared as constant")
+                    )
+                elif arrays.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Variable {q} is already declared as array")
                     )
                 elif variables.get(q) is None:
                     variables[q] = p
@@ -418,31 +493,212 @@ class CydcCodegen(object):
                     offset += len(t)  # Add new length
         if len(code_tmp) > 0:
             code_banks.append(code_tmp)
-        return (code_banks, labels, variables)
+        return (code_banks, labels, variables, constants, arrays)
 
-    def symbol_replacement(self, code, symbols, variables):
+    def constant_calculation(self, constants):
+        f_constants = {}
+        while len(constants) > 0:
+            tmp_const = constants.copy()
+            # Get flattened constants (without reference to other constants)
+            for k in constants.keys():
+                is_flattened = True
+                for c in constants[k]:
+                    if isinstance(c, tuple):
+                        if c[0] == "C_REPL":
+                            is_flattened = False
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid constant {k}!"))
+                if is_flattened:
+                    c = tmp_const.pop(k)
+                    f_constants[k] = c
+            constants = tmp_const
+            # Replace references on non flattened constants
+            for k in constants.keys():
+                l = []
+                for c in constants[k]:
+                    if isinstance(c, tuple):
+                        if c[0] == "C_REPL":
+                            k2 = c[1]
+                            v2 = f_constants.get(k2)
+                            if v2 is None:  # Non flattened reference found
+                                l.append(c)
+                            elif isinstance(v2, list):
+                                l += v2
+                            else:
+                                l.append(v2)
+                        else:
+                            l.append(c)
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid constant {k}, {c}!"))
+                constants[k] = l
+
+        # Calculate constants
+        for k in f_constants.keys():
+            stack = []
+            for c in f_constants[k]:
+                if isinstance(c, tuple) and len(c) in range(1, 3):
+                    op = c[0]
+                    try:
+                        if op == "C_VAL":
+                            stack.append(c[1])
+                        elif op == "C_+":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a + b)
+                        elif op == "C_-":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a - b)
+                        elif op == "C_*":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a * b)
+                        elif op == "C_/":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a / b)
+                        elif op == "C_&":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a & b)
+                        elif op == "C_|":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a | b)
+                        elif op == "C_<<":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a << b)
+                        elif op == "C_>>":
+                            b = stack.pop()
+                            a = stack.pop()
+                            stack.append(a >> b)
+                        else:
+                            sys.exit(self._(f"ERROR: Invalid constant {k}, {op}!"))
+                    except IndexError:
+                        sys.exit(
+                            self._(f"ERROR: Invalid constant operation {k}, {op}!")
+                        )
+                else:
+                    sys.exit(self._(f"ERROR: Invalid constant {k}, {c}!"))
+            if len(stack) != 1:
+                sys.exit(self._(f"ERROR: Invalid constant operation {k}!"))
+            else:
+                c = stack.pop()
+                if isinstance(c, int):
+                    if c in range(0, 256):
+                        f_constants[k] = c
+                    else:
+                        sys.exit(
+                            self._(f"ERROR: Invalid constant value {k} is not a byte!")
+                        )
+                else:
+                    sys.exit(self._(f"ERROR: Invalid constant value {k}, {c}!"))
+
+        return f_constants
+
+    def constant_expression_calculation(self, expression, constants):
+        stack = []
+        for c in expression:
+            if isinstance(c, tuple) and len(c) in range(1, 3):
+                op = c[0]
+                try:
+                    if op == "C_REPL":
+                        a = constants.get(c[1])
+                        if a is not None:
+                            stack.append(a)
+                        else:
+                            sys.exit(self._(f"ERROR: Constant {c[1]} does not exists!"))
+                    elif op == "C_VAL":
+                        stack.append(c[1])
+                    elif op == "C_+":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a + b)
+                    elif op == "C_-":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a - b)
+                    elif op == "C_*":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a * b)
+                    elif op == "C_/":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a / b)
+                    elif op == "C_&":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a & b)
+                    elif op == "C_|":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a | b)
+                    elif op == "C_<<":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a << b)
+                    elif op == "C_>>":
+                        b = stack.pop()
+                        a = stack.pop()
+                        stack.append(a >> b)
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid constant expression, {op}!"))
+                except IndexError:
+                    sys.exit(
+                        self._(f"ERROR: Invalid constant expression operation {op}!")
+                    )
+            else:
+                sys.exit(self._(f"ERROR: Invalid constant expression {c}!"))
+        if len(stack) != 1:
+            sys.exit(self._(f"ERROR: Invalid constant expression operation!"))
+        else:
+            c = stack.pop()
+            if isinstance(c, int):
+                if c in range(0, 256):
+                    return c
+                else:
+                    sys.exit(
+                        self._(
+                            f"ERROR: Invalid constant expression value {c} is not a byte!"
+                        )
+                    )
+            else:
+                sys.exit(self._(f"ERROR: Invalid constant expression value {c}!"))
+
+    def symbol_replacement(self, code, symbols, variables, constants):
         code_tmp = []
         queue = []
         for c in code:
             if len(queue) > 0 and c == 0:
                 c = queue.pop()
-            elif isinstance(c, tuple):  # Variable with displacement
-                if len(c) != 2:
-                    sys.exit(self._(f"ERROR: Invalid opcode translation!"))
-                disp = c[1]
-                c = c[0]
-                if isinstance(c, str):
-                    t = variables.get(c)
-                    if t is None:
-                        # print(variables)
-                        sys.exit(self._(f"ERROR: Variable {c} does not exists!"))
-                    elif (t + disp) not in range(256):
-                        sys.exit(self._(f"ERROR: Array {c} out of bounds!"))
+            elif isinstance(
+                c, tuple
+            ):  # Variable with displacement or constant expression
+                if len(c) == 3 and c[0] == "VARIABLE":  # Variable with displacement
+                    disp = c[2]
+                    c = c[1]
+                    if isinstance(c, str):
+                        t = variables.get(c)
+                        if t is None:
+                            # print(variables)
+                            sys.exit(self._(f"ERROR: Variable {c} does not exists!"))
+                        elif (t + disp) not in range(256):
+                            sys.exit(self._(f"ERROR: Array {c} out of bounds!"))
+                        else:
+                            c = t + disp  # Adds displacement
                     else:
-                        c = t + disp  # Adds displacement
+                        c = c + disp
+                elif (
+                    len(c) == 2 and c[0] == "CONSTANT" and isinstance(c[1], list)
+                ):  # Constant expression
+                    # print(c)
+                    c = self.constant_expression_calculation(c[1], constants)
+                    # print(c)
                 else:
-                    c = c + disp
-            elif isinstance(c, str):
+                    sys.exit(self._(f"ERROR: Invalid opcode translation!"))
+            elif isinstance(c, str):  # Merged labels & arrays
                 t = symbols.get(c)
                 if t is None:
                     sys.exit(self._(f"ERROR: Label {c} does not exists!"))
@@ -495,9 +751,18 @@ class CydcCodegen(object):
         if show_debug:
             for c in code:
                 print(c)
-        (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
+        (code, self.symbols, self.variables, self.constants, self.arrays) = (
+            self.code_translate(code, slice_text)
+        )
+        self.constants = self.constant_calculation(self.constants)
+        if show_debug:
+            print("\nConstants resolved:\n-------------------")
+            print(self.constants)
         self.code = [
-            self.symbol_replacement(c, self.symbols, self.variables) for c in code
+            self.symbol_replacement(
+                c, self.symbols | self.arrays, self.variables, self.constants
+            )
+            for c in code
         ]
         index = []
         sizes = []
@@ -543,9 +808,18 @@ class CydcCodegen(object):
         if show_debug:
             for c in code:
                 print(c)
-        (code, self.symbols, self.variables) = self.code_translate(code, slice_text)
+        (code, self.symbols, self.variables, self.constants, self.arrays) = (
+            self.code_translate(code, slice_text)
+        )
+        self.constants = self.constant_calculation(self.constants)
+        if show_debug:
+            print("\nConstants resolved:\n-------------------")
+            print(self.constants)
         self.code = [
-            self.symbol_replacement(c, self.symbols, self.variables) for c in code
+            self.symbol_replacement(
+                c, self.symbols | self.arrays, self.variables, self.constants
+            )
+            for c in code
         ]
         return self.code
 
