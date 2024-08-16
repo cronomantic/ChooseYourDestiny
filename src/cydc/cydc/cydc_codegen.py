@@ -151,9 +151,10 @@ class CydcCodegen(object):
         "POP_VAL_OPTION": 0x76,
         "WINDOW": 0x77,
         "CHARSET": 0x78,
-        # "READ": 0x79,
-        # "DATA": 0x7A,
-        # "RESTORE": 0x7B,
+        "SKIP_ARRAY": 0x79,
+        "PUSH_VAL_ARRAY": 0x7A,
+        "POP_VAL_ARRAY": 0x7B,
+        "PUSH_LEN_ARRAY": 0x7C,
     }
 
     def __init__(self, gettext):
@@ -161,6 +162,7 @@ class CydcCodegen(object):
         self.symbols = {}
         self.variables = {}
         self.constants = {}
+        self.arrays = {}
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
@@ -344,6 +346,7 @@ class CydcCodegen(object):
         labels = {}
         variables = {}
         constants = {}
+        arrays = {}
         offset = 0
         bank = 0
         for t in code:
@@ -358,10 +361,46 @@ class CydcCodegen(object):
                     sys.exit(
                         self._(f"ERROR: Label {q} is already declared as constant")
                     )
+                elif arrays.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
                 elif labels.get(q) is None:
                     labels[q] = (bank, offset)  # Add to symbol table
                 else:
                     sys.exit(self._(f"ERROR: Label {q} declared two times!"))
+            elif opcode == "ARRAY":
+                p = t[2]  # get constant list
+                q = t[1]  # get symbol
+                if variables.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Array {q} is already declared as variable")
+                    )
+                elif labels.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Array {q} is already declared as label"))
+                elif constants.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Array {q} is already declared as constant")
+                    )
+                elif arrays.get(q) is None:
+                    # if we have not space on the current bank, change to the next
+                    if (len(p) + 3 + offset + 4) >= self._get_bank_size(bank):
+                        bank += 1
+                        offset = 0  # reset offset counter
+                        code_tmp += [
+                            self.opcodes["GOTO"],
+                            bank,
+                        ] + self._convert_address(offset, bank)
+                        # Jump to next bank
+                        code_banks.append(code_tmp)  # add new bank
+                        code_tmp = []
+                    arrays[q] = (
+                        bank,
+                        offset + 1,
+                    )  # Add to symbol table (skipping the SKIP_ARRAY opcode)
+                    c = [self.opcodes.get("SKIP_ARRAY"), len(p) - 1] + p
+                    code_tmp += c
+                    offset += len(c)
+                else:
+                    sys.exit(self._(f"ERROR: Array {q} declared two times!"))
             elif opcode == "CONST":
                 p = t[2]  # get value
                 q = t[1]  # get symbol
@@ -373,7 +412,11 @@ class CydcCodegen(object):
                     sys.exit(
                         self._(f"ERROR: Constant {q} is already declared as label")
                     )
-                if constants.get(q) is None:
+                elif arrays.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Constant {q} is already declared as array")
+                    )
+                elif constants.get(q) is None:
                     constants[q] = p  # Add to symbol table
                 else:
                     sys.exit(self._(f"ERROR: Constant {q} declared two times!"))
@@ -387,6 +430,10 @@ class CydcCodegen(object):
                 elif constants.get(q) is not None:
                     sys.exit(
                         self._(f"ERROR: Variable {q} is already declared as constant")
+                    )
+                elif arrays.get(q) is not None:
+                    sys.exit(
+                        self._(f"ERROR: Variable {q} is already declared as array")
                     )
                 elif variables.get(q) is None:
                     variables[q] = p
@@ -446,7 +493,7 @@ class CydcCodegen(object):
                     offset += len(t)  # Add new length
         if len(code_tmp) > 0:
             code_banks.append(code_tmp)
-        return (code_banks, labels, variables, constants)
+        return (code_banks, labels, variables, constants, arrays)
 
     def constant_calculation(self, constants):
         f_constants = {}
@@ -646,12 +693,12 @@ class CydcCodegen(object):
                 elif (
                     len(c) == 2 and c[0] == "CONSTANT" and isinstance(c[1], list)
                 ):  # Constant expression
-                    print(c)
+                    # print(c)
                     c = self.constant_expression_calculation(c[1], constants)
-                    print(c)
+                    # print(c)
                 else:
                     sys.exit(self._(f"ERROR: Invalid opcode translation!"))
-            elif isinstance(c, str):
+            elif isinstance(c, str):  # Merged labels & arrays
                 t = symbols.get(c)
                 if t is None:
                     sys.exit(self._(f"ERROR: Label {c} does not exists!"))
@@ -704,15 +751,17 @@ class CydcCodegen(object):
         if show_debug:
             for c in code:
                 print(c)
-        (code, self.symbols, self.variables, self.constants) = self.code_translate(
-            code, slice_text
+        (code, self.symbols, self.variables, self.constants, self.arrays) = (
+            self.code_translate(code, slice_text)
         )
         self.constants = self.constant_calculation(self.constants)
         if show_debug:
             print("\nConstants resolved:\n-------------------")
             print(self.constants)
         self.code = [
-            self.symbol_replacement(c, self.symbols, self.variables, self.constants)
+            self.symbol_replacement(
+                c, self.symbols | self.arrays, self.variables, self.constants
+            )
             for c in code
         ]
         index = []
@@ -759,15 +808,17 @@ class CydcCodegen(object):
         if show_debug:
             for c in code:
                 print(c)
-        (code, self.symbols, self.variables, self.constants) = self.code_translate(
-            code, slice_text
+        (code, self.symbols, self.variables, self.constants, self.arrays) = (
+            self.code_translate(code, slice_text)
         )
         self.constants = self.constant_calculation(self.constants)
         if show_debug:
             print("\nConstants resolved:\n-------------------")
             print(self.constants)
         self.code = [
-            self.symbol_replacement(c, self.symbols, self.variables, self.constants)
+            self.symbol_replacement(
+                c, self.symbols | self.arrays, self.variables, self.constants
+            )
             for c in code
         ]
         return self.code
