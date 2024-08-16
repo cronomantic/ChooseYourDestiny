@@ -30,6 +30,8 @@ from enum import Enum
 class SymbolType(Enum):
     LABEL = 1
     VARIABLE = 2
+    CONSTANT = 3
+    ARRAY = 4
 
 
 class CydcParser(object):
@@ -388,7 +390,7 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_char(self, p):
-        "statement : CHAR numexpression"
+        "statement : CHAR varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -396,7 +398,7 @@ class CydcParser(object):
         p[0].append(("POP_CHAR",))
 
     def p_statement_print(self, p):
-        "statement : PRINT numexpression"
+        "statement : PRINT varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -404,7 +406,7 @@ class CydcParser(object):
         p[0].append(("POP_PRINT",))
 
     def p_statement_ink(self, p):
-        "statement : INK numexpression"
+        "statement : INK varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -412,7 +414,7 @@ class CydcParser(object):
         p[0].append(("POP_INK",))
 
     def p_statement_paper(self, p):
-        "statement : PAPER numexpression"
+        "statement : PAPER varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -420,7 +422,7 @@ class CydcParser(object):
         p[0].append(("POP_PAPER",))
 
     def p_statement_border(self, p):
-        "statement : BORDER numexpression"
+        "statement : BORDER varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -428,7 +430,7 @@ class CydcParser(object):
         p[0].append(("POP_BORDER",))
 
     def p_statement_bright(self, p):
-        "statement : BRIGHT numexpression"
+        "statement : BRIGHT varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -436,7 +438,7 @@ class CydcParser(object):
         p[0].append(("POP_BRIGHT",))
 
     def p_statement_flash(self, p):
-        "statement : FLASH numexpression"
+        "statement : FLASH varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -444,7 +446,7 @@ class CydcParser(object):
         p[0].append(("POP_FLASH",))
 
     def p_statement_sfx(self, p):
-        "statement : SFX numexpression"
+        "statement : SFX varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -452,7 +454,7 @@ class CydcParser(object):
         p[0].append(("POP_SFX",))
 
     def p_statement_display(self, p):
-        "statement : DISPLAY numexpression"
+        "statement : DISPLAY varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -460,7 +462,7 @@ class CydcParser(object):
         p[0].append(("POP_DISPLAY",))
 
     def p_statement_picture(self, p):
-        "statement : PICTURE numexpression"
+        "statement : PICTURE varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -468,7 +470,7 @@ class CydcParser(object):
         p[0].append(("POP_PICTURE",))
 
     def p_statement_track(self, p):
-        "statement : TRACK numexpression"
+        "statement : TRACK varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -476,7 +478,7 @@ class CydcParser(object):
         p[0].append(("POP_TRACK",))
 
     def p_statement_play(self, p):
-        "statement : PLAY numexpression"
+        "statement : PLAY varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -484,7 +486,7 @@ class CydcParser(object):
         p[0].append(("POP_PLAY",))
 
     def p_statement_loop(self, p):
-        "statement : LOOP numexpression"
+        "statement : LOOP varexpression"
         if isinstance(p[2], list):
             p[0] = p[2]
         else:
@@ -492,7 +494,7 @@ class CydcParser(object):
         p[0].append(("POP_LOOP",))
 
     def p_statement_load(self, p):
-        "statement : LOAD numexpression"
+        "statement : LOAD varexpression"
         if len(p) == 3 and p[2]:
             if isinstance(p[2], list):
                 p[0] = p[2]
@@ -538,7 +540,7 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_blit(self, p):
-        "statement : BLIT numexpression COMMA numexpression COMMA numexpression COMMA numexpression AT numexpression COMMA numexpression"
+        "statement : BLIT varexpression COMMA varexpression COMMA varexpression COMMA varexpression AT varexpression COMMA varexpression"
         if len(p) == 13:
             if (
                 isinstance(p[2], tuple)
@@ -649,7 +651,7 @@ class CydcParser(object):
                 p[0] += [("POP_ALL_BLIT",)]
 
     def p_statement_fillattr(self, p):
-        "statement : FILLATTR numexpression COMMA numexpression COMMA numexpression COMMA numexpression COMMA numexpression"
+        "statement : FILLATTR varexpression COMMA varexpression COMMA varexpression COMMA varexpression COMMA varexpression"
         if len(p) == 11:
             col = None
             row = None
@@ -739,8 +741,8 @@ class CydcParser(object):
 
     def p_statement_putattr(self, p):
         """
-        statement : PUTATTR numexpression COMMA numexpression AT numexpression COMMA numexpression
-                  | PUTATTR numexpression AT numexpression COMMA numexpression
+        statement : PUTATTR varexpression COMMA varexpression AT varexpression COMMA varexpression
+                  | PUTATTR varexpression AT varexpression COMMA varexpression
         """
         if len(p) == 9:
             attr = None
@@ -840,7 +842,7 @@ class CydcParser(object):
                 p[0] += [("POP_ALL_PUTATTR",)]
 
     def p_statement_at(self, p):
-        "statement : AT numexpression COMMA numexpression"
+        "statement : AT varexpression COMMA varexpression"
         if len(p) == 5:
             col_d = None
             row_d = None
@@ -875,9 +877,9 @@ class CydcParser(object):
 
     def p_statement_menuconfig(self, p):
         """
-        statement : MENUCONFIG numexpression COMMA numexpression COMMA numexpression COMMA numexpression
-                  | MENUCONFIG numexpression COMMA numexpression COMMA numexpression
-                  | MENUCONFIG numexpression COMMA numexpression
+        statement : MENUCONFIG varexpression COMMA varexpression COMMA varexpression COMMA varexpression
+                  | MENUCONFIG varexpression COMMA varexpression COMMA varexpression
+                  | MENUCONFIG varexpression COMMA varexpression
         """
         if len(p) in [9, 7, 5]:
             col_d = None
@@ -946,9 +948,9 @@ class CydcParser(object):
 
     def p_statement_save(self, p):
         """
-        statement : SAVE numexpression COMMA variableID COMMA expression
-                  | SAVE numexpression COMMA variableID
-                  | SAVE numexpression
+        statement : SAVE varexpression COMMA variableID COMMA expression
+                  | SAVE varexpression COMMA variableID
+                  | SAVE varexpression
         """
         if len(p) == 7 and p[2] and self._is_valid_var(p[4]):
             if self._check_byte_value(p[6], p.lexer.lexer.lineno):
@@ -956,7 +958,7 @@ class CydcParser(object):
                     p[0] = p[2]
                 else:
                     p[0] = [p[2]]
-                p[0].append(("POP_SLOT_SAVE", (p[4], 0), p[6]))
+                p[0].append(("POP_SLOT_SAVE", ("VARIABLE", p[4], 0), p[6]))
             else:
                 p[0] = None
         elif len(p) == 5 and p[2] and self._is_valid_var(p[4]):
@@ -964,7 +966,7 @@ class CydcParser(object):
                 p[0] = p[2]
             else:
                 p[0] = [p[2]]
-            p[0].append(("POP_SLOT_SAVE", (p[4], 0), 0))
+            p[0].append(("POP_SLOT_SAVE", ("VARIABLE", p[4], 0), 0))
         elif len(p) == 3 and p[2]:
             if isinstance(p[2], list):
                 p[0] = p[2]
@@ -980,11 +982,11 @@ class CydcParser(object):
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                p[0] = ("RAMLOAD", (p[2], 0), p[4])
+                p[0] = ("RAMLOAD", ("VARIABLE", p[2], 0), p[4])
             else:
                 p[0] = None
         elif len(p) == 3 and self._is_valid_var(p[2]):
-            p[0] = ("RAMLOAD", (p[2], 0), 0)
+            p[0] = ("RAMLOAD", ("VARIABLE", p[2], 0), 0)
         elif len(p) == 2:
             p[0] = ("RAMLOAD", 0, 0)
 
@@ -996,11 +998,11 @@ class CydcParser(object):
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if self._check_byte_value(p[4], p.lexer.lexer.lineno):
-                p[0] = ("RAMSAVE", (p[2], 0), p[4])
+                p[0] = ("RAMSAVE", ("VARIABLE", p[2], 0), p[4])
             else:
                 p[0] = None
         elif len(p) == 3 and self._is_valid_var(p[2]):
-            p[0] = ("RAMSAVE", (p[2], 0), 0)
+            p[0] = ("RAMSAVE", ("VARIABLE", p[2], 0), 0)
         elif len(p) == 2:
             p[0] = ("RAMSAVE", 0, 0)
 
@@ -1023,34 +1025,79 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_statement_set_ind_array(self, p):
+    def p_constant_ID(self, p):
         """
-        statement : SET LCARET variableID RCARET TO LCURLY numexpressions_list RCURLY
-                  | LET LCARET variableID RCARET EQUALS LCURLY numexpressions_list RCURLY
+        statement : CONST ID EQUALS constexpression
+        """
+        if len(p) == 5 and self._declare_symbol(
+            p[2], SymbolType.CONSTANT, p.lexer.lexer.lineno
+        ):
+            if isinstance(p[4], list):
+                p[0] = ("CONST", p[2], p[4])
+            else:
+                p[0] = ("CONST", p[2], [p[4]])
+        else:
+            p[0] = None
+
+    def p_array_constexpressions_list(self, p):
+        """
+        statement : ARRAY ID EQUALS LCURLY constexpressions_list RCURLY
+        """
+        if (
+            len(p) == 7
+            and self._check_array(p[5], p.lexer.lexer.lineno)
+            and self._declare_symbol(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno)
+        ):
+            p[0] = ("ARRAY", p[2], [("CONSTANT", c) for c in p[5]])
+        else:
+            p[0] = None
+
+    def p_statement_set_array_value(self, p):
+        """
+        statement : SET ID LPAREN varexpression RPAREN TO varexpression
+                  | LET ID LPAREN varexpression RPAREN EQUALS varexpression
+        """
+        if len(p) == 8 and self._symbol_usage(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno):
+            if isinstance(p[4], list):
+                p[0] = p[7]
+            else:
+                p[0] = [p[7]]
+            if isinstance(p[4], list):
+                p[0] += p[4]
+            else:
+                p[0] += [p[4]]
+            p[0].append(("POP_VAL_ARRAY", p[2], 0, 0))
+        else:
+            p[0] = None
+
+    def p_statement_set_ind_array_var(self, p):
+        """
+        statement : SET LCARET variableID RCARET TO LCURLY varexpressions_list RCURLY
+                  | LET LCARET variableID RCARET EQUALS LCURLY varexpressions_list RCURLY
         """
         if len(p) == 9 and self._is_valid_var(p[3]) and isinstance(p[7], list):
             p[0] = []
             for i, c in enumerate(p[7]):
                 if isinstance(c, list):
                     p[0] += c
-                    p[0].append(("POP_SET_DI", (p[3], i)))
+                    p[0].append(("POP_SET_DI", ("VARIABLE", p[3], i)))
                 else:
                     p[0] = None
                     break
         else:
             p[0] = None
 
-    def p_statement_set_dir_array(self, p):
+    def p_statement_set_dir_array_var(self, p):
         """
-        statement : SET variableID TO LCURLY numexpressions_list RCURLY
-                  | LET variableID EQUALS LCURLY numexpressions_list RCURLY
+        statement : SET variableID TO LCURLY varexpressions_list RCURLY
+                  | LET variableID EQUALS LCURLY varexpressions_list RCURLY
         """
         if len(p) == 7 and self._is_valid_var(p[2]) and isinstance(p[5], list):
             p[0] = []
             for i, c in enumerate(p[5]):
                 if isinstance(c, list):
                     p[0] += c
-                    p[0].append(("POP_SET", (p[2], i)))
+                    p[0].append(("POP_SET", ("VARIABLE", p[2], i)))
                 else:
                     p[0] = None
                     break
@@ -1059,27 +1106,27 @@ class CydcParser(object):
 
     def p_statement_set_ind(self, p):
         """
-        statement : SET LCARET variableID RCARET TO numexpression
-                  | LET LCARET variableID RCARET EQUALS numexpression
+        statement : SET LCARET variableID RCARET TO varexpression
+                  | LET LCARET variableID RCARET EQUALS varexpression
         """
         if len(p) == 7 and self._is_valid_var(p[3]):
             if isinstance(p[6], list):
                 p[0] = p[6]
             else:
                 p[0] = [p[6]]
-            p[0].append(("POP_SET_DI", (p[3], 0)))
+            p[0].append(("POP_SET_DI", ("VARIABLE", p[3], 0)))
 
     def p_statement_set_dir(self, p):
         """
-        statement : SET variableID TO numexpression
-                  | LET variableID EQUALS numexpression
+        statement : SET variableID TO varexpression
+                  | LET variableID EQUALS varexpression
         """
         if len(p) == 5 and self._is_valid_var(p[2]):
             if isinstance(p[4], list):
                 p[0] = p[4]
             else:
                 p[0] = [p[4]]
-            p[0].append(("POP_SET", (p[2], 0)))
+            p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
     def p_statement_choose(self, p):
         """
@@ -1126,7 +1173,7 @@ class CydcParser(object):
 
     def p_statement_option_goto(self, p):
         """
-        statement : OPTION VALUE LPAREN numexpression RPAREN GOTO ID
+        statement : OPTION VALUE LPAREN varexpression RPAREN GOTO ID
                   | OPTION GOTO ID
         """
         if len(p) == 8 and self._symbol_usage(
@@ -1146,7 +1193,7 @@ class CydcParser(object):
 
     def p_statement_option_gosub(self, p):
         """
-        statement : OPTION VALUE LPAREN numexpression RPAREN GOSUB ID
+        statement : OPTION VALUE LPAREN varexpression RPAREN GOSUB ID
                   | OPTION GOSUB ID
         """
         if len(p) == 8 and self._symbol_usage(
@@ -1164,10 +1211,10 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_numexpressions_list(self, p):
+    def p_varexpressions_list(self, p):
         """
-        numexpressions_list : numexpressions_list COMMA numexpression
-                            | numexpression
+        varexpressions_list : varexpressions_list COMMA varexpression
+                            | varexpression
         """
         if len(p) == 2 and p[1]:
             p[0] = []
@@ -1221,12 +1268,12 @@ class CydcParser(object):
 
     def p_boolexpression_cmp_op(self, p):
         """
-        boolexpression : numexpression NOT_EQUALS numexpression
-                  | numexpression LESS_EQUALS numexpression
-                  | numexpression MORE_EQUALS numexpression
-                  | numexpression EQUALS numexpression
-                  | numexpression LESS_THAN numexpression
-                  | numexpression MORE_THAN numexpression
+        boolexpression : varexpression NOT_EQUALS varexpression
+                  | varexpression LESS_EQUALS varexpression
+                  | varexpression MORE_EQUALS varexpression
+                  | varexpression EQUALS varexpression
+                  | varexpression LESS_THAN varexpression
+                  | varexpression MORE_THAN varexpression
         """
         if isinstance(p[1], list):
             p[0] = p[1]
@@ -1251,14 +1298,14 @@ class CydcParser(object):
         elif p[2] == ">":
             p[0].append(("CP_MT",))
 
-    def p_numexpression_binop(self, p):
+    def p_varexpression_binop(self, p):
         """
-        numexpression : numexpression PLUS numexpression
-                  | numexpression MINUS numexpression
-                  | numexpression AND_B numexpression
-                  | numexpression OR_B numexpression
-                  | numexpression SHIFT_L numexpression
-                  | numexpression SHIFT_R numexpression
+        varexpression : varexpression PLUS varexpression
+                  | varexpression MINUS varexpression
+                  | varexpression AND_B varexpression
+                  | varexpression OR_B varexpression
+                  | varexpression SHIFT_L varexpression
+                  | varexpression SHIFT_R varexpression
         """
         if len(p) == 4 and p[1] and p[3]:
             p[0] = []
@@ -1285,9 +1332,9 @@ class CydcParser(object):
             elif p[2] == ">>":
                 p[0].append(("SHIFT_R",))
 
-    def p_numexpression_min(self, p):
+    def p_varexpression_min(self, p):
         """
-        numexpression : MIN LPAREN numexpression COMMA numexpression RPAREN
+        varexpression : MIN LPAREN varexpression COMMA varexpression RPAREN
         """
         if len(p) == 4 and p[3] and p[5]:
             p[0] = []
@@ -1303,9 +1350,9 @@ class CydcParser(object):
 
             p[0].append(("MIN",))
 
-    def p_numexpression_max(self, p):
+    def p_varexpression_max(self, p):
         """
-        numexpression : MAX LPAREN numexpression COMMA numexpression RPAREN
+        varexpression : MAX LPAREN varexpression COMMA varexpression RPAREN
         """
         if len(p) == 4 and p[3] and p[5]:
             p[0] = []
@@ -1321,19 +1368,19 @@ class CydcParser(object):
 
             p[0].append(("MAX",))
 
-    def p_numexpression_unop(self, p):
-        "numexpression : NOT_B numexpression %prec UNOT_B"
+    def p_varexpression_unop(self, p):
+        "varexpression : NOT_B varexpression %prec UNOT_B"
         if isinstance(p[2], list):
             p[0] = p[2].append(("NOT_B",))
         else:
             p[0] = [p[2], ("NOT_B",)]
 
-    def p_numexpression_group(self, p):
-        "numexpression : LPAREN numexpression RPAREN"
+    def p_varexpression_group(self, p):
+        "varexpression : LPAREN varexpression RPAREN"
         p[0] = p[2]
 
-    def p_numexpression_variable_ind(self, p):
-        "numexpression : LCARET numexpression RCARET"
+    def p_varexpression_variable_ind(self, p):
+        "varexpression : LCARET varexpression RCARET"
         if len(p) == 4 and p[2]:
             if isinstance(p[2], list):
                 p[0] = p[2]
@@ -1341,8 +1388,8 @@ class CydcParser(object):
                 p[0] = [p[2]]
             p[0].append(("POP_PUSH_I",))
 
-    def p_numexpression_get_attr(self, p):
-        "numexpression : GETATTR LPAREN numexpression COMMA numexpression RPAREN"
+    def p_varexpression_get_attr(self, p):
+        "varexpression : GETATTR LPAREN varexpression COMMA varexpression RPAREN"
         if len(p) == 7 and p[3] and p[5]:
             if isinstance(p[3], list):
                 p[0] = p[3]
@@ -1356,41 +1403,41 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_numexpression_variable_addr(self, p):
-        "numexpression : AT_CHAR AT_CHAR variableID"
+    def p_varexpression_variable_addr(self, p):
+        "varexpression : AT_CHAR AT_CHAR variableID"
         if self._is_valid_var(p[3]):
-            p[0] = ("PUSH_D", (p[3], 0))
+            p[0] = ("PUSH_D", ("VARIABLE", p[3], 0))
         else:
             p[0] = None
 
-    def p_numexpression_variable(self, p):
-        "numexpression : AT_CHAR variableID"
+    def p_varexpression_variable(self, p):
+        "varexpression : AT_CHAR variableID"
         if self._is_valid_var(p[2]):
-            p[0] = ("PUSH_I", (p[2], 0))
+            p[0] = ("PUSH_I", ("VARIABLE", p[2], 0))
         else:
             p[0] = None
 
-    def p_numexpression_saveresult_expression(self, p):
-        "numexpression : SAVERESULT LPAREN RPAREN"
+    def p_varexpression_saveresult_expression(self, p):
+        "varexpression : SAVERESULT LPAREN RPAREN"
         p[0] = ("PUSH_SAVE_RESULT",)
 
-    def p_numexpression_optionval(self, p):
-        "numexpression : OPTIONVAL LPAREN RPAREN"
+    def p_varexpression_optionval(self, p):
+        "varexpression : OPTIONVAL LPAREN RPAREN"
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 2)
 
-    def p_numexpression_optionsel(self, p):
-        "numexpression : OPTIONSEL LPAREN RPAREN"
+    def p_varexpression_optionsel(self, p):
+        "varexpression : OPTIONSEL LPAREN RPAREN"
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 1)
 
-    def p_numexpression_numoptions(self, p):
-        "numexpression : NUMOPTIONS LPAREN RPAREN"
+    def p_varexpression_numoptions(self, p):
+        "varexpression : NUMOPTIONS LPAREN RPAREN"
         if len(p) == 4:
             p[0] = ("PUSH_OPTION_ST", 0)
 
-    def p_numexpression_attrval_expression(self, p):
-        "numexpression : ATTRVAL LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+    def p_varexpression_attrval_expression(self, p):
+        "varexpression : ATTRVAL LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
         if len(p) == 11:
             if (
                 self._check_byte_value(p[3], p.lexer.lexer.lineno)
@@ -1406,8 +1453,8 @@ class CydcParser(object):
                 else:
                     p[0] = None
 
-    def p_numexpression_attrmask_expression(self, p):
-        "numexpression : ATTRMASK LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
+    def p_varexpression_attrmask_expression(self, p):
+        "varexpression : ATTRMASK LPAREN expression COMMA expression COMMA expression COMMA expression RPAREN"
         if len(p) == 11:
             if (
                 self._check_byte_value(p[3], p.lexer.lexer.lineno)
@@ -1421,8 +1468,8 @@ class CydcParser(object):
                 else:
                     p[0] = None
 
-    def p_numexpression_random_expression_limit(self, p):
-        "numexpression : RANDOM LPAREN expression COMMA expression RPAREN"
+    def p_varexpression_random_expression_limit(self, p):
+        "varexpression : RANDOM LPAREN expression COMMA expression RPAREN"
         if self._check_byte_value(
             p[3], p.lexer.lexer.lineno
         ) and self._check_byte_value(p[5], p.lexer.lexer.lineno):
@@ -1439,9 +1486,9 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_numexpression_random_expression(self, p):
+    def p_varexpression_random_expression(self, p):
         """
-        numexpression : RANDOM LPAREN expression RPAREN
+        varexpression : RANDOM LPAREN expression RPAREN
                       | RANDOM LPAREN RPAREN
         """
         if len(p) == 5:
@@ -1452,33 +1499,62 @@ class CydcParser(object):
         elif len(p) == 4:
             p[0] = ("PUSH_RANDOM", 0)
 
-    def p_numexpression_inkey_expression(self, p):
-        "numexpression : INKEY LPAREN expression RPAREN"
+    def p_varexpression_inkey_expression(self, p):
+        "varexpression : INKEY LPAREN expression RPAREN"
         if self._check_byte_value(p[3], p.lexer.lexer.lineno):
             p[0] = ("PUSH_INKEY", p[3])
         else:
             p[0] = None
 
-    def p_numexpression_inkey(self, p):
-        "numexpression : INKEY LPAREN RPAREN"
+    def p_varexpression_len_array(self, p):
+        "varexpression : LASTPOS LPAREN ID RPAREN"
+        if len(p) == 5 and self._symbol_usage(
+            p[3], SymbolType.ARRAY, p.lexer.lexer.lineno
+        ):
+            p[0] = ("PUSH_LEN_ARRAY", p[3], 0, 0)
+        else:
+            p[0] = [p[3]]
+
+    def p_varexpression_get_array_value(self, p):
+        "varexpression : ID LPAREN varexpression RPAREN"
+        if (
+            len(p) == 5
+            and p[3]
+            and self._symbol_usage(p[1], SymbolType.ARRAY, p.lexer.lexer.lineno)
+        ):
+            if isinstance(p[3], list):
+                p[0] = p[3]
+            else:
+                p[0] = [p[3]]
+            p[0].append(("PUSH_VAL_ARRAY", p[1], 0, 0))
+        else:
+            p[0] = None
+
+    def p_varexpression_inkey(self, p):
+        "varexpression : INKEY LPAREN RPAREN"
         p[0] = ("PUSH_INKEY", 0)
 
-    def p_numexpression_xpos(self, p):
-        "numexpression : XPOS LPAREN RPAREN"
+    def p_varexpression_xpos(self, p):
+        "varexpression : XPOS LPAREN RPAREN"
         p[0] = ("PUSH_XPOS",)
 
-    def p_numexpression_ypos(self, p):
-        "numexpression : YPOS LPAREN RPAREN"
+    def p_varexpression_ypos(self, p):
+        "varexpression : YPOS LPAREN RPAREN"
         p[0] = ("PUSH_YPOS",)
 
-    def p_numexpression_isdisk(self, p):
-        "numexpression : ISDISK LPAREN RPAREN"
+    def p_varexpression_isdisk(self, p):
+        "varexpression : ISDISK LPAREN RPAREN"
         p[0] = ("PUSH_IS_DISK",)
 
-    def p_numexpression_expression(self, p):
-        "numexpression : expression"
-        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
-            p[0] = ("PUSH_D", p[1])
+
+    def p_varexpression_expression(self, p):
+        """
+        varexpression  : constexpression
+        """
+        if isinstance(p[1], list):
+            p[0] = ("PUSH_D", ("CONSTANT", p[1]))
+        elif isinstance(p[1], tuple):
+            p[0] = ("PUSH_D", ("CONSTANT", [p[1]]))
         else:
             p[0] = None
 
@@ -1497,6 +1573,71 @@ class CydcParser(object):
                 p[0] = p[1]
             else:
                 p[0] = None
+        else:
+            p[0] = None
+
+    def p_constexpressions_list(self, p):
+        """
+        constexpressions_list    : constexpressions_list COMMA constexpression
+                                 | constexpression
+        """
+        if len(p) == 2 and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0].append(p[1])
+            else:
+                p[0].append([p[1]])
+        elif len(p) == 4:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[3]:
+                if isinstance(p[3], list):
+                    p[0].append(p[3])
+                else:
+                    p[0].append([p[3]])
+
+    def p_constexpression_binop(self, p):
+        """
+        constexpression : constexpression PLUS constexpression
+                        | constexpression MINUS constexpression
+                        | constexpression TIMES constexpression
+                        | constexpression DIVIDE constexpression
+                        | constexpression AND_B constexpression
+                        | constexpression OR_B constexpression
+                        | constexpression SHIFT_L constexpression
+                        | constexpression SHIFT_R constexpression
+        """
+        if len(p) == 4 and p[1] and p[3]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+
+            if isinstance(p[3], list):
+                p[0] += p[3]
+            else:
+                p[0].append(p[3])
+            p[0].append(("C_" + p[2],))
+
+    def p_constexpression_group(self, p):
+        "constexpression : LPAREN constexpression RPAREN"
+        p[0] = p[2]
+
+    def p_constexpression_expression(self, p):
+        "constexpression : expression"
+        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
+            p[0] = ("C_VAL", p[1])
+        else:
+            p[0] = None
+
+    def p_constexpression_constant(self, p):
+        "constexpression : ID"
+        if self._is_valid_const(p[1]) and self._symbol_usage(
+            p[1], SymbolType.CONSTANT, p.lexer.lexer.lineno
+        ):
+            p[0] = ("C_REPL", p[1])
         else:
             p[0] = None
 
@@ -1587,6 +1728,12 @@ class CydcParser(object):
             s += str(t) + ";"
         print(s)
 
+    def _check_array(self, val, lineno):
+        if not isinstance(val, list) or len(val) not in range(1, 256 + 1):
+            self.errors.append(f"Invalid array size on line {lineno}")
+            return False
+        return True
+
     def _check_byte_value(self, val, lineno):
         if not isinstance(val, int) or val not in range(256):
             self.errors.append(f"Invalid byte value {val} on line {lineno}")
@@ -1601,6 +1748,12 @@ class CydcParser(object):
 
     def _is_valid_var(self, val):
         return isinstance(val, str) or isinstance(val, int)
+
+    def _is_valid_const(self, val):
+        return isinstance(val, str)
+
+    def _is_valid_array(self, val):
+        return isinstance(val, str)
 
     def _fix_borders(self, row, col, width, height):
         (row, height) = self._fix_rows(row, height)
@@ -1763,6 +1916,14 @@ class CydcParser(object):
                 self.errors.append(
                     f"Variable '{symbol}' on line {lineno} was already declared before."
                 )
+            elif symbol_type == SymbolType.CONSTANT:
+                self.errors.append(
+                    f"Constant '{symbol}' on line {lineno} was already declared before."
+                )
+            elif symbol_type == SymbolType.ARRAY:
+                self.errors.append(
+                    f"Data array '{symbol}' on line {lineno} was already declared before."
+                )
             else:
                 self.errors.append(
                     f"Symbol '{symbol}' on line {lineno} was already declared before."
@@ -1788,6 +1949,14 @@ class CydcParser(object):
                     self.errors.append(
                         f"Variable '{symbol}' on line {lineno} was already used as label."
                     )
+                elif symbol_type == SymbolType.CONSTANT:
+                    self.errors.append(
+                        f"Constant '{symbol}' on line {lineno} was already used as label."
+                    )
+                elif symbol_type == SymbolType.ARRAY:
+                    self.errors.append(
+                        f"Data array '{symbol}' on line {lineno} was already used as label."
+                    )
                 else:
                     self.errors.append(
                         f"Symbol '{symbol}' on line {lineno} was already used in other context."
@@ -1811,6 +1980,14 @@ class CydcParser(object):
                     self.errors.append(
                         f"Variable '{symbol}' on lines {lines_str} is not declared."
                     )
+                elif symbol_type == SymbolType.CONSTANT:
+                    self.errors.append(
+                        f"Constant '{symbol}' on lines {lines_str} is not declared."
+                    )
+                elif symbol_type == SymbolType.ARRAY:
+                    self.errors.append(
+                        f"Data array '{symbol}' on lines {lines_str} is not declared."
+                    )
                 else:
                     self.errors.append(
                         f"Symbol '{symbol}' on lines {lines_str} is not declared."
@@ -1827,6 +2004,14 @@ class CydcParser(object):
                         self.errors.append(
                             f"Variable '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
                         )
+                    elif symbol_type == SymbolType.CONSTANT:
+                        self.errors.append(
+                            f"Constant '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
+                    elif symbol_type == SymbolType.ARRAY:
+                        self.errors.append(
+                            f"Data array '{symbol}' on lines {lines_str} was already declared as label on {s[1]}."
+                        )
                     else:
                         self.errors.append(
                             f"Symbol '{symbol}' on lines {lines_str} was already declared with another type on {s[1]}."
@@ -1841,5 +2026,9 @@ class CydcParser(object):
                 print(f"- Label '{symbol}' declared on line {s[1]}.")
             elif s[0] == SymbolType.VARIABLE:
                 print(f"- Variable '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.CONSTANT:
+                print(f"- Constant '{symbol}' declared on line {s[1]}.")
+            elif s[0] == SymbolType.ARRAY:
+                print(f"- Data Array '{symbol}' declared on line {s[1]}.")
             else:
                 print(f"- Symbol '{symbol}' declared on line {s[1]}.")
