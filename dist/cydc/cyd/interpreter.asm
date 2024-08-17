@@ -2530,7 +2530,7 @@ OP_PUSH_VAL_ARRAY:
     inc hl
     push hl
     ld a, (CHUNK)
-    cp c       ; If the CHUNK is the same...
+    cp c                      ; If the CHUNK is the same...
     jr z, .same_CHUNK
     push af
     ld a, c
@@ -2602,7 +2602,7 @@ OP_POP_VAL_ARRAY:
     inc ix
     ld (ix+0), a
     ret
-   ENDIF
+    ENDIF
 
     IFNDEF UNUSED_OP_PUSH_LEN_ARRAY
 OP_PUSH_LEN_ARRAY:
@@ -2612,27 +2612,25 @@ OP_PUSH_LEN_ARRAY:
     inc hl
     ld d, (hl)
     inc hl
-    push hl
     ld a, (CHUNK)
-    cp c       ; If the CHUNK is the same...
+    cp c                  ; If the CHUNK is the same...
     jr z, .same_CHUNK
+    push hl
     push af
     ld a, c
     push de
     call LOAD_CHUNK
     pop de
-    call .push_len_array
+    ld a, (de)
+    PUSH_INT_STACK
     pop af
     call LOAD_CHUNK
     pop hl
     jp EXEC_LOOP
 .same_CHUNK:
-    call .push_len_array
-    jp EXEC_LOOP
-.push_len_array:
     ld a, (de)
     PUSH_INT_STACK
-    ret
+    jp EXEC_LOOP
     ENDIF
 
 /*
