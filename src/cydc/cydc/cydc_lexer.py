@@ -179,7 +179,7 @@ class CydcLexer(object):
         "WINDOW": "WINDOW",
         "CHARSET": "CHARSET",
         "CONST": "CONST",
-        "ARRAY": "ARRAY",
+        "DIM": "DIM",
         "LASTPOS": "LASTPOS",
     }
 
