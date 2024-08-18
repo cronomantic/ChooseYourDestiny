@@ -1034,14 +1034,46 @@ class CydcParser(object):
 
     def p_array_constexpressions_list(self, p):
         """
-        statement : ARRAY ID EQUALS LCURLY constexpressions_list RCURLY
+        statement : DIM ID LPAREN constexpression RPAREN EQUALS LCURLY constexpressions_list RCURLY
+                  | DIM ID LPAREN RPAREN EQUALS LCURLY constexpressions_list RCURLY
+                  | DIM ID LPAREN constexpression RPAREN
+                  | DIM ID LPAREN RPAREN
+
         """
         if (
-            len(p) == 7
-            and self._check_array(p[5], p.lexer.lexer.lineno)
+            len(p) == 10
+            and self._check_array(p[8], p.lexer.lexer.lineno)
+            and (isinstance(p[4], tuple) or isinstance(p[4], list))
             and self._declare_symbol(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno)
         ):
-            p[0] = ("ARRAY", p[2], [("CONSTANT", c) for c in p[5]])
+            if isinstance(p[4], list):
+                size = ("CONSTANT", p[4])
+            else:
+                size = ("CONSTANT", [p[4]])
+            p[0] = ("ARRAY", p[2], size, [("CONSTANT", c) for c in p[8]])
+        elif (
+            len(p) == 9
+            and self._check_array(p[7], p.lexer.lexer.lineno)
+            and self._declare_symbol(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno)
+        ):
+            p[0] = ("ARRAY", p[2], None, [("CONSTANT", c) for c in p[7]])
+        elif (
+            len(p) == 6
+            and (isinstance(p[4], tuple) or isinstance(p[4], list))
+            and self._declare_symbol(p[2], SymbolType.ARRAY, p.lexer.lexer.lineno)
+        ):
+            if isinstance(p[4], list):
+                size = ("CONSTANT", p[4])
+            else:
+                size = ("CONSTANT", [p[4]])
+            p[0] = ("ARRAY", p[2], size, [])
+        elif len(p) == 5 and self._declare_symbol(
+            p[2], SymbolType.ARRAY, p.lexer.lexer.lineno
+        ):
+            self.errors.append(
+                f"Data array '{p[2]}' on line {p.lexer.lexer.lineno} must have defined a size or have initialization data."
+            )
+            p[0] = None
         else:
             p[0] = None
 
