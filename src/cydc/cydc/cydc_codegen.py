@@ -175,7 +175,7 @@ class CydcCodegen(object):
         if size_list is not None:
             self.bank_size_list = size_list
 
-    def constant_calculation(self, constants):
+    def constant_calculation(self, constants, is_word=False):
         f_constants = {}
         while len(constants) > 0:
             tmp_const = constants.copy()
@@ -266,17 +266,19 @@ class CydcCodegen(object):
             else:
                 c = stack.pop()
                 if isinstance(c, int):
-                    if c in range(0, 256):
+                    if c >= 0:
                         f_constants[k] = c
                     else:
                         sys.exit(
-                            self._(f"ERROR: Invalid constant value {k} is not a byte!")
+                            self._(
+                                f"ERROR: Invalid constant value {k}, must not be negative!"
+                            )
                         )
                 else:
                     sys.exit(self._(f"ERROR: Invalid constant value {k}, {c}!"))
         return f_constants
 
-    def constant_expression_calculation(self, expression, constants):
+    def constant_expression_calculation(self, expression, constants, is_word=False):
         stack = []
         for c in expression:
             if isinstance(c, tuple) and len(c) in range(1, 3):
@@ -335,14 +337,24 @@ class CydcCodegen(object):
         else:
             c = stack.pop()
             if isinstance(c, int):
-                if c in range(0, 256):
-                    return c
-                else:
-                    sys.exit(
-                        self._(
-                            f"ERROR: Invalid constant expression value {c} is not a byte!"
+                if is_word:
+                    if c in range(0, 1 << 16) and is_word:
+                        return c
+                    else:
+                        sys.exit(
+                            self._(
+                                f"ERROR: Invalid constant expression value {c} is not a word!"
+                            )
                         )
-                    )
+                else:
+                    if c in range(0, 1 << 8):
+                        return c
+                    else:
+                        sys.exit(
+                            self._(
+                                f"ERROR: Invalid constant expression value {c} is not a byte!"
+                            )
+                        )
             else:
                 sys.exit(self._(f"ERROR: Invalid constant expression value {c}!"))
 
@@ -439,7 +451,7 @@ class CydcCodegen(object):
                         and size[0] == "CONSTANT"
                     ):
                         array_len = self.constant_expression_calculation(
-                            size[1], constants
+                            size[1], constants, False
                         )
                     elif instruction[2] is None:
                         array_len = len(instruction[3])
@@ -460,7 +472,9 @@ class CydcCodegen(object):
                             and isinstance(c[1], list)
                         ):
                             lc.append(
-                                self.constant_expression_calculation(c[1], constants)
+                                self.constant_expression_calculation(
+                                    c[1], constants, False
+                                )
                             )
                         else:
                             sys.exit(
@@ -511,8 +525,27 @@ class CydcCodegen(object):
                             and c[0] == "CONSTANT"
                             and isinstance(c[1], list)
                         ):  # Constant expression
-                            # print(c)
-                            c = self.constant_expression_calculation(c[1], constants)
+                            c = self.constant_expression_calculation(
+                                c[1], constants, False
+                            )
+                        elif (
+                            len(c) == 2
+                            and c[0] == "CONSTANT_L"
+                            and isinstance(c[1], list)
+                        ):
+                            c = self.constant_expression_calculation(
+                                c[1], constants, True
+                            )
+                            c = c & 0xFF
+                        elif (
+                            len(c) == 2
+                            and c[0] == "CONSTANT_H"
+                            and isinstance(c[1], list)
+                        ):
+                            c = self.constant_expression_calculation(
+                                c[1], constants, True
+                            )
+                            c = (c >> 8) & 0xFF
                     tup += (c,)
             code.append(tup)
         return (code, variables, constants)
