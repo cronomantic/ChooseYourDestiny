@@ -508,25 +508,49 @@ class CydcParser(object):
             p[0] = None
 
     def p_statement_wait(self, p):
-        "statement : WAIT expression"
-        if self._check_word_value(p[2], p.lexer.lexer.lineno):
-            p[0] = ("WAIT", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        "statement : WAIT constexpression"
+        if len(p) == 3 and self._is_valid_constexpression(p[2]):
+            if isinstance(p[2], list):
+                p[0] = ("WAIT", ("CONSTANT_L", p[2]), ("CONSTANT_H", p[2]))
+            else:
+                p[0] = ("WAIT", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
         else:
             p[0] = None
+
+        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
+        #     p[0] = ("WAIT", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        # else:
+        #     p[0] = None
 
     def p_statement_pause(self, p):
-        "statement : PAUSE expression"
-        if self._check_word_value(p[2], p.lexer.lexer.lineno):
-            p[0] = ("PAUSE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        "statement : PAUSE constexpression"
+        if len(p) == 3 and self._is_valid_constexpression(p[2]):
+            if isinstance(p[2], list):
+                p[0] = ("PAUSE", ("CONSTANT_L", p[2]), ("CONSTANT_H", p[2]))
+            else:
+                p[0] = ("PAUSE", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
         else:
             p[0] = None
 
+        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
+        #     p[0] = ("PAUSE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        # else:
+        #     p[0] = None
+
     def p_statement_typerate(self, p):
-        "statement : TYPERATE expression"
-        if self._check_word_value(p[2], p.lexer.lexer.lineno):
-            p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        "statement : TYPERATE constexpression"
+        if len(p) == 3 and self._is_valid_constexpression(p[2]):
+            if isinstance(p[2], list):
+                p[0] = ("TYPERATE", ("CONSTANT_L", p[2]), ("CONSTANT_H", p[2]))
+            else:
+                p[0] = ("TYPERATE", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
         else:
             p[0] = None
+
+        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
+        #     p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
+        # else:
+        #     p[0] = None
 
     def p_statement_window(self, p):
         "statement : WINDOW constexpression"
@@ -1368,20 +1392,25 @@ class CydcParser(object):
 
     def p_statement_choose(self, p):
         """
-        statement : CHOOSE IF WAIT expression THEN GOTO ID
-                  | CHOOSE IF WAIT expression THEN GOSUB ID
+        statement : CHOOSE IF WAIT constexpression THEN GOTO ID
+                  | CHOOSE IF WAIT constexpression THEN GOSUB ID
                   | CHOOSE IF CHANGED THEN GOSUB ID
                   | CHOOSE
         """
         if len(p) == 8 and p[3] == "WAIT":
-            if self._check_word_value(
-                p[4], p.lexer.lexer.lineno
-            ) and self._symbol_usage(p[7], SymbolType.LABEL, p.lexer.lexer.lineno):
+            if self._is_valid_constexpression(p[4]) and self._symbol_usage(
+                p[7], SymbolType.LABEL, p.lexer.lexer.lineno
+            ):
+                if isinstance(p[4], list):
+                    tm = p[4]
+                else:
+                    tm = [p[4]]
+
                 if p[6] == "GOTO":
                     p[0] = (
                         "CHOOSE_W",
-                        p[4] & 0xFF,
-                        (p[4] >> 8) & 0xFF,
+                        ("CONSTANT_L", tm),
+                        ("CONSTANT_H", tm),
                         0x00,
                         p[7],
                         0,
@@ -1390,8 +1419,8 @@ class CydcParser(object):
                 elif p[6] == "GOSUB":
                     p[0] = (
                         "CHOOSE_W",
-                        p[4] & 0xFF,
-                        (p[4] >> 8) & 0xFF,
+                        ("CONSTANT_L", tm),
+                        ("CONSTANT_H", tm),
                         0xFF,
                         p[7],
                         0,
@@ -1408,6 +1437,42 @@ class CydcParser(object):
                 p[0] = None
         elif len(p) == 2:
             p[0] = ("CHOOSE",)
+
+        # if len(p) == 8 and p[3] == "WAIT":
+        #     if self._check_word_value(
+        #         p[4], p.lexer.lexer.lineno
+        #     ) and self._symbol_usage(p[7], SymbolType.LABEL, p.lexer.lexer.lineno):
+        #         if p[6] == "GOTO":
+        #             p[0] = (
+        #                 "CHOOSE_W",
+        #                 p[4] & 0xFF,
+        #                 (p[4] >> 8) & 0xFF,
+        #                 0x00,
+        #                 p[7],
+        #                 0,
+        #                 0,
+        #             )
+        #         elif p[6] == "GOSUB":
+        #             p[0] = (
+        #                 "CHOOSE_W",
+        #                 p[4] & 0xFF,
+        #                 (p[4] >> 8) & 0xFF,
+        #                 0xFF,
+        #                 p[7],
+        #                 0,
+        #                 0,
+        #             )
+        #         else:
+        #             p[0] = None
+        #     else:
+        #         p[0] = None
+        # elif len(p) == 7 and p[3] == "CHANGED":
+        #     if self._symbol_usage(p[6], SymbolType.LABEL, p.lexer.lexer.lineno):
+        #         p[0] = ("CHOOSE_CH", p[6], 0, 0)
+        #     else:
+        #         p[0] = None
+        # elif len(p) == 2:
+        #     p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
         """
@@ -1999,7 +2064,8 @@ class CydcParser(object):
 
     def p_constexpression_expression(self, p):
         "constexpression : expression"
-        if self._check_byte_value(p[1], p.lexer.lexer.lineno):
+        # if self._check_byte_value(p[1], p.lexer.lexer.lineno):
+        if isinstance(p[1], int):
             p[0] = ("C_VAL", p[1])
         else:
             p[0] = None
