@@ -669,6 +669,190 @@ class CydcCodegen(object):
                     code_tmp.append(c)
             else:
                 code_tmp.append(c)
+        # MENUCONFIG
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 5:
+                for i in range(4, len(code_tmp)):
+                    t0 = code_tmp[i - 4]
+                    t1 = code_tmp[i - 3]
+                    t2 = code_tmp[i - 2]
+                    t3 = code_tmp[i - 1]
+                    t4 = code_tmp[i]
+                    if (
+                        t4[0] == "POP_MENUCONFIG"
+                        and t3[0] == "PUSH_D"
+                        and t2[0] == "PUSH_D"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 4) > 0:
+                            l += code_tmp[: i - 4]
+                        l.append(("MENUCONFIG", t0[1], t1[1], t2[1], t3[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # AT
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 3:
+                for i in range(2, len(code_tmp)):
+                    t0 = code_tmp[i - 2]
+                    t1 = code_tmp[i - 1]
+                    t2 = code_tmp[i]
+                    if t2[0] == "POP_AT" and t1[0] == "PUSH_D" and t0[0] == "PUSH_D":
+                        l = []
+                        if (i - 2) > 0:
+                            l += code_tmp[: i - 2]
+                        l.append(("AT", t0[1], t1[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # FILLATTR
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 6:
+                for i in range(5, len(code_tmp)):
+                    t0 = code_tmp[i - 5]
+                    t1 = code_tmp[i - 4]
+                    t2 = code_tmp[i - 3]
+                    t3 = code_tmp[i - 2]
+                    t4 = code_tmp[i - 1]
+                    t5 = code_tmp[i]
+                    if (
+                        t5[0] == "POP_FILLATTR"
+                        and t4[0] == "PUSH_D"
+                        and t3[0] == "PUSH_D"
+                        and t2[0] == "PUSH_D"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 5) > 0:
+                            l += code_tmp[: i - 5]
+                        l.append(("FILLATTR", t0[1], t1[1], t2[1], t3[1], t4[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # PUTATTR
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 5:
+                for i in range(4, len(code_tmp)):
+                    t0 = code_tmp[i - 4]
+                    t1 = code_tmp[i - 3]
+                    t2 = code_tmp[i - 2]
+                    t3 = code_tmp[i - 1]
+                    t4 = code_tmp[i]
+                    if (
+                        t4[0] == "POP_ALL_PUTATTR"
+                        and t3[0] == "PUSH_D"
+                        and t2[0] == "PUSH_D"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 4) > 0:
+                            l += code_tmp[: i - 4]
+                        l.append(("PUTATTR", t0[1], t1[1], t2[1], t3[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # POP_PUTATTR
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 3:
+                for i in range(2, len(code_tmp)):
+                    t0 = code_tmp[i - 2]
+                    t1 = code_tmp[i - 1]
+                    t2 = code_tmp[i]
+                    if (
+                        t2[0] == "POP_ALL_PUTATTR"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 2) > 0:
+                            l += code_tmp[: i - 2]
+                        l.append(("POP_PUTATTR", t0[1], t1[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # BLIT
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 7:
+                for i in range(6, len(code_tmp)):
+                    t0 = code_tmp[i - 6]
+                    t1 = code_tmp[i - 5]
+                    t2 = code_tmp[i - 4]
+                    t3 = code_tmp[i - 3]
+                    t4 = code_tmp[i - 2]
+                    t5 = code_tmp[i - 1]
+                    t6 = code_tmp[i]
+                    if (
+                        t6[0] == "POP_ALL_BLIT"
+                        and t5[0] == "PUSH_D"
+                        and t4[0] == "PUSH_D"
+                        and t3[0] == "PUSH_D"
+                        and t2[0] == "PUSH_D"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 6) > 0:
+                            l += code_tmp[: i - 6]
+                        l.append(("BLIT", t0[1], t1[1], t2[1], t3[1], t4[1], t5[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+        # POP_BLIT
+        run = True
+        while run:
+            run = False
+            if len(code_tmp) >= 5:
+                for i in range(4, len(code_tmp)):
+                    t0 = code_tmp[i - 4]
+                    t1 = code_tmp[i - 3]
+                    t2 = code_tmp[i - 2]
+                    t3 = code_tmp[i - 1]
+                    t4 = code_tmp[i]
+                    if (
+                        t4[0] == "POP_ALL_BLIT"
+                        and t3[0] == "PUSH_D"
+                        and t2[0] == "PUSH_D"
+                        and t1[0] == "PUSH_D"
+                        and t0[0] == "PUSH_D"
+                    ):
+                        l = []
+                        if (i - 4) > 0:
+                            l += code_tmp[: i - 4]
+                        l.append(("POP_BLIT", t0[1], t1[1], t2[1], t3[1]))
+                        if (i + 1) < len(code_tmp):
+                            l += code_tmp[i + 1 :]
+                        code_tmp = l
+                        run = True
+                        break
+
         # Append an END just in case...
         last_opcode = code_tmp[-1]
         if last_opcode[0] != "END":
@@ -679,6 +863,58 @@ class CydcCodegen(object):
         # print()
         # for c in code_tmp:
         #     print(c)
+        return code_tmp
+
+    def check_code_paramenters(self, code):
+        code_tmp = []
+        for t in code:
+            opcode = t[0]  # get opcode type
+            if opcode == "MARGINS" or opcode == "FADEOUT":
+                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
+                t = (opcode, col, row, width, height)
+            elif opcode == "AT":
+                col = t[1]
+                row = t[2]
+                if col >= 32:
+                    col = 31
+                if col < 0:
+                    col = 0
+                if row >= 24:
+                    row = 23
+                if row < 0:
+                    row = 0
+                t = (opcode, col, row)
+            elif opcode == "MENUCONFIG":
+                col = t[1]
+                row = t[2]
+                init = t[3]
+                show = t[4]
+                if col >= 32:
+                    col = 31
+                if col < 0:
+                    col = 0
+                if row >= 24:
+                    row = 23
+                if row < 0:
+                    row = 0
+                if init_d >= 32:
+                    init_d = 0
+                t = (opcode, col, row, init, show)
+            elif opcode == "BLIT":
+                col_d = t[5]
+                row_d = t[6]
+                if col_d >= 32:
+                    col_d = 31
+                if row_d < 0:
+                    row_d = 0
+                if col_d < 0:
+                    col_d = 0
+                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
+                t = (opcode, col, row, width, height, col_d, row_d)
+            elif opcode == "POP_BLIT":
+                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
+                t = (opcode, col, row, width, height)
+            code_tmp.append(t)
         return code_tmp
 
     def code_translate(self, code, slice_text=False):
@@ -829,6 +1065,33 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
+    def _fix_borders(self, row, col, width, height):
+        (row, height) = self._fix_rows(row, height)
+        (col, width) = self._fix_cols(col, width)
+        return (row, col, width, height)
+
+    def _fix_rows(self, row, height):
+        if row >= 24:
+            row = 23
+        if row < 0:
+            row = 0
+        if height <= 0:
+            height = 1
+        if (height + row) > 24:
+            height = 24 - row
+        return (row, height)
+
+    def _fix_cols(self, col, width):
+        if col >= 32:
+            col = 31
+        if col < 0:
+            col = 0
+        if width <= 0:
+            width = 1
+        if (width + col) > 32:
+            width = 32 - col
+        return (col, width)
+
     def generate_code_dsk(
         self, code, tokens, font=None, slice_text=False, show_debug=False
     ):
@@ -845,6 +1108,7 @@ class CydcCodegen(object):
             print("\nVirtual machine opcode:\n-------------------")
             for c in code:
                 print(c)
+        self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
         self.code = [self.symbol_replacement(c, self.symbols) for c in code]
         index = []
@@ -899,6 +1163,7 @@ class CydcCodegen(object):
             for c in code:
                 print(c)
 
+        self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
 
         self.code = [self.symbol_replacement(c, self.symbols) for c in code]
