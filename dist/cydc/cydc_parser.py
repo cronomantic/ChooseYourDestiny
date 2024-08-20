@@ -166,7 +166,6 @@ class CydcParser(object):
         if len(p) == 2:
             p[0] = []
             if p[1]:
-                print(p[1])
                 if isinstance(p[1], list):
                     p[0] += p[1]
                 else:
@@ -1802,7 +1801,6 @@ class CydcParser(object):
 
             flash += [("C_VAL", 1), ("C_&",), ("C_VAL", 7), ("C_<<",)]
             c_seq = ink + paper + [("C_|",)] + bright + [("C_|",)] + flash + [("C_|",)]
-            print(c_seq)
             p[0] = ("PUSH_D", ("CONSTANT", c_seq))
 
     def p_varexpression_attrmask_constexpression(self, p):
@@ -1857,7 +1855,6 @@ class CydcParser(object):
 
             flash += [("C_VAL", 1), ("C_&",), ("C_VAL", 7), ("C_<<",)]
             c_seq = ink + paper + [("C_|",)] + bright + [("C_|",)] + flash + [("C_|",)]
-            print(c_seq)
             p[0] = ("PUSH_D", ("CONSTANT", c_seq))
 
     def p_varexpression_random_expression_limit(self, p):
