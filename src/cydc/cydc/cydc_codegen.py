@@ -451,13 +451,13 @@ class CydcCodegen(object):
                         and size[0] == "CONSTANT"
                     ):
                         array_len = self.constant_expression_calculation(
-                            size[1], constants, False
+                            size[1], constants, True
                         )
                     elif instruction[2] is None:
                         array_len = len(instruction[3])
                     else:
                         sys.exit(self._(f"ERROR: Invalid array declaration"))
-                    if array_len not in range(1, 256):
+                    if array_len not in range(1, 257):
                         sys.exit(
                             self._(
                                 f"ERROR: The array {instruction[1]} has an invalid size."
