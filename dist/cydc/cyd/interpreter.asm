@@ -2591,8 +2591,8 @@ OP_POP_VAL_ARRAY:
     inc de
     ld h, 0
     ld l, (ix+0)          ;Get offset
-    ld a, (ix+1)          ;Get value
     cp l                  ;test if offset > (size-1) (A-C)
+    ld a, (ix+1)          ;Get value
     jr nc, 2f
     ;Error, array out of bounds
     ld a, 7
@@ -2600,7 +2600,7 @@ OP_POP_VAL_ARRAY:
 2:  add hl, de
     ld (hl), a
     inc ix
-    ld (ix+0), a
+    inc ix
     ret
     ENDIF
 
@@ -2634,6 +2634,12 @@ OP_PUSH_LEN_ARRAY:
     ENDIF
 
 /*
+
+    ld a, (ix+0)
+    inc ix
+    ld a, (ix+0)
+    inc ix
+
     MACRO OP_2PARAM_GET_STACK
     ld c, (ix+0)
     ld a, (ix+1)
