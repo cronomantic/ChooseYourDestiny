@@ -1449,7 +1449,7 @@ OP_CHOOSE_CH:
     jp OP_GOTO
 .on_change_gosub:
     ld hl, CHOOSE_CH_RET_ADDRESS
-    ld e, (hl)
+    ld a, (hl)
     inc hl
     ld e, (hl)
     inc hl
