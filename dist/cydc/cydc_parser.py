@@ -281,10 +281,18 @@ class CydcParser(object):
 
     def p_statement_text_error(self, p):
         "statement : ERROR_TEXT"
-        for err in p[1]:
-            self.errors.append(
-                f"Invalid character '{err[2]}' ({ord(err[2])}) in line {err[0]} and position {err[1]}"
-            )
+        if isinstance(p[1], tuple):
+            t = p[1]
+            if isinstance(t[1], list):
+                for err in t[1]:
+                    print(err)
+                    self.errors.append(
+                        f"Invalid character '{err[2]}' (\\u{ord(err[2]):04x}) in line {err[0]} and position {err[1]}"
+                    )
+            else:
+                self.errors.append(f"Undefined codification error")
+        else:
+            self.errors.append(f"Undefined codification error")
         p[0] = None
 
     def p_statement_text(self, p):
