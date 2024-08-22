@@ -397,6 +397,7 @@ class CydcLexer(object):
             else:
                 pos += 1
         if len(errors) > 0:
+            print(errors)
             token_type = "ERROR_TEXT"
             token_value = ("ERROR_TEXT", errors)
         else:
