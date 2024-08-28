@@ -1023,20 +1023,16 @@ PRINT_HL_WORD:
     pop hl                    ; Restore start buffer on HL
     ex af, af'                ; Restore carry
     jp c, PRINT_STR           ; On carry, leave any leading zeroes.
-    dec de                    ; Step over NULL
-    dec de                    ; Step over first digit
-    ld b, 4                   ; Number of digits
+    ld b, 4                   ; Max number of digits to skip
+    ld a, $30                 ; is Zero char
 .loop1:
-    ld a, (de)                ; Get digit
-    cp $30                    ; is Zero char
-    jr z, .end_loop1          ; In that case, we leave
-    dec de                    ; Advance pointer
+    cp (hl)
+    jp nz, PRINT_STR          ; If not, we have ended
+    inc hl                    ; Advance pointer
     djnz .loop1               ; Iterate over all digits
-    jp PRINT_STR              ; Full number, so returns HL
 .end_loop1:
-    inc de                    ; Restore to the first not Zero digit
-    ex de, hl                 ; Move DE to HL
     jp PRINT_STR              ; Print number
+
 
 CONV_HL_TO_STR:
     ld bc, -10000
