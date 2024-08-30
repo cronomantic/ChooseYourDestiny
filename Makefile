@@ -1,4 +1,4 @@
-#NAME:=consider_es
+#NAME:=EFD-EN
 NAME:=delerict
 #NAME:=test
 CYD_FILENAME:=$(NAME).cyd
