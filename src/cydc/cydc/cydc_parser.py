@@ -98,10 +98,12 @@ class CydcParser(object):
     def p_statements(self, p):
         """
         statements  : statements COLON if_statement
-                    | statements COLON loop_statement
+                    | statements COLON loop_while_statement
+                    | statements COLON loop_do_until_statement
                     | statements COLON statement
                     | if_statement
-                    | loop_statement
+                    | loop_do_until_statement
+                    | loop_while_statement
                     | statement
         """
         if (len(p) == 2) and p[1]:
@@ -120,12 +122,12 @@ class CydcParser(object):
                 else:
                     p[0].append(p[3])
 
-    def p_loop_statement(self, p):
+    def p_loop_while_statement(self, p):
         """
-        loop_statement : WHILE LPAREN boolexpression RPAREN loop_statement WEND
-                       | WHILE LPAREN boolexpression RPAREN loop_subprogram WEND
-                       | WHILE LPAREN RPAREN loop_statement WEND
-                       | WHILE LPAREN RPAREN loop_subprogram WEND
+        loop_while_statement    : WHILE LPAREN boolexpression RPAREN loop_while_statement WEND
+                                | WHILE LPAREN boolexpression RPAREN loop_while_subprogram WEND
+                                | WHILE LPAREN RPAREN loop_while_statement WEND
+                                | WHILE LPAREN RPAREN loop_while_subprogram WEND
         """
         if len(p) == 7 and p[3]:
             label_loop = self._get_hidden_label()
@@ -155,13 +157,69 @@ class CydcParser(object):
                     p[0].append(p[4])
             p[0] += [("GOTO", label_loop, 0, 0)]
 
-    def p_loop_subprogram(self, p):
+    def p_loop_while_subprogram(self, p):
         """
-        loop_subprogram : loop_subprogram statements_nl
-                        | loop_subprogram statements
-                        | statements_nl
-                        | statements
-                        | loop_empty
+        loop_while_subprogram   : loop_while_subprogram statements_nl
+                                | loop_while_subprogram statements
+                                | statements_nl
+                                | statements
+                                | loop_empty
+        """
+        if len(p) == 2:
+            p[0] = []
+            if p[1]:
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_loop_do_until_statement(self, p):
+        """
+        loop_do_until_statement : DO loop_do_until_statement UNTIL LPAREN boolexpression RPAREN
+                                | DO loop_do_until_subprogram UNTIL LPAREN boolexpression RPAREN
+                                | DO loop_do_until_statement UNTIL LPAREN RPAREN
+                                | DO loop_do_until_subprogram UNTIL LPAREN RPAREN
+        """
+        if len(p) == 7 and p[5]:
+            label_loop = self._get_hidden_label()
+            p[0] = [("LABEL", label_loop)]
+            if p[3]:
+                if isinstance(p[3], list):
+                    p[0] += p[3]
+                else:
+                    p[0].append(p[3])
+            if isinstance(p[5], list):
+                p[0] += p[5]
+                p[0] += [("IF_N_GOTO", label_loop, 0, 0)]
+            else:
+                p[0] += [p[5], ("IF_N_GOTO", label_loop, 0, 0)]
+
+        elif len(p) == 6:
+            label_loop = self._get_hidden_label()
+            p[0] = [("LABEL", label_loop)]
+            if p[3]:
+                if isinstance(p[3], list):
+                    p[0] += p[3]
+                else:
+                    p[0].append(p[3])
+            p[0] += [("GOTO", label_loop, 0, 0)]
+
+    def p_loop_do_until_subprogram(self, p):
+        """
+        loop_do_until_subprogram    : loop_do_until_subprogram statements_nl
+                                    | loop_do_until_subprogram statements
+                                    | statements_nl
+                                    | statements
+                                    | loop_empty
         """
         if len(p) == 2:
             p[0] = []
