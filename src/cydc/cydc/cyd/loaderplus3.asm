@@ -21,6 +21,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+    DEVICE ZXSPECTRUM48
 
 LD_SCR_ADDR      EQU  16384
 LD_SCR_SIZE      EQU  6912
@@ -46,30 +47,56 @@ LINEA0:
     DW SIZE_LINE0 - 4 ;TAMAÑO
     DB 234 ;TOKEN DE REM
 
+LOAD_TABLE:
+@{BLOCK_LIST}
+
 START_LOADER:
     DI
     LD SP, @STACK_ADDRESS
     CALL INIT_STATE
 
     LD BC, $0001 ;B: FICHERO 0 , C: MODO DE LECTURA
-    LD DE, $0001 ;HA DE EXISTIR EL ARCHIVO, CARGAR SIN CABECERA
+    LD DE, $0002 ;HA DE EXISTIR EL ARCHIVO, CARGAR SIN CABECERA
     LD HL, FILENAME_LOAD
     ;HL has the start of the FILENAME
     CALL DOS_OPEN
     JR NC, RESET
-    LD HL, START_INTERPRETER
-    LD DE, SIZE_INTERPRETER
-    LD BC, $00     ;B: FICHERO, C: RAM A PAGINAR
+
+    LD HL, LOAD_TABLE               ;Blocks table
+LOOP_TABLE:
+    LD E, (HL)
+    INC HL
+    LD D, (HL)
+    INC HL                          ; Start address
+    LD A, E
+    OR D
+    JR Z, END_LOAD
+    LD C, (HL)
+    INC HL
+    LD B, (HL)
+    INC HL                          ; Size
+    LD A, (HL)                      
+    INC HL                          ; Bank
+    PUSH HL
+    PUSH BC
+    EX DE, HL                       ; Start Address HL
+    LD C, A
+    LD B, 0                         ;B: FILE HANDLE, C: RAM to page
+    POP DE
     CALL DOS_READ
     JR NC, RESET
+    POP HL
+    JR LOOP_TABLE
+;----------
+END_LOAD:
     LD B, $00
     CALL DOS_CLOSE
-END_LOAD:
     CALL DOS_OFF_MOTOR
     CALL MAINROM ;rom interprete 48k
+    DI
     LD C, 0
     CALL SETRAM
-    JP START_INTERPRETER
+    CALL @INIT_ADDR
 
 RESET:
     XOR A
@@ -131,7 +158,7 @@ INIT_STATE:
     LD HL, $7800                  ;H 120, L 0
                                   ;8 last buffers of RAM 6
                                   ;0 for Ram Disc
-    LD DE, $7808                  ;H 120, L 8
+    LD DE, $7E02                  ;H 120, L 8
                                   ;8 last buffers of RAM 6
                                   ;4kb for cache
 
@@ -150,7 +177,7 @@ LOADSCR_DAT:
     ENDIF
 
 FILENAME_LOAD:
-    DB "@INTERPRETER_FILENAME_BASE", $FF
+    DB "@DSK_FILENAME_BASE", $FF
 
 
 SIZE_LINE0 = $ - LINEA0
@@ -172,5 +199,5 @@ LINEA10:
 SIZE_LINE10 = $ - LINEA10
 SIZEOFBASIC = $ - START_ADDRESS
 
-    SAVE3DOS "@LOADER_FILENAME", START_ADDRESS, SIZEOFBASIC, 0, 10
+    SAVE3DOS "@DSK_LOADER_FILENAME", START_ADDRESS, SIZEOFBASIC, 0, 10
 

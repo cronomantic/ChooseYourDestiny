@@ -1,7 +1,7 @@
 ; 
 ; MIT License
 ; 
-; Copyright (c) 2023 Sergio Chico
+; Copyright (c) 2024 Sergio Chico
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-IMG_BANK        EQU 4
+IMG_BANK        EQU 6
 IMAGE_FILE_H    EQU 1 << 8
 
 
 IMG_LOAD:
+    push ix
     ld de, TEXT_BUFFER
     ld h, 0
     ld l, a
@@ -137,6 +138,7 @@ IMG_LOAD:
 
     ld b, IMAGE_FILE_H>>8
     call PLUS3_DOS_CLOSE
+    pop ix
     ret c
     jp DISK_ERROR          ; Error 1 if NC
 
