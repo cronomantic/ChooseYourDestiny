@@ -70,6 +70,84 @@ def get_asm_template(filename):
     return AsmTemplate(text)
 
 
+def get_asm_plus3(
+    index,
+    size_index,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    has_tracks=False,
+    dsk_path="",
+    unused_opcodes=None,
+    name="",
+):
+    if sfx_asm is None:
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
+        sfx_asm += "BEEPFX              EQU $0\n"
+        sfx_asm += "SFX_ID              EQU BEEPFX+1\n"
+    else:
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
+        sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
+    d = dict(
+        INIT_ADDR="$8000",
+        TOKENS=bytes2str(tokens, ""),
+        CHARS=bytes2str(chars, ""),
+        CHARW=bytes2str(charw, ""),
+        INDEX=index,
+        SIZE_INDEX=str(size_index),
+        SIZE_INDEX_ENTRY=str(5),
+        DSK_PATH=dsk_path,
+        GAMEID=get_game_id(name),
+    )
+
+    t = get_asm_template("inkey")
+    includes = t.substitute(d)
+    t = get_asm_template("bank_zx128")
+    includes += t.substitute(d)
+    t = get_asm_template("plus3dos")
+    includes += t.substitute(d)
+    t = get_asm_template("savegame_plus3")
+    includes += t.substitute(d)
+    t = get_asm_template("dzx0_turbo")
+    includes += t.substitute(d)
+    if has_tracks:
+        t = get_asm_template("music_manager")
+        includes += t.substitute(d)
+        t = get_asm_template("VTII10bG")
+        includes += t.substitute(d)
+    t = get_asm_template("screen_manager")
+    includes += t.substitute(d)
+    t = get_asm_template("text_manager")
+    includes += t.substitute(d)
+    t = get_asm_template("interpreter")
+    includes += t.substitute(d)
+    if has_tracks:
+        t = get_asm_template("VTII10bG_vars")
+        includes += t.substitute(d)
+    includes += sfx_asm
+
+    asm = "    DEVICE ZXSPECTRUM128\n"
+    asm += "    SLOT 3\n"
+    asm += "    PAGE 0\n"
+    asm += "\n"
+
+    d.update(INCLUDES=includes)
+    t = get_asm_template("sysvars")
+    asm += t.substitute(d)
+    t = get_asm_template("vars")
+    asm += t.substitute(d)
+    if has_tracks:
+        asm += "    DEFINE USE_VORTEX\n\n"
+
+    asm += get_unused_opcodes_defines(unused_opcodes)
+
+    t = get_asm_template("cyd_plus3")
+    asm += t.substitute(d)
+
+    return asm
+
+
 def get_asm_128(
     index,
     size_index,
@@ -126,16 +204,18 @@ def get_asm_128(
         includes += t.substitute(d)
     includes += sfx_asm
 
+    asm = "    DEVICE ZXSPECTRUM48\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
-    asm = t.substitute(d)
+    asm += t.substitute(d)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
         asm += "    DEFINE USE_VORTEX\n\n"
 
     asm += get_unused_opcodes_defines(unused_opcodes)
-    
+
     asm = "    DEFINE IS_128_TAPE\n" + asm
 
     t = get_asm_template("cyd_tape")
@@ -190,9 +270,11 @@ def get_asm_48(
     includes += t.substitute(d)
     includes += sfx_asm
 
+    asm = "    DEVICE ZXSPECTRUM48\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
-    asm = t.substitute(d)
+    asm += t.substitute(d)
     t = get_asm_template("vars")
     asm += t.substitute(d)
 
@@ -264,6 +346,48 @@ def get_asm_48_size(
         charw=charw,
         sfx_asm=sfx_asm,
         tap_path="",
+        unused_opcodes=unused_opcodes,
+        name="",
+    )
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    res = run_assembler(
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=verbose,
+        capture_output=True,
+    )
+    m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
+    if m is None:
+        raise ValueError("Size pattern not found")
+    size = res.stderr[m.start() : m.end()]
+    m = re.search(r"\d{1,6}", size)
+    if m is None:
+        raise ValueError("Size pattern not found")
+    size = int(size[m.start() : m.end()])
+    return size
+
+
+def get_asm_plus3_size(
+    sjasmplus_path,
+    output_path,
+    verbose,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    has_tracks=False,
+    unused_opcodes=None,
+):
+    asm = get_asm_plus3(
+        index="",
+        size_index=0,
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        has_tracks=has_tracks,
+        dsk_path="",
         unused_opcodes=unused_opcodes,
         name="",
     )
@@ -486,20 +610,70 @@ def do_asm_plus3(
     sjasmplus_path,
     output_path,
     verbose,
+    dsk_name,
+    index,
+    blocks,
+    banks,
+    size_interpreter,
+    bank0_offset,
+    tokens,
+    chars,
+    charw,
     sfx_asm,
-    filename_script="SCRIPT.DAT",
     loading_scr=None,
+    has_tracks=False,
     unused_opcodes=None,
     name="",
 ):
 
-    if sfx_asm is None:
-        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
-        sfx_asm += "BEEPFX              EQU $0\n"
-        sfx_asm += "SFX_ID              EQU BEEPFX+1\n"
-    else:
-        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\nBEEPFX:\n" + sfx_asm
-        sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
+    dsk_path = os.path.join(output_path, dsk_name + ".BIN").replace(os.sep, "/")
+
+    asm_ind = ""
+    for i, v in enumerate(index):
+        asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
+        asm_ind += f"    DEFW ${v[3]:X}\n"
+
+    blk_asm = ""
+    for i, block in enumerate(blocks):
+        bank = banks[i]
+        block_path = os.path.join(output_path, f"__BLOCK_{i}.BIN").replace(os.sep, "/")
+        blk_asm += f"    PAGE {bank}\n"
+        if i == 0:
+            blk_asm += f"    ORG ${bank0_offset:X}\n"
+        else:
+            blk_asm += "    ORG $C000\n"
+        blk_asm += f"START_BLOCK_{i}:\n"
+        blk_asm += bytes2str(block)
+        blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
+        blk_asm += f'    SAVEBIN "{block_path}",START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
+
+    asm_int = get_asm_plus3(
+        index=asm_ind,
+        size_index=len(index),
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        has_tracks=has_tracks,
+        dsk_path=dsk_path,
+        unused_opcodes=unused_opcodes,
+        name=name,
+    )
+
+    block_list = ""
+    block_list += f"    DEFW $8000\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFB $0\n"
+    for i, block in enumerate(blocks):
+        bank = banks[i]
+        if i == 0:
+            offset = bank0_offset
+        else:
+            offset = 0xC000
+        block_list += f"    DEFW ${offset:X}\n"
+        block_list += f"    DEFW ${len(block):X}\n"
+        block_list += f"    DEFB ${bank:X}\n"
+    block_list += "    DEFW $0\n"  # End mark
 
     loading_scr_def = ""
     if loading_scr is None:
@@ -511,57 +685,37 @@ def do_asm_plus3(
     d = dict(
         INIT_ADDR="$8000",
         STACK_ADDRESS="$8000",
-        INTERPRETER_FILENAME=os.path.join(output_path, "CYD.BIN").replace(os.sep, "/"),
-        INTERPRETER_FILENAME_BASE="CYD.BIN",
-        LOADER_FILENAME=os.path.join(output_path, "DISK").replace(os.sep, "/"),
-        FILENAME_SCRIPT=filename_script,
+        BLOCK_LIST=block_list,
+        DSK_FILENAME_BASE=dsk_name + ".BIN",
+        DSK_LOADER_FILENAME=os.path.join(output_path, "DISK").replace(os.sep, "/"),
         DEFINE_LOADING_SCREEN=loading_scr_def,
         LOADSCR_DAT=loading_scr,
         GAMEID=get_game_id(name),
     )
-    t = get_asm_template("inkey")
-    includes = t.substitute(d)
-    t = get_asm_template("bank_zx128")
-    includes += t.substitute(d)
-    t = get_asm_template("plus3dos")
-    includes += t.substitute(d)
-    t = get_asm_template("savegame_plus3")
-    includes += t.substitute(d)
-    t = get_asm_template("dzx0_turbo")
-    includes += t.substitute(d)
-    t = get_asm_template("music_manager")
-    includes += t.substitute(d)
-    t = get_asm_template("VTII10bG")
-    includes += t.substitute(d)
-    t = get_asm_template("screen_manager")
-    includes += t.substitute(d)
-    t = get_asm_template("text_manager")
-    includes += t.substitute(d)
-    t = get_asm_template("interpreter")
-    includes += t.substitute(d)
-    t = get_asm_template("VTII10bG_vars")
-    includes += t.substitute(d)
-    includes += sfx_asm
 
-    d.update(INCLUDES=includes)
-    t = get_asm_template("sysvars")
-    asm = t.substitute(d)
-    t = get_asm_template("vars")
-    asm += t.substitute(d)
-
-    asm += get_unused_opcodes_defines(unused_opcodes)
-
-    t = get_asm_template("cyd_plus3")
-    asm += t.substitute(d)
     t = get_asm_template("loaderplus3")
-    asm += t.substitute(d)
+    asm = t.substitute(d)
+    asm += asm_int + blk_asm
 
-    run_assembler(
+    res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
+        capture_output=False,
     )
+
+    if res:
+        for i, block in enumerate(blocks):
+            block_path = os.path.join(output_path, f"__BLOCK_{i}.BIN").replace(
+                os.sep, "/"
+            )
+            with open(dsk_path, "ab") as file_dsk, open(block_path, "rb") as file_block:
+                file_dsk.write(file_block.read())
+            if os.path.exists(block_path):
+                os.remove(block_path)
+
+
 
 
 def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):

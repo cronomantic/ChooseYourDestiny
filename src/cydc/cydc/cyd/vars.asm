@@ -183,7 +183,7 @@ WINDOWS_END:
 END_VARS:
 ;--------------------------------------------------
 
-    ORG $C000
+    ORG $E000
 PIC_BUFFER:
     DEFW 0
 PIC_BUFFER_SCR:

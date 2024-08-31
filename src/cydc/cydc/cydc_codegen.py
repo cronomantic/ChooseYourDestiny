@@ -1125,63 +1125,6 @@ class CydcCodegen(object):
             width = 32 - col
         return (col, width)
 
-    def generate_code_dsk(
-        self, code, tokens, font=None, slice_text=False, show_debug=False
-    ):
-        if font is None:
-            font = CydcFont()
-
-        (code, self.variables, self.constants) = self.code_extract_declarations(code)
-        if show_debug:
-            print("\nConstants resolved:\n-------------------")
-            print(self.constants)
-        if self.optimize:
-            code = self.code_simple_optimize(code)
-        if show_debug:
-            print("\nVirtual machine opcode:\n-------------------")
-            for c in code:
-                print(c)
-        self.code = self.check_code_paramenters(self.code)
-        (code, self.symbols) = self.code_translate(code, slice_text)
-        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
-        index = []
-        sizes = []
-        code = []
-        offset = (6 * len(self.code)) + len(tokens)
-        offset += len(font.font_chars) + len(font.font_sizes)
-        offset += 14 + 2
-        for idx, c in enumerate(self.code):
-            l = len(c)
-            index += self._get_index_offset(idx, offset)
-            sizes += self._word_to_list(l)
-            code += c
-            offset += l
-        header = index + sizes + tokens + font.font_chars + font.font_sizes
-        header = (
-            self._word_to_list(
-                14
-                + len(sizes)
-                + len(index)
-                + len(tokens)
-                + len(font.font_chars)
-                + len(font.font_sizes)
-            )
-            + header
-        )
-        header = (
-            self._word_to_list(
-                14 + len(sizes) + len(index) + len(tokens) + len(font.font_chars)
-            )
-            + header
-        )
-        header = self._word_to_list(14 + len(sizes) + len(index) + len(tokens)) + header
-        header = self._word_to_list(14 + len(sizes) + len(index)) + header
-        header = self._word_to_list(14 + len(index)) + header
-        header = self._word_to_list(14) + header
-        header = self._word_to_list(len(self.code)) + header
-        header = self._word_to_list(len(header)) + header
-        return header + code
-
     def generate_code(self, code, slice_text=False, show_debug=False):
 
         (code, self.variables, self.constants) = self.code_extract_declarations(code)
