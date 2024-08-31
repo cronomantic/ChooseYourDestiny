@@ -1,7 +1,7 @@
 ; 
 ; MIT License
 ; 
-; Copyright (c) 2023 Sergio Chico
+; Copyright (c) 2024 Sergio Chico
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+    IFDEF USE_VORTEX
 ;Loads the music file with number on A
 LOAD_MUSIC:
+    push ix
     ld de, TEXT_BUFFER
     ld h, 0
     ld l, a
@@ -51,9 +53,9 @@ LOAD_MUSIC:
     or a
     jr nz, .invalid_size
     ld a, h
-    cp $40                ; h-$40
-    jr c, .valid_size     ; h < $40
-    jr nz, .invalid_size  ; h > $40
+    cp $20                ; h-$20
+    jr c, .valid_size     ; h < $20
+    jr nz, .invalid_size  ; h > $20
     ld a, l               
     or a
     jr z, .valid_size
@@ -80,6 +82,7 @@ LOAD_MUSIC:
 
     ld b, VORTEX_FILE_H>>8
     call PLUS3_DOS_CLOSE
+    pop ix
     ret c
     jp DISK_ERROR          ; Error 1 if NC
 
@@ -87,3 +90,4 @@ VORTEX_EXTENSION:
     DB ".PT3", $FF
 
     ;INCLUDE "VTII10bG.asm"
+    ENDIF

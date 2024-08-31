@@ -38,7 +38,14 @@ from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
 
-from cyd import do_asm_plus3, get_asm_48_size, get_asm_128_size, do_asm_128, do_asm_48
+from cyd import (
+    get_asm_plus3_size,
+    get_asm_48_size,
+    get_asm_128_size,
+    do_asm_128,
+    do_asm_48,
+    do_asm_plus3,
+)
 from cydc_utils import make_plus3_dsk
 
 
@@ -373,7 +380,7 @@ def main():
         for e in parser.errors:
             print("ERROR:" + e)
         sys.exit(1)
-    
+
     ######################################################################
 
     if verbose:
@@ -435,6 +442,8 @@ def main():
                     b = list(f.read())
                     t = ("SCR", i, len(b), b, fpath)
                     blocks.append(t)
+                    if (model == "plus3") and (len(b) > (7 * 1024)):
+                        sys.exit(_("ERROR: Invalid SCR file, it is too big"))
 
     has_tracks = False
     if args.pt3_tracks_path is not None and model != "48k":
@@ -446,6 +455,8 @@ def main():
                     t = ("TRK", i, len(b), b, fpath)
                     blocks.append(t)
                     has_tracks = True
+                    if (model == "plus3") and (len(b) > (8 * 1024)):
+                        sys.exit(_("ERROR: Invalid PT3 file, it is too big"))
 
     loading_scr = None
     if args.load_scr_file is not None:
@@ -469,35 +480,11 @@ def main():
     else:
         unused_opcodes = set()
 
-    if model == "plus3":
-        if verbose:
-            print(_("Generating final bytecode..."))
-        codegen.set_bank_offset_list([0xC000])
-        codegen.set_bank_size_list([16 * 1024])
-        code_dsk = codegen.generate_code_dsk(
-            code=code,
-            tokens=tokenBytes,
-            font=font,
-            slice_text=args.slice_texts,
-            show_debug=args.show_bytecode,
-        )
-        for p, i in enumerate(code_dsk):
-            if i > 255:
-                sys.exit(_(f"ERROR: Invalid character.{i} - {chr(i)} at {p} byte."))
-
-        try:
-            filename = os.path.join(args.output_path, "SCRIPT.DAT")
-            with open(filename, "wb") as f:
-                fileBytes = bytes(code_dsk)
-                f.write(fileBytes)
-        except OSError:
-            sys.exit(_("ERROR: Can't write SCRIPT.DAT file."))
-    else:
-        if font is None:
-            font = CydcFont()
-        l_chars = font.font_chars
-        l_charw = font.font_sizes
-        l_tokens = tokenBytes
+    if font is None:
+        font = CydcFont()
+    l_chars = font.font_chars
+    l_charw = font.font_sizes
+    l_tokens = tokenBytes
 
     ######################################################################
 
@@ -505,16 +492,17 @@ def main():
     try:
         if model == "plus3":
             if verbose:
-                print(_("Assembling interpreter..."))
-            do_asm_plus3(
+                print(_("Assembling interpreter for size..."))
+            asm_size = get_asm_plus3_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=verbose,
                 sfx_asm=sfx,
-                filename_script="SCRIPT.DAT",
-                loading_scr=loading_scr,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                has_tracks=has_tracks,
                 unused_opcodes=unused_opcodes,
-                name=output_name,
             )
         elif model == "128k":
             if verbose:
@@ -545,9 +533,9 @@ def main():
             )
 
     except ValueError as e1:
-        sys.exit(_("ERROR: Error assembling TAP."), e1)
+        sys.exit(_("ERROR: Error assembling interpreter."), e1)
     except OSError as e2:
-        sys.exit(_("ERROR: Error assembling TAP."), e2)
+        sys.exit(_("ERROR: Error assembling interpreter."), e2)
 
     if model == "48k" and (asm_size > 32 * 1024):
         sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
@@ -555,69 +543,76 @@ def main():
         sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
 
     ######################################################################
-    if model != "plus3":
 
-        if verbose:
-            print(_("Memory organization for tape version..."))
+    if model == "plus3" and verbose:
+        print(_("Memory organization for disk version..."))
+    elif verbose:
+        print(_("Memory organization for tape version..."))
 
-        # We do this to get an rounded-up approximation of the number of blocks
-        codegen.set_bank_offset_list([0xC000])
-        codegen.set_bank_size_list([16 * 1024])
-        chunks = codegen.generate_code(
-            code=code, slice_text=args.slice_texts, show_debug=False
-        )
+    # We do this to get an rounded-up approximation of the number of blocks
+    codegen.set_bank_offset_list([0xC000])
+    codegen.set_bank_size_list([16 * 1024])
+    chunks = codegen.generate_code(
+        code=code, slice_text=args.slice_texts, show_debug=False
+    )
 
-        # To calculate the offset
+    # To calculate the offset
+    if model == "plus3":
+        num_blocks = len(chunks)
+    else:
         num_blocks = len(blocks) + len(chunks)
-        bank0_offset = (5 * num_blocks) + asm_size + 0x8000
-        bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
+    bank0_offset = (5 * num_blocks) + asm_size + 0x8000
+    bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
-        # generate block again
-        codegen.set_bank_offset_list([bank0_offset, 0xC000])
-        codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
-        chunks = codegen.generate_code(
-            code=code, slice_text=args.slice_texts, show_debug=args.show_bytecode
-        )
+    # generate block again
+    codegen.set_bank_offset_list([bank0_offset, 0xC000])
+    codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
+    chunks = codegen.generate_code(
+        code=code, slice_text=args.slice_texts, show_debug=args.show_bytecode
+    )
 
-        if model == "128k":
-            spectrum_banks = [0, 1, 3, 4, 6, 7]
+    if model == "128k":
+        spectrum_banks = [0, 1, 3, 4, 6, 7]
+    elif model == "plus3":
+        spectrum_banks = [0, 1, 3, 4]
+    else:
+        spectrum_banks = [0]
+
+    tmp_blocks = []
+    tmp_index = []
+    tmp_available_bank_size = []
+    # Make sure that the TXT blocks are first!
+    for i, chunk in enumerate(chunks):
+        # tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))
+        if i == 0:
+            offset = bank0_offset
+            size = bank0_size_available
         else:
-            spectrum_banks = [0]
+            offset = 0xC000
+            size = 16 * 1024
+        if size < len(chunk):
+            sys.exit(_("ERROR: Block too big."))
+        tmp_blocks.insert(i, chunk)
+        tmp_index.insert(i, (0, i, i, offset))
+        tmp_available_bank_size.insert(i, size - len(chunk))
 
-        tmp_blocks = []
-        tmp_index = []
-        tmp_available_bank_size = []
-        # Make sure that the TXT blocks are first!
-        for i, chunk in enumerate(chunks):
-            # tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))
-            if i == 0:
-                offset = bank0_offset
-                size = bank0_size_available
-            else:
-                offset = 0xC000
-                size = 16 * 1024
-            if size < len(chunk):
-                sys.exit(_("ERROR: Block too big."))
-            tmp_blocks.insert(i, chunk)
-            tmp_index.insert(i, (0, i, i, offset))
-            tmp_available_bank_size.insert(i, size - len(chunk))
+    max_banks = len(spectrum_banks)
+    num_banks = len(tmp_blocks)
 
-        max_banks = len(spectrum_banks)
-        num_banks = len(tmp_blocks)
+    if num_banks > max_banks:
+        sys.exit(_("ERROR: Not enough memory available"))
 
-        if num_banks > max_banks:
-            sys.exit(_("ERROR: Not enough memory available"))
-
-        fits = False
-        while not fits:
-            index = copy.deepcopy(tmp_index)
-            available_banks = copy.deepcopy(tmp_blocks)
-            available_banks.extend([[] for x in range(num_banks - len(tmp_blocks))])
-            available_bank_size = copy.deepcopy(tmp_available_bank_size)
-            available_bank_size.extend(
-                [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
-            )
-            fits = True
+    fits = False
+    while not fits:
+        index = copy.deepcopy(tmp_index)
+        available_banks = copy.deepcopy(tmp_blocks)
+        available_banks.extend([[] for x in range(num_banks - len(tmp_blocks))])
+        available_bank_size = copy.deepcopy(tmp_available_bank_size)
+        available_bank_size.extend(
+            [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
+        )
+        fits = True
+        if model != "plus3":
             for i, block in enumerate(blocks):
                 btype, bidx, bsize, bdata, bpath = block
                 best_fit_index = -1
@@ -654,78 +649,102 @@ def main():
             if num_banks > max_banks:
                 sys.exit(_("ERROR: Not enough memory available"))
 
-        index = [
-            (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
-        ]
+    index = [
+        (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
+    ]
 
-        print("\nRAM usage:\n-----------------")
-        for i, v in enumerate(available_banks):
-            print(
-                f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free:{available_bank_size[i]} bytes."
+    print("\nRAM usage:\n-----------------")
+    for i, v in enumerate(available_banks):
+        print(
+            f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free:{available_bank_size[i]} bytes."
+        )
+
+    if verbose:
+        print("\nIndex:\n-----------------")
+        for i, v in enumerate(index):
+            print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
+        print("\n")
+    try:
+        if model == "128k":
+            if verbose:
+                print(_("Assembling Spectrum 128k TAP..."))
+            output_name = output_name[:10]
+            do_asm_128(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=verbose,
+                tap_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                name=output_name,
             )
-
-        if verbose:
-            print("\nIndex:\n-----------------")
-            for i, v in enumerate(index):
-                print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
-            print("\n")
-        try:
-            if model == "128k":
-                if verbose:
-                    print(_("Assembling Spectrum 128k TAP..."))
-                do_asm_128(
-                    sjasmplus_path=args.sjasmplus_path,
-                    output_path=args.output_path,
-                    verbose=verbose,
-                    tap_name=output_name,
-                    index=index,
-                    blocks=available_banks,
-                    banks=spectrum_banks,
-                    size_interpreter=asm_size,
-                    bank0_offset=bank0_offset,
-                    sfx_asm=sfx,
-                    tokens=l_tokens,
-                    chars=l_chars,
-                    charw=l_charw,
-                    loading_scr=loading_scr,
-                    has_tracks=has_tracks,
-                    unused_opcodes=unused_opcodes,
-                    name=output_name,
-                )
-            else:
-                if verbose:
-                    print(_("Assembling Spectrum 48k TAP..."))
-                do_asm_48(
-                    sjasmplus_path=args.sjasmplus_path,
-                    output_path=args.output_path,
-                    verbose=verbose,
-                    tap_name=output_name,
-                    index=index,
-                    blocks=available_banks,
-                    banks=spectrum_banks,
-                    size_interpreter=asm_size,
-                    bank0_offset=bank0_offset,
-                    sfx_asm=sfx,
-                    tokens=l_tokens,
-                    chars=l_chars,
-                    charw=l_charw,
-                    loading_scr=loading_scr,
-                    unused_opcodes=unused_opcodes,
-                    name=output_name,
-                )
-        except ValueError as e1:
-            sys.exit(_("ERROR: Error assembling TAP."), e1)
-        except OSError as e2:
-            sys.exit(_("ERROR: Error assembling TAP."), e2)
+        elif model == "plus3":
+            if verbose:
+                print(_("Assembling Spectrum PLUS3 binary files..."))
+            output_name = output_name[:8]
+            do_asm_plus3(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=verbose,
+                dsk_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                name=output_name,
+            )
+        else:
+            if verbose:
+                print(_("Assembling Spectrum 48k TAP..."))
+            output_name = output_name[:10]
+            do_asm_48(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=verbose,
+                tap_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                unused_opcodes=unused_opcodes,
+                name=output_name,
+            )
+    except ValueError as e1:
+        sys.exit(_("ERROR: Error assembling source."), e1)
+    except OSError as e2:
+        sys.exit(_("ERROR: Error assembling source."), e2)
 
     ######################################################################
     if model == "plus3":
         if verbose:
-            print(_("Assembling disk..."))
+            print(_("Assembling PLUS3 disk..."))
         files = [
             os.path.join(args.output_path, "DISK"),
-            os.path.join(args.output_path, "CYD.BIN"),
-            os.path.join(args.output_path, "SCRIPT.DAT"),
+            os.path.join(args.output_path, f"{output_name}.BIN"),
         ]
         for b in blocks:
             btype = b[0]
