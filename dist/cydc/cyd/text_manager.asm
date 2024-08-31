@@ -1267,8 +1267,30 @@ SCROLL_WIN:
     ld (ix-2), a
     ld (ix-4), 1
     call CLEAR_RECT
+    ;TODO: Check this??
+    ld a, (NUM_OPTIONS)
+    or a
+    call nz, UPDATE_OPTIONS_POS
     pop ix
     ret
+
+    ; a = number of options
+UPDATE_OPTIONS_POS:
+    ld bc, (MIN_X)               ;c = MIN_Y
+    ld b, a                      ;Number of options -> b
+    ld de, 8
+    ld hl, OPTIONS_TABLE+1  ;Set pointer to first Y parameter
+1:  dec (hl)
+    ld a, (hl)
+    cp 24                        ; A - 24
+    jr nc, 2f                    ; testing if A >= 24
+    cp c                         ; A - MIN_Y
+    jr c, 2f                     ; testing if A < MIN_Y
+    add hl, de
+    djnz 1b
+    ret
+2:  ld a, 7                      ; ERROR
+    jp SYS_ERROR
 
 CLEAR_LINE:
     push ix
