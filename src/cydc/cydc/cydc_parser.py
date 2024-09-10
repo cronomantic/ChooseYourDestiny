@@ -2366,6 +2366,8 @@ class CydcParser(object):
                     last_c_pos = curr_pos
                     if len(curr_text) > 0:
                         curr_code += "[[" + curr_text + "]]"
+                    else: #with no text, adding a space to act as a separator
+                        curr_code += " "
                     curr_text = ""
                 elif text[i] == "]" and text[i + 1] == "]":
                     if is_text:
