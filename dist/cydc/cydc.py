@@ -654,10 +654,24 @@ def main():
     ]
 
     print("\nRAM usage:\n-----------------")
+    total_bytes = 0
     for i, v in enumerate(available_banks):
+        total_bytes += len(v)
         print(
-            f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free:{available_bank_size[i]} bytes."
+            f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free: {available_bank_size[i]} bytes."
         )
+
+    available_bytes = 0
+    for v in spectrum_banks:
+        if v == 0:
+            available_bytes += bank0_size_available
+        else:
+            available_bytes += 16 * 1024
+            
+    print("\nSummary:")
+    print(f"- {available_bytes} bytes available.")
+    print(f"- {total_bytes} bytes used.")
+    print(f"- {available_bytes-total_bytes} bytes free.")
 
     if verbose:
         print("\nIndex:\n-----------------")
