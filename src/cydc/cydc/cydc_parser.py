@@ -1963,10 +1963,10 @@ class CydcParser(object):
                       | RANDOM LPAREN RPAREN
         """
         if len(p) == 5 and self._is_valid_constexpression(p[3]):
-            if isinstance(p[1], list):
-                p[0] = ("PUSH_RANDOM", ("CONSTANT", p[1]))
+            if isinstance(p[3], list):
+                p[0] = ("PUSH_RANDOM", ("CONSTANT", p[3]))
             else:
-                p[0] = ("PUSH_RANDOM", ("CONSTANT", [p[1]]))
+                p[0] = ("PUSH_RANDOM", ("CONSTANT", [p[3]]))
         elif len(p) == 4:
             p[0] = ("PUSH_RANDOM", 0)
         else:
@@ -1975,10 +1975,10 @@ class CydcParser(object):
     def p_varexpression_inkey_constexpression(self, p):
         "varexpression : INKEY LPAREN constexpression RPAREN"
         if len(p) == 5 and self._is_valid_constexpression(p[3]):
-            if isinstance(p[1], list):
-                p[0] = ("PUSH_INKEY", ("CONSTANT", p[1]))
+            if isinstance(p[3], list):
+                p[0] = ("PUSH_INKEY", ("CONSTANT", p[3]))
             else:
-                p[0] = ("PUSH_INKEY", ("CONSTANT", [p[1]]))
+                p[0] = ("PUSH_INKEY", ("CONSTANT", [p[3]]))
         else:
             p[0] = None
 
@@ -2366,7 +2366,7 @@ class CydcParser(object):
                     last_c_pos = curr_pos
                     if len(curr_text) > 0:
                         curr_code += "[[" + curr_text + "]]"
-                    else: #with no text, adding a space to act as a separator
+                    else:  # with no text, adding a space to act as a separator
                         curr_code += " "
                     curr_text = ""
                 elif text[i] == "]" and text[i + 1] == "]":
