@@ -16,15 +16,18 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis Básica](#sintaxis-básica)
-  - [Flags y expresiones numéricas](#flags-y-expresiones-numéricas)
+  - [Variables y expresiones numéricas](#variables-y-expresiones-numéricas)
   - [Control de flujo y expresiones condicionales](#control-de-flujo-y-expresiones-condicionales)
   - [Asignaciones e indirección](#asignaciones-e-indirección)
+  - [Constantes](#constantes)
+  - [Arrays o "secuencias"](#arrays-o-secuencias)
   - [Listado de comandos](#listado-de-comandos)
-    - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v07)
-    - [**NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**](#nota-importante-para-usuarios-de-versiones-anteriores-a-v09)
     - [LABEL ID](#label-id)
     - [#ID](#id)
     - [DECLARE expression AS ID](#declare-expression-as-id)
+    - [CONST ID = expression](#const-id--expression)
+    - [DIM ID(expression)](#dim-idexpression)
+    - [DIM ID(expression) = {expression, expression...}](#dim-idexpression--expression-expression)
     - [GOTO ID](#goto-id)
     - [GOSUB ID](#gosub-id)
     - [RETURN](#return)
@@ -32,6 +35,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
     - [IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
+    - [REPEAT ... UNTIL (condexpression)](#repeat--until-condexpression)
     - [SET varID TO varexpression](#set-varid-to-varexpression)
     - [SET \[varID\] TO varexpression](#set-varid-to-varexpression-1)
     - [SET varID TO {varexpression1, varexpression2,...}](#set-varid-to-varexpression1-varexpression2)
@@ -319,7 +323,7 @@ Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que hay
 
 Este es un ejemplo resumido y auto explicativo de la sintaxis:
 
-```
+```cyd
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
     Sigue siendo texto [[
          /* Esto es un comentario y lo siguiente son comandos */
@@ -334,7 +338,7 @@ El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla s
 Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
 De nuevo, éste es un ejemplo auto explicativo:
 
-```
+```cyd
 [[ /* Comandos que ponen colores de pantalla y la borra */
    PAPER 0   /* Color de fondo a cero (negro)*/
    INK   7   /* Color de la tinta (blanco) */
@@ -361,7 +365,7 @@ Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (c
 
 También se permite una versión acortada de las etiquetas precediendo el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
 
-```
+```cyd
 [[ /* Comandos que ponen colores de pantalla y la borra */
    PAPER 0   /* Color de fondo a cero (negro)*/
    INK   7   /* Color de la tinta (blanco) */
@@ -382,15 +386,15 @@ Los comandos disponibles están descritos en su [sección](#comandos) correspond
 
 ---
 
-## Flags y expresiones numéricas
+## Variables y expresiones numéricas
 
 Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
 
-Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "flags" indistintamente a lo largo de este documento.
+Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "variables" indistintamente a lo largo de este documento.
 
 Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el carácter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
 
-```
+```cyd
 [[
 DECLARE 7 AS ColorTinta
 INK @ColorTinta
@@ -399,22 +403,22 @@ INK @ColorTinta
 
 Hay que indicar que no se puede declarar una variable dos veces, ni puede haber etiquetas y variables con los mismos nombres, pero se permiten sinónimos de la siguiente forma:
 
-```
+```cyd
 [[
 DECLARE 10 AS UnNombre
 DECLARE 10 AS OtroNombre
 ]]
 ```
 
-Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar el flag 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
+Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar el variable 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
 
-Para asignar valores a un flag, usamos el comando `SET varId TO varexpression`, de la siguiente manera:
+Para asignar valores a un variable, usamos el comando `SET varId TO varexpression`, de la siguiente manera:
 
-```
+```cyd
 [[
-  SET 0 TO 1                      /* Ponemos el flag cero a 1 */
-  SET variable TO 2               /* Ponemos el flag llamado variable a 2 */
-  SET variable2 TO @variable + 2  /* Ponemos el flag llamado variable2 al dos sumado al valor del flag llamado variable */
+  SET 0 TO 1                      /* Ponemos el variable cero a 1 */
+  SET variable TO 2               /* Ponemos el variable llamado variable a 2 */
+  SET variable2 TO @variable + 2  /* Ponemos el variable llamado variable2 al dos sumado al valor del variable llamado variable */
   SET variable2 TO @variable2 - (@variable + 2)  /* Permite paréntesis */
 ]]
 
@@ -422,16 +426,16 @@ Para asignar valores a un flag, usamos el comando `SET varId TO varexpression`, 
 
 También tenemos ahora el siguiente sinónimo con `LET varId = varexpression`, de tal forma que los ejemplos anteriores se podrían reescribir así:
 
-```
+```cyd
 [[
-  LET 0 = 1                      /* Ponemos el flag cero a 1 */
-  LET variable = 2               /* Ponemos el flag llamado variable a 2 */
-  LET variable2 = @variable + 2  /* Ponemos el flag llamado variable2 al dos sumado al valor del flag llamado variable */
+  LET 0 = 1                      /* Ponemos el variable cero a 1 */
+  LET variable = 2               /* Ponemos el variable llamado variable a 2 */
+  LET variable2 = @variable + 2  /* Ponemos el variable llamado variable2 al dos sumado al valor del variable llamado variable */
   LET variable2 = @variable2 - (@variable + 2)  /* Permite paréntesis */
 ]]
 ```
 
-Como se puede ver, a un flag se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del carácter `@`**.
+Como se puede ver, a un variable se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del carácter `@`**.
 
 Los operandos disponibles son:
 
@@ -445,11 +449,11 @@ Los operandos disponibles son:
 
 El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
 
-Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits del flag.
+Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits del variable.
 
 La mayor parte de los comandos aceptan expresiones numéricas en sus parámetros, por ejemplo:
 
-```
+```cyd
 [[
 INK 7
 INK @7
@@ -458,7 +462,7 @@ INK @7
 
 El primer comando pondrá el color del texto en blanco (color 7), mientras que el segundo pondrá el color del texto con el valor contenido en la variable número 7. Combinando con todo lo anteriormente descrito, se podría hacer:
 
-```
+```cyd
 [[
 INK 3+4
 INK @Var-1
@@ -477,8 +481,9 @@ Por último, hay una serie de comandos especiales llamados **funciones**. Estos 
 - **MAX(varexpression,varexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
 - **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
+- **LASTPOS(ID)**: Devuelve el índice de la última posición del array dado.
 
-Así que, por ejemplo `SET flag_no TO RANDOM(6)`, asigna a la variable _flag_no_ un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET flag_no TO RANDOM(6) + @var + 1`
+Así que, por ejemplo `SET variable_no TO RANDOM(6)`, asigna a la variable _variable_no_ un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET variable_no TO RANDOM(6) + @var + 1`
 
 ---
 
@@ -492,7 +497,7 @@ Salta a la etiqueta _ID_.
 
 - **GOSUB ID**
 
-Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero devuelve la ejecución a la siguiente instrucción al `GOSUB` en cuanto encuentre un comando `RETURN`.  
 
 - **RETURN**
 
@@ -515,13 +520,17 @@ verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso 
 
 Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
+- **REPEAT ... UNTIL (condexpression)**
+
+Se repiten repetidamente el texto y los comandos que haya desde `REPEAT` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
+
 Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
 
-```
+```cyd
 [[IF @var = 0 THEN GOTO salto ENDIF]]
 ```
 
-Para que se ejecute el salto, tiene que cumplirse que la variable _var_ sea igual a cero. Esto es una expresión condicional.
+Para que se ejecute el salto, tiene que cumplirse que la variable _var_ sea igual a cero. Esto es lo que se llama una expresión condicional.
 
 Una condición es siempre una comparación entre dos expresiones numéricas:
 
@@ -534,25 +543,27 @@ Una condición es siempre una comparación entre dos expresiones numéricas:
 
 Además, las condiciones se pueden combinar formando expresiones condicionales mediante operaciones lógicas. Por ejemplo:
 
-```
+```cyd
 [[IF (@variable = 0 AND @variable2 = 1) AND NOT @variable3 = 1 THEN GOTO salto ENDIF]]
 ```
 
-- Cond1 AND Cond2: Cierto si se cumple tanto como Cond1 como Cond2.
-- Cond1 OR Cond2: Cierto si se cumple Cond1 o Cond2.
-- NOT Cond1: Cierto si la condición Cond1 es falsa.
+- Cond1 **AND** Cond2: Cierto si se cumple tanto como Cond1 como Cond2.
+- Cond1 **OR** Cond2: Cierto si se cumple Cond1 o Cond2.
+- **NOT** Cond1: Cierto si la condición Cond1 es falsa.
 
-Recuerdo de nuevo que los operadores lógicos de las expresiones condicionales **no son los mismos que los operadores binarios**. Además para aquellos que tengan nociones avanzadas de programación, las condiciones no son "cortocircuitantes", es decir, se evalúan todas las operaciones lógicas y comparaciones hasta el final.
+Recuerdo de nuevo que los operadores lógicos de las expresiones condicionales **no son los mismos que los operadores binarios**.
+
+Además, para aquellos que tengan nociones avanzadas de programación, las condiciones no son "cortocircuitantes", es decir, se evalúan todas las operaciones lógicas y comparaciones hasta el final.
 
 ---
 
 ## Asignaciones e indirección
 
-Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#flags-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte.
+Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#variables-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte.
 
-La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir al flag o variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
+La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir al variable o variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
 
-- `SET var to [2+2]`: indica que vamos a asignar a _var_ el contenido del flag 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
+- `SET var to [2+2]`: indica que vamos a asignar a _var_ el contenido del variable 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
 - `SET var TO [@indice]`: aquí es donde se muestra realmente la utilidad, ya que estamos indicando que guardamos en _var_ el contenido de la variable cuyo número corresponde con el contenido de la variable _indice_. Es decir, podemos cambiar de forma dinámica la variable a la cual hacemos la asignación.
 - `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en _var_ el contenido de la variable corresponda con el contenido de _indice_ mas dos.
 - `SET [var] TO 0`: La indirección también puede usarse en el lado derecho, y en este caso, no se soportan expresiones numéricas, sólo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable _var_.
@@ -561,7 +572,7 @@ La indirección se realiza poniendo entre corchetes simples una expresión numé
 
 Si usamos los indicadores numéricos con las variables (p.ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos:
 
-```
+```cyd
 [[
 DECLARE 20 AS var : DECLARE 10 AS index: SET index AS @@var : SET [index] AS 0
 ]]
@@ -569,11 +580,11 @@ DECLARE 20 AS var : DECLARE 10 AS index: SET index AS @@var : SET [index] AS 0
 
 Vemos que esto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
   
-La indirección constituye una herramienta poderosa que nos permite implementar arrays en los flags, pero ¡ojo, que sólo tenemos 256!
+La indirección constituye una herramienta poderosa que nos permite implementar arrays en los variables, pero ¡ojo, que sólo tenemos 256! Además, no hay que confundirlos con los arrays descritos en la siguiente sección, que son de una naturaleza diferente.
 
-Por último, y relacionado con los arrays, podemos realizar asignaciones múltiples mediante la siguiente construcción:
+Por último, podemos realizar asignaciones múltiples mediante la siguiente construcción:
 
-```
+```cyd
 [[
 DECLARE 10 AS var
 SET var AS {0, 1, 2, 3}
@@ -582,7 +593,7 @@ SET var AS {0, 1, 2, 3}
 
 Esto sería equivalente a:
 
-```
+```cyd
 [[
 SET 10 AS 0
 SET 11 AS 1
@@ -591,7 +602,80 @@ SET 13 AS 3
 ]]
 ```
 
-Es decir, podemos asignar de forma consecutiva una secuencia de valores a una secuencia de variables, comenzando por la variable indicada en el lado izquierdo. Lo cual permite asignar valores para arrays, o asignar múltiples valores de forma consecutiva.
+Es decir, podemos asignar de forma consecutiva una secuencia de valores a una secuencia de variables, comenzando por la variable indicada en el lado izquierdo. Lo cual permite asignar múltiples valores de forma consecutiva.
+
+---
+
+## Constantes
+
+A lo largo del desarrollo, puede que necesitemos tener valores con una denominación significativa. De la misma forma que con las variables, podemos darles nombre con `CONST nombre = valor`, y luego usar `nombre` en su lugar. Por ejemplo:
+
+```cyd
+[[
+  CONST maxBalas = 10      /* declaramos la constante maxBalas con valor 10 */
+  PRINT maxBalas           /* imprimimos el valor 10 */
+]]
+```
+
+Al contrario que las variables, podemos usar tantas constantes como queramos, ya que durante el proceso de compilación se sustituirán por su valor correspondiente.
+
+El nombre de la constante no puede coincidir con el de otra variable, etiqueta o alguno de los comandos.
+
+---
+
+## Arrays o "secuencias"
+
+En la sección anterior hemos descrito el uso de la indirección para usar las variables como un array, pero `CYD` también dispone de una forma alternativa de crear arrays de datos mediante el comando `DIM`, de tal mnanera que con `DIM nombre(tamaño)` declaramos un array de nombre `nombre` y tamaño `tamaño`. El tamaño de un array no puede ser mayor de 256 ni ser cero. Accedemos a cada uno de los elementos del array con la nomenclatura `nombre(pos)`, donde `pos` es el número de posición del elemento a acceder dentro del array, empezando desde cero. Vamos a verlo con ejemplos:
+
+```cyd
+[[
+  DIM miArray(5)          /* Declaramos un array de 5 elementos del 0 al 4              */
+  LET miArray(3) = 1      /* Asignamos 1 a la posición 3 del array, que sería la cuarta */
+  PRINT miArray(3)         /* Imprimimos el valor almacenado en la posición 3           */
+]]
+```
+
+Si intentamos acceder a una posición fuera del rango, el motor fallará y dará un error. Para saber cual es la última posición accessible del array, tenemos la función `LASTPOS`:
+
+```cyd
+[[
+  DIM miArray(5)          /* Declaramos un array de 5 elementos  */
+  PRINT LASTPOS(miArray)  /* Devolvería 4                        */
+]]
+```
+
+Asignar valores iniciales a un array se puede hacer de la siguiente forma: `DIM nombre_array(tamaño) = {valor1, valor2, ...}`. Siguiendo el ejemplo anterior:
+
+```cyd
+[[
+  DIM miArray(5) = {1, 2, 3, 4, 5}   /* Asignamos valores al array */
+  PRINT miArray(1)                   /* Esto imprimiría 2          */   
+]]
+```
+
+Las posiciones no inicializadas siempre tendrán valor 0 por defecto, con lo que podemos tener un array con más posiciones que valores. Lo contrario nos daría un error:
+
+```cyd
+[[
+  DIM miArray(5) = {1, 2, 3}         /* Esto se permite  */
+  DIM miArray(3) = {1, 2, 3, 4, 5}   /* Esto daría error */
+]]
+```
+
+Por último, y como conveniencia, podemos dejar vacío el número de posiciones del array al declararlo con valores. El compilador creará un array de tantas posiciones como elementos haya en la inicialización:
+
+```cyd
+[[
+  DIM miArray() = {1, 2, 3}  /* Esto se permite, miArray sería de 3 posiciones  */
+  DIM miArray()              /* Esto daría error                                */
+]]
+```
+
+Este tipo arrays tienen una serie de limitaciones que hay que tener en cuenta a la hora de usarlos. La más evidente es que no pueden tener más de 256 elementos y son unidimensionales y no se pueden redimensionar.
+
+Otra limitación es que no se pueden salvar ni recuperar los datos de estos arrays mediante `SAVE` y `LOAD` directamente. La única opción es mover los datos del array desde o hacia las variables y realizar las operaciones de grabar o recuperar en las mismas.
+
+Por último, si se modifican los datos de un array, no se pueden recuperar los valores originales a menos que se haga una copia en otro array previamente.
 
 ---
 
@@ -601,29 +685,9 @@ Antes de describir los comandos, vamos a hablar resumidamente de la leyenda util
 
 - **ID** es un identificador y es una cadena de cifras, letras o subrayado. No se admiten letras acentuadas ni la ñ.
 - **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
-- **varexpression**, expresión numérica tal y como es descrita en su [sección](#flags-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
+- **varexpression**, expresión numérica tal y como es descrita en su [sección](#variables-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
 - **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
 - **varID**, identificador de variable, puede ser una _expression_ si usamos su índice numérico o un _ID_ si lo hemos declarado así con `DECLARE`.
-
-### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.7**
-
-Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
-
-| Comando obsoleto                    | Sustituir por...                          |
-| ----------------------------------- | ----------------------------------------- |
-| `IF condexpression THEN GOTO ID`    | `IF condexpression THEN GOTO ID ENDIF`    |
-| `IF condexpression THEN GOSUB ID`   | `IF condexpression THEN GOSUB ID ENDIF`   |
-| `IF condexpression OPTION GOTO ID`  | `IF condexpression OPTION GOTO ID ENDIF`  |
-| `IF condexpression OPTION GOSUB ID` | `IF condexpression OPTION GOSUB ID ENDIF` |
-
-### **NOTA IMPORTANTE PARA USUARIOS DE VERSIONES ANTERIORES A v0.9**
-
-Debido a las adiciones al lenguaje, los comandos siguientes quedan obsoletos y las aventuras que los usen no compilarán. También indico el sustituto correspondiente para recuperar la funcionalidad:
-
-| Comando obsoleto                                          | Sustituir por...                                                   |
-| --------------------------------------------------------- | ------------------------------------------------------------------ |
-| `FILLATTR x, y, width, height, ink, paper, bright, flash` | `FILLATTR x, y, width, height, ATTRVAL(ink, paper, bright, flash)` |
-| `PUTATTR x, y, ink, paper, bright, flash`                 | `PUTATTR ATTRVAL(ink, paper, bright, flash), AT (x, y)`            |
 
 ---
 
@@ -639,7 +703,19 @@ Versión resumida para declarar la etiqueta _ID_, de tal manera que `#LabelId` e
 
 ### DECLARE expression AS ID
 
-Declara el identificador _ID_ como un símbolo que representa al flag _expression_ en su lugar.
+Declara el identificador _ID_ como un símbolo que representa al variable _expression_ en su lugar.
+
+### CONST ID = expression
+
+Declara la constante _ID_ con el valor de _expression_.
+
+### DIM ID(expression)
+
+Crea un array de nombre _ID_ con tantos elementos como se indique en _expression_. El número de elementos no puede ser mayor de 256.
+
+### DIM ID(expression) = {expression, expression...}
+
+Igual que [DIM ID(expression)](#dim-idexpression), pero asignando valores separados por comas.
 
 ### GOTO ID
 
@@ -669,6 +745,10 @@ verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso 
 ### WHILE (condexpression) ... WEND
 
 Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+
+### REPEAT ... UNTIL (condexpression)
+
+Se repiten repetidamente el texto y los comandos que haya desde `REPEAT` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
 
 ### SET varID TO varexpression
 
@@ -981,7 +1061,7 @@ _Función_ que devuelve un número aleatorio entre 0 y el valor indicado en **ex
 
 ### RANDOM()
 
-_Función_ que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET flag_no TO RANDOM(0)`.
+_Función_ que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET variable_no TO RANDOM(0)`.
 
 ### RANDOM(expression, expression)
 
@@ -1105,7 +1185,7 @@ _Función_ que devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso 
 
 ### LASTPOS(ID)
 
-_Función_ que devuelve la última posición accessible del array dado.
+_Función_ que devuelve la última posición accessible del array dado. A todos los efectos, el tamaño del array menos 1.
 
 ---
 
@@ -1326,6 +1406,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
 - Error 5: No hay un módulo de música cargado para reproducir.
 - Error 6: Código de instrucción inválido.
+- Error 7: Acceso a posición del array fuera del rango.
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
