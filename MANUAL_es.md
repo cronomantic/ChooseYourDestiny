@@ -164,7 +164,7 @@ Para estos sistemas, los requerimientos son:
 - wget
 - git
 - libdsk
-  
+
 Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente.
 
 Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
@@ -225,7 +225,7 @@ Este programa es el compilador que traduce el texto de la aventura a un fichero 
 cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-csc CSC_IMAGES_PATH] [-trk TRACKS_PATH]
-              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] 
+              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
               {48k,128k,plus3} input.txt SJASMPLUS_PATH MKP3FS_PATH OUTPUT_PATH
 ```
 
@@ -335,7 +335,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
-Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.  
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.
 De nuevo, éste es un ejemplo auto explicativo:
 
 ```cyd
@@ -355,10 +355,10 @@ De nuevo, éste es un ejemplo auto explicativo:
 [[ LABEL Final : WAITKEY: END ]]
 ```
 
-El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.  
+El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 32.
 
-Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.  
+Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
 
 Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
@@ -497,7 +497,7 @@ Salta a la etiqueta _ID_.
 
 - **GOSUB ID**
 
-Salto de subrutina, hace un salto a la etiqueta _ID_, pero devuelve la ejecución a la siguiente instrucción al `GOSUB` en cuanto encuentre un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero devuelve la ejecución a la siguiente instrucción al `GOSUB` en cuanto encuentre un comando `RETURN`.
 
 - **RETURN**
 
@@ -579,7 +579,7 @@ DECLARE 20 AS var : DECLARE 10 AS index: SET index AS @@var : SET [index] AS 0
 ```
 
 Vemos que esto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
-  
+
 La indirección constituye una herramienta poderosa que nos permite implementar arrays en los variables, pero ¡ojo, que sólo tenemos 256! Además, no hay que confundirlos con los arrays descritos en la siguiente sección, que son de una naturaleza diferente.
 
 Por último, podemos realizar asignaciones múltiples mediante la siguiente construcción:
@@ -649,7 +649,7 @@ Asignar valores iniciales a un array se puede hacer de la siguiente forma: `DIM 
 ```cyd
 [[
   DIM miArray(5) = {1, 2, 3, 4, 5}   /* Asignamos valores al array */
-  PRINT miArray(1)                   /* Esto imprimiría 2          */   
+  PRINT miArray(1)                   /* Esto imprimiría 2          */
 ]]
 ```
 
@@ -723,7 +723,7 @@ Salta a la etiqueta _ID_.
 
 ### GOSUB ID
 
-Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.  
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.
 
 ### RETURN
 
@@ -823,7 +823,7 @@ Recuerda que si se borra la pantalla antes de este comando, perderás las opcion
 
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.  
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.
 El timeout tiene como máximo 65535 (16 bits).
 
 ### CHOOSE IF CHANGED THEN GOSUB ID
@@ -925,17 +925,17 @@ Equivalente a `BACKSPACE 1`.
 
 ### SFX varexpression
 
-Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.  
+Si se ha cargado un fichero de efectos de sonido, reproduce el efecto indicado.
 Si no se ha cargado dicho fichero, el comando es ignorado.
 
 ### PICTURE varexpression
 
-Carga en el buffer la imagen indicada como parámetro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.  
+Carga en el buffer la imagen indicada como parámetro. Por ejemplo, si se indica 3, cargará el fichero `003.CSC`.
 La imagen no se muestra, lo que permite controlar cuándo se realiza la carga del fichero.
 
 ### DISPLAY varexpression
 
-Muestra el contenido actual del buffer en pantalla.  
+Muestra el contenido actual del buffer en pantalla.
 El parámetro indica si se muestra o no la imagen, con un 0 no se muestra, y con un valor distinto de cero, sí.
 Se muestran tantas líneas como se hayan definido en la imagen correspondiente y el contenido de la pantalla será sobrescrito.
 
@@ -991,7 +991,7 @@ Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
 ### AT varexpression, varexpression
 
-Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.  
+Sitúa el cursor en una posición dada, relativa al área definida por el comando `MARGINS`.
 Los parámetros, por orden, son:
 
 - Columna relativa al origen del área de texto.
@@ -1147,7 +1147,7 @@ Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE
 
 - En el caso del disco, se guardará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P.ej. el fichero a cargar con 16 sería el `016.SAV`. Si el fichero ya existiese, se sobreescribirá.
 - En el caso de la cinta, se guardará en ésta. El sistema empezará inmediatamente a guardar, con lo que el autor es el responsable de indicar al usuario que se va a grabar y que tiene que poner la unidad de casette (o equivalente) a grabar. El proceso puede interrumpirse con la tecla **BREAK**.
-  
+
 El resultado de la operación se puede consultar con la función `SAVERESULT()`.
 
 ### SAVE varexpression, varId
@@ -1191,7 +1191,7 @@ _Función_ que devuelve la última posición accessible del array dado. A todos 
 
 ## Imágenes
 
-Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.  
+Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.
 Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imagen 0, `001.CSC` para la imagen 1, y así con el resto.
 
 Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar esto con otro parámetro de la misma.
@@ -1230,7 +1230,7 @@ Es importante que la codificación del fichero sea UTF-8, pero hay que tener en 
 
 Una vez tenemos la aventura, usamos el compilador `CYDC` para generar un fichero DSK o TAP. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
-A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.  
+A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.
 Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
 Para añadir efectos de sonido, imágenes y melodías, consulta las secciones correspondientes.
@@ -1323,7 +1323,7 @@ CYDC_EXTRA_PARAMS=
 
 Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos:
 
-- En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`.
+- En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`. Solo funciona en los ordenadores de 128K.
 
 - En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
 
@@ -1337,7 +1337,9 @@ Dispones de una serie de ejemplos para comprobar las capacidades del motor y apr
 
 - En la carpeta `examples\windows` tienes un ejemplo sencillo que ilustra el uso del comando `WINDOW`.
 
-Para probarlos en vivo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
+Se incluye en cada directorio un fichero TAP con el resultado compilado para que poder probarlos en vivo en un emulador.
+
+Para compilarlos por uno mismo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
 
 ---
 
@@ -1396,7 +1398,7 @@ Para facilitar la tarea de creación de un juego de caracteres alternativo, se h
 
 ## Códigos de error
 
-La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.  
+La aplicación puede generar errores en tiempo de ejecución. Los errores son de dos tipos, de disco y del motor.
 
 Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
 
