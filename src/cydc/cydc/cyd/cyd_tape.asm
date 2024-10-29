@@ -24,7 +24,7 @@
 ;
 
 
-    DEFINE RELEASE "0.9"
+    DEFINE RELEASE "1.0"
 
     DEFINE IS_PLUS3 0
 
@@ -32,8 +32,6 @@
 START_INTERPRETER:
 
 INT_STACK_ADDR EQU $8000
-
-
 
     ;Clear data area
     xor a
