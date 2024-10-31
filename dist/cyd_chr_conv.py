@@ -81,7 +81,7 @@ def check_width(value):
 
 
 def main():
-    version = "0.1.1"
+    version = "0.9.0"
     program = "Choose Your Destiny Font Conversion " + version
     exec = "cyd_font_conv"
 
@@ -90,7 +90,7 @@ def main():
     )
     gettext.textdomain(exec)
     _ = gettext.gettext
-    
+
     if sys.version_info[0] < 3:  # Python 2
         sys.exit(_("ERROR: Invalid python version"))
 
@@ -98,10 +98,20 @@ def main():
 
     arg_parser.add_argument(
         "-w",
-        "--width",
-        metavar=_("WIDTH"),
+        "--width_low",
+        metavar=_("WIDTH_LOW"),
         type=check_width,
-        help=_("Width of the characters"),
+        default=6,
+        help=_("Width of the characters of the lower character set"),
+    )
+
+    arg_parser.add_argument(
+        "-W",
+        "--width_high",
+        metavar=_("WIDTH_HIGH"),
+        type=check_width,
+        default=4,
+        help=_("Width of the characters of the upper character set"),
     )
 
     arg_parser.add_argument(
@@ -162,23 +172,26 @@ def main():
     if num_chars == 0 or num_chars > 256:
         sys.exit(_("ERROR: Invalid input file size"))
 
-    valid_extensions = {".chr": 8, ".ch8": 8, ".ch6": 6, "ch4": 4}
+    valid_extensions = {".chr", ".ch8", ".ch6", "ch4"}
     extension = os.path.splitext(os.path.basename(args.input))[1].lower()
 
-    if extension not in valid_extensions.keys():
+    if extension not in valid_extensions:
         sys.exit(_("ERROR: Invalid input file extension"))
 
-    if args.width is None:
-        chars_width = valid_extensions[extension]
-    else:
-        chars_width = args.width
+    chars_width_upper = args.width_high
+    chars_width_lower = args.width_low
 
     if verbose:
-        print(f"Chars. Width {chars_width}")
+        print(f"Chars. width upper set {chars_width_upper}")
+        print(f"Chars. width lower set {chars_width_lower}")
 
-    font_file_widths = [chars_width for x in range(num_chars)]
+    font_file_widths = [chars_width_lower for x in range(num_chars)]
+    if num_chars >= 128:
+        for x in range(128, num_chars):
+            font_file_widths[x] = chars_width_upper
 
-    print(len(font_file_widths))
+    if verbose:
+        print(f"Character set with {len(font_file_widths)} characters")
 
     if len(font_file_chars) < len(font.default_font) and len(font_file_widths) < len(
         font.default_font_sizes
