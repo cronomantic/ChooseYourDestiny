@@ -8,7 +8,7 @@ GAME="test"
 #   - The name of the TAP file or +3 disk image
 #
 # Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-TARGET="plus3"
+TARGET="48k"
 #
 # Number of lines used on SCR files at compressing
 IMGLINES="192"
