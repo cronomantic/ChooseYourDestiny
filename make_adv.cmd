@@ -9,7 +9,7 @@ REM   - The file to compile will be test.cyd with this example
 REM   - The name of the TAP file or +3 disk image
 
 REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=plus3
+SET TARGET=48k
 
 REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
