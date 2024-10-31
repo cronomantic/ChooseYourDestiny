@@ -129,7 +129,6 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Ejemplos](#ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
-  - [F.A.Q](#faq)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
   - [Licencia](#licencia)
 
@@ -299,19 +298,21 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 Esta utilidad permite convertir juegos de caracteres en formato `.chr`, `.ch8`, `.ch6` y `.ch4` en un fichero utilizable por el compilador en formato JSON. Estos formatos son editables con ZxPaintbrush.
 
 ```batch
-cyd_chr_conv.py [-h] [-w WITDH] [-v] [-V] charset.chr charset.json
+cyd_chr_conv.py [-h] [-w WITDH_LOW] [-W WITDH_UP] [-v] [-V] charset.chr charset.json
 ```
 
 Los parámetros que soporta:
 
-- **\-w, --width**: Ancho de los caracteres (1-8).
+- **\-w, --width_low**: Ancho de los caracteres (1-8) del juego de caracteres inferior.
+- **\-W, --width_high**: Ancho de los caracteres (1-8) del juego de caracteres superior.
 - **\-h, --help**: Muestra la ayuda.
 - **\-v, --verbose**: Modo verboso.
-- **\-V, --verbose**: Versión del programa.
+- **\-V, --version**: Versión del programa.
 - **charset.chr**: Huego de caracteres de entrada.
 - **charset.json**: Fichero con el juego de caracteres para el compilador.
 
-El ancho de los caracteres empleado depende de la extensión del fichero de entrada, 8 pixels para `.chr` y `.ch8`, 6 para `.ch6` y 4 para`.ch4`, pero se pueden forzar el ancho con el parámetro `-w`. Indicar que los caracteres del 127 al 143 son especiales para los cursores y siempre tendrán ancho 8, con lo que el tamaño de la fuente será ignorado en esos caracteres. Si se desea definir un ancho específico para cada carácter tendrás que editarlo en el fichero JSON de salida. Tienes más información en la sección [Juego de caracteres](#juego-de-caracteres).
+El ancho de los caracteres utilizado por defecto es 6 para el juego de caracteres inferior (desde primero al número 127) y 4 para el superior (desde el número 145 hasta el 256), pero se pueden cambiar estos valores con los parámetros `-w` y `-W` respectivamente.
+Indicar que los caracteres del 128 al 144 son especiales, ya que se usan para los cursores y siempre tendrán ancho 8, con lo que el tamaño de la fuente será ignorado en esos caracteres. Si se desea definir un ancho específico para cada carácter tendrás que editarlo en el fichero JSON de salida. Tienes más información en la sección [Juego de caracteres](#juego-de-caracteres).
 
 ---
 
@@ -1441,12 +1442,6 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 - Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
 La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
-
----
-
-## F.A.Q
-
-(TBC)
 
 ---
 
