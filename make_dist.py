@@ -84,6 +84,7 @@ DIST_FILES = [
     "LICENSE",
     "test.cyd",
     "MANUAL_es.md",
+    "MANUAL_en.md",
     "README.md",
     "dist/cyd_chr_conv.py",
     "dist/cydc_cli.py",
