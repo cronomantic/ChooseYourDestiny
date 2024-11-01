@@ -8,7 +8,7 @@ It consists of a virtual machine that interprets "tokens" found during the text 
 
 In addition, it can also display compressed images stored on the same disk, as well as sound effects based on Shiru's [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) and PT3-like melodies created with Vortex Tracker.
 
-More information in the [Manual (Spanish)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es.md) (Translation pending)
+More information in the [Manual (Spanish)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en.md). To make writing code easier, there is a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
 
 Improvements and contributions are welcome.
 
