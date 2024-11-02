@@ -114,6 +114,8 @@ RUN:
     DI
     LD C, 0
     CALL SETRAM
+    XOR A
+    OUT (254), A                    ;Black border
     CALL @INIT_ADDR
     JR RESET
 

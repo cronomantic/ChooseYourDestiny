@@ -631,20 +631,16 @@ OP_POP_PRINT:
 
     IFNDEF UNUSED_OP_MARGINS
 OP_MARGINS:
-    ld c, (hl)
+
+    ld c, (hl)       ;PosX
     inc hl
-    ld b, (hl)
+    ld b, (hl)       ;PosY
     inc hl
-    ld d, (hl)
+    ld e, (hl)       ;Width
     inc hl
-    ld a, (hl)
+    ld d, (hl)       ;Height
     inc hl
     push hl
-    push af
-    push de
-    push bc
-    ld a, c
-    push af
     call SET_MARGINS
     call SET_BACKSPACE_MARGINS_WIDTH
     pop hl
