@@ -82,6 +82,7 @@ DIST_DIRS_LINUX = [] + DIST_DIRS
 DIST_FILES = [
     "make_adventure.py",
     "LICENSE",
+    "version.txt",
     "test.cyd",
     "MANUAL_es.md",
     "MANUAL_en.md",
@@ -115,8 +116,17 @@ for d in DIST_DIRS_LINUX:
     result = [x for x in result if "__pycache__" not in x]
     DIST_FILES_LINUX += result
 
+ver_file_path = os.path.join(currentPath, "version.txt")
+version = ""
+if os.path.exists(ver_file_path):
+    with open(ver_file_path, "r") as f:
+        version = f.read()
+    version = "_" + version
+    version = version.replace("\n", "")
+    version = version.replace("\r", "")
+
 with zipfile.ZipFile(
-    os.path.join(currentPath, "ChooseYourDestiny_Win_x64.zip"),
+    os.path.join(currentPath, "ChooseYourDestiny_Win_x64" + version + ".zip"),
     mode="w",
     compression=zipfile.ZIP_DEFLATED,
     compresslevel=9,
