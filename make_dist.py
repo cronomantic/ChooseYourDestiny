@@ -75,7 +75,7 @@ for file in SRC_FILES:
     shutil.copy(srcPath, dstPath)
 
 
-DIST_DIRS = ["assets", "IMAGES", "TRACKS", "examples", "dist/cydc"]
+DIST_DIRS = ["assets", "examples", "dist/cydc"]
 DIST_DIRS_WIN32 = ["dist/python"] + DIST_DIRS
 DIST_DIRS_LINUX = [] + DIST_DIRS
 
@@ -88,9 +88,10 @@ DIST_FILES = [
     "README.md",
     "dist/cyd_chr_conv.py",
     "dist/cydc_cli.py",
+    "IMAGES/readme.txt",
+    "TRACKS/readme.txt",
 ]
 DIST_FILES_WIN32 = [
-    #"MakeAdv.bat",  # This will be deprecated
     "make_adv.cmd",
     "tools/mkp3fs.exe",
     "tools/sjasmplus.exe",
