@@ -215,112 +215,66 @@ FLASH_TMP:
 
 ;------------------------------------------------------------------------
 SET_MARGINS:
-    push ix
-    ld ix, 0
-    add ix, sp
-    ld hl, 0
-    push hl
-    ld a, 32
-    cp (ix+9)
-    jp nc, .tmp1
-    ld (ix+9), 32
-.tmp1:
-    ld a, 24
-    cp (ix+11)
-    jp nc, .tmp3
-    ld (ix+11), 24
-.tmp3:
-    ld a, (ix+9)
-    or a
-    jp nz, .tmp5
-    ld (ix+9), 1
-.tmp5:
-    ld a, (ix+11)
-    or a
-    jp nz, .tmp7
-    ld (ix+11), 1
-.tmp7:
+    ;BC = PosY, PosX
+    ;DE = Height, Width
+    ld a, c
+    cp 32     ;POSX - 32
+    jr c, 1f
     ld a, 31
-    cp (ix+5)
-    jp nc, .tmp9
-    ld (ix+5), 31
-.tmp9:
+1:  ld c, a
+
+    ld a, b
+    cp 24     ;POSY - 24
+    jr c, 1f
     ld a, 23
-    cp (ix+7)
-    jp nc, .tmp11
-    ld (ix+7), 23
-.tmp11:
-    ld a, (ix+5)
+1:  ld b, a
+
+    ld a, e
+    cp 32+1   ;Width - 33
+    jr c, 1f
+    ld a, 32
+1:  or a
+    jr nz, 2f
+    inc a
+2:  ld e, a
+
+    ld a, d
+    cp 24+1   ;Height - 25
+    jr c, 1f
+    ld a, 24  
+1:  or a
+    jr nz, 2f
+    inc a
+2:  ld d, a
+
+    ld a, d
+    add a, b    ;PosY + Height
+    cp 24+1
+    jr c, 1f
+    ld a, 24  
+1:  dec a
+    ld d, a
+
+    ld a, c    
     add a, a
     add a, a
+    add a, a   ; PosX * 8
+    ld c, a
+    ld a, e
     add a, a
-    ld (MIN_X), a
-    ld a, (ix+7)
-    ld (MIN_Y), a
-    ld a, (ix+9)
+    add a, a
+    add a, a   ;Width * 8
+    jr nc, 1f  ;Width * 8 < 256
+2:  ld a, $FF
+    jr 3f
+1:  add a, c   ;PosX + Width
+    jr c, 2b   ; >= 256
     dec a
-    add a, a
-    add a, a
-    add a, a
-    ld (ix+9), a
-    ld a, (MIN_X)
-    ld l, a
-    push hl
-    ld a, (ix+9)
-    ld l, a
-    ex de, hl
-    pop hl
-    add hl, de
-    ld (ix-2), l
-    ld (ix-1), h
-    ex de, hl
-    ld hl, 255
-    or a
-    sbc hl, de
-    jp nc, .tmp13
-    ld (ix-2), 255
-    ld (ix-1), 0
-.tmp13:
-    ld l, (ix-2)
-    ld a, l
-    ld (MAX_X), a
-    dec (ix+11)
-    ld a, (MIN_Y)
-    ld l, a
-    ld h, 0
-    push hl
-    ld a, (ix+11)
-    ld l, a
-    ex de, hl
-    pop hl
-    add hl, de
-    ld (ix-2), l
-    ld (ix-1), h
-    ex de, hl
-    ld hl, 24
-    or a
-    sbc hl, de
-    jp nc, .tmp15
-    ld (ix-2), 24
-    ld (ix-1), 0
-.tmp15:
-    ld l, (ix-2)
-    ld h, (ix-1)
-    ld a, l
-    ld (MAX_Y), a
-    ld a, (MIN_X)
-    ld (POS_X), a
-    ld a, (MIN_Y)
-    ld (POS_Y), a
-    ld sp, ix
-    pop ix
-    exx
-    pop hl
-    pop bc
-    pop bc
-    pop bc
-    ex (sp), hl
-    exx
+3:  ld e, a
+    ld (MIN_X), bc
+    ld (MAX_X), de 
+    ld (POS_X), bc
+
     xor a
     ld (PRINTED_LINES), a
     ret
