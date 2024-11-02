@@ -1,9 +1,7 @@
-#NAME:=EFD-EN
-NAME:=delerict
-#NAME:=test
+NAME:=test
 CYD_FILENAME:=$(NAME).cyd
 
-TAP_TARGET:=plus3
+TAP_TARGET:=128k
 
 .PHONY: clean clean_all disk test_disk tape test_tape all
 
