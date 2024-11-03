@@ -934,7 +934,7 @@ class CydcParser(object):
             if isinstance(p[6], list):
                 p[0] += p[6]
             else:
-                p[0] = [p[6]]
+                p[0] += [p[6]]
             if isinstance(p[8], list):
                 p[0] += p[8]
             else:

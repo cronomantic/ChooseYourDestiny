@@ -8,7 +8,7 @@ It consists of a virtual machine that interprets "tokens" found during the text 
 
 In addition, it can also display compressed images stored on the same disk, as well as sound effects based on Shiru's [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) and PT3-like melodies created with Vortex Tracker.
 
-More information in the [Manual (Spanish)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en). To make writing code easier, there is a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
+More information in the [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en). To make writing code easier, there is a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
 
 Improvements and contributions are welcome.
 
@@ -20,6 +20,6 @@ Consiste una máquina virtual que va interpretando "tokens" que se encuentra dur
 
 Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
 
-Más información en el [Manual (Español)](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es) para aprender. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
+Más información en el [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es) para aprender. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
 
 Mejoras y aportaciones son bienvenidas.
