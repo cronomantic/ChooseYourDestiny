@@ -582,11 +582,6 @@ class CydcParser(object):
         else:
             p[0] = None
 
-        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
-        #     p[0] = ("WAIT", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
-        # else:
-        #     p[0] = None
-
     def p_statement_pause(self, p):
         "statement : PAUSE constexpression"
         if len(p) == 3 and self._is_valid_constexpression(p[2]):
@@ -597,11 +592,6 @@ class CydcParser(object):
         else:
             p[0] = None
 
-        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
-        #     p[0] = ("PAUSE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
-        # else:
-        #     p[0] = None
-
     def p_statement_typerate(self, p):
         "statement : TYPERATE constexpression"
         if len(p) == 3 and self._is_valid_constexpression(p[2]):
@@ -611,11 +601,6 @@ class CydcParser(object):
                 p[0] = ("TYPERATE", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
         else:
             p[0] = None
-
-        # if self._check_word_value(p[2], p.lexer.lexer.lineno):
-        #     p[0] = ("TYPERATE", p[2] & 0xFF, (p[2] >> 8) & 0xFF)
-        # else:
-        #     p[0] = None
 
     def p_statement_window(self, p):
         "statement : WINDOW constexpression"
@@ -666,115 +651,6 @@ class CydcParser(object):
                 p[0] += [p[12]]
             p[0] += [("POP_ALL_BLIT",)]
 
-        # if len(p) == 13:
-        #     if (
-        #         isinstance(p[2], tuple)
-        #         and isinstance(p[4], tuple)
-        #         and isinstance(p[6], tuple)
-        #         and isinstance(p[8], tuple)
-        #     ):
-        #         t1 = p[2]
-        #         t2 = p[4]
-        #         t3 = p[6]
-        #         t4 = p[8]
-        #         if (
-        #             (t1[0] == "PUSH_D")
-        #             and (t2[0] == "PUSH_D")
-        #             and (t3[0] == "PUSH_D")
-        #             and (t4[0] == "PUSH_D")
-        #             and isinstance(t1[1], int)
-        #             and isinstance(t2[1], int)
-        #             and isinstance(t3[1], int)
-        #             and isinstance(t4[1], int)
-        #         ):
-        #             (row, col, width, height) = self._fix_borders(
-        #                 t2[1], t1[1], t3[1], t4[1]
-        #             )
-        #             if isinstance(p[10], tuple) and isinstance(p[12], tuple):
-        #                 t1 = p[10]
-        #                 t2 = p[12]
-        #                 if (
-        #                     (t1[0] == "PUSH_D")
-        #                     and (t2[0] == "PUSH_D")
-        #                     and isinstance(t1[1], int)
-        #                     and isinstance(t2[1], int)
-        #                 ):
-        #                     row_d = t2[1]
-        #                     col_d = t1[1]
-        #                     if row_d >= 24:
-        #                         row_d = 23
-        #                     if col_d >= 32:
-        #                         col_d = 31
-        #                     if row_d < 0:
-        #                         row_d = 0
-        #                     if col_d < 0:
-        #                         col_d = 0
-        #                     p[0] = ("BLIT", col, row, width, height, col_d, row_d)
-        #                 else:
-        #                     p[0] = [t1, t2, ("POP_BLIT", col, row, width, height)]
-        #             else:
-        #                 if isinstance(p[10], list):
-        #                     p[0] = p[10]
-        #                 else:
-        #                     p[0] = [p[10]]
-        #                 if isinstance(p[12], list):
-        #                     p[0] += p[12]
-        #                 else:
-        #                     p[0] += [p[12]]
-        #                 p[0] += [("POP_BLIT", col, row, width, height)]
-        #         else:
-        #             if isinstance(p[2], list):
-        #                 p[0] = p[2]
-        #             else:
-        #                 p[0] = [p[2]]
-        #             if isinstance(p[4], list):
-        #                 p[0] += p[4]
-        #             else:
-        #                 p[0] += [p[4]]
-        #             if isinstance(p[6], list):
-        #                 p[0] += p[6]
-        #             else:
-        #                 p[0] += [p[6]]
-        #             if isinstance(p[8], list):
-        #                 p[0] += p[8]
-        #             else:
-        #                 p[0] += [p[8]]
-        #             if isinstance(p[10], list):
-        #                 p[0] += p[10]
-        #             else:
-        #                 p[0] += [p[10]]
-        #             if isinstance(p[12], list):
-        #                 p[0] += p[12]
-        #             else:
-        #                 p[0] += [p[12]]
-        #             p[0] += [("POP_ALL_BLIT",)]
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] += [p[4]]
-        #         if isinstance(p[6], list):
-        #             p[0] += p[6]
-        #         else:
-        #             p[0] += [p[6]]
-        #         if isinstance(p[8], list):
-        #             p[0] += p[8]
-        #         else:
-        #             p[0] += [p[8]]
-        #         if isinstance(p[10], list):
-        #             p[0] += p[10]
-        #         else:
-        #             p[0] += [p[10]]
-        #         if isinstance(p[12], list):
-        #             p[0] += p[12]
-        #         else:
-        #             p[0] += [p[12]]
-        #         p[0] += [("POP_ALL_BLIT",)]
-
     def p_statement_fillattr(self, p):
         "statement : FILLATTR varexpression COMMA varexpression COMMA varexpression COMMA varexpression COMMA varexpression"
         if len(p) == 11:
@@ -799,63 +675,6 @@ class CydcParser(object):
             else:
                 p[0] += [p[10]]
             p[0] += [("POP_FILLATTR",)]
-
-        # if len(p) == 11:
-        #     col = None
-        #     row = None
-        #     width = None
-        #     height = None
-        #     attr = None
-        #     if isinstance(p[2], tuple):
-        #         t1 = p[2]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             col = t1[1]
-        #     if isinstance(p[4], tuple):
-        #         t1 = p[4]
-        #         if (t1[1] == "PUSH_D") and isinstance(t1[1], int):
-        #             row = t1[1]
-        #     if isinstance(p[6], tuple):
-        #         t1 = p[6]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             width = t1[1]
-        #     if isinstance(p[8], tuple):
-        #         t1 = p[8]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             height = t1[1]
-        #     if isinstance(p[10], tuple):
-        #         t1 = p[10]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             attr = t1[1]
-        #     if (
-        #         col is not None
-        #         and row is not None
-        #         and width is not None
-        #         and height is not None
-        #         and attr is not None
-        #     ):
-        #         p[0] = ("FILLATTR", col, row, width, height, attr)
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] += [p[4]]
-        #         if isinstance(p[6], list):
-        #             p[0] += p[6]
-        #         else:
-        #             p[0] += [p[6]]
-        #         if isinstance(p[8], list):
-        #             p[0] += p[8]
-        #         else:
-        #             p[0] += [p[8]]
-        #         if isinstance(p[10], list):
-        #             p[0] += p[10]
-        #         else:
-        #             p[0] += [p[10]]
-        #         p[0] += [("POP_FILLATTR",)]
 
     def p_statement_fadeout(self, p):
         """
@@ -958,103 +777,6 @@ class CydcParser(object):
         else:
             p[0] = None
 
-        # if len(p) == 9:
-        #     attr = None
-        #     mask = None
-        #     row = None
-        #     col = None
-        #     if isinstance(p[2], tuple):
-        #         t1 = p[2]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             attr = t1[1]
-        #     if isinstance(p[4], tuple):
-        #         t2 = p[4]
-        #         if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
-        #             mask = t2[1]
-        #     if isinstance(p[6], tuple):
-        #         t3 = p[6]
-        #         if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
-        #             col = t3[1]
-        #     if isinstance(p[8], tuple):
-        #         t4 = p[8]
-        #         if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
-        #             row = t4[1]
-        #     if attr is not None and mask is not None:
-        #         if row is not None and col is not None:
-        #             p[0] = ("PUTATTR", col, row, mask, attr)
-        #         else:
-        #             if isinstance(p[6], list):
-        #                 p[0] = p[6]
-        #             else:
-        #                 p[0] = [p[6]]
-        #             if isinstance(p[8], list):
-        #                 p[0] += p[8]
-        #             else:
-        #                 p[0] += [p[8]]
-        #             p[0] += [("POP_PUTATTR", mask, attr)]
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] += [p[4]]
-        #         if isinstance(p[6], list):
-        #             p[0] += p[6]
-        #         else:
-        #             p[0] = [p[6]]
-        #         if isinstance(p[8], list):
-        #             p[0] += p[8]
-        #         else:
-        #             p[0] += [p[8]]
-        #         p[0] += [("POP_ALL_PUTATTR",)]
-        # elif len(p) == 7:
-        #     attr = None
-        #     row = None
-        #     col = None
-        #     if isinstance(p[2], tuple):
-        #         t1 = p[2]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             attr = t1[1]
-        #     if isinstance(p[4], tuple):
-        #         t2 = p[4]
-        #         if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
-        #             col = t2[1]
-        #     if isinstance(p[6], tuple):
-        #         t3 = p[6]
-        #         if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
-        #             row = t3[1]
-        #     if attr is not None:
-        #         if row is not None and col is not None:
-        #             p[0] = ("PUTATTR", col, row, 0xFF, attr)
-        #         else:
-        #             if isinstance(p[4], list):
-        #                 p[0] = p[4]
-        #             else:
-        #                 p[0] = [p[4]]
-        #             if isinstance(p[6], list):
-        #                 p[0] += p[6]
-        #             else:
-        #                 p[0] += [p[6]]
-        #             p[0] += [("POP_PUTATTR", 0xFF, attr)]
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         p[0] += [("PUSH_D", 0xFF)]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] = [p[4]]
-        #         if isinstance(p[6], list):
-        #             p[0] += p[6]
-        #         else:
-        #             p[0] += [p[6]]
-        #         p[0] += [("POP_ALL_PUTATTR",)]
-
     def p_statement_at(self, p):
         "statement : AT varexpression COMMA varexpression"
         if len(p) == 5:
@@ -1067,38 +789,6 @@ class CydcParser(object):
             else:
                 p[0] += [p[4]]
             p[0] += [("POP_AT",)]
-
-        # if len(p) == 5:
-        #     col_d = None
-        #     row_d = None
-        #     if isinstance(p[2], tuple):
-        #         t1 = p[2]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             col_d = t1[1]
-        #             if col_d >= 32:
-        #                 col_d = 31
-        #             if col_d < 0:
-        #                 col_d = 0
-        #     if isinstance(p[4], tuple):
-        #         t2 = p[4]
-        #         if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
-        #             row_d = t2[1]
-        #             if row_d >= 24:
-        #                 row_d = 23
-        #             if row_d < 0:
-        #                 row_d = 0
-        #     if col_d is not None and row_d is not None:
-        #         p[0] = ("AT", col_d, row_d)
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] += [p[4]]
-        #         p[0] += [("POP_AT",)]
 
     def p_statement_menuconfig(self, p):
         """
@@ -1153,71 +843,6 @@ class CydcParser(object):
             p[0] += [("POP_MENUCONFIG",)]
         else:
             p[0] = None
-
-        # if len(p) in [9, 7, 5]:
-        #     col_d = None
-        #     row_d = None
-        #     init_d = None
-        #     show_d = None
-        #     if isinstance(p[2], tuple):
-        #         t1 = p[2]
-        #         if (t1[0] == "PUSH_D") and isinstance(t1[1], int):
-        #             col_d = t1[1]
-        #             if col_d >= 32:
-        #                 col_d = 31
-        #             if col_d < 0:
-        #                 col_d = 0
-        #     if isinstance(p[4], tuple):
-        #         t2 = p[4]
-        #         if (t2[0] == "PUSH_D") and isinstance(t2[1], int):
-        #             row_d = t2[1]
-        #             if row_d >= 32:
-        #                 row_d = 31
-        #             if row_d < 0:
-        #                 row_d = 0
-        #     if len(p) == 5:
-        #         init_d = 0
-        #     elif isinstance(p[6], tuple):
-        #         t3 = p[6]
-        #         if (t3[0] == "PUSH_D") and isinstance(t3[1], int):
-        #             init_d = t3[1]
-        #             if init_d >= 32:
-        #                 init_d = 0
-        #     if len(p) in [5, 7]:
-        #         show_d = 1
-        #     elif isinstance(p[8], tuple):
-        #         t4 = p[8]
-        #         if (t4[0] == "PUSH_D") and isinstance(t4[1], int):
-        #             show_d = t4[1]
-        #     if (
-        #         col_d is not None
-        #         and row_d is not None
-        #         and init_d is not None
-        #         and show_d is not None
-        #     ):
-        #         p[0] = ("MENUCONFIG", col_d, row_d, init_d, show_d)
-        #     else:
-        #         if isinstance(p[2], list):
-        #             p[0] = p[2]
-        #         else:
-        #             p[0] = [p[2]]
-        #         if isinstance(p[4], list):
-        #             p[0] += p[4]
-        #         else:
-        #             p[0] += [p[4]]
-        #         if init_d is not None and isinstance(init_d, int):
-        #             p[0] += [("PUSH_D", init_d)]
-        #         elif isinstance(p[6], list):
-        #             p[0] += p[6]
-        #         else:
-        #             p[0] += [p[6]]
-        #         if show_d is not None and isinstance(show_d, int):
-        #             p[0] += [("PUSH_D", show_d)]
-        #         elif isinstance(p[8], list):
-        #             p[0] += p[8]
-        #         else:
-        #             p[0] += [p[8]]
-        #         p[0] += [("POP_MENUCONFIG",)]
 
     def p_statement_save(self, p):
         """
@@ -1502,42 +1127,6 @@ class CydcParser(object):
                 p[0] = None
         elif len(p) == 2:
             p[0] = ("CHOOSE",)
-
-        # if len(p) == 8 and p[3] == "WAIT":
-        #     if self._check_word_value(
-        #         p[4], p.lexer.lexer.lineno
-        #     ) and self._symbol_usage(p[7], SymbolType.LABEL, p.lexer.lexer.lineno):
-        #         if p[6] == "GOTO":
-        #             p[0] = (
-        #                 "CHOOSE_W",
-        #                 p[4] & 0xFF,
-        #                 (p[4] >> 8) & 0xFF,
-        #                 0x00,
-        #                 p[7],
-        #                 0,
-        #                 0,
-        #             )
-        #         elif p[6] == "GOSUB":
-        #             p[0] = (
-        #                 "CHOOSE_W",
-        #                 p[4] & 0xFF,
-        #                 (p[4] >> 8) & 0xFF,
-        #                 0xFF,
-        #                 p[7],
-        #                 0,
-        #                 0,
-        #             )
-        #         else:
-        #             p[0] = None
-        #     else:
-        #         p[0] = None
-        # elif len(p) == 7 and p[3] == "CHANGED":
-        #     if self._symbol_usage(p[6], SymbolType.LABEL, p.lexer.lexer.lineno):
-        #         p[0] = ("CHOOSE_CH", p[6], 0, 0)
-        #     else:
-        #         p[0] = None
-        # elif len(p) == 2:
-        #     p[0] = ("CHOOSE",)
 
     def p_statement_option_goto(self, p):
         """
@@ -1944,16 +1533,6 @@ class CydcParser(object):
                 ("PUSH_D", ("CONSTANT", p1)),
                 ("ADD",),
             ]
-            # limit = p[5] - p[3]
-            # if limit <= 0 or limit > 255:
-            #     self.errors.append(f"Invalid values on RANDOM({p[3]}, {p[5]})")
-            #     p[0] = None
-            # else:
-            #     p[0] = [
-            #         ("PUSH_RANDOM", limit),
-            #         ("PUSH_D", p[3]),
-            #         ("ADD",),
-            #     ]
         else:
             p[0] = None
 
