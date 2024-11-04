@@ -2245,17 +2245,20 @@ FILLATTR:
     DEFINE PUT_ATTR_USED
     ENDIF
 OP_PUTATTR:
-    ;Get Rows
-    ld c, (hl)
-    inc hl
-    ;Get Cols
-    ld b, (hl)
-    inc hl
-    ld e, (hl)
-    inc hl
+    ;Get Attr
     ld d, (hl)
     inc hl
+    ;Get mask
+    ld e, (hl)
+    inc hl
+    ;Get Cols
+    ld c, (hl)
+    inc hl
+    ;Get Rows
+    ld b, (hl)
+    inc hl
     push hl
+    call POS_ADJUST
     call PUT_ATTR
     pop hl
     jp EXEC_LOOP
@@ -2266,20 +2269,20 @@ OP_PUTATTR:
     DEFINE PUT_ATTR_USED
     ENDIF
 OP_POP_PUTATTR:
-    ;Get Rows
-    ld b, (ix+0)
     ;Get Cols
-    ld c, (ix+1)
-    inc ix
-    inc ix
-    call POS_ADJUST
-    ;Get mask
-    ld e, (hl)
+    ld c, (hl)
     inc hl
-    ;Get Attr
-    ld d, (hl)
+    ;Get Rows
+    ld b, (hl)
     inc hl
     push hl
+    call POS_ADJUST
+    ;Get mask
+    ld e, (ix+0)
+    ;Get Attr
+    ld d, (ix+1)
+    inc ix
+    inc ix
     call PUT_ATTR
     pop hl
     jp EXEC_LOOP
@@ -2319,8 +2322,8 @@ PUT_ATTR:
     ld a, e
     cpl
     and (hl)        ;AND with mask
-    or d              ;OR with new values
-    ld (hl), a        ;Store value again
+    or d            ;OR with new values
+    ld (hl), a      ;Store value again
     ret
     ENDIF
 
