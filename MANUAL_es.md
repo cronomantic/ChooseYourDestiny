@@ -849,7 +849,7 @@ Elimina las opciones almacenadas en el menú.
 
 ### MENUCONFIG varexpression, varexpression, varexpression, varexpression
 
-Configura el menú de opciones. Los parñametros que se pueden configurar son los siguientes:
+Configura el menú de opciones. Los parámetros que se pueden configurar son los siguientes:
 
 - El primer parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **P** y **O** respectivamente.
 - El segundo parámetro determina el incremento o decremento del número de opción seleccionado cuando pulsamos **A** y **Q** respectivamente.
