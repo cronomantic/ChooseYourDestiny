@@ -244,7 +244,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
-- **\-trim**: (Experimental) Elimina el código de aquellos comandos que no se usen en la aventura.
+- **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
