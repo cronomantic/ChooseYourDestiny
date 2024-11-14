@@ -183,6 +183,7 @@ class CydcLexer(object):
         "WINDOW": "WINDOW",
         "CHARSET": "CHARSET",
         "LASTPOS": "LASTPOS",
+        "KEMPSTON": "KEMPSTON",
     }
 
     # token_list

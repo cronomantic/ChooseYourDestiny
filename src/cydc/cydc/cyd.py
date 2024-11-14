@@ -80,6 +80,7 @@ def get_asm_plus3(
     has_tracks=False,
     dsk_path="",
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
     if sfx_asm is None:
@@ -132,6 +133,9 @@ def get_asm_plus3(
     asm += "    PAGE 0\n"
     asm += "\n"
 
+    if pause_start_value is not None:
+        asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -158,6 +162,7 @@ def get_asm_128(
     has_tracks=False,
     tap_path="",
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
     if sfx_asm is None:
@@ -206,6 +211,9 @@ def get_asm_128(
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
 
+    if pause_start_value is not None:
+        asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -233,6 +241,7 @@ def get_asm_48(
     sfx_asm,
     tap_path="",
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
     if sfx_asm is None:
@@ -272,6 +281,9 @@ def get_asm_48(
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
 
+    if pause_start_value is not None:
+        asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -296,6 +308,7 @@ def get_asm_128_size(
     sfx_asm,
     has_tracks=False,
     unused_opcodes=None,
+    pause_start_value=None,
 ):
     asm = get_asm_128(
         index="",
@@ -307,6 +320,7 @@ def get_asm_128_size(
         has_tracks=has_tracks,
         tap_path="",
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
@@ -337,6 +351,7 @@ def get_asm_48_size(
     charw,
     sfx_asm,
     unused_opcodes=None,
+    pause_start_value=None,
 ):
     asm = get_asm_48(
         index="",
@@ -347,6 +362,7 @@ def get_asm_48_size(
         sfx_asm=sfx_asm,
         tap_path="",
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
@@ -378,6 +394,7 @@ def get_asm_plus3_size(
     sfx_asm,
     has_tracks=False,
     unused_opcodes=None,
+    pause_start_value=None,
 ):
     asm = get_asm_plus3(
         index="",
@@ -389,6 +406,7 @@ def get_asm_plus3_size(
         has_tracks=has_tracks,
         dsk_path="",
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
@@ -427,6 +445,7 @@ def do_asm_128(
     loading_scr=None,
     has_tracks=False,
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
 
@@ -447,6 +466,7 @@ def do_asm_128(
         has_tracks=has_tracks,
         tap_path=tap_path,
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name=name,
     )
 
@@ -527,6 +547,7 @@ def do_asm_48(
     sfx_asm,
     loading_scr=None,
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -545,6 +566,7 @@ def do_asm_48(
         sfx_asm=sfx_asm,
         tap_path=tap_path,
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name=name,
     )
 
@@ -623,6 +645,7 @@ def do_asm_plus3(
     loading_scr=None,
     has_tracks=False,
     unused_opcodes=None,
+    pause_start_value=None,
     name="",
 ):
 
@@ -657,6 +680,7 @@ def do_asm_plus3(
         has_tracks=has_tracks,
         dsk_path=dsk_path,
         unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
         name=name,
     )
 
@@ -714,8 +738,6 @@ def do_asm_plus3(
                 file_dsk.write(file_block.read())
             if os.path.exists(block_path):
                 os.remove(block_path)
-
-
 
 
 def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
