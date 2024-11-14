@@ -22,7 +22,8 @@ FILELIST = $(CYD_FILENAME) $(CSC_LIST) $(PT3_LIST)
 
 EXTRA_PARAM = -v -code
 
-# EXTRA_PARAM += -trim
+#EXTRA_PARAM += -trim
+#EXTRA_PARAM += -pause 5
 
 ifneq (,$(wildcard ./charset.json))
 EXTRA_PARAM += -c ./charset.json

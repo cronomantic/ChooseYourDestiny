@@ -60,6 +60,22 @@ INT_STACK_ADDR EQU $8000
 
     xor a
     call BORDER
+
+    IFDEF PAUSE_AT_START_VAL
+    ld de, PAUSE_AT_START_VAL
+    ld (DOWN_COUNTER), de
+1:  call INKEY_MENU
+    or a
+    jr nz, 2f
+    ld bc, (DOWN_COUNTER)
+    ld a, b
+    or c
+    jr nz, 1b
+2:  call INKEY_MENU
+    or a
+    jr nz, 2b
+    ENDIF
+
     xor a
     call PAPER
     ld a, 7
