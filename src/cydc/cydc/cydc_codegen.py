@@ -155,6 +155,8 @@ class CydcCodegen(object):
         "PUSH_VAL_ARRAY": 0x7A,
         "POP_VAL_ARRAY": 0x7B,
         "PUSH_LEN_ARRAY": 0x7C,
+        "SET_KEMPSTON": 0x7D,
+        "PUSH_KEMPSTON": 0x7E,
     }
 
     def __init__(self, gettext):
@@ -570,6 +572,9 @@ class CydcCodegen(object):
                         skip = True
                     elif c[0] == "PUSH_INKEY":
                         c = ("INKEY", next[1], c[1])
+                        skip = True
+                    elif c[0] == "PUSH_KEMPSTON":
+                        c = ("SET_KEMPSTON", next[1])
                         skip = True
                     elif c[0] == "PUSH_XPOS":
                         c = ("SET_XPOS", next[1])

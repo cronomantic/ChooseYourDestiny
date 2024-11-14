@@ -1588,6 +1588,10 @@ class CydcParser(object):
     def p_varexpression_inkey(self, p):
         "varexpression : INKEY LPAREN RPAREN"
         p[0] = ("PUSH_INKEY", 0)
+        
+    def p_varexpression_kempston(self, p):
+        "varexpression : KEMPSTON LPAREN RPAREN"
+        p[0] = ("PUSH_KEMPSTON",)
 
     def p_varexpression_xpos(self, p):
         "varexpression : XPOS LPAREN RPAREN"
