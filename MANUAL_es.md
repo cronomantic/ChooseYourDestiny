@@ -97,6 +97,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RANDOM(expression, expression)](#randomexpression-expression)
     - [INKEY(expression)](#inkeyexpression)
     - [INKEY()](#inkey)
+    - [KEMPSTON()](#kempston)
     - [MIN(varexpression,varexpression)](#minvarexpressionvarexpression)
     - [MAX(varexpression,varexpression)](#maxvarexpressionvarexpression)
     - [YPOS()](#ypos)
@@ -245,6 +246,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
+- **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
@@ -336,7 +338,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
-Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE` o `ENTER`.
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE`, `M` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú.
 De nuevo, éste es un ejemplo auto explicativo:
 
 ```cyd
@@ -477,7 +479,8 @@ Por último, hay una serie de comandos especiales llamados **funciones**. Estos 
 - **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
 - **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
 - **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
-- **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada.
+- **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada (sólo teclado).
+- **KEMPSTON()** Devuelve los botones pulsados en un joystick kempston conectado al Spectrum.
 - **MIN(varexpression,varexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **MAX(varexpression,varexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **POSY()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
@@ -818,7 +821,8 @@ Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que
 ### CHOOSE
 
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
-La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A**. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
+La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. También se pueden usar las direcciones correspondientes del joystick Kempston.
+Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A** ó **arriba** y **abajo** en el joystick Kempston. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
 Recuerda que si se borra la pantalla antes de este comando, perderás las opciones y dará un error de sistema.
 
@@ -1070,11 +1074,21 @@ _Función_ que devuelve un número aleatorio entre el valor indicado en el prime
 
 ### INKEY(expression)
 
-_Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero, se espera hasta que se pulse una tecla. Si es distinto de cero, devuelve el código de la tecla pulsada en ese momento, y cero si no hay ninguna tecla pulsada.
+_Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero, se espera hasta que se pulse una tecla. Si es distinto de cero, devuelve el código de la tecla pulsada en ese momento, y cero si no hay ninguna tecla pulsada. **Sólo responde a las pulsaciones del teclado, no del joystick**
 
 ### INKEY()
 
 _Función_ que espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada. Es equivalente a `INKEY(0)`
+
+### KEMPSTON()
+
+_Función_ que devuelve las teclas pulsadas en un joystick kempston conectado. Los bits siguientes estarán a uno si el botón correspondiente está pulsado:
+
+- Bit 0 = Derecha.
+- Bit 1 = Izquierda.
+- Bit 2 = Abajo.
+- Bit 3 = Arriba.
+- Bit 4 = Disparo.
 
 ### MIN(varexpression,varexpression)
 

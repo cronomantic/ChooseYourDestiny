@@ -89,3 +89,71 @@ INKEY_NO_WAIT:
 .empty_inkey:
     pop bc
     ret
+
+KEYPRESS_RIGHT EQU %00000001
+KEYPRESS_LEFT  EQU %00000010
+KEYPRESS_DOWN  EQU %00000100
+KEYPRESS_UP    EQU %00001000
+KEYPRESS_FIRE  EQU %00010000
+
+;   xxxKUDLR
+INKEY_MENU:
+    push bc
+    xor a
+    ld c, a
+    call INKEY
+.right:
+    cp 'p'
+    jp nz, .left
+    ld b, a
+    ld a, c
+    or KEYPRESS_RIGHT
+    ld c, a
+    ld a, b
+.left:
+    cp 'o'
+    jp nz, .down
+    ld b, a
+    ld a, c
+    or KEYPRESS_LEFT
+    ld c, a
+    ld a, b
+.down:
+    cp 'a'
+    jp nz, .up
+    ld b, a
+    ld a, c 
+    or KEYPRESS_DOWN
+    ld c, a
+    ld a, b
+.up:
+    cp 'q'
+    jp nz, .selected
+    ld b, a
+    ld a, c
+    or KEYPRESS_UP
+    ld c, a
+    ld a, b
+.selected:
+    cp ' '
+    jp z, .selected_enabled
+    cp 'm'
+    jp z, .selected_enabled
+    cp 13
+    jp nz, .kempston
+.selected_enabled:
+    ld a, KEYPRESS_FIRE
+    or c
+    ld c, a
+.kempston:
+    call KEMPSTON
+    or c
+    pop bc
+    ret
+
+KEMPSTON:
+    in a, ($1F)    ;Read kempston
+    cp $FF         ;Bus value if joystick not connected
+    ret nz
+    xor a
+    ret

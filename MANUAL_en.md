@@ -88,6 +88,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [RANDOM(expression, expression)](#randomexpression-expression)
     - [INKEY(expression)](#inkeyexpression)
     - [INKEY()](#inkey)
+    - [KEMPSTON()](#kempston)
     - [MIN(varexpression,varexpression)](#minvarexpressionvarexpression)
     - [MAX(varexpression,varexpression)](#maxvarexpressionvarexpression)
     - [YPOS()](#ypos)
@@ -236,6 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-v**: Verbose mode, gives more information about the process.
 - **\-V**: Indicates the version of the program.
 - **\-trim**: Removes code from commands that are not used in the adventure to make the interpreter smaller.
+- **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
 
 -**{48k,128k,plus3}**: Spectrum model to be used:
   -- **48k**: Version for tape in TAP format, does not include the PT3 player and everything is loaded at once. It depends on the size of the available memory.
@@ -327,7 +329,7 @@ This is text again but white, and watch out for the line break that precedes it!
 
 The interpreter runs through the text from the beginning, printing it on the screen if it is "printable text." When a complete word does not fit on the rest of the line, it prints it on the next line. And if it does not fit on the rest of the screen, a wait is generated and the user is asked to press the confirmation key to delete the section of text and continue printing (this last behavior is optional).
 
-When the interpreter detects commands, it executes them sequentially, unless it encounters breaks. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 8 at a time), which can be chosen with the `P` and `Q` keys and selected with `SPACE` or `ENTER`.
+When the interpreter detects commands, it executes them sequentially, unless it encounters breaks. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 8 at a time), which can be chosen with the `P` and `Q` keys and selected with `SPACE` or `ENTER`. It supports a Kempston joystick too.
 Again, this is a self-explanatory example:
 
 ```cyd
@@ -468,7 +470,8 @@ Finally, there are a number of special commands called **functions**. These comm
 - **RANDOM(expression)**: Returns a random number between 0 and the value indicated in **expression** minus one. If zero is indicated, the result will be as if it were between 0 and 255.
 - **RANDOM()**: Returns a random number between 0 and 255. It is the equivalent of `RANDOM(0)`.
 - **RANDOM(expression,expression)**: Returns a random number between the value indicated in the first parameter and the second, both inclusive.
-- **INKEY()** Waits until a key is pressed and returns the code of the key pressed.
+- **INKEY()** Waits until a key is pressed and returns the code of the key pressed. (Only for keyboard).
+- **KEMPSTON()** Returns the buttons pressed on a Kempston joystick connected to the Spectrum.
 - **MIN(varexpression,varexpression)**: Limits the value of the first parameter to the minimum indicated by the second. That is, if parameter 1 is less than parameter 2, parameter 2 is returned, otherwise 1 is returned.
 - **MAX(varexpression,varexpression)**: Limits the value of the first parameter to the maximum indicated by the second. That is, if parameter 1 is greater than parameter 2, parameter 2 is returned, otherwise 1 is returned.
 - **POSY()**: Returns the current row the cursor is on in 8x8 coordinates.
@@ -807,7 +810,8 @@ Works the same as `OPTION GOSUB ID`, but we assign it a specific value that will
 ### CHOOSE
 
 Stops execution and allows the player to select one of the options currently on the screen. It will jump to the label indicated in the corresponding option.
-Selection is made with the keys **O** and **P** for "horizontal scrolling" and **Q** and **A** for vertical scrolling. When the keys are pressed, a pointer moves over the list of options, incrementing or decrementing according to the current configuration of the pointer (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical scrolling is configured with the keys **Q** and **A**. It is the user's responsibility to place the option points on the screen in a way that is coherent with the configured menu movement.
+Selection is made with the keys **O** and **P** for "horizontal scrolling" and **Q** and **A** for vertical scrolling. The corresponding Kempston joystick directions can also be used.
+When the keys are pressed, a pointer moves over the list of options, incrementing or decrementing according to the current configuration of the pointer (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical scrolling is configured with the keys **Q** and **A**, or **up** and **down** on the Kempston joystick. It is the user's responsibility to place the option points on the screen in a way that is coherent with the configured menu movement.
 
 Remember that if you clear the screen before this command, you will lose the options and a system error will be given.
 
@@ -1009,11 +1013,21 @@ _Function_ that returns a random number between the value indicated in the first
 
 ### INKEY(expression)
 
-_Function_ that returns the code of the key pressed. If the parameter is zero, it waits until a key is pressed. If it is non-zero, it returns the code of the key pressed at that moment, and zero if no key is pressed.
+_Function_ that returns the code of the key pressed. If the parameter is zero, it waits until a key is pressed. If it is non-zero, it returns the code of the key pressed at that moment, and zero if no key is pressed. **Only responds to keyboard presses, not the joystick**.
 
 ### INKEY()
 
 _Function_ that waits until a key is pressed and returns the code of the key pressed. It is equivalent to `INKEY(0)`
+
+### KEMPSTON()
+
+_Function_ that returns the keys pressed on a connected Kempston joystick. The following bits will be set to one if the corresponding button is pressed:
+
+- Bit 0 = Right.
+- Bit 1 = Left.
+- Bit 2 = Down.
+- Bit 3 = Up.
+- Bit 4 = Fire.
 
 ### MIN(varexpression,varexpression)
 

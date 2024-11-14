@@ -21,6 +21,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
+
 OP_END EQU END_PROGRAM
 
 OP_TEXT:
@@ -360,6 +361,23 @@ OP_PUSH_INKEY:
     ld a, (hl)
     inc hl
     call INKEY_SELECT_WAIT_MODE 
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_SET_KEMPSTON
+OP_SET_KEMPSTON:
+    ld d, HIGH FLAGS
+    ld e, (hl)
+    inc hl
+    call KEMPSTON   
+    ld (de), a
+    jp EXEC_LOOP
+    ENDIF
+
+    IFNDEF UNUSED_OP_PUSH_KEMPSTON
+OP_PUSH_KEMPSTON:
+    call KEMPSTON
     PUSH_INT_STACK
     jp EXEC_LOOP
     ENDIF
@@ -852,13 +870,9 @@ OP_WAITKEY:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-1:  call INKEY
-    cp 13
-    jr z, .keyp
-    cp 'm'
-    jp z, .keyp
-    cp ' '
-    jp z, .keyp
+1:  call INKEY_MENU
+    and KEYPRESS_FIRE
+    jr nz, .keyp
 .animate_bullet:
     push de
     ld a, (CYCLE_OPTION)
@@ -879,7 +893,7 @@ OP_WAITKEY:
     call PUT_8X8_CHAR           ; Print the character
     pop de
     ld (POS_X), de
-2:  call INKEY
+2:  call INKEY_MENU
     or a
     jr nz, 2b
     ;xor a
@@ -904,13 +918,9 @@ OP_PAUSE:
     pop de
     call PUT_8X8_CHAR           ; Print the character
     pop de
-1:  call INKEY
-    cp 13
-    jr z, .keyp
-    cp 'm'
-    jp z, .keyp
-    cp ' '
-    jp z, .keyp
+1:  call INKEY_MENU
+    and KEYPRESS_FIRE
+    jr nz, .keyp
     ld bc, (DOWN_COUNTER)
     ld a, b
     or c
@@ -935,7 +945,7 @@ OP_PAUSE:
     call PUT_8X8_CHAR           ; Print the character
     pop de
     ld (POS_X), de
-2:  call INKEY
+2:  call INKEY_MENU
     or a
     jr nz, 2b
     ;xor a
@@ -958,21 +968,17 @@ OP_CHOOSE:
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
-    call INKEY
-    cp 'o'
-    jp z, .left
-    cp 'p'
-    jp z, .right
-    cp 'q'
-    jp z, .up
-    cp 'a'
-    jp z, .down
-    cp ' '
-    jp z, .selected
-    cp 'm'
-    jp z, .selected
-    cp 13
-    jp z, .selected
+    call INKEY_MENU
+    rrca
+    jp c, .right
+    rrca
+    jp c, .left
+    rrca
+    jp c, .down
+    rrca
+    jp c, .up
+    rrca
+    jp c, .selected
     call ANIMATE_OPTION_BULLET
     jr .inkey
 .left:
@@ -990,7 +996,7 @@ OP_CHOOSE:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 3b
@@ -1015,7 +1021,7 @@ OP_CHOOSE:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY
+4:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 4b
@@ -1034,7 +1040,7 @@ OP_CHOOSE:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY
+2:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 2b
@@ -1059,7 +1065,7 @@ OP_CHOOSE:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 3b
@@ -1073,7 +1079,7 @@ OP_CHOOSE:
     ld h, HIGH OPTIONS_TABLE
     xor a
     ld (NUM_OPTIONS), a
-5:  call INKEY
+5:  call INKEY_MENU
     or a
     jr nz, 5b
     ld a, (hl)      ;Store selected option value
@@ -1129,21 +1135,17 @@ OP_CHOOSE_W:
     ld a, NO_SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
-    call INKEY
-    cp 'o'
-    jp z, .left
-    cp 'p'
-    jp z, .right
-    cp 'q'
-    jp z, .up
-    cp 'a'
-    jp z, .down
-    cp ' '
-    jp z, .selected
-    cp 'm'
-    jp z, .selected
-    cp 13
-    jp z, .selected
+    call INKEY_MENU
+    rrca
+    jp c, .right
+    rrca
+    jp c, .left
+    rrca
+    jp c, .down
+    rrca
+    jp c, .up
+    rrca
+    jp c, .selected
     ld bc, (DOWN_COUNTER)
     ld a, c
     or b
@@ -1166,7 +1168,7 @@ OP_CHOOSE_W:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 3b
@@ -1191,7 +1193,7 @@ OP_CHOOSE_W:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY
+4:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 4b
@@ -1210,7 +1212,7 @@ OP_CHOOSE_W:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY
+2:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 2b
@@ -1235,7 +1237,7 @@ OP_CHOOSE_W:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .inkey
     jr 3b
@@ -1257,7 +1259,7 @@ OP_CHOOSE_W:
     inc hl
     xor a
     ld (NUM_OPTIONS), a
-4:  call INKEY
+4:  call INKEY_MENU
     or a
     jr nz, 4b
     ld a, c
@@ -1306,21 +1308,17 @@ OP_CHOOSE_CH:
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
-    call INKEY
-    cp 'o'
-    jp z, .left
-    cp 'p'
-    jp z, .right
-    cp 'q'
-    jp z, .up
-    cp 'a'
-    jp z, .down
-    cp ' '
-    jp z, .selected
-    cp 'm'
-    jp z, .selected
-    cp 13
-    jp z, .selected
+    call INKEY_MENU
+    rrca
+    jp c, .right
+    rrca
+    jp c, .left
+    rrca
+    jp c, .down
+    rrca
+    jp c, .up
+    rrca
+    jp c, .selected
     call ANIMATE_OPTION_BULLET
     jr .inkey
 .left:
@@ -1338,7 +1336,7 @@ OP_CHOOSE_CH:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .on_change_gosub
     jr 3b
@@ -1363,7 +1361,7 @@ OP_CHOOSE_CH:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY
+4:  call INKEY_MENU
     or a
     jp z, .on_change_gosub
     jr 4b
@@ -1382,7 +1380,7 @@ OP_CHOOSE_CH:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY
+2:  call INKEY_MENU
     or a
     jp z, .on_change_gosub
     jr 2b
@@ -1407,7 +1405,7 @@ OP_CHOOSE_CH:
     ld (SELECTED_OPTION), a
     ld a, SELECTED_BULLET
     call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY
+3:  call INKEY_MENU
     or a
     jp z, .on_change_gosub
     jr 3b
@@ -1422,7 +1420,7 @@ OP_CHOOSE_CH:
     xor a
     ld (NUM_OPTIONS), a
     ld (RETURN_FROM_CHOOSE_CH), a
-5:  call INKEY
+5:  call INKEY_MENU
     or a
     jr nz, 5b
     ld a, (hl)      ;Store selected option value
@@ -3417,7 +3415,18 @@ OPCODES:
     IFDEF UNUSED_OP_PUSH_LEN_ARRAY
     DW ERROR_NOP
     ENDIF
-
+    IFNDEF UNUSED_OP_SET_KEMPSTON
+    DW OP_SET_KEMPSTON
+    ENDIF
+    IFDEF UNUSED_OP_SET_KEMPSTON
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_PUSH_KEMPSTON
+    DW OP_PUSH_KEMPSTON
+    ENDIF
+    IFDEF UNUSED_OP_PUSH_KEMPSTON
+    DW ERROR_NOP
+    ENDIF
 
     IFDEF USE_256_OPCODES
     REPT 256-(($-OPCODES)/2)
