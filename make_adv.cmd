@@ -9,7 +9,7 @@ REM   - The file to compile will be test.cyd with this example
 REM   - The name of the TAP file or +3 disk image
 
 REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=48k
+SET TARGET=128k
 
 REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
@@ -18,7 +18,7 @@ REM Loading screen
 SET LOAD_SCR="LOAD.scr"
 
 REM Parameters for compiler
-SET CYDC_EXTRA_PARAMS=
+SET CYDC_EXTRA_PARAMS=-pause 10
 
 REM --------------------------------------
 %~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -il %IMGLINES% -scr %LOAD_SCR% %TARGET%

@@ -101,11 +101,12 @@ def file_path(string):
         raise FileNotFoundError(string)
 
 
-def pause_value(string):
-    val = (int(string)) * 50
-    if val < 0 or val >= 64*1024:
-        raise ValueError("Invalid value")
-    return val
+def pause_value(value):
+    val = (int(value))
+    val *= 50
+    if (val < 0) or (val >= (64 * 1024)):
+        raise argparse.ArgumentTypeError("%s is an invalid value" % value)
+    return value
 
 
 def main():
