@@ -85,10 +85,11 @@ def file_path(string):
         raise FileNotFoundError(string)
 
 
-def pause_value(string):
-    val = (int(string)) * 50
-    if val < 0 or val >= 64*1024:
-        raise ValueError("Invalid value")
+def pause_value(value):
+    val = (int(value))
+    val *= 50
+    if (val < 0) or (val >= (64 * 1024)):
+        raise argparse.ArgumentTypeError("%s is an invalid value" % value)
     return val
 
 
@@ -217,7 +218,9 @@ def main():
         "-pause",
         "--pause-after-load",
         type=pause_value,
-        help=_("Number of seconds of pause after finishing the loading process, can be aborted with any keypress."),
+        help=_(
+            "Number of seconds of pause after finishing the loading process, can be aborted with any keypress."
+        ),
     )
     arg_parser.add_argument(
         "-V",
@@ -683,7 +686,7 @@ def main():
             available_bytes += bank0_size_available
         else:
             available_bytes += 16 * 1024
-            
+
     print("\nSummary:")
     print(f"- {available_bytes} bytes available.")
     print(f"- {total_bytes} bytes used.")
