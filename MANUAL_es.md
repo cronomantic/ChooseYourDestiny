@@ -1467,10 +1467,11 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
-- XimoKom y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
+- XimoKom, Javier Fopiani y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
 - 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
-- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y la gente de [CAAD](https://caad.club) por el apoyo.
+- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y [Javi Ortiz](https://twitter.com/tbrazil_speccy) por la difusión.
+- Al Club de Aventuras AD [CAAD](https://caad.club) por el apoyo.
 
 ---
 
@@ -1482,3 +1483,5 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 
 El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
 EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
+
+Como excepción, el fichero `cydc_txt_compress.py` está bajo licencia [GPLv2](https://www.gnu.org/licenses) y está basado en [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT) de DjMorgul.
