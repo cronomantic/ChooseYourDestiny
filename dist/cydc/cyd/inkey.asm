@@ -152,8 +152,20 @@ INKEY_MENU:
     ret
 
 KEMPSTON:
+    ld a, (KEMPSTON_VALUE)
+    cp $FF         ;Bus value if joystick not connected on blanking to avoid floating bus issues
+    jr z, .invalid
     in a, ($1F)    ;Read kempston
-    cp $FF         ;Bus value if joystick not connected
-    ret nz
+    ld b, a
+    and %00000011  ; Up + Down is invalid
+    cp %00000011
+    jr z, .invalid 
+    ld a, b
+    and %00001100  ; Left + Right is invalid
+    cp %00001100
+    jr z, .invalid 
+    ld a, b
+    ret
+.invalid:
     xor a
     ret

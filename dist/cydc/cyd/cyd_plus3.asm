@@ -114,16 +114,12 @@ CHUNK_ADDR:
 SCRIPT_BANK:
     DB 0
 
-TMP_AREA:
-    DS 16, 0
-
-    org $8060
-SIGNATURE:
-    DB "CYD v", RELEASE, 0
+KEMPSTON_VALUE:
+    DB $FF
 
     org $8070
-GAME_ID:
-@{GAMEID}
+TMP_AREA:
+    DS 16, 0
 
     org $8080
 ISR:
@@ -139,6 +135,9 @@ ISR:
     push hl
     push bc
     push de                  ;Full context save
+
+    in a, ($1f)
+    ld (KEMPSTON_VALUE), a
 
     ld a, (UPDATE_SCR_FLAG)  ; Get flag
     or a                     ; test if active
@@ -469,6 +468,12 @@ RANDOM_2:
     djnz .loop
     ld (RND_SEED), hl
     ret
+
+;----------------------------------------------------
+SIGNATURE:
+    DB "CYD v", RELEASE, 0
+GAME_ID:
+@{GAMEID}
 
 ;----------------------------------------------------
 @{INCLUDES}

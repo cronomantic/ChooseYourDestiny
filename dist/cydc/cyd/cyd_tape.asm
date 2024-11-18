@@ -98,6 +98,9 @@ CHUNK_ADDR:
 SCRIPT_BANK:
     DB 0
 
+KEMPSTON_VALUE:
+    DB $FF
+
     IFDEF USE_VORTEX
 MDLADDR:
     DW 0
@@ -105,17 +108,9 @@ VORTEX_BANK:
     DB 0
     ENDIF
 
+    org $8070
 TMP_AREA:
     DS 16, 0
-
-    org $8060
-SIGNATURE:
-    DB "CYD v", RELEASE, 0
-
-    org $8070
-GAME_ID:
-@{GAMEID}
-
     org $8080
 ISR:
     push af
@@ -130,6 +125,9 @@ ISR:
     push hl
     push bc
     push de                  ;Full context save
+
+    in a, ($1f)
+    ld (KEMPSTON_VALUE), a
 
     ld a, (UPDATE_SCR_FLAG)  ; Get flag
     or a                     ; test if active
@@ -459,6 +457,11 @@ RANDOM_2:
     ld (RND_SEED), hl
     ret
 
+;----------------------------------------------------
+SIGNATURE:
+    DB "CYD v", RELEASE, 0
+GAME_ID:
+@{GAMEID}
 ;----------------------------------------------------
 @{INCLUDES}
 ;----------------------------------------------------
