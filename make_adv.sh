@@ -14,7 +14,7 @@ TARGET="48k"
 IMGLINES="192"
 #
 # Loading screen
-LOAD_SCR="./LOAD.scr"
+LOAD_SCR="./IMAGES/LOAD.scr"
 #
 # Parameters for compiler
 CYDC_EXTRA_PARAMS=
