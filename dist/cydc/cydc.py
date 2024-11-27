@@ -555,6 +555,9 @@ def main():
         sys.exit(_("ERROR: Error assembling interpreter."), e1)
     except OSError as e2:
         sys.exit(_("ERROR: Error assembling interpreter."), e2)
+        
+    if verbose:
+        print(f"Interpreter size: {asm_size}")
 
     if model == "48k" and (asm_size > 32 * 1024):
         sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
