@@ -48,7 +48,7 @@ def get_unused_opcodes_defines(unused_opcodes=None):
 
 def get_game_id(name=None):
     if name is None or len(name) == 0:
-        return "    DEFB 16,0"
+        return "    DEFS 16,0"
     elif len(name) < 16:
         n = 16 - len(name)
         name = '"' + name + '"'
