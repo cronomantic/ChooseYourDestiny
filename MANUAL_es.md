@@ -1285,6 +1285,15 @@ SET LOAD_SCR="LOAD.scr"
 REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=
 
+REM Run emulator after compilation (none/internal/default)
+REM     -None: Do nothing
+REM     -internal: run the compiled file with Zesarux (must be on the directory .\tools\zesarux\)
+REM     -default: run the compiled file with the program set on Windows to run its extension
+SET RUN_EMULATOR=none
+
+REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
+SET BACKUP_CYD=no
+
 REM --------------------------------------
 ```
 
@@ -1295,6 +1304,12 @@ REM --------------------------------------
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
+- La variable `CYDC_EXTRA_PARAMS` se usa para añadir parámetros extra en la llamada al compilador [cydc](#cydc-compilador).
+- La variable `RUN_EMULATOR` indica si queremos que se ejecute el programa compilado bajo un emulador con los siguientes valores posibles:
+  -- none: Si no queremos que haga esto.
+  -- internal: Ejecuta el fichero compilado bajo Zesarux que debe estar dentro del directorio `.\tools\zesarux\`.
+  -- default: Si la extensión del fichero está asociada bajo Windows con otro emulador, lo ejecutará con éste.
+- La variable `BACKUP_CYD` con el valor `yes` hace una copia de seguridad del fichero actual dentro del directorio `.\BACKUP`. Cada copia añade al nombre del fichero la fecha en la cual se creó.
 
 El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
 

@@ -1224,6 +1224,15 @@ SET LOAD_SCR="./IMAGES/LOAD.scr"
 REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=
 
+REM Run emulator after compilation (none/internal/default)
+REM     -None: Do nothing
+REM     -internal: run the compiled file with Zesarux (must be on the directory .\tools\zesarux\)
+REM     -default: run the compiled file with the program set on Windows to run its extension
+SET RUN_EMULATOR=none
+
+REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
+SET BACKUP_CYD=no
+
 REM --------------------------------------
 ```
 
@@ -1233,6 +1242,12 @@ REM --------------------------------------
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
+- The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
+- The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
+-- none: If we do not want it to do this.
+-- internal: Executes the compiled file under Zesarux which must be inside the `.\tools\zesarux\` directory.
+-- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
+- The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
 
 The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\zesarux` folder, after compilation it will run automatically with the appropriate options.
 
