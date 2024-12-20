@@ -86,7 +86,7 @@ def file_path(string):
 
 
 def pause_value(value):
-    val = (int(value))
+    val = int(value)
     val *= 50
     if (val < 0) or (val >= (64 * 1024)):
         raise argparse.ArgumentTypeError("%s is an invalid value" % value)
@@ -427,8 +427,12 @@ def main():
             fto.write(json.dumps(tokens))
 
     # Set text to compressed bytes format
+    force_slice_texts = args.slice_texts
     for posT, posC in enumerate(positions):
         code[posC] = ("TEXT", textBytes[posT])
+        #If any of the texts are bigger than 16Kb (size of bank), we enforce text slicing
+        if not force_slice_texts and ((len(textBytes[posT]) + 1) >= (16 * 1024)):
+            force_slice_texts = True
 
     del txtComp
     ######################################################################
@@ -555,7 +559,7 @@ def main():
         sys.exit(_("ERROR: Error assembling interpreter."), e1)
     except OSError as e2:
         sys.exit(_("ERROR: Error assembling interpreter."), e2)
-        
+
     if verbose:
         print(f"Interpreter size: {asm_size}")
 
@@ -575,7 +579,7 @@ def main():
     codegen.set_bank_offset_list([0xC000])
     codegen.set_bank_size_list([16 * 1024])
     chunks = codegen.generate_code(
-        code=code, slice_text=args.slice_texts, show_debug=False
+        code=code, slice_text=force_slice_texts, show_debug=False
     )
 
     # To calculate the offset
@@ -590,7 +594,7 @@ def main():
     codegen.set_bank_offset_list([bank0_offset, 0xC000])
     codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
     chunks = codegen.generate_code(
-        code=code, slice_text=args.slice_texts, show_debug=args.show_bytecode
+        code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
     )
 
     if model == "128k":
