@@ -1974,7 +1974,10 @@ class CydcParser(object):
                     curr_pos += 1
         if not is_text and len(errors) == 0:
             errors.append(f"Invalid code closure on line {last_c_line} at {last_c_pos}")
-
+        # Adding trailing text if exists
+        if len(curr_text) > 0:
+            code += "[[" + curr_text + "]]"
+        
         return (code, errors)
 
     # def _check_symbol(self, symbol, expected_type, lineno):
