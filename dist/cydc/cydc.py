@@ -435,6 +435,7 @@ def main():
             force_slice_texts = True
 
     del txtComp
+    
     ######################################################################
 
     # Exporting current font
@@ -494,7 +495,6 @@ def main():
     l_chars = []
     l_charw = []
 
-    # TODO: experimental for now...
     if args.trim_interpreter:
         unused_opcodes = codegen.get_unused_opcodes(code)
     else:
