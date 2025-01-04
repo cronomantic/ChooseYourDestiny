@@ -45,6 +45,7 @@ class CydcParser(object):
         self.symbols = dict()
         self.symbols_used = dict()
         self.hidden_label_counter = 0
+        self.debug = False
 
     precedence = (
         (
@@ -261,7 +262,7 @@ class CydcParser(object):
             else:
                 p[0] += p[3]
                 p[0] += [("LABEL", label)]
-
+                
     def p_then_statement(self, p):
         """
         then_statement :   THEN if_statement
@@ -326,7 +327,7 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
-
+                    
     def p_statement_close_error(self, p):
         "statement : ERROR_CLOSE_TEXT"
         self.errors.append(f"Invalid opening code token in line {p[1]}")
@@ -347,6 +348,7 @@ class CydcParser(object):
         else:
             self.errors.append(f"Undefined codification error")
         p[0] = None
+        
 
     def p_statement_text(self, p):
         "statement : TEXT"
@@ -2122,18 +2124,29 @@ class CydcParser(object):
         elif isinstance(p, yacc.YaccProduction):
             msg = f"Syntax error at line {p.lineno(0)}"
         else:
-            msg = "Syntax error"
+            tok_type_stack = [xx.type for xx in self.parser.symstack][1:]
+            if self.debug:
+                print(f"Last symbol stack: {tok_type_stack}")
+            if tok_type_stack.count("IF") != tok_type_stack.count("ENDIF"):
+                pos_if = tok_type_stack.index("IF") + 1
+                msg = f"Syntax error at line {self.parser.symstack[pos_if].lineno}: Missing ENDIF for IF"
+            elif tok_type_stack.count("WHILE") != tok_type_stack.count("WEND"):
+                pos_while = tok_type_stack.index("WHILE") + 1
+                msg = f"Syntax error at line {self.parser.symstack[pos_while].lineno}: Missing WEND for WHILE"
+            else:
+                msg = "Syntax error"
         self.errors.append(msg)
 
     def build(self):
         self.lexer.build()
         self.parser = yacc.yacc(module=self)
 
-    def parse(self, input):
+    def parse(self, input, verbose=False):
         if self.parser is None:
             self.errors.append("Parser not build.")
             return None
         else:
+            self.debug = verbose
             self.symbols.clear()
             self.symbols_used.clear()
             self.errors.clear()
@@ -2142,7 +2155,7 @@ class CydcParser(object):
             self.errors += cerrors
             if len(self.errors) > 0:
                 return []
-            parse_result = self.parser.parse(cinput, lexer=self.lexer, tracking=True)
+            parse_result = self.parser.parse(cinput, lexer=self.lexer, debug=self.debug, tracking=True)
             if not self._check_symbols():
                 return []
             return parse_result
