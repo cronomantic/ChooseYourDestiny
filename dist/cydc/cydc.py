@@ -388,7 +388,7 @@ def main():
 
     parser = CydcParser()
     parser.build()
-    code = parser.parse(text)
+    code = parser.parse(input=text, verbose=verbose)
     if verbose:
         print(_("Symbols:"))
         parser.print_symbols()

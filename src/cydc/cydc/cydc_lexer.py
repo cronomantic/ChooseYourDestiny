@@ -208,6 +208,28 @@ class CydcLexer(object):
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += list(reserved.values())
+    
+    @property
+    def lineno(self):
+        if self.lexer is None:
+            return 1
+        return self.lexer.lineno
+    
+    @lineno.setter
+    def lineno(self, value):
+        if self.lexer is not None:
+            self.lexer.lineno = value
+            
+    @property
+    def lexpos(self):
+        if self.lexer is None:
+            return 0
+        return self.lexer.lexpos
+    
+    @lexpos.setter
+    def lexpos(self, value):
+        if self.lexer is not None:
+            self.lexer.lexpos = value
 
     def t_open_text(self, t):
         r"\[\["
