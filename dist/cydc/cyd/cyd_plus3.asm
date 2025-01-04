@@ -46,7 +46,6 @@ SAVEGAME_FILE_H   EQU 0 << 8
 
 MDLADDR 		EQU $C000
 
-    call PLUS3_DOS_INIT
     ld hl, 0                  ; No RAM disk
     ld de, DISK_BUFFER        ; Restrict cache to bank 6
     call PLUS3_DOS_SET_1346
@@ -368,7 +367,7 @@ START_LOADING:
     ld ix, INT_STACK_ADDR     ;Set internal Stack
 
     xor a
-    call LOAD_CHUNK         ;Loads first CHUNK
+    call LOAD_CHUNK         ;Loads first CHUNK    
     ;ld hl, CHUNK_ADDR       ;Start the CHUNK
     ; HL current pointer,
 EXEC_LOOP:
