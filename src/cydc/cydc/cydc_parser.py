@@ -194,11 +194,11 @@ class CydcParser(object):
         if len(p) == 7 and p[5]:
             label_loop = self._get_hidden_label()
             p[0] = [("LABEL", label_loop)]
-            if p[3]:
-                if isinstance(p[3], list):
-                    p[0] += p[3]
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
                 else:
-                    p[0].append(p[3])
+                    p[0].append(p[2])
             if isinstance(p[5], list):
                 p[0] += p[5]
                 p[0] += [("IF_N_GOTO", label_loop, 0, 0)]
@@ -208,11 +208,11 @@ class CydcParser(object):
         elif len(p) == 6:
             label_loop = self._get_hidden_label()
             p[0] = [("LABEL", label_loop)]
-            if p[3]:
-                if isinstance(p[3], list):
-                    p[0] += p[3]
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
                 else:
-                    p[0].append(p[3])
+                    p[0].append(p[2])
             p[0] += [("GOTO", label_loop, 0, 0)]
 
     def p_loop_do_until_subprogram(self, p):
@@ -2133,6 +2133,9 @@ class CydcParser(object):
             elif tok_type_stack.count("WHILE") != tok_type_stack.count("WEND"):
                 pos_while = tok_type_stack.index("WHILE") + 1
                 msg = f"Syntax error at line {self.parser.symstack[pos_while].lineno}: Missing WEND for WHILE"
+            elif tok_type_stack.count("DO") != tok_type_stack.count("UNTIL"):
+                pos_while = tok_type_stack.index("DO") + 1
+                msg = f"Syntax error at line {self.parser.symstack[pos_while].lineno}: Missing UNTIL for DO"
             else:
                 msg = "Syntax error"
         self.errors.append(msg)
