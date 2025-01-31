@@ -382,63 +382,85 @@ OP_PUSH_KEMPSTON:
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_RANDOM
-OP_RANDOM:
-    ld e, (hl)
-    inc hl
-    ld d, HIGH FLAGS
-    push hl
-    call RANDOM
-    ld a, r
-    rrca
-    jr c, 1f
-    ld a, l
-    jr 2f
-1:  ld a, h
-2:  pop hl
-    ld c, a
-    ld b, (hl)
-    inc hl
-    ld a, b
-    or a
-    ld a, c
-    jr nz, 3f
-    ld a, c
-4:  ld (de), a   
-    jp EXEC_LOOP
-3:  cp b           ; a - b
-    jr c, 4b
-    sub b
-    jr 3b
-    ENDIF
 
     IFNDEF UNUSED_OP_PUSH_RANDOM
+    IFNDEF USED_DIV_DE
+    DEFINE USED_DIV_DE
+    ENDIF
 OP_PUSH_RANDOM:
     push hl
     call RANDOM
-    ld a, r
+    ld a, r            ;Select if we use H or L value based in R value
     rrca
     jr c, 1f
     ld a, l
     jr 2f
 1:  ld a, h
 2:  pop hl
-    ld c, a
-    ld b, (hl)
+    ld d, a
+    ld e, (hl)        ;Get max element
     inc hl
-    ld a, b
-    or a
-    ld a, c
+    ld a, $FF         ;If E is 255, leave the value as it is
+    cp e
     jr nz, 3f
-    ld a, c
+    ld a, d
+    jr 4f
+3:  inc e             ;Increment E to calculate mod E+1
+    call DIV_DE
 4:  ;Stack
     PUSH_INT_STACK
     jp EXEC_LOOP
-3:  cp b           ; a - b
-    jr c, 4b
-    sub b
-    jr 3b
     ENDIF
+
+
+    IFNDEF UNUSED_OP_RANDOM
+    IFNDEF USED_DIV_DE
+    DEFINE USED_DIV_DE
+    ENDIF
+OP_RANDOM:
+    ld e, (hl)
+    ld d, HIGH FLAGS
+    push de
+    inc hl
+    push hl
+    call RANDOM
+    ld a, r            ;Select if we use H or L value based in R value
+    rrca
+    jr c, 1f
+    ld a, l
+    jr 2f
+1:  ld a, h
+2:  pop hl
+    ld d, a
+    ld e, (hl)        ;Get max element
+    inc hl
+    ld a, $FF         ;If E is 255, leave the value as it is
+    cp e
+    jr nz, 3f
+    ld a, d
+    jr 4f
+3:  inc e             ;Increment E to calculate mod E+1
+    call DIV_DE
+4:  pop de
+    ld (de), a
+    jp EXEC_LOOP
+    ENDIF
+
+    IFDEF USED_DIV_DE
+    ; Divide D by E. The quotient is in D and remainder in A
+DIV_DE:
+   xor a
+   ld b, 8
+1: sla d
+   rla
+   cp e
+   jr c, 2f
+   sub e
+   inc d
+2: djnz	1b
+   ret
+   ENDIF
+
 
     IFNDEF UNUSED_OP_RANDOMIZE
 OP_RANDOMIZE:
