@@ -507,7 +507,8 @@ PUT_VAR_CHAR:
     pop af
     call ADJUST_CHAR_POS
     pop hl
-    jp PUT_8X8_CHAR
+    call PUT_8X8_CHAR
+    jp .t7         ;Jump to make typematic pause
 .t6:
     ld a, 4         ;Character too big
     jp SYS_ERROR
@@ -658,6 +659,7 @@ PUT_VAR_CHAR:
     djnz .loop1
 
     ; Typing pause
+.t7:
     ld hl, (PRT_INTERVAL)
 .t4: 
     ld a, h
