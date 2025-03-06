@@ -96,39 +96,54 @@ KEYPRESS_DOWN  EQU %00000100
 KEYPRESS_UP    EQU %00001000
 KEYPRESS_FIRE  EQU %00010000
 
+;
+; Keypress format:
 ;   xxxKUDLR
+
 INKEY_MENU:
     push bc
     xor a
     ld c, a
     call INKEY
 .right:
+    cp $09  ; cursor right
+    jr z, .right_ok
     cp 'p'
-    jp nz, .left
+    jr nz, .left
+.right_ok:
     ld b, a
     ld a, c
     or KEYPRESS_RIGHT
     ld c, a
     ld a, b
 .left:
+    cp $08  ; cursor left
+    jr z, .left_ok
     cp 'o'
-    jp nz, .down
+    jr nz, .down
+.left_ok:
     ld b, a
     ld a, c
     or KEYPRESS_LEFT
     ld c, a
     ld a, b
 .down:
+    cp $0A  ; cursor down
+    jr z, .down_ok
     cp 'a'
-    jp nz, .up
+    jr nz, .up
+.down_ok:
     ld b, a
     ld a, c 
     or KEYPRESS_DOWN
     ld c, a
     ld a, b
 .up:
+    cp $0B  ; cursor up
+    jr z, .up_ok
     cp 'q'
-    jp nz, .selected
+    jr nz, .selected
+.up_ok:
     ld b, a
     ld a, c
     or KEYPRESS_UP
@@ -136,12 +151,12 @@ INKEY_MENU:
     ld a, b
 .selected:
     cp ' '
-    jp z, .selected_enabled
+    jr z, .selected_ok
     cp 'm'
-    jp z, .selected_enabled
+    jr z, .selected_ok
     cp 13
-    jp nz, .kempston
-.selected_enabled:
+    jr nz, .kempston
+.selected_ok:
     ld a, KEYPRESS_FIRE
     or c
     ld c, a
