@@ -91,12 +91,15 @@ def bytes2str(list_bytes=[], b_str=""):
     return b_str
 
 
-def make_plus3_dsk(mkp3fs_path, filename, label=None, filelist=[]):
+def make_plus3_dsk(mkp3fs_path, filename, label=None, filelist=[], disk_720=False):
 
     mkp3fs_path = os.path.abspath(
         mkp3fs_path
     )  # Get the absolute path of the executable
-    command_line = [mkp3fs_path, "-180"]
+    if disk_720:
+        command_line = [mkp3fs_path, "-720", "-cpmonly"]
+    else:
+        command_line = [mkp3fs_path, "-180"]
     if label is not None:
         command_line += ["-label", label]
     command_line += [filename] + filelist

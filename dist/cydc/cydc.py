@@ -96,6 +96,9 @@ def pause_value(value):
 def main():
     """Main function"""
 
+    if sys.version_info[0] < 3:  # Python 2
+        sys.exit(_("ERROR: Invalid python version"))
+
     version = "1.0.0"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
@@ -172,7 +175,13 @@ def main():
         metavar=_("NAME"),
         help=_("Name of the output file"),
     )
-
+    arg_parser.add_argument(
+        "-720",
+        "--disk-720",
+        action="store_true",
+        default=False,
+        help=_("Use 720 Kb disk images"),
+    )
     #####################################
     arg_parser.add_argument(
         "-csc",
@@ -283,8 +292,8 @@ def main():
     model = args.model
     output_name = args.name
 
-    if sys.version_info[0] < 3:  # Python 2
-        sys.exit(_("ERROR: Invalid python version"))
+    if model != "plus3" and args.disk_720:
+        sys.exit(_("ERROR: Invalid parameter this model."))
 
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
@@ -430,12 +439,12 @@ def main():
     force_slice_texts = args.slice_texts
     for posT, posC in enumerate(positions):
         code[posC] = ("TEXT", textBytes[posT])
-        #If any of the texts are bigger than 16Kb (size of bank), we enforce text slicing
+        # If any of the texts are bigger than 16Kb (size of bank), we enforce text slicing
         if not force_slice_texts and ((len(textBytes[posT]) + 1) >= (16 * 1024)):
             force_slice_texts = True
 
     del txtComp
-    
+
     ######################################################################
 
     # Exporting current font
@@ -800,6 +809,7 @@ def main():
                 os.path.join(args.output_path, output_name + ".DSK"),
                 output_name,
                 files,
+                args.disk_720,
             )
         except OSError:
             sys.exit("ERROR: could not create DSK file")
