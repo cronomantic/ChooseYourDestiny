@@ -24,6 +24,7 @@ EXTRA_PARAM = -v -code
 
 #EXTRA_PARAM += -trim
 #EXTRA_PARAM += -pause 5
+#EXTRA_PARAM += -720
 
 ifneq (,$(wildcard ./charset.json))
 EXTRA_PARAM += -c ./charset.json
