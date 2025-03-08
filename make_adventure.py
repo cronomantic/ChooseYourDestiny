@@ -102,7 +102,7 @@ def file_path(string):
 
 
 def pause_value(value):
-    val = (int(value))
+    val = int(value)
     val *= 50
     if (val < 0) or (val >= (64 * 1024)):
         raise argparse.ArgumentTypeError("%s is an invalid value" % value)
@@ -294,7 +294,16 @@ def main():
         "-pause",
         "--pause-after-load",
         type=pause_value,
-        help=_("Number of seconds of pause after finishing the loading process, can be aborted with any keypress."),
+        help=_(
+            "Number of seconds of pause after finishing the loading process, can be aborted with any keypress."
+        ),
+    )
+    arg_parser.add_argument(
+        "-720",
+        "--disk-720",
+        action="store_true",
+        default=False,
+        help=_("Use 720 Kb disk images"),
     )
     ##
     arg_parser.add_argument(
@@ -380,6 +389,9 @@ def main():
 
     if args.pause_after_load:
         cydc_params = ["-pause", f"{args.pause_after_load}"] + cydc_params
+
+    if args.disk_720:
+        cydc_params = ["-720"] + cydc_params
 
     cydc_params = [cydc_path] + cydc_params
     cydc_params += [
