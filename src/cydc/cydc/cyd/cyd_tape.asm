@@ -448,7 +448,7 @@ FIND_IN_INDEX:
     jr .loop
 .end_loop:
     ld a, 1
-    jp c, SYS_ERROR
+    jp SYS_ERROR
 .found:
     ld a, (ix+2)
     ld l, (ix+3)
