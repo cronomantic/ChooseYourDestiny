@@ -458,7 +458,7 @@ FIND_IN_INDEX:
     jr .loop
 .end_loop:
     ld a, 1
-    jp c, SYS_ERROR
+    jp SYS_ERROR
 .found:
     ld a, (ix+2)
     ld l, (ix+3)
@@ -562,6 +562,7 @@ SIZE_INTERPRETER = $ - START_INTERPRETER
     IFNDEF SHOW_SIZE_INTERPRETER
 INDEX:
 @{INDEX}
+
 
 SIZE_INTERPRETER = $ - START_INTERPRETER
     SAVEBIN "@DSK_PATH", START_INTERPRETER, SIZE_INTERPRETER
