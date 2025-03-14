@@ -1685,6 +1685,11 @@ OP_TRACK_D:
     pop hl
     ei
     ENDIF
+    IFDEF USE_WYZ
+    ld d, 1
+    ld e, a
+    call WYZ_CALL
+    ENDIF
     jp EXEC_LOOP
     ENDIF
 
@@ -1703,6 +1708,11 @@ OP_TRACK_I:
     pop hl
     ei
     ENDIF
+    IFDEF USE_WYZ
+    ld d, 1
+    ld e, a
+    call WYZ_CALL
+    ENDIF
     jp EXEC_LOOP
     ENDIF
 
@@ -1717,6 +1727,11 @@ OP_POP_TRACK:
     pop ix
     pop hl
     ei
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, 1
+    ld e, a
+    call WYZ_CALL
     ENDIF
     jp EXEC_LOOP
     ENDIF
@@ -1738,6 +1753,11 @@ OP_PLAY_D:
     jr 1f
 2:  set 2, (hl)
 1:  pop hl
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, 2
+    ld e, a
+    call WYZ_CALL
     ENDIF
     jp EXEC_LOOP
     ENDIF
@@ -1762,6 +1782,11 @@ OP_PLAY_I:
 2:  set 2, (hl)
 1:  pop hl
     ENDIF
+    IFDEF USE_WYZ
+    ld d, 2
+    ld e, a
+    call WYZ_CALL
+    ENDIF
     jp EXEC_LOOP
     ENDIF
 
@@ -1781,6 +1806,11 @@ OP_POP_PLAY:
     jr 1f
 2:  set 2, (hl)
 1:  pop hl
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, 2
+    ld e, a
+    call WYZ_CALL
     ENDIF
     jp EXEC_LOOP
     ENDIF
@@ -1802,6 +1832,11 @@ OP_LOOP_D:
     jr 1f
 2:  res 0, (hl)
 1:  pop hl
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, 3
+    ld e, a
+    call WYZ_CALL
     ENDIF
     jp EXEC_LOOP
     ENDIF
@@ -1826,6 +1861,11 @@ OP_LOOP_I:
 2:  res 0, (hl)
 1:  pop hl
     ENDIF
+    IFDEF USE_WYZ
+    ld d, 3
+    ld e, a
+    call WYZ_CALL
+    ENDIF
     jp EXEC_LOOP
     ENDIF
 
@@ -1845,6 +1885,11 @@ OP_POP_LOOP:
     jr 1f
 2:  res 0, (hl)
 1:  pop hl
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, 3
+    ld e, a
+    call WYZ_CALL
     ENDIF
     jp EXEC_LOOP
     ENDIF

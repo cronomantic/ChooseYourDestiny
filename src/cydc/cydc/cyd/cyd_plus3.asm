@@ -35,16 +35,21 @@ INT_STACK_ADDR EQU $8000
 DISK_BUFFER_SIZE    EQU (1*1024)/512
 DISK_BUFFER         EQU ((128-DISK_BUFFER_SIZE) << 8) + DISK_BUFFER_SIZE
 
-;SCRIPT_BANK     EQU 0
-;SCRIPT_FILE_H   EQU 0 << 8
-
+    IFDEF USE_VORTEX
 VORTEX_BANK     EQU 6
 VORTEX_FILE_H   EQU 2 << 8
+MDLADDR 		EQU $C000
+    ENDIF
+
+    IFDEF USE_WYZ
+WYZ_BANK     EQU 1
+WYZ_TRACKER  EQU $C000
+    ENDIF
 
 SAVEGAME_BANK     EQU 0
 SAVEGAME_FILE_H   EQU 0 << 8
 
-MDLADDR 		EQU $C000
+
 
     ld hl, 0                  ; No RAM disk
     ld de, DISK_BUFFER        ; Restrict cache to bank 6
@@ -58,13 +63,17 @@ MDLADDR 		EQU $C000
     ld de, START_VARS+1
     ld bc, END_VARS-START_VARS-1
     ldir
-
     di
+
     ld sp, INITIAL_STACK      ; Set stack
     ld a, high ISR_TABLE      ; load interrupt service routine
     ld i, a
     im 2
     call SET_DEFAULT_BANKS
+    IFDEF USE_WYZ
+    ld d, $FF
+    call WYZ_CALL
+    ENDIF
     ei
 
     ;Disable CAPS_LOCK
@@ -318,8 +327,22 @@ VORTEX_PLAYER_ISR:
 
 .mute:
     call VTR_MUTE
-
 .no_ay:
+    ENDIF
+
+    IFDEF USE_WYZ
+WYZ_PLAYER_ISR:
+    ld a, (PLUS3_DOS_BANKM)
+    ld bc, $7ffd
+    push af                  ; Save current bank
+    push bc
+    ld a, WYZ_BANK|%00010000
+    out (c), a  ;Sets bank
+    xor a
+    CALL WYZ_TRACKER
+    pop bc
+    pop af
+    out (c), a   
     ENDIF
 
     ; Downcounter for pauses
@@ -387,6 +410,10 @@ EXEC_LOOP:
 END_PROGRAM:
     IFDEF USE_VORTEX
     call VTR_MUTE
+    ENDIF
+    IFDEF USE_WYZ
+    ld de, $0200
+    call WYZ_CALL
     ENDIF
     jp RESET_SYS
 
