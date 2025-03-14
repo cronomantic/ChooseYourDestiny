@@ -28,6 +28,11 @@
 
     DEFINE IS_PLUS3 0
 
+    IFDEF USE_WYZ
+WYZ_BANK     EQU 1
+WYZ_TRACKER  EQU $C000
+    ENDIF
+
     ORG @INIT_ADDR
 START_INTERPRETER:
 
@@ -49,6 +54,10 @@ INT_STACK_ADDR EQU $8000
 
     IFDEF IS_128_TAPE
     call SET_DEFAULT_BANKS
+    ENDIF
+    IFDEF USE_WYZ
+    ld d, $FF
+    call WYZ_CALL
     ENDIF
     ei
 
@@ -285,7 +294,7 @@ VORTEX_PLAYER_ISR:
     jr z, .mute
 
     push hl
-    ld a, ($5b5c)
+    ld a, (PLUS3_DOS_BANKM)
     ld bc, $7ffd
     push af                  ; Save current bank
     push bc
@@ -308,6 +317,21 @@ VORTEX_PLAYER_ISR:
 .mute:
     call VTR_MUTE
 .no_ay:
+    ENDIF
+
+    IFDEF USE_WYZ
+WYZ_PLAYER_ISR:
+    ld a, (PLUS3_DOS_BANKM)
+    ld bc, $7ffd
+    push af                  ; Save current bank
+    push bc
+    ld a, WYZ_BANK|%00010000
+    out (c), a  ;Sets bank
+    xor a
+    CALL WYZ_TRACKER
+    pop bc
+    pop af
+    out (c), a
     ENDIF
 
     ; Downcounter for pauses
@@ -375,6 +399,10 @@ EXEC_LOOP:
 END_PROGRAM:
     IFDEF USE_VORTEX
     call VTR_MUTE
+    ENDIF
+    IFDEF USE_WYZ
+    ld de, $0200
+    call WYZ_CALL
     ENDIF
     jp RESET_SYS
 

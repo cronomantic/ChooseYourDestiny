@@ -169,10 +169,10 @@ def main():
         default=os.path.join(curr_path, "IMAGES"),
     )
     arg_parser.add_argument(
-        "-pt3",
-        "--pt3-tracks-path",
+        "-trk",
+        "--tracks-path",
         type=dir_path,
-        help=_("path to the directory with the PT3 tracks"),
+        help=_("path to the directory with the music tracks"),
         default=os.path.join(curr_path, "TRACKS"),
     )
     arg_parser.add_argument(
@@ -198,6 +198,13 @@ def main():
         "--charset-file",
         help=_("path to the charset json file"),
         default=os.path.join(curr_path, "charset.json"),
+    )
+    arg_parser.add_argument(
+        "-wyz",
+        "--use-wyz-tracker",
+        action="store_true",
+        default=False,
+        help=_("Use WYZ tracker instead of Vortex tracker"),
     )
     ###
     arg_parser.add_argument(
@@ -392,6 +399,9 @@ def main():
 
     if args.disk_720:
         cydc_params = ["-720"] + cydc_params
+
+    if args.use_wyz_tracker:
+        cydc_params = ["-wyz"] + cydc_params
 
     cydc_params = [cydc_path] + cydc_params
     cydc_params += [

@@ -89,5 +89,29 @@ LOAD_MUSIC:
 VORTEX_EXTENSION:
     DB ".PT3", $FF
 
-    ;INCLUDE "VTII10bG.asm"
+    ENDIF
+
+    IFDEF USE_WYZ
+; D -> Operation
+; E -> Parameter
+WYZ_CALL:
+    di
+    push hl
+    push ix
+    ld a, (PLUS3_DOS_BANKM)
+    ld bc, $7ffd
+    push af                  ; Save current bank
+    push bc
+    ld a, WYZ_BANK|%00010000
+    out (c), a  ;Sets bank
+    ld a, d
+    ld b, e
+    CALL WYZ_TRACKER
+    pop bc
+    pop af
+    out (c), a
+    pop ix
+    pop hl
+    ei
+    ret
     ENDIF
