@@ -37,7 +37,7 @@ from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
-from cydc_music import compress_track_data,create_wyz_player_bank
+from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
 
 
 from cyd import (
@@ -513,6 +513,9 @@ def main():
                                     f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
                                 )
                             )
+                        #test
+                        t = ("WYZ", i, 0, [], fpath)
+                        blocks.append(t)
             if len(wyz_instruments) == 0 and len(wyz_tracks.keys()) > 0:
                 sys.exit(_(f"ERROR: File {fpath1} not found."))
             has_tracks = len(wyz_instruments) > 0 and len(wyz_tracks.keys()) > 0
@@ -758,6 +761,8 @@ def main():
                         b = 2
                     elif btype == "SCR":
                         b = 1
+                    elif btype == "WYZ":
+                        b = 3
                     else:  # btype == "TXT"
                         sys.exit(_("ERROR: Unexpected data"))
                     index.append((b, bidx, best_fit_index, offset))
@@ -774,7 +779,7 @@ def main():
                 sys.exit(_("ERROR: Not enough memory available"))
 
     index = [
-        (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
+        (b, bidx, spectrum_banks[bank], (offset & 0xFFFF)) for (b, bidx, bank, offset) in index
     ]
 
     print("\nRAM usage:\n-----------------")
@@ -902,12 +907,26 @@ def main():
             os.path.join(args.output_path, "DISK"),
             os.path.join(args.output_path, f"{output_name}.BIN"),
         ]
+        track_list = []
         for b in blocks:
             btype = b[0]
             bpath = b[4]
-            if btype == "SCR" or btype == "TRK":
+            if btype == "SCR":
                 files.append(bpath)
+            elif btype == "TRK":
+                track_list.append(bpath)
+
+        track_list_aux = []
+        res = True
         try:
+            for t in track_list:
+                tb, _ = os.path.splitext(t)
+                tb += ".BIN"
+                add_size_header(t, tb)
+                track_list_aux.append(tb)
+
+            files += track_list_aux
+
             make_plus3_dsk(
                 args.mkp3fs_path,
                 os.path.join(args.output_path, output_name + ".DSK"),
@@ -916,7 +935,17 @@ def main():
                 args.disk_720,
             )
         except OSError:
+            res = False
+
+        try:
+            for t in track_list_aux:
+                if os.path.exists(t):
+                    os.remove(tb)
+        except OSError:
             sys.exit("ERROR: could not create DSK file")
+        finally:
+            if not res:
+                sys.exit("ERROR: could not create DSK file")
 
     ######################################################################
     sys.exit(0)

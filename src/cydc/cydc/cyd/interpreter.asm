@@ -1672,20 +1672,31 @@ OP_POP_SFX:
     ENDIF
     
 
+    IFDEF USE_WYZ
+FIND_WYZ_INDEX:
+    push af
+    push hl
+    ld c, a
+    ld b, TYPE_WYZ
+    call FIND_IN_INDEX
+    pop hl
+    pop af
+    ret
+    ENDIF
+
     IFNDEF UNUSED_OP_TRACK_D
 OP_TRACK_D:
     ld a, (hl)
     inc hl
     IFDEF USE_VORTEX
-    di
     push hl
     push ix
     call LOAD_MUSIC
     pop ix
     pop hl
-    ei
     ENDIF
     IFDEF USE_WYZ
+    call FIND_WYZ_INDEX
     ld d, 1
     ld e, a
     call WYZ_CALL
@@ -1700,15 +1711,14 @@ OP_TRACK_I:
     ld d, HIGH FLAGS
     ld a, (de)
     IFDEF USE_VORTEX
-    di
     push hl
     push ix
     call LOAD_MUSIC
     pop ix
     pop hl
-    ei
     ENDIF
     IFDEF USE_WYZ
+    call FIND_WYZ_INDEX
     ld d, 1
     ld e, a
     call WYZ_CALL
@@ -1720,15 +1730,14 @@ OP_TRACK_I:
 OP_POP_TRACK:
     POP_INT_STACK
     IFDEF USE_VORTEX
-    di
     push hl
     push ix
     call LOAD_MUSIC
     pop ix
     pop hl
-    ei
     ENDIF
     IFDEF USE_WYZ
+    call FIND_WYZ_INDEX
     ld d, 1
     ld e, a
     call WYZ_CALL

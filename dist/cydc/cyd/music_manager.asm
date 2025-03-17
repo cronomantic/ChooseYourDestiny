@@ -24,7 +24,6 @@
     IFDEF USE_VORTEX
 ;Loads the music file with number on A
 LOAD_MUSIC:
-    push ix
     ld de, TEXT_BUFFER
     ld h, 0
     ld l, a
@@ -82,7 +81,6 @@ LOAD_MUSIC:
 
     ld b, VORTEX_FILE_H>>8
     call PLUS3_DOS_CLOSE
-    pop ix
     ret c
     jp DISK_ERROR          ; Error 1 if NC
 
