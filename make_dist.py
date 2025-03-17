@@ -43,8 +43,14 @@ SRC_FILES = [
     "cydc/cydc_txt_compress.py",
     "cydc/cyd.py",
     "cydc/cydc_utils.py",
+    "cydc/cydc_music.py",
     "cydc/ply/lex.py",
     "cydc/ply/yacc.py",
+    "cydc/pyZX0/compress.py",
+    "cydc/pyZX0/optimize.py",
+    "cydc/pyZX0/pyzx0.py",
+    "cydc/pyZX0/README.md",
+    "cydc/pyZX0/LICENSE",
     "cydc/cyd/bank_zx128.asm",
     "cydc/cyd/cyd_plus3.asm",
     "cydc/cyd/cyd_tape.asm",
@@ -66,6 +72,7 @@ SRC_FILES = [
     "cydc/cyd/VTII10bG_vars.asm",
     "cydc/cyd/savegame_plus3.asm",
     "cydc/cyd/savegame_tape.asm",
+    "cydc/cyd/wyz_player.asm",
 ]
 
 for file in SRC_FILES:

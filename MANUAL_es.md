@@ -6,7 +6,7 @@ El programa es un compilador e intérprete para ejecutar historias de tipo "Esco
 
 Consiste una máquina virtual que va interpretando comandos que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
 
-Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru y melodías tipo PT3 creadas con Vortex Tracker.
+Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru, melodías tipo PT3 creadas con Vortex Tracker o melodías creadas con WyzTracker 2.0.
 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [Requerimientos e Instalación](#requerimientos-e-instalación)
@@ -123,7 +123,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [LASTPOS(ID)](#lastposid)
   - [Imágenes](#imágenes)
   - [Efectos de sonido](#efectos-de-sonido)
-  - [Melodías](#melodías)
+  - [Melodías Vortex Tracker](#melodías-vortex-tracker)
+  - [Melodías WyzTracker](#melodías-wyztracker)
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
     - [Windows](#windows-1)
     - [Linux, BSDs](#linux-bsds)
@@ -241,12 +242,14 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-n NAME**: Nombre a usar para el fichero de salida (nombre para el fichero TAP o DSK), si no se define será el mismo que el fichero de entrada.
 - **\-scr LOAD_SCR_FILE**: Ruta hacia un fichero SCR con la pantalla de carga a usar.
 - **\-csc CSC_PATH**: Ruta al directorio con las imágenes CSC comprimidas de la aventura.
-- **\-trk TRACKS_PATH**: Ruta al directorio con los ficheros PT3 de música AY.
+- **\-trk TRACKS_PATH**: Ruta al directorio con los ficheros PT3 de música AY o ficheros de WyzTracker.
 - **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
+- **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
+- **\-720**: En caso de usar el formato Plus3, se usará una imagen de disco de 720 Kb en lugar del tamaño estándar de 180 Kb.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
@@ -1121,7 +1124,7 @@ Inicializa el generador de números aleatorios. La generación de números aleat
 
 ### TRACK varexpression
 
-Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3`. Si existiese una pista cargada previamente, la sobrescribirá.
+Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3` (o `003.mus` en caso de usar WyzTracker). Si existiese una pista cargada previamente, la sobrescribirá.
 
 ### PLAY varexpression
 
@@ -1130,6 +1133,7 @@ Si el parámetro es distinto de cero y la música está desactivada, reproduce l
 ### LOOP varexpression
 
 Establece si al acabar la pista musical cargada en ese momento, se repite de nuevo o no. Un valor 0 significa falso y distinto de cero, verdadero.
+Este comando no funciona con WyzTracker.
 
 ### RAMSAVE varID, expression
 
@@ -1227,13 +1231,29 @@ No está contemplado llamar a un número de efecto que no exista en el fichero i
 
 ---
 
-## Melodías
+## Melodías Vortex Tracker
 
-El motor `CYD` también permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará la pista del fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes.
+El motor `CYD` permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará la pista del fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes para cinta y 8 Kilobytes en caso de usar Plus3.
 
 Una vez cargado un módulo, se podrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
 
 Cuando se llegue al final del módulo, la reproducción se detendrá automáticamente, pero podemos cambiar este comportamiento con el comando `LOOP`. De nuevo, según se indica en la referencia, si el parámetro es igual a cero, al llegar al final se detendrá la reproducción, como se ha indicado antes. Pero si el parámetro es distinto de cero, el módulo volverá a reproducirse desde el principio.
+
+---
+
+## Melodías WyzTracker
+
+`CYD` también permite reproducir módulos de música creados con WyzTracker v2.0. El funcionamiento es similar al mecanismo de Melodías de Vortex Tracker y las imágenes; los nombres de los ficheros de los módulos tienen que ser números de 0 a 255 y con tres dígitos, de tal manera que con `TRACK 3`, cargaríamos el módulo `003.mus` correspondiente.
+
+Una vez cargado un módulo, se podrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
+
+A diferencia de con los módulos de Vortex Tracker, no se soporta el comando `LOOP` de forma completa, ya que son los propios módulos los que definen si éstos se reproducirán en bucle o no.
+
+Debido a las peculiaridades del formato de WyzTracker, hay que tener en cuenta una serie de consideraciones que afectarán al uso del motor con este reproductor de música:
+
+- Todos los módulos deben compartir los mismos instrumentos. El fichero de instrumentos se debe llamar `instruments.asm` y debe depositarse junto a los ficheros de módulos en el directorio `TRACKS`.
+- Se reservará la totalidad del banco 1 de la memoria del Spectrum, en el cual se almacenará el código del reproductor, los instrumentos y las melodías. Esto supone que se dispondrán de 16 Kb menos para la versión de cinta, y 8 Kb menos para la versión de Plus3.
+- Las diferentes melodías serán comprimidas para ahorrar espacio y cada vez que se cargue una de ellas, será descomprimida en el espacio restante del banco 1. El compilador generará un error si alguna de las melodías no cabe en ese espacio restante.
 
 ---
 
@@ -1492,7 +1512,7 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 
 ## Licencia
 
-Copyright (c) 2024 Sergio Chico
+Copyright (c) 2025 Sergio Chico
 
 Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
 

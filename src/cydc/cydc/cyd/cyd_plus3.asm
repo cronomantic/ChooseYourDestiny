@@ -420,6 +420,7 @@ END_PROGRAM:
 TYPE_TXT EQU  0
 TYPE_SCR EQU  1
 TYPE_TRK EQU  2
+TYPE_WYZ EQU  3
 
 ; A - New CHUNK number
 ; On exit, new CHUNK in C

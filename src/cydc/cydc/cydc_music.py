@@ -33,6 +33,15 @@ def compress_track_data(data):
     return list(cdata), delta
 
 
+def add_size_header(file_path_orig, file_path_dest):
+    with open(file_path_orig, "rb") as fo:
+        b = list(fo.read())
+    size = len(b)
+    b = [(size & 0xFF), ((size >> 8) & 0xFF)] + b
+    with open(file_path_dest, "wb") as fb:
+        fb.write(bytearray(b))
+
+
 def create_wyz_player_bank(
     track_path, sjasmplus_path, tracks={}, instruments="", verbose=False
 ):
@@ -64,7 +73,7 @@ def create_wyz_player_bank(
     asm += f"\nWYZ_LEN=($-$C000)"
     asm += f"\n    ASSERT WYZ_LEN < $4000, Player file is too big!\n"
     asm += f'    SAVEBIN "{path_dest}",WYZ_CALL,WYZ_LEN\n'
-    asm += f'    END\n'
+    asm += f"    END\n"
 
     res = run_assembler(
         asm_path=sjasmplus_path,
