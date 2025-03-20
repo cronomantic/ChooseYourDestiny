@@ -27,20 +27,50 @@ LOAD_MUSIC:
     ld c, a
     ld b, TYPE_TRK
     call FIND_IN_INDEX
+
+    di
     ld (MDLADDR), hl
     ld (VORTEX_BANK), a
-    or ROM48KBASIC
-    call SET_RAM_BANK
-    push af
+
+    ld bc, $7ffd
+    push bc    
     ld hl, (MDLADDR)
+    ld a, (VORTEX_BANK)
+    or ROM48KBASIC
+    out (c), a
     call VTR_INIT_HL
-    pop af
-    call SET_RAM_BANK
+    pop bc
+    ld a, (PLUS3_DOS_BANKM)
+    out (c), a
 
     ld hl, VTR_STAT
     res 2, (hl)
     set 1, (hl)
+    ei
+
     ret
     ENDIF
 
-    ;INCLUDE "VTII10bG.asm"
+    IFDEF USE_WYZ
+; D -> Operation
+; E -> Parameter
+WYZ_CALL:
+    di
+    push hl
+    push ix
+    ld bc, $7ffd
+    push bc
+    ld a, WYZ_BANK|%00010000
+    out (c), a  ;Sets bank
+    ld a, d
+    ld b, e
+    CALL WYZ_TRACKER
+    pop bc
+    ld a, (PLUS3_DOS_BANKM)
+    out (c), a
+    pop ix
+    pop hl
+    ei
+    ret
+    ENDIF
+

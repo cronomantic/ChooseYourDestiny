@@ -357,7 +357,7 @@ def main():
         sys.exit(_("ERROR: Input file does not exists."))
 
     # Setting parameters
-    cydc_params = ["-csc", f"{args.csc_images_path}", "-pt3", f"{args.pt3_tracks_path}"]
+    cydc_params = ["-csc", f"{args.csc_images_path}", "-trk", f"{args.tracks_path}"]
 
     if not os.path.isfile(args.tokens_file):
         cydc_params = ["-T", f"{args.tokens_file}"] + cydc_params

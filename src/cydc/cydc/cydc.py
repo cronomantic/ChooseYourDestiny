@@ -268,13 +268,6 @@ def main():
         type=file_path,
         help=_("path to sjasmplus executable"),
     )
-    # arg_parser.add_argument(
-    #     "zx0_path",
-    #     default="zx0",
-    #     metavar=_("ZX0_PATH"),
-    #     type=file_path,
-    #     help=_("path to zx0 executable"),
-    # )
     arg_parser.add_argument(
         "mkp3fs_path",
         default="mkp3fs",
@@ -513,7 +506,7 @@ def main():
                                     f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
                                 )
                             )
-                        #test
+                        # test
                         t = ("WYZ", i, 0, [], fpath)
                         blocks.append(t)
             if len(wyz_instruments) == 0 and len(wyz_tracks.keys()) > 0:
@@ -779,7 +772,8 @@ def main():
                 sys.exit(_("ERROR: Not enough memory available"))
 
     index = [
-        (b, bidx, spectrum_banks[bank], (offset & 0xFFFF)) for (b, bidx, bank, offset) in index
+        (b, bidx, spectrum_banks[bank], (offset & 0xFFFF))
+        for (b, bidx, bank, offset) in index
     ]
 
     print("\nRAM usage:\n-----------------")
