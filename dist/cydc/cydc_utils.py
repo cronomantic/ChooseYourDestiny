@@ -26,27 +26,50 @@ import sys
 import os
 import subprocess
 
+from string import Template
 
-def compress_zx0_list_bytes(zx0_path, chunk):
+class AsmTemplate(Template):
+    delimiter = "@"
+    
+def get_asm_template(filename):
+    filepath = os.path.join(os.path.dirname(__file__), "cyd", filename + ".asm")
+    filepath = os.path.abspath(filepath)
+    if not os.path.isfile(filepath):
+        raise ValueError(f"{filename} file not found")
+    with open(filepath, "r", encoding="utf-8") as f:
+        text = f.read()
+    return AsmTemplate(text)
+
+
+def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
     """_summary_
 
     Args:
         zx0_path (_type_): _description_
         chunk (_type_): _description_
     """
-    filename = "__TEMP__"
     try:
-        with open(filename, "wb") as f:
-            f.write(bytes(chunk))
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(asm)
     except OSError:
         sys.exit("ERROR: Can't write temp file.")
-    zx0_path = os.path.abspath(zx0_path)  # Get the absolute path of the executable
+    asm_path = os.path.abspath(asm_path)  # Get the absolute path of the executable
+    command_line = [asm_path, "--nologo", "-Wno-all"]
+    if listing:
+        command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
+    command_line += [filename]
     try:
+        stdout = None
+        # stdout = subprocess.DEVNULL
+        # stdout = subprocess.STDOUT
+        stderr = None
+        # stderr=subprocess.DEVNULL
         result = subprocess.run(
-            [zx0_path, "-f", filename],
-            check=True,
-            # stdout=subprocess.DEVNULL,
-            # stderr=subprocess.DEVNULL,
+            args=command_line,
+            check=False,
+            stdout=subprocess.PIPE if capture_output else stdout,
+            stderr=subprocess.PIPE if capture_output else stderr,
+            universal_newlines=capture_output,
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
@@ -54,16 +77,17 @@ def compress_zx0_list_bytes(zx0_path, chunk):
         if os.path.isfile(filename):
             os.remove(filename)
     if result.returncode != 0:
-        raise OSError
-    try:
-        with open(filename + ".zx0", "rb") as f:
-            chunk = list(f.read())
-    except OSError:
-        sys.exit("ERROR: Can't read temp file.")
-    finally:
-        if os.path.isfile(filename + ".zx0"):
-            os.remove(filename + ".zx0")
-    return chunk
+        raise OSError(result.stderr)
+    return result
+    # try:
+    #    with open(filename + ".zx0", "rb") as f:
+    #        chunk = list(f.read())
+    # except OSError:
+    #    sys.exit("ERROR: Can't read temp file.")
+    # finally:
+    #    if os.path.isfile(filename + ".zx0"):
+    #        os.remove(filename + ".zx0")
+    # return chunk
 
 
 def bytes2str(list_bytes=[], b_str=""):

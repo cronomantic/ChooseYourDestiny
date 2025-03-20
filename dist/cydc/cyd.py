@@ -24,17 +24,8 @@
 
 
 import os
-import sys
 import re
-import subprocess
-
-
-from string import Template
-from cydc_utils import bytes2str
-
-
-class AsmTemplate(Template):
-    delimiter = "@"
+from cydc_utils import bytes2str, run_assembler, get_asm_template
 
 
 def get_unused_opcodes_defines(unused_opcodes=None):
@@ -60,16 +51,6 @@ def get_game_id(name=None):
         return f"    DEFB {name}"
 
 
-def get_asm_template(filename):
-    filepath = os.path.join(os.path.dirname(__file__), "cyd", filename + ".asm")
-    filepath = os.path.abspath(filepath)
-    if not os.path.isfile(filepath):
-        raise ValueError(f"{filename} file not found")
-    with open(filepath, "r", encoding="utf-8") as f:
-        text = f.read()
-    return AsmTemplate(text)
-
-
 def get_asm_plus3(
     index,
     size_index,
@@ -81,6 +62,7 @@ def get_asm_plus3(
     dsk_path="",
     unused_opcodes=None,
     pause_start_value=None,
+    use_wyz_tracker=False,
     name="",
 ):
     if sfx_asm is None:
@@ -115,15 +97,16 @@ def get_asm_plus3(
     if has_tracks:
         t = get_asm_template("music_manager")
         includes += t.substitute(d)
-        t = get_asm_template("VTII10bG")
-        includes += t.substitute(d)
+        if not use_wyz_tracker:
+            t = get_asm_template("VTII10bG")
+            includes += t.substitute(d)
     t = get_asm_template("screen_manager")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
     t = get_asm_template("interpreter")
     includes += t.substitute(d)
-    if has_tracks:
+    if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
     includes += sfx_asm
@@ -142,7 +125,10 @@ def get_asm_plus3(
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
-        asm += "    DEFINE USE_VORTEX\n\n"
+        if use_wyz_tracker:
+            asm += "    DEFINE USE_WYZ\n\n"
+        else:
+            asm += "    DEFINE USE_VORTEX\n\n"
 
     asm += get_unused_opcodes_defines(unused_opcodes)
 
@@ -163,6 +149,7 @@ def get_asm_128(
     tap_path="",
     unused_opcodes=None,
     pause_start_value=None,
+    use_wyz_tracker=False,
     name="",
 ):
     if sfx_asm is None:
@@ -196,15 +183,16 @@ def get_asm_128(
     if has_tracks:
         t = get_asm_template("music_manager_tape")
         includes += t.substitute(d)
-        t = get_asm_template("VTII10bG")
-        includes += t.substitute(d)
+        if not use_wyz_tracker:
+            t = get_asm_template("VTII10bG")
+            includes += t.substitute(d)
     t = get_asm_template("screen_manager_tape")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
     t = get_asm_template("interpreter")
     includes += t.substitute(d)
-    if has_tracks:
+    if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
     includes += sfx_asm
@@ -220,7 +208,10 @@ def get_asm_128(
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
-        asm += "    DEFINE USE_VORTEX\n\n"
+        if use_wyz_tracker:
+            asm += "    DEFINE USE_WYZ\n\n"
+        else:
+            asm += "    DEFINE USE_VORTEX\n\n"
 
     asm += get_unused_opcodes_defines(unused_opcodes)
 
@@ -309,6 +300,7 @@ def get_asm_128_size(
     has_tracks=False,
     unused_opcodes=None,
     pause_start_value=None,
+    use_wyz_tracker=False,
 ):
     asm = get_asm_128(
         index="",
@@ -321,6 +313,7 @@ def get_asm_128_size(
         tap_path="",
         unused_opcodes=unused_opcodes,
         pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
         name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
@@ -395,6 +388,7 @@ def get_asm_plus3_size(
     has_tracks=False,
     unused_opcodes=None,
     pause_start_value=None,
+    use_wyz_tracker=False,
 ):
     asm = get_asm_plus3(
         index="",
@@ -407,6 +401,7 @@ def get_asm_plus3_size(
         dsk_path="",
         unused_opcodes=unused_opcodes,
         pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
         name="",
     )
     asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
@@ -426,109 +421,6 @@ def get_asm_plus3_size(
         raise ValueError("Size pattern not found")
     size = int(size[m.start() : m.end()])
     return size
-
-
-def do_asm_128(
-    sjasmplus_path,
-    output_path,
-    verbose,
-    tap_name,
-    index,
-    blocks,
-    banks,
-    size_interpreter,
-    bank0_offset,
-    tokens,
-    chars,
-    charw,
-    sfx_asm,
-    loading_scr=None,
-    has_tracks=False,
-    unused_opcodes=None,
-    pause_start_value=None,
-    name="",
-):
-
-    tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
-
-    asm_ind = ""
-    for i, v in enumerate(index):
-        asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
-        asm_ind += f"    DEFW ${v[3]:X}\n"
-
-    asm_int = get_asm_128(
-        index=asm_ind,
-        size_index=len(index),
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        has_tracks=has_tracks,
-        tap_path=tap_path,
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        name=name,
-    )
-
-    block_list = ""
-    if loading_scr is not None:
-        block_list += f"    DEFW LD_SCR_ADDR\n"
-        block_list += f"    DEFW LD_SCR_SIZE\n"
-        block_list += f"    DEFB $0\n"
-    block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
-    block_list += f"    DEFB $0\n"
-    for i, block in enumerate(blocks):
-        bank = banks[i]
-        if i == 0:
-            offset = bank0_offset
-        else:
-            offset = 0xC000
-        block_list += f"    DEFW ${offset:X}\n"
-        block_list += f"    DEFW ${len(block):X}\n"
-        block_list += f"    DEFB ${bank:X}\n"
-    block_list += "    DEFW $0\n"  # End mark
-
-    d = dict(
-        INIT_ADDR="$8000",
-        STACK_ADDRESS="$8000",
-        TAP_NAME=tap_path,
-        TAP_LABEL=tap_name,
-        BLOCK_LIST=block_list,
-        DEFINE_IS_128="DEFINE IS_128",
-    )
-    t = get_asm_template("loadertape")
-    asm = t.substitute(d)
-
-    if loading_scr is not None:
-        asm += "    ORG 16384\n"
-        asm += "START_LOADING_SCREEN:\n"
-        asm += bytes2str(loading_scr)
-        asm += "\nSIZE_LOADING_SCREEN = $ - START_LOADING_SCREEN\n"
-        asm += f'    SAVETAP "{tap_path}",HEADLESS,START_LOADING_SCREEN,SIZE_LOADING_SCREEN\n\n'
-
-    asm += asm_int
-
-    for i, block in enumerate(blocks):
-        if i == 0:
-            blk_asm = f"    ORG ${bank0_offset:X}\n"
-        else:
-            blk_asm = "    ORG $C000\n"
-        blk_asm += f"START_BLOCK_{i}:\n"
-        blk_asm += bytes2str(block)
-        blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
-        blk_asm += (
-            f'    SAVETAP "{tap_path}",HEADLESS,START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
-        )
-        asm += blk_asm
-
-    res = run_assembler(
-        asm_path=sjasmplus_path,
-        asm=asm,
-        filename=os.path.join(output_path, "cyd.asm"),
-        listing=verbose,
-        capture_output=False,
-    )
 
 
 def do_asm_48(
@@ -628,6 +520,111 @@ def do_asm_48(
     )
 
 
+def do_asm_128(
+    sjasmplus_path,
+    output_path,
+    verbose,
+    tap_name,
+    index,
+    blocks,
+    banks,
+    size_interpreter,
+    bank0_offset,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    loading_scr=None,
+    has_tracks=False,
+    unused_opcodes=None,
+    pause_start_value=None,
+    use_wyz_tracker=False,
+    name="",
+):
+
+    tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
+
+    asm_ind = ""
+    for i, v in enumerate(index):
+        asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
+        asm_ind += f"    DEFW ${v[3]:X}\n"
+
+    asm_int = get_asm_128(
+        index=asm_ind,
+        size_index=len(index),
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        has_tracks=has_tracks,
+        tap_path=tap_path,
+        unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
+        name=name,
+    )
+
+    block_list = ""
+    if loading_scr is not None:
+        block_list += f"    DEFW LD_SCR_ADDR\n"
+        block_list += f"    DEFW LD_SCR_SIZE\n"
+        block_list += f"    DEFB $0\n"
+    block_list += f"    DEFW $8000\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFB $0\n"
+    for i, block in enumerate(blocks):
+        bank = banks[i]
+        if i == 0:
+            offset = bank0_offset
+        else:
+            offset = 0xC000
+        block_list += f"    DEFW ${offset:X}\n"
+        block_list += f"    DEFW ${len(block):X}\n"
+        block_list += f"    DEFB ${bank:X}\n"
+    block_list += "    DEFW $0\n"  # End mark
+
+    d = dict(
+        INIT_ADDR="$8000",
+        STACK_ADDRESS="$8000",
+        TAP_NAME=tap_path,
+        TAP_LABEL=tap_name,
+        BLOCK_LIST=block_list,
+        DEFINE_IS_128="DEFINE IS_128",
+    )
+    t = get_asm_template("loadertape")
+    asm = t.substitute(d)
+
+    if loading_scr is not None:
+        asm += "    ORG 16384\n"
+        asm += "START_LOADING_SCREEN:\n"
+        asm += bytes2str(loading_scr)
+        asm += "\nSIZE_LOADING_SCREEN = $ - START_LOADING_SCREEN\n"
+        asm += f'    SAVETAP "{tap_path}",HEADLESS,START_LOADING_SCREEN,SIZE_LOADING_SCREEN\n\n'
+
+    asm += asm_int
+
+    for i, block in enumerate(blocks):
+        if i == 0:
+            blk_asm = f"    ORG ${bank0_offset:X}\n"
+        else:
+            blk_asm = "    ORG $C000\n"
+        blk_asm += f"START_BLOCK_{i}:\n"
+        blk_asm += bytes2str(block)
+        blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
+        blk_asm += (
+            f'    SAVETAP "{tap_path}",HEADLESS,START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
+        )
+        asm += blk_asm
+
+    res = run_assembler(
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=verbose,
+        capture_output=False,
+    )
+
+
 def do_asm_plus3(
     sjasmplus_path,
     output_path,
@@ -646,6 +643,7 @@ def do_asm_plus3(
     has_tracks=False,
     unused_opcodes=None,
     pause_start_value=None,
+    use_wyz_tracker=False,
     name="",
 ):
 
@@ -681,6 +679,7 @@ def do_asm_plus3(
         dsk_path=dsk_path,
         unused_opcodes=unused_opcodes,
         pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
         name=name,
     )
 
@@ -738,52 +737,3 @@ def do_asm_plus3(
                 file_dsk.write(file_block.read())
             if os.path.exists(block_path):
                 os.remove(block_path)
-
-
-def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
-    """_summary_
-
-    Args:
-        zx0_path (_type_): _description_
-        chunk (_type_): _description_
-    """
-    try:
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(asm)
-    except OSError:
-        sys.exit("ERROR: Can't write temp file.")
-    asm_path = os.path.abspath(asm_path)  # Get the absolute path of the executable
-    command_line = [asm_path, "--nologo", "-Wno-all"]
-    if listing:
-        command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
-    command_line += [filename]
-    try:
-        stdout = None
-        # stdout = subprocess.DEVNULL
-        # stdout = subprocess.STDOUT
-        stderr = None
-        # stderr=subprocess.DEVNULL
-        result = subprocess.run(
-            args=command_line,
-            check=False,
-            stdout=subprocess.PIPE if capture_output else stdout,
-            stderr=subprocess.PIPE if capture_output else stderr,
-            universal_newlines=capture_output,
-        )
-    except subprocess.CalledProcessError as exc:
-        raise OSError from exc
-    finally:
-        if os.path.isfile(filename):
-            os.remove(filename)
-    if result.returncode != 0:
-        raise OSError(result.stderr)
-    return result
-    # try:
-    #    with open(filename + ".zx0", "rb") as f:
-    #        chunk = list(f.read())
-    # except OSError:
-    #    sys.exit("ERROR: Can't read temp file.")
-    # finally:
-    #    if os.path.isfile(filename + ".zx0"):
-    #        os.remove(filename + ".zx0")
-    # return chunk

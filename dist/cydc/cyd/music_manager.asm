@@ -44,40 +44,31 @@ LOAD_MUSIC:
     call PLUS3_DOS_OPEN
     jp nc, DISK_ERROR
 
-    ld b, VORTEX_FILE_H>>8
-    call PLUS3_DOS_GET_EOF
-    jp nc, DISK_ERROR
-
-    ld a, e               ;test if E > 0
-    or a
-    jr nz, .invalid_size
-    ld a, h
-    cp $20                ; h-$20
-    jr c, .valid_size     ; h < $20
-    jr nz, .invalid_size  ; h > $20
-    ld a, l               
-    or a
-    jr z, .valid_size
-.invalid_size:
-    ld a, 4
-    jp SYS_ERROR
-.valid_size:
-    ex hl, de             ; hl -> de
+    ld de, 2
+    ld hl, .size+1
+    ld bc, VORTEX_FILE_H+VORTEX_BANK
+    call PLUS3_DOS_READ        ; Read header
+    jp nc, DISK_ERROR          ; Error 1 if NC
+.size:
+    ld de, 0
     ld hl, MDLADDR
     ld bc, VORTEX_FILE_H+VORTEX_BANK
     call PLUS3_DOS_READ        ; Read header
     jp nc, DISK_ERROR          ; Error 1 if NC
 
+    di
+    ld bc, $7ffd
+    push bc    
     ld a, VORTEX_BANK
-    call SET_RAM_BANK
-    push af
+    out (c), a
     call VTR_INIT
-    pop af
-    call SET_RAM_BANK
-
+    pop bc
+    ld a, (PLUS3_DOS_BANKM)
+    out (c), a
     ld hl, VTR_STAT
     res 2, (hl)
     set 1, (hl)
+    ei
 
     ld b, VORTEX_FILE_H>>8
     call PLUS3_DOS_CLOSE
@@ -85,7 +76,31 @@ LOAD_MUSIC:
     jp DISK_ERROR          ; Error 1 if NC
 
 VORTEX_EXTENSION:
-    DB ".PT3", $FF
+    DB ".BIN", $FF
 
-    ;INCLUDE "VTII10bG.asm"
+    ENDIF
+
+    IFDEF USE_WYZ
+; D -> Operation
+; E -> Parameter
+WYZ_CALL:
+    di
+    push hl
+    push ix
+    ld a, (PLUS3_DOS_BANKM)
+    ld bc, $7ffd
+    push af                  ; Save current bank
+    push bc
+    ld a, WYZ_BANK|%00010000
+    out (c), a  ;Sets bank
+    ld a, d
+    ld b, e
+    CALL WYZ_TRACKER
+    pop bc
+    pop af
+    out (c), a
+    pop ix
+    pop hl
+    ei
+    ret
     ENDIF
