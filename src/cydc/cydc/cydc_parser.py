@@ -89,8 +89,8 @@ class CydcParser(object):
 
     def p_statements_nl(self, p):
         """
-        statements_nl   : statements NEWLINE_CHAR
-                        | NEWLINE_CHAR
+        statements_nl   : statements newline_seq
+                        | newline_seq
         """
         if len(p) == 2:
             p[0] = None
@@ -262,7 +262,7 @@ class CydcParser(object):
             else:
                 p[0] += p[3]
                 p[0] += [("LABEL", label)]
-                
+
     def p_then_statement(self, p):
         """
         then_statement :   THEN if_statement
@@ -327,7 +327,7 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
-                    
+
     def p_statement_close_error(self, p):
         "statement : ERROR_CLOSE_TEXT"
         self.errors.append(f"Invalid opening code token in line {p[1]}")
@@ -348,7 +348,6 @@ class CydcParser(object):
         else:
             self.errors.append(f"Undefined codification error")
         p[0] = None
-        
 
     def p_statement_text(self, p):
         "statement : TEXT"
@@ -1531,9 +1530,9 @@ class CydcParser(object):
 
     def p_nl_varexpression(self, p):
         """
-        nl_varexpression    : NEWLINE_CHAR varexpression_nl
-                            | NEWLINE_CHAR varexpression
-                            | NEWLINE_CHAR
+        nl_varexpression    : newline_seq varexpression_nl
+                            | newline_seq varexpression
+                            | newline_seq
         """
         if len(p) == 2:
             p[0] = None
@@ -1542,8 +1541,8 @@ class CydcParser(object):
 
     def p_varexpression_nl(self, p):
         """
-        varexpression_nl    : varexpression NEWLINE_CHAR
-                            | NEWLINE_CHAR
+        varexpression_nl    : varexpression newline_seq
+                            | newline_seq
         """
         if len(p) == 2:
             p[0] = None
@@ -1995,9 +1994,9 @@ class CydcParser(object):
 
     def p_nl_constexpression(self, p):
         """
-        nl_constexpression  : NEWLINE_CHAR constexpression_nl
-                            | NEWLINE_CHAR constexpression
-                            | NEWLINE_CHAR
+        nl_constexpression  : newline_seq constexpression_nl
+                            | newline_seq constexpression
+                            | newline_seq
         """
         if len(p) == 2:
             p[0] = None
@@ -2006,8 +2005,8 @@ class CydcParser(object):
 
     def p_constexpression_nl(self, p):
         """
-        constexpression_nl  : constexpression NEWLINE_CHAR
-                            | NEWLINE_CHAR
+        constexpression_nl  : constexpression newline_seq
+                            | newline_seq
         """
         if len(p) == 2:
             p[0] = None
@@ -2107,6 +2106,13 @@ class CydcParser(object):
         "number : DEC_NUMBER"
         p[0] = p[1]
 
+    def p_newline_seq(self, p):
+        """
+        newline_seq : newline_seq NEWLINE_CHAR
+                    | NEWLINE_CHAR
+        """
+        p[0] = None
+
     def p_loop_empty(self, p):
         """
         loop_empty : loop_empty NEWLINE_CHAR
@@ -2158,7 +2164,9 @@ class CydcParser(object):
             self.errors += cerrors
             if len(self.errors) > 0:
                 return []
-            parse_result = self.parser.parse(cinput, lexer=self.lexer, debug=self.debug, tracking=True)
+            parse_result = self.parser.parse(
+                cinput, lexer=self.lexer, debug=self.debug, tracking=True
+            )
             if not self._check_symbols():
                 return []
             return parse_result

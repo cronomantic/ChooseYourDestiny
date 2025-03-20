@@ -35,13 +35,13 @@ ROM48KBASIC EQU %00010000
 SET_RAM_BANK:
     AND %00010111                 ;mask correct bytes
     LD B, A
-    LD A,($5b5c)                  ; Previous value of the port
+    LD A,(PLUS3_DOS_BANKM)        ; Previous value of the port
     PUSH AF                       ; Saving in stack
     AND %11101000                 ; Change only bank bits
     OR B                          ; Select bank on B
     LD BC,$7ffd
     DI
-    LD ($5b5c),A
+    LD (PLUS3_DOS_BANKM),A
     OUT (C),A                     ;update port
     EI
     POP AF                        ;Recovering previous value

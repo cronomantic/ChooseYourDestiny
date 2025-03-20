@@ -1137,8 +1137,12 @@ class CydcCodegen(object):
             print("\nConstants resolved:\n-------------------")
             print(self.constants)
 
+        if code is None or len(code) == 0:
+            code = [("END",)]
+
         if self.optimize:
             code = self.code_simple_optimize(code)
+
         if show_debug:
             print("\nVirtual machine opcode:\n-------------------")
             for c in code:
