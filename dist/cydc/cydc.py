@@ -37,6 +37,8 @@ from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
+from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
+
 
 from cyd import (
     get_asm_plus3_size,
@@ -184,16 +186,23 @@ def main():
     )
     #####################################
     arg_parser.add_argument(
+        "-wyz",
+        "--use-wyz-tracker",
+        action="store_true",
+        default=False,
+        help=_("Use WYZ tracker instead of Vortex tracker"),
+    )
+    arg_parser.add_argument(
         "-csc",
         "--csc-images-path",
         type=dir_path,
         help=_("path to the directory with the CSC compressed Spectrum screens"),
     )
     arg_parser.add_argument(
-        "-pt3",
-        "--pt3-tracks-path",
+        "-trk",
+        "--tracks-path",
         type=dir_path,
-        help=_("path to the directory with the PT3 tracks"),
+        help=_("path to the directory with the music tracks"),
     )
     arg_parser.add_argument(
         "-sfx",
@@ -259,13 +268,6 @@ def main():
         type=file_path,
         help=_("path to sjasmplus executable"),
     )
-    # arg_parser.add_argument(
-    #     "zx0_path",
-    #     default="zx0",
-    #     metavar=_("ZX0_PATH"),
-    #     type=file_path,
-    #     help=_("path to zx0 executable"),
-    # )
     arg_parser.add_argument(
         "mkp3fs_path",
         default="mkp3fs",
@@ -476,20 +478,62 @@ def main():
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
 
     has_tracks = False
-    if args.pt3_tracks_path is not None and model != "48k":
-        for i in range(256):
-            fpath = os.path.join(args.pt3_tracks_path, f"{i:03d}.PT3")
-            if os.path.isfile(fpath):
-                with open(fpath, "rb") as f:
-                    b = list(f.read())
-                    t = ("TRK", i, len(b), b, fpath)
-                    blocks.append(t)
-                    has_tracks = True
-                    if (model == "plus3") and (len(b) > (8 * 1024)):
-                        sys.exit(_("ERROR: Invalid PT3 file, it is too big"))
+    wyz_instruments = ""
+    wyz_tracks = dict()
+    wyz_tracks_sizes = dict()
+    if args.tracks_path is not None and model != "48k":
+        if args.use_wyz_tracker:
+            # Using WYZ tracker
+            if verbose:
+                print(_("Reading WyzTracker files..."))
+            fpath1 = os.path.join(args.tracks_path, f"instruments.asm")
+            if os.path.isfile(fpath1):
+                with open(fpath1, "r") as f:  # Load instruments data
+                    wyz_instruments += f.read()
+            for i in range(256):
+                fpath = os.path.join(args.tracks_path, f"{i:03d}.mus")
+                if os.path.isfile(fpath):
+                    b = None
+                    with open(fpath, "rb") as f:  # Load track data
+                        b = list(f.read())
+                    if b is not None:
+                        b2, delta = compress_track_data(b)
+                        wyz_tracks[i] = b2
+                        wyz_tracks_sizes[i] = len(b)
+                        if verbose:
+                            print(
+                                _(
+                                    f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
+                                )
+                            )
+                        # test
+                        t = ("WYZ", i, 0, [], fpath)
+                        blocks.append(t)
+            if len(wyz_instruments) == 0 and len(wyz_tracks.keys()) > 0:
+                sys.exit(_(f"ERROR: File {fpath1} not found."))
+            has_tracks = len(wyz_instruments) > 0 and len(wyz_tracks.keys()) > 0
+        else:
+            # PT3 tracks
+            if verbose:
+                print(_("Reading PT3 files..."))
+            for i in range(256):
+                fpath = os.path.join(args.tracks_path, f"{i:03d}.PT3")
+                if os.path.isfile(fpath):
+                    with open(fpath, "rb") as f:
+                        b = list(f.read())
+                        if (model == "plus3") and (len(b) > (8 * 1024)):
+                            sys.exit(
+                                _(f"ERROR: Invalid PT3 file {fpath}, it is too big")
+                            )
+                        t = ("TRK", i, len(b), b, fpath)
+                        blocks.append(t)
+                        if not has_tracks:
+                            has_tracks = True
 
     loading_scr = None
     if args.load_scr_file is not None:
+        if verbose:
+            print(_("Reading loaging screen..."))
         if os.path.isfile(args.load_scr_file):
             with open(args.load_scr_file, "rb") as f:
                 loading_scr = list(f.read())
@@ -498,6 +542,30 @@ def main():
         else:
             sys.exit(_("ERROR: Can't open load SCR file."))
     ######################################################################
+    use_wyz_tracker = has_tracks and args.use_wyz_tracker
+
+    wyz_player_bin = None
+    if use_wyz_tracker:
+        if verbose:
+            print(_("Assembling WyzTracker bank..."))
+        res, wyz_player_bin = create_wyz_player_bank(
+            track_path=args.tracks_path,
+            sjasmplus_path=args.sjasmplus_path,
+            tracks=wyz_tracks,
+            instruments=wyz_instruments,
+            verbose=verbose,
+        )
+        if not res:
+            sys.exit(_("ERROR: Invalid WyzTracker code generation."))
+        else:
+            for k in wyz_tracks_sizes.keys():
+                if wyz_tracks_sizes[k] > (16 * 1024 - len(wyz_player_bin)):
+                    sys.exit(
+                        _(f"ERROR: Track {k} doens't fit on available space in bank 1!")
+                    )
+
+    ######################################################################
+
     codegen = CydcCodegen(gettext)
     chunks = []
     l_tokens = []
@@ -533,6 +601,7 @@ def main():
                 has_tracks=has_tracks,
                 unused_opcodes=unused_opcodes,
                 pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
             )
         elif model == "128k":
             if verbose:
@@ -548,6 +617,7 @@ def main():
                 has_tracks=has_tracks,
                 unused_opcodes=unused_opcodes,
                 pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
             )
         else:
             if verbose:
@@ -600,16 +670,28 @@ def main():
     bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
     # generate block again
-    codegen.set_bank_offset_list([bank0_offset, 0xC000])
-    codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
+    if model == "plus3" and use_wyz_tracker:
+        codegen.set_bank_offset_list([bank0_offset, 0xC000])
+        codegen.set_bank_size_list(
+            [bank0_size_available, 16 * 1024, 16 * 1024, 8 * 1024]
+        )
+    else:
+        codegen.set_bank_offset_list([bank0_offset, 0xC000])
+        codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
     chunks = codegen.generate_code(
         code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
     )
 
     if model == "128k":
-        spectrum_banks = [0, 1, 3, 4, 6, 7]
+        if use_wyz_tracker:
+            spectrum_banks = [0, 3, 4, 6, 7]
+        else:
+            spectrum_banks = [0, 1, 3, 4, 6, 7]
     elif model == "plus3":
-        spectrum_banks = [0, 1, 3, 4]
+        if use_wyz_tracker:
+            spectrum_banks = [0, 3, 4, 6]
+        else:
+            spectrum_banks = [0, 1, 3, 4]
     else:
         spectrum_banks = [0]
 
@@ -622,6 +704,9 @@ def main():
         if i == 0:
             offset = bank0_offset
             size = bank0_size_available
+        elif i == 3 and model == "plus3" and use_wyz_tracker:
+            offset = 0xC000
+            size = 8 * 1024
         else:
             offset = 0xC000
             size = 16 * 1024
@@ -669,6 +754,8 @@ def main():
                         b = 2
                     elif btype == "SCR":
                         b = 1
+                    elif btype == "WYZ":
+                        b = 3
                     else:  # btype == "TXT"
                         sys.exit(_("ERROR: Unexpected data"))
                     index.append((b, bidx, best_fit_index, offset))
@@ -685,7 +772,8 @@ def main():
                 sys.exit(_("ERROR: Not enough memory available"))
 
     index = [
-        (b, bidx, spectrum_banks[bank], offset) for (b, bidx, bank, offset) in index
+        (b, bidx, spectrum_banks[bank], (offset & 0xFFFF))
+        for (b, bidx, bank, offset) in index
     ]
 
     print("\nRAM usage:\n-----------------")
@@ -695,11 +783,15 @@ def main():
         print(
             f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free: {available_bank_size[i]} bytes."
         )
+    if use_wyz_tracker:
+        print(_("Bank [1]: Reserved for WyzTracker."))
 
     available_bytes = 0
     for v in spectrum_banks:
         if v == 0:
             available_bytes += bank0_size_available
+        elif v == 6 and model == "plus3" and use_wyz_tracker:
+            available_bytes += 8 * 1024
         else:
             available_bytes += 16 * 1024
 
@@ -712,7 +804,16 @@ def main():
         print("\nIndex:\n-----------------")
         for i, v in enumerate(index):
             print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
-        print("\n")
+        print()
+
+    # Cutting the spectrum banks not used from the list
+    spectrum_banks = spectrum_banks[0 : len(available_banks)]
+
+    # In case we use WyzTracker, add bank 1
+    if use_wyz_tracker:
+        spectrum_banks.append(1)
+        available_banks.append(wyz_player_bin)
+
     try:
         if model == "128k":
             if verbose:
@@ -736,6 +837,7 @@ def main():
                 has_tracks=has_tracks,
                 unused_opcodes=unused_opcodes,
                 pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
             )
         elif model == "plus3":
@@ -760,6 +862,7 @@ def main():
                 has_tracks=has_tracks,
                 unused_opcodes=unused_opcodes,
                 pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
             )
         else:
@@ -798,12 +901,26 @@ def main():
             os.path.join(args.output_path, "DISK"),
             os.path.join(args.output_path, f"{output_name}.BIN"),
         ]
+        track_list = []
         for b in blocks:
             btype = b[0]
             bpath = b[4]
-            if btype == "SCR" or btype == "TRK":
+            if btype == "SCR":
                 files.append(bpath)
+            elif btype == "TRK":
+                track_list.append(bpath)
+
+        track_list_aux = []
+        res = True
         try:
+            for t in track_list:
+                tb, _ = os.path.splitext(t)
+                tb += ".BIN"
+                add_size_header(t, tb)
+                track_list_aux.append(tb)
+
+            files += track_list_aux
+
             make_plus3_dsk(
                 args.mkp3fs_path,
                 os.path.join(args.output_path, output_name + ".DSK"),
@@ -812,7 +929,17 @@ def main():
                 args.disk_720,
             )
         except OSError:
+            res = False
+
+        try:
+            for t in track_list_aux:
+                if os.path.exists(t):
+                    os.remove(tb)
+        except OSError:
             sys.exit("ERROR: could not create DSK file")
+        finally:
+            if not res:
+                sys.exit("ERROR: could not create DSK file")
 
     ######################################################################
     sys.exit(0)
