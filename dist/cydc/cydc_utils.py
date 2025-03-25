@@ -28,9 +28,11 @@ import subprocess
 
 from string import Template
 
+
 class AsmTemplate(Template):
     delimiter = "@"
-    
+
+
 def get_asm_template(filename):
     filepath = os.path.join(os.path.dirname(__file__), "cyd", filename + ".asm")
     filepath = os.path.abspath(filepath)
@@ -140,3 +142,16 @@ def make_plus3_dsk(mkp3fs_path, filename, label=None, filelist=[], disk_720=Fals
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
+
+
+def file_must_be_generated(src_file_path, prod_file_path):
+    if not os.path.exists(src_file_path):
+        return False
+
+    if not os.path.exists(prod_file_path):
+        return True
+
+    src_mtime = os.path.getmtime(src_file_path)
+    prod_mtime = os.path.getmtime(prod_file_path)
+
+    return prod_mtime <= src_mtime
