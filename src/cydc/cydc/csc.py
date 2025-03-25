@@ -35,8 +35,8 @@ class ScreenCompressor(object):
 
     def __init__(self, scr_data):
         self.input_data = bytearray(scr_data[self.MAX_SIZE])
-        self.screen_data = bytearray(scr_data[self.MAX_SIZE - self.ATTRIB1])
-        self.att_data = bytearray(scr_data[self.ATTRIB1])
+        self.screen_data = bytearray(self.MAX_SIZE - self.ATTRIB1)
+        self.att_data = bytearray(self.ATTRIB1)
 
     def convert_to_CSC(self, num_lines=192, force_mirror=False):
         txt = ""
@@ -68,12 +68,14 @@ class ScreenCompressor(object):
         att_zx0 = list(att_zx0)
         txt += f"Attributes compressed from {num_lines_att*32} to {len(att_zx0)} bytes! (delta {att_delta})\n"
 
-        filesize = (len(scr_zx0) + len(att_zx0) + 2)
+        filesize = len(scr_zx0) + len(att_zx0) + 2
         csc = [(filesize & 0xFF), ((filesize >> 8) & 0xFF)]
-        csc.append(num_lines_scr & 0xFF)
+        num_lines_scr &= 0xFF
+        num_lines_att &= 0xFF
         if mirror_mode:
             num_lines_att |= 0x80
-        csc.append(num_lines_att & 0xFF)
+        csc.append(num_lines_scr)
+        csc.append(num_lines_att)
         csc += scr_zx0
         csc += att_zx0
 

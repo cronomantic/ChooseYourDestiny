@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024 Sergio Chico
+# Copyright (c) 2025 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -96,6 +96,38 @@ class CydcParser(object):
             p[0] = None
         elif len(p) == 3 and p[1]:
             p[0] = p[1]
+
+    def p_statements_text_statement(self, p):
+        """
+        statements  : statements text_statement
+                    | text_statement
+        """
+        if (len(p) == 2) and p[1]:
+            p[0] = []
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    # def p_statements_dup(self, p):
+    #     """
+    #     statements  : statements if_statement
+    #                 | statements loop_while_statement
+    #                 | statements loop_do_until_statement
+    #                 | statements statement
+    #     """
+    #     if len(p) == 3 and p[1] and p[2]:
+    #         self.errors.append(f"Missing colon in line {p.lineno(2)}")
+    #         raise SyntaxError
 
     def p_statements(self, p):
         """
@@ -328,13 +360,13 @@ class CydcParser(object):
                 else:
                     p[0].append(p[2])
 
-    def p_statement_close_error(self, p):
-        "statement : ERROR_CLOSE_TEXT"
+    def p_text_statement_close_error(self, p):
+        "text_statement : ERROR_CLOSE_TEXT"
         self.errors.append(f"Invalid opening code token in line {p[1]}")
         p[0] = None
 
-    def p_statement_text_error(self, p):
-        "statement : ERROR_TEXT"
+    def p_text_statement_text_error(self, p):
+        "text_statement : ERROR_TEXT"
         if isinstance(p[1], tuple):
             t = p[1]
             if isinstance(t[1], list):
@@ -349,8 +381,8 @@ class CydcParser(object):
             self.errors.append(f"Undefined codification error")
         p[0] = None
 
-    def p_statement_text(self, p):
-        "statement : TEXT"
+    def p_text_statement_text(self, p):
+        "text_statement : TEXT"
         p[0] = p[1]
 
     def p_statement_short_label(self, p):
