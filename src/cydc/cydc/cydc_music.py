@@ -24,7 +24,12 @@
 
 import os
 
-from cydc_utils import bytes2str, run_assembler, get_asm_template
+from cydc_utils import (
+    bytes2str,
+    run_assembler,
+    get_asm_template,
+    file_must_be_generated,
+)
 from pyZX0.compress import compress_data
 
 
@@ -34,12 +39,14 @@ def compress_track_data(data):
 
 
 def add_size_header(file_path_orig, file_path_dest):
-    with open(file_path_orig, "rb") as fo:
-        b = list(fo.read())
-    size = len(b)
-    b = [(size & 0xFF), ((size >> 8) & 0xFF)] + b
-    with open(file_path_dest, "wb") as fb:
-        fb.write(bytearray(b))
+
+    if file_must_be_generated(file_path_orig, file_path_dest):
+        with open(file_path_orig, "rb") as fo:
+            b = list(fo.read())
+        size = len(b)
+        b = [(size & 0xFF), ((size >> 8) & 0xFF)] + b
+        with open(file_path_dest, "wb") as fb:
+            fb.write(bytearray(b))
 
 
 def create_wyz_player_bank(
