@@ -32,35 +32,35 @@ class CydcLexer(object):
         self.special_chars = [
             c.decode("iso-8859-15")
             for c in (
-                b"\xAA",
-                b"\xA1",
-                b"\xBF",
-                b"\xAB",
-                b"\xBB",
-                b"\xE1",
-                b"\xE9",
-                b"\xED",
-                b"\xF3",
-                b"\xFA",
-                b"\xF1",
-                b"\xD1",
-                b"\xE7",
-                b"\xC7",
-                b"\xFC",
-                b"\xDC",
+                b"\xaa",
+                b"\xa1",
+                b"\xbf",
+                b"\xab",
+                b"\xbb",
+                b"\xe1",
+                b"\xe9",
+                b"\xed",
+                b"\xf3",
+                b"\xfa",
+                b"\xf1",
+                b"\xd1",
+                b"\xe7",
+                b"\xc7",
+                b"\xfc",
+                b"\xdc",
             )
         ]
 
         subtitute_chars_keys = [
             c.decode("iso-8859-15")
             for c in (
-                b"\xC1",
-                b"\xC9",
-                b"\xCD",
-                b"\xD3",
-                b"\xDA",
-                b"\xAB",
-                b"\xBB",
+                b"\xc1",
+                b"\xc9",
+                b"\xcd",
+                b"\xd3",
+                b"\xda",
+                b"\xab",
+                b"\xbb",
             )
         ]
         subtitute_chars_values = [
@@ -69,7 +69,7 @@ class CydcLexer(object):
                 b"\x41",
                 b"\x45",
                 b"\x49",
-                b"\x4F",
+                b"\x4f",
                 b"\x55",
                 b"\x22",
                 b"\x22",
@@ -82,7 +82,7 @@ class CydcLexer(object):
         subtitute_chars_values = [
             c.decode("iso-8859-15")
             for c in (
-                b"\x2D",
+                b"\x2d",
                 b"\x27",
                 b"\x27",
                 b"\x22",
@@ -193,6 +193,7 @@ class CydcLexer(object):
         "ERROR_CLOSE_TEXT",
         "NEWLINE_CHAR",
         "ERROR_TEXT",
+        # "END_OF_FILE",
     ]
     tokens += [
         "SHORT_LABEL",
@@ -208,24 +209,24 @@ class CydcLexer(object):
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += list(reserved.values())
-    
+
     @property
     def lineno(self):
         if self.lexer is None:
             return 1
         return self.lexer.lineno
-    
+
     @lineno.setter
     def lineno(self, value):
         if self.lexer is not None:
             self.lexer.lineno = value
-            
+
     @property
     def lexpos(self):
         if self.lexer is None:
             return 0
         return self.lexer.lexpos
-    
+
     @lexpos.setter
     def lexpos(self, value):
         if self.lexer is not None:
@@ -355,6 +356,11 @@ class CydcLexer(object):
             return t
         else:
             return None
+
+    # def t_eof(self, t):
+    #     more = "\n"
+    #     self.lexer.input(more)
+    #     return self.lexer.token()
 
     def t_error(self, t):
         t.lexer.skip(1)  # just skip chars

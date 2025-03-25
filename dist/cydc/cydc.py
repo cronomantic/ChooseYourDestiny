@@ -48,7 +48,7 @@ from cyd import (
     do_asm_48,
     do_asm_plus3,
 )
-from cydc_utils import make_plus3_dsk
+from cydc_utils import make_plus3_dsk, file_must_be_generated
 
 
 def dir_path(string):
