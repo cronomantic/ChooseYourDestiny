@@ -44,7 +44,7 @@ SRC_FILES = [
     "cydc/cyd.py",
     "cydc/cydc_utils.py",
     "cydc/cydc_music.py",
-    "cydc/csc.py",
+    "cydc/cydc_csc.py",
     "cydc/plus3fs.py",
     "cydc/mkp3fs.py",
     "cydc/ply/lex.py",

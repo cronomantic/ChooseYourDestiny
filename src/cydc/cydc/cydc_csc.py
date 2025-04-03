@@ -23,10 +23,11 @@
 #
 
 
+
 from pyZX0.compress import compress_data
 
 
-class ScreenCompressor(object):
+class ScreenCompress(object):
 
     MAX_OFFSET_ZX0 = 32640
     MAX_SIZE = 6912
@@ -34,7 +35,7 @@ class ScreenCompressor(object):
     ATTRIB1 = 768
 
     def __init__(self, scr_data):
-        self.input_data = bytearray(scr_data[self.MAX_SIZE])
+        self.input_data = bytearray(scr_data[0:self.MAX_SIZE])
         self.screen_data = bytearray(self.MAX_SIZE - self.ATTRIB1)
         self.att_data = bytearray(self.ATTRIB1)
 
@@ -64,16 +65,16 @@ class ScreenCompressor(object):
         scr_zx0 = list(scr_zx0)
         txt += f"Pixel data compressed from {num_lines_scr*32} to {len(scr_zx0)} bytes! (delta {scr_delta})\n"
 
-        att_zx0, att_delta = compress_data(self.screen_data, False, False, False, False)
+        att_zx0, att_delta = compress_data(self.att_data, False, False, False, False)
         att_zx0 = list(att_zx0)
         txt += f"Attributes compressed from {num_lines_att*32} to {len(att_zx0)} bytes! (delta {att_delta})\n"
 
         filesize = len(scr_zx0) + len(att_zx0) + 2
-        csc = [(filesize & 0xFF), ((filesize >> 8) & 0xFF)]
         num_lines_scr &= 0xFF
         num_lines_att &= 0xFF
         if mirror_mode:
             num_lines_att |= 0x80
+        csc = [(filesize & 0xFF), ((filesize >> 8) & 0xFF)]
         csc.append(num_lines_scr)
         csc.append(num_lines_att)
         csc += scr_zx0
