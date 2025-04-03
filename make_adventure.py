@@ -3,7 +3,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024 Sergio Chico
+# Copyright (c) 2025 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -129,17 +129,17 @@ def main():
     tools_path = os.path.join(curr_path, "tools")
     external_path = os.path.join(curr_path, "external")
     if os.name == "nt":
-        csc_path = os.path.join(dist_path, "csc.exe")
+        # csc_path = os.path.join(dist_path, "csc.exe")
         python_path = os.path.join(dist_path, "python", "python.exe")
         sjasmplus_path = os.path.join(tools_path, "sjasmplus.exe")
-        mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
+        # mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
     else:
-        csc_path = os.path.join(dist_path, "csc")
+        # csc_path = os.path.join(dist_path, "csc")
         python_path = "/usr/bin/python"
         sjasmplus_path = os.path.join(external_path, "sjasmplus")
         sjasmplus_path = os.path.join(sjasmplus_path, "sjasmplus")
-        mkp3fs_path = os.path.join(external_path, "taptools-1.1.1")
-        mkp3fs_path = os.path.join(mkp3fs_path, "mkp3fs")
+        # mkp3fs_path = os.path.join(external_path, "taptools-1.1.1")
+        # mkp3fs_path = os.path.join(mkp3fs_path, "mkp3fs")
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
 
     #########################################################
@@ -162,8 +162,8 @@ def main():
         default=curr_path,
     )
     arg_parser.add_argument(
-        "-csc",
-        "--csc-images-path",
+        "-img",
+        "--images-path",
         type=dir_path,
         help=_("path to the directory with the SCR files"),
         default=os.path.join(curr_path, "IMAGES"),
@@ -217,7 +217,11 @@ def main():
     )
     ###
     arg_parser.add_argument(
-        "-v", "--verbose", action="store_true", help=_("show additional information")
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help=_("show additional information (-v for level 1, -vv for level 2, etc.)"),
     )
     arg_parser.add_argument(
         "-V",
@@ -320,14 +324,7 @@ def main():
         type=str.lower,
         default="plus3",
     )
-    arg_parser.add_argument(
-        "csc_path",
-        type=file_path,
-        nargs="?",
-        metavar=_("CSC_PATH"),
-        help=_("path to csc executable"),
-        default=csc_path,
-    )
+
     arg_parser.add_argument(
         "sjasmplus_path",
         nargs="?",
@@ -335,14 +332,6 @@ def main():
         type=file_path,
         help=_("path to sjasmplus executable"),
         default=sjasmplus_path,
-    )
-    arg_parser.add_argument(
-        "mkp3fs_path",
-        type=file_path,
-        nargs="?",
-        metavar=_("MKP3FS_PATH"),
-        help=_("path to mkp3fs executable"),
-        default=mkp3fs_path,
     )
 
     try:
@@ -357,7 +346,7 @@ def main():
         sys.exit(_("ERROR: Input file does not exists."))
 
     # Setting parameters
-    cydc_params = ["-csc", f"{args.csc_images_path}", "-trk", f"{args.tracks_path}"]
+    cydc_params = ["-img", f"{args.images_path}", "-trk", f"{args.tracks_path}"]
 
     if not os.path.isfile(args.tokens_file):
         cydc_params = ["-T", f"{args.tokens_file}"] + cydc_params
@@ -380,7 +369,7 @@ def main():
         cydc_params = ["-L", f"{args.max_length}"] + cydc_params
 
     if args.superset_limit:
-        cydc_params = ["-L", f"{args.superset_limit}"] + cydc_params
+        cydc_params = ["-s", f"{args.superset_limit}"] + cydc_params
 
     if args.verbose:
         cydc_params = ["-v"] + cydc_params
@@ -403,44 +392,21 @@ def main():
     if args.use_wyz_tracker:
         cydc_params = ["-wyz"] + cydc_params
 
+    if args.image_lines:
+        cydc_params = ["-il", f"{args.image_lines}"] + cydc_params
+
     cydc_params = [cydc_path] + cydc_params
     cydc_params += [
         args.model,
         input_file,
         args.sjasmplus_path,
-        args.mkp3fs_path,
+        # args.mkp3fs_path,
         args.output_path,
     ]
 
-    # Compressing CSC files
-    print("Preparing images (if any)...")
-    for f in range(256):
-        scr_file_path = os.path.join(args.csc_images_path, f"{f:03d}.SCR")
-        csc_file_path = os.path.join(args.csc_images_path, f"{f:03d}.CSC")
-        do_csc = False
-        if os.path.isfile(scr_file_path):
-            if os.path.isfile(csc_file_path):
-                if os.path.getmtime(scr_file_path) >= os.path.getmtime(csc_file_path):
-                    do_csc = True
-            else:
-                do_csc = True
-        if do_csc:
-            try:
-                run_exec(
-                    csc_path,
-                    [
-                        f"-l={args.image_lines}",
-                        f"-f",
-                        f"-o={csc_file_path}",
-                        scr_file_path,
-                    ],
-                )
-            except OSError as os1:
-                err = _("ERROR: Error running CSC.") + str(os1)
-                sys.exit(err)
-
     try:
         print("Compiling the script...")
+        print(cydc_params)
         run_exec(python_path, cydc_params)
     except OSError as os1:
         err = _("ERROR: Error running CYDC.") + str(os1)

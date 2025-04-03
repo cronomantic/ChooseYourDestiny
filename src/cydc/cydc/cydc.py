@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024 Sergio Chico
+# Copyright (c) 2025 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,15 +40,8 @@ from cydc_font import CydcFont
 from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
 
 
-from cyd import (
-    get_asm_plus3_size,
-    get_asm_48_size,
-    get_asm_128_size,
-    do_asm_128,
-    do_asm_48,
-    do_asm_plus3,
-)
-from cydc_utils import make_plus3_dsk, file_must_be_generated
+from cyd import *
+from cydc_utils import *
 
 
 def dir_path(string):
@@ -101,7 +94,7 @@ def main():
     if sys.version_info[0] < 3:  # Python 2
         sys.exit(_("ERROR: Invalid python version"))
 
-    version = "1.0.0"
+    version = "1.0.6"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
@@ -184,6 +177,14 @@ def main():
         default=False,
         help=_("Use 720 Kb disk images"),
     )
+    arg_parser.add_argument(
+        "-il",
+        "--image-lines",
+        metavar=_("NUM_IMAGE_LINES"),
+        type=int,
+        help=_("Number of lines of the image to use (default: %(default)d)"),
+        default=192,
+    )
     #####################################
     arg_parser.add_argument(
         "-wyz",
@@ -193,10 +194,10 @@ def main():
         help=_("Use WYZ tracker instead of Vortex tracker"),
     )
     arg_parser.add_argument(
-        "-csc",
-        "--csc-images-path",
+        "-img",
+        "--images-path",
         type=dir_path,
-        help=_("path to the directory with the CSC compressed Spectrum screens"),
+        help=_("path to the directory with the Spectrum screens"),
     )
     arg_parser.add_argument(
         "-trk",
@@ -218,7 +219,11 @@ def main():
     )
     ###
     arg_parser.add_argument(
-        "-v", "--verbose", action="store_true", help=_("show additional information")
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help=_("show additional information (-v for level 1, -vv for level 2, etc.)"),
     )
     arg_parser.add_argument(
         "-trim",
@@ -268,13 +273,13 @@ def main():
         type=file_path,
         help=_("path to sjasmplus executable"),
     )
-    arg_parser.add_argument(
-        "mkp3fs_path",
-        default="mkp3fs",
-        type=file_path,
-        metavar=_("MKP3FS_PATH"),
-        help=_("path to mkp3fs executable"),
-    )
+    # arg_parser.add_argument(
+    #     "mkp3fs_path",
+    #     default="mkp3fs",
+    #     type=file_path,
+    #     metavar=_("MKP3FS_PATH"),
+    #     help=_("path to mkp3fs executable"),
+    # )
     arg_parser.add_argument(
         "output_path",
         default=".",
@@ -290,7 +295,7 @@ def main():
     except NotADirectoryError as f2:
         sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
 
-    verbose = args.verbose
+    verbose = 3 if args.verbose > 3 else args.verbose
     model = args.model
     output_name = args.name
 
@@ -394,13 +399,13 @@ def main():
 
     ######################################################################
 
-    if verbose:
+    if verbose > 0:
         print(_("Parsing code..."))
 
     parser = CydcParser()
     parser.build()
-    code = parser.parse(input=text, verbose=verbose)
-    if verbose:
+    code = parser.parse(input=text, verbose=(verbose >= 3))
+    if verbose >= 2:
         print(_("Symbols:"))
         parser.print_symbols()
     if len(parser.errors) > 0:
@@ -410,7 +415,7 @@ def main():
 
     ######################################################################
 
-    if verbose:
+    if verbose > 0:
         print(_("Compressing texts..."))
 
     # Recollecting strings for tokenization
@@ -426,7 +431,7 @@ def main():
     if args.min_length > args.max_length:
         sys.exit(_("ERROR: min-length can't be greather than max-length."))
 
-    txtComp = CydcTextCompressor(gettext, args.superset_limit, verbose)
+    txtComp = CydcTextCompressor(gettext, args.superset_limit, verbose=(verbose >= 1))
     (textBytes, tokenBytes, tokens) = txtComp.compress(
         strings, args.min_length, args.max_length, tokens
     )
@@ -456,8 +461,11 @@ def main():
             fco.write(font.getJson())
 
     ######################################################################
-    if verbose:
+    if verbose > 0:
         print(_("Reading external files..."))
+
+    if args.image_lines not in range(1, 193):
+        sys.exit(_(f"ERROR: Invalid number of image lines {args.image_lines}."))
 
     sfx = None
     if args.sfx_asm_file is not None:
@@ -466,13 +474,42 @@ def main():
             sfx = re.sub(r"org\s+\d{1,6}", "", sfx, flags=re.IGNORECASE)
 
     blocks = []
-    if args.csc_images_path is not None:
+    if args.images_path is not None:
+        images_json_path = os.path.join(args.images_path, f"images.json")
+        result, images_json, error_txt = get_image_config(images_json_path)
+        if not result:
+            sys.exit(_(error_txt))
         for i in range(256):
-            fpath = os.path.join(args.csc_images_path, f"{i:03d}.CSC")
-            if os.path.isfile(fpath):
-                with open(fpath, "rb") as f:
+            fpath = os.path.join(args.images_path, f"{i:03d}.scr")
+            dpath = os.path.join(args.images_path, f"{i:03d}.csc")
+            if os.path.isfile(fpath) and file_must_be_generated(fpath, dpath):
+                scr_num_lines = args.image_lines
+                scr_force_mirror = False
+                if images_json is not None:
+                    for image_json in images_json:
+                        if image_json["id"] == i:
+                            scr_num_lines = image_json["num_lines"]
+                            scr_force_mirror = image_json["force_mirror"]
+                            if verbose >= 1:
+                                print(_(f"{fpath} is set with {scr_num_lines} lines."))
+                                if scr_force_mirror:
+                                    print(_(f"{fpath} has forced simmetry."))
+                b = compress_screen_file(
+                    fpath,
+                    num_lines=scr_num_lines,
+                    force_mirror=scr_force_mirror,
+                    verbose=(verbose >= 1),
+                )
+                if (model == "plus3") and (len(b) > (7 * 1024)):
+                    sys.exit(_("ERROR: Invalid SCR file, it is too big"))
+                with open(dpath, "wb") as f:
+                    f.write(bytearray(b))
+                t = ("SCR", i, len(b), b, dpath)
+                blocks.append(t)
+            elif os.path.isfile(dpath):
+                with open(dpath, "rb") as f:
                     b = list(f.read())
-                    t = ("SCR", i, len(b), b, fpath)
+                    t = ("SCR", i, len(b), b, dpath)
                     blocks.append(t)
                     if (model == "plus3") and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
@@ -484,7 +521,7 @@ def main():
     if args.tracks_path is not None and model != "48k":
         if args.use_wyz_tracker:
             # Using WYZ tracker
-            if verbose:
+            if verbose > 0:
                 print(_("Reading WyzTracker files..."))
             fpath1 = os.path.join(args.tracks_path, f"instruments.asm")
             if os.path.isfile(fpath1):
@@ -500,7 +537,7 @@ def main():
                         b2, delta = compress_track_data(b)
                         wyz_tracks[i] = b2
                         wyz_tracks_sizes[i] = len(b)
-                        if verbose:
+                        if verbose >= 1:
                             print(
                                 _(
                                     f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
@@ -514,7 +551,7 @@ def main():
             has_tracks = len(wyz_instruments) > 0 and len(wyz_tracks.keys()) > 0
         else:
             # PT3 tracks
-            if verbose:
+            if verbose > 0:
                 print(_("Reading PT3 files..."))
             for i in range(256):
                 fpath = os.path.join(args.tracks_path, f"{i:03d}.PT3")
@@ -532,7 +569,7 @@ def main():
 
     loading_scr = None
     if args.load_scr_file is not None:
-        if verbose:
+        if verbose > 0:
             print(_("Reading loaging screen..."))
         if os.path.isfile(args.load_scr_file):
             with open(args.load_scr_file, "rb") as f:
@@ -541,19 +578,20 @@ def main():
                 sys.exit(_("ERROR: Invalid SCR file"))
         else:
             sys.exit(_("ERROR: Can't open load SCR file."))
+
     ######################################################################
     use_wyz_tracker = has_tracks and args.use_wyz_tracker
 
     wyz_player_bin = None
     if use_wyz_tracker:
-        if verbose:
+        if verbose > 0:
             print(_("Assembling WyzTracker bank..."))
         res, wyz_player_bin = create_wyz_player_bank(
             track_path=args.tracks_path,
             sjasmplus_path=args.sjasmplus_path,
             tracks=wyz_tracks,
             instruments=wyz_instruments,
-            verbose=verbose,
+            verbose=(verbose >= 1),
         )
         if not res:
             sys.exit(_("ERROR: Invalid WyzTracker code generation."))
@@ -588,12 +626,12 @@ def main():
     asm_size = 0
     try:
         if model == "plus3":
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling interpreter for size..."))
             asm_size = get_asm_plus3_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 sfx_asm=sfx,
                 tokens=l_tokens,
                 chars=l_chars,
@@ -604,12 +642,12 @@ def main():
                 use_wyz_tracker=use_wyz_tracker,
             )
         elif model == "128k":
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling interpreter for size..."))
             asm_size = get_asm_128_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 sfx_asm=sfx,
                 tokens=l_tokens,
                 chars=l_chars,
@@ -620,12 +658,12 @@ def main():
                 use_wyz_tracker=use_wyz_tracker,
             )
         else:
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling interpreter for size..."))
             asm_size = get_asm_48_size(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 sfx_asm=sfx,
                 tokens=l_tokens,
                 chars=l_chars,
@@ -649,9 +687,9 @@ def main():
 
     ######################################################################
 
-    if model == "plus3" and verbose:
+    if model == "plus3" and verbose > 0:
         print(_("Memory organization for disk version..."))
-    elif verbose:
+    elif verbose > 0:
         print(_("Memory organization for tape version..."))
 
     # We do this to get an rounded-up approximation of the number of blocks
@@ -800,7 +838,7 @@ def main():
     print(f"- {total_bytes} bytes used.")
     print(f"- {available_bytes-total_bytes} bytes free.")
 
-    if verbose:
+    if verbose >= 1:
         print("\nIndex:\n-----------------")
         for i, v in enumerate(index):
             print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
@@ -816,13 +854,13 @@ def main():
 
     try:
         if model == "128k":
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling Spectrum 128k TAP..."))
             output_name = output_name[:10]
             do_asm_128(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 tap_name=output_name,
                 index=index,
                 blocks=available_banks,
@@ -841,13 +879,13 @@ def main():
                 name=output_name,
             )
         elif model == "plus3":
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling Spectrum PLUS3 binary files..."))
             output_name = output_name[:8]
             do_asm_plus3(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 dsk_name=output_name,
                 index=index,
                 blocks=available_banks,
@@ -866,13 +904,13 @@ def main():
                 name=output_name,
             )
         else:
-            if verbose:
+            if verbose > 0:
                 print(_("Assembling Spectrum 48k TAP..."))
             output_name = output_name[:10]
             do_asm_48(
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
-                verbose=verbose,
+                verbose=(verbose >= 1),
                 tap_name=output_name,
                 index=index,
                 blocks=available_banks,
@@ -895,7 +933,7 @@ def main():
 
     ######################################################################
     if model == "plus3":
-        if verbose:
+        if verbose > 0:
             print(_("Assembling PLUS3 disk..."))
         files = [
             os.path.join(args.output_path, "DISK"),
@@ -922,11 +960,11 @@ def main():
             files += track_list_aux
 
             make_plus3_dsk(
-                args.mkp3fs_path,
-                os.path.join(args.output_path, output_name + ".DSK"),
-                output_name,
-                files,
-                args.disk_720,
+                filename=os.path.join(args.output_path, output_name + ".DSK"),
+                filelist=files,
+                label=output_name,
+                disk_720=args.disk_720,
+                verbose=(verbose >= 1),
             )
         except OSError:
             res = False

@@ -11,9 +11,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [Requerimientos e Instalación](#requerimientos-e-instalación)
     - [Windows](#windows)
-    - [Linux, BSDs y compatibles (Experimental)](#linux-bsds-y-compatibles-experimental)
+    - [Linux, BSDs y compatibles](#linux-bsds-y-compatibles)
   - [CYDC (Compilador)](#cydc-compilador)
-  - [CSC (Compresor de Imágenes)](#csc-compresor-de-imágenes)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis Básica](#sintaxis-básica)
   - [Variables y expresiones numéricas](#variables-y-expresiones-numéricas)
@@ -142,7 +141,6 @@ Estos son los requerimientos externos de la herramienta:
 
 - [Python 3.11 o superior](https://www.python.org/)
 - [SjAsmPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
-- [TAPTOOLS 1.0.8 o superior](http://www.seasip.info/ZX/unix.html), para ser más exactos la utilidad `mkp3fs`.
 - Descompresor de ficheros ZIP
 
 Si se actualiza una versión más antigua, es recomendable NO sobrescribirla. Es mejor renombrar el directorio de la versión antigua, descomprimir la nueva versión, copiar los archivos de tu aventura a la nueva versión y configurar de nuevo el guion `make_adv` para cada caso.
@@ -153,7 +151,7 @@ Estas son las instrucciones más detalladas para cada sistema operativo:
 
 La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio. En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
 
-### Linux, BSDs y compatibles (Experimental)
+### Linux, BSDs y compatibles
 
 Para estos sistemas, los requerimientos son:
 
@@ -164,9 +162,8 @@ Para estos sistemas, los requerimientos son:
 - Autotools (autoconf, automake, aclocals...).
 - wget
 - git
-- libdsk
 
-Estos requerimientos son necesarios para compilar `SjAsmPlus` y `TAPTOOLS`. No existe distribución en binario de estas herramientas para sistemas compatibles UNIX, con lo que se requiere compilarlas directamente.
+Estos requerimientos son necesarios para compilar `SjAsmPlus`. No existe distribución en binario de esta herramienta para sistemas compatibles UNIX, con lo que se requiere compilarla directamente.
 
 Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
 
@@ -186,29 +183,6 @@ make
 cd ..
 ```
 
-Ahora, pasaremos a compilar **TAPTOOLS**, pero antes necesitamos instalar la librería **LIBDSK**. Si estás en Debian o Ubuntu, las puedes instalar con el siguiente comando (si usas Ubuntu, tienes que tener activado el repositorio "Universe"):
-
-```bash
-sudo apt-get install libdsk4 libdsk4-dev libdsk-utils
-```
-
-Para ArchLinux, el comando sería el siguiente:
-
-```bash
-pacman -S libdsk
-```
-
-Consulta si dispones de dicha librería en tu distribución. Si no es el caso, tendrás que bajártela y compilarla tú mismo.
-
-Una vez hecho esto, realizamos la siquiente secuencia de comandos:
-
-```bash
-tar -xf taptools-1.1.1.tar.gz
-cd taptools-1.1.1
-./configure
-make
-```
-
 Y con esto ya tenemos preparadas las dependencias. Como último paso, debemos poner el script de compilación como ejecutable:
 
 ```bash
@@ -225,9 +199,10 @@ Este programa es el compilador que traduce el texto de la aventura a un fichero 
 ```batch
 cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
-              [-c IMPORT-CHARSET] [-S] [-n NAME] [-csc CSC_IMAGES_PATH] [-trk TRACKS_PATH]
+              [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
-              {48k,128k,plus3} input.txt SJASMPLUS_PATH MKP3FS_PATH OUTPUT_PATH
+              [-wyz] [-nl NUM_LINES] [-720]
+              {48k,128k,plus3} input.txt SJASMPLUS_PATH OUTPUT_PATH
 ```
 
 - **\-h**: Muestra la ayuda
@@ -241,7 +216,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-S**: Si un fragmento de texto comprimido no cabe en un banco, se divide en dos entre el banco actual y el siguiente con esta opción activada. Si no, el fragmento pasa al banco siguiente.
 - **\-n NAME**: Nombre a usar para el fichero de salida (nombre para el fichero TAP o DSK), si no se define será el mismo que el fichero de entrada.
 - **\-scr LOAD_SCR_FILE**: Ruta hacia un fichero SCR con la pantalla de carga a usar.
-- **\-csc CSC_PATH**: Ruta al directorio con las imágenes CSC comprimidas de la aventura.
+- **\-img IMAGES_PATH**: Ruta al directorio con las imágenes de la aventura.
 - **\-trk TRACKS_PATH**: Ruta al directorio con los ficheros PT3 de música AY o ficheros de WyzTracker.
 - **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
 - **\-v**: Modo verboso, da más información del proceso.
@@ -249,52 +224,31 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
+- **\-nl NUM_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
 - **\-720**: En caso de usar el formato Plus3, se usará una imagen de disco de 720 Kb en lugar del tamaño estándar de 180 Kb.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
-  -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 y se carga todo de una vez. Depende del tamaño de la memoria disponible.
+  -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 ni WyzTracker y se carga todo de una vez. Depende del tamaño de la memoria disponible.
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
-- **MKP3FS_PATH**: Ruta al ejecutable mkp3fs.
 - **OUTPUT_PATH**: Ruta donde se depositarán los ficheros de salida.
 
 El compilador es un programa escrito en Python, por lo que se requiere tener el entorno de Python instalado. Para mayor comodidad, se incluye en la distribución un Python embebido y un guion batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 
-**El compilador depende de dos programas externos para funcionar**. El ensamblador `SjASMPlus` y el constructor de imágenes DSK `mkp3fs`, por lo que habrá que indicar en los parámetros de entrada las correspondientes rutas a esos programas, los cuales están incluidos en la distribución en el directorio `tools`.
+**El compilador depende de un programa externo para funcionar**, el ensamblador `SjASMPlus`, por lo que habrá que indicar en los parámetros de entrada la correspondiente ruta a este programa, el cual está incluido en la distribución en el directorio `tools`.
 
 También hay que indicar un directorio de destino para dejar los ficheros resultantes de la compilación.
 
-Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `CSC`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de archivos deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.CSC`, `001.CSC`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-csc` y -`pt3` respectivamente.
+Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `scr`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de archivos deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.scr`, `001.scr`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-img` y -`trk` respectivamente.
+
+Las imágenes serán comprimidas en un fichero de formato `CSC`. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudiéndose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio. Más detalles de éste funcionamiento en la sección [Imágenes](#imágenes).
+
+Para la música, podemos usar módulos de Vortex Tracker (`PT3`), o música creada con WyzTracker v2.0 y superiores. El comportamiento está también descrito en sus secciones correspondientes: [Melodías Vortex Tracker](#melodías-vortex-tracker) y [Melodías WyzTracker](#melodías-wyztracker).
 
 Se pueden añadir efectos de sonido generados con la aplicación BeepFx de Shiru. Para utilizarlos, hay que exportar usando la opción `File->Compile` del menú superior. En la ventana flotante que aparece, debemos asegurarnos de que tenemos seleccionado `Assembly` e `Include Player Code`, el resto de las opciones son indiferentes. Luego guardar el fichero en algún punto accesible para indicar la ruta desde la línea de comandos con la opción `-sfx`.
-
----
-
-## CSC (Compresor de Imágenes)
-
-Esta utilidad permite comprimir imágenes tipo **SCR** de ZX Spectrum para mostrarlas en el motor. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudiéndose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio.
-
-```batch
-CSC [-f] [-m] [-l=num_lines] [-o=output] input
-    -f, --force                Force overwrite of output file
-    -m, --mirror               The right side of the image is the reflection of the left one.
-    -o, --output=FILE          Output path for the file
-    -l, --num-lines=NUMBER     Number of visible lines
-    -h, --help                 Shows the command help
-```
-
-Esto es una definición de los parámetros:
-
-- **\-f, --force**: Fuerza la sobreescritura del fichero de destino si ya existiese.
-- **\-m, --mirror**: Descarta el lado derecho de la imagen y usa la imagen espejada del izquierdo.
-- **\-o, --output=FILE**: Ruta del salida del fichero comprimido.
-- **\-l, --num-lines=NUMBER**: Número de líneas de la pantalla a tratar (en carácteres, de 1 a 24).
-- **\-h, --help**: Muestra la ayuda.
-
-El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco o la memoria, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.CSC`, la imagen número 1 `001.CSC`, y así hasta 255, como ya se ha indicado en la sección anterior.
 
 ---
 
@@ -341,7 +295,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
-Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` y seleccionar con `SPACE`, `M` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú.
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 8 a la vez), y que puede elegir con las teclas `P` y `Q` o los cursores, y seleccionar con `SPACE`, `M` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú.
 De nuevo, éste es un ejemplo auto explicativo:
 
 ```cyd
@@ -1210,14 +1164,42 @@ _Función_ que devuelve la última posición accessible del array dado. A todos 
 
 ## Imágenes
 
-Para mostrar imágenes, tenemos que comprimir ficheros en formato SCR de la pantalla de Spectrum con la utilidad `CSC`.
-Los ficheros deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa, es decir, `000.CSC` para la imagen 0, `001.CSC` para la imagen 1, y así con el resto.
+El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco o la memoria, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.scr`, la imagen número 1 `001.scr`, y así hasta 255. Las imágenes deben estar en el formato de pantalla de Spectrum.
 
-Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con la utilidad `CSC` para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque se puede forzar esto con otro parámetro de la misma.
+Para mostrar imágenes, el compilador comprime los ficheros en formato SCR de la pantalla de Spectrum en ficheros comprimidos con extensión `csc`. El proceso de compresión puede ser largo, así que el compilador detecta si por cada fichero `scr`, existe un fichero equivalente con extensión `csc` más reciente en el directorio de imágenes. Si es el caso, entonces se salta este fichero, y si no, lo vuelve a comprimir, generando de nuevo el fichero `csc`.
 
-Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un buffer la imagen n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera desde el disco (por ejemplo, hacerlo al iniciar un capítulo). Si se carga una imagen cuyo fichero no existe, se generará el error de disco 23.
+Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con el compilador para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque podemos forzar este comportamiento con cualquier imagen. Para ello hay que crear un fichero llamado `images.json` dentro del directorio de imágenes.
+
+La estructura del fichero `images.json` es la siguiente:
+
+```json
+[
+  {
+    "id": 0,
+    "num_lines": 192,
+    "force_mirror": false
+  },
+  {
+    "id": 1,
+    "num_lines": 64,
+    "force_mirror": true
+  }
+]
+```
+
+Es un listado de registros con los siguientes campos:
+
+- `id` : Es el número de imágen correspondiente a esta entrada. En el ejemplo, `"id":0` corresponde a la imagen `000.scr` e `"id":1` corresponde a la imagen `001.scr`.
+- `num_lines` : Indica el número de líneas a incluir en el fichero comprimido. El mínimo es 1 y el máximo (pantalla completa) es 192.
+- `force_mirror`: Con valor `true`, forzamos a que la imagen se considere simétrica. Esto hará que se descarte la mitad derecha de la imagen y que cuando se descomprima em memoria, se dibuje en su lugar la mitad izquierda reflejada. En otro caso, este campo debe tener el valor `false`.
+
+Debemos indicar en el JSON tantos registros como imágenes queramos definir el comportamiento. Con aquellas imágenes que no estén definidas en el fichero `images.json`, se tratarán con el comportamiento normal, el cual es usar el número de líneas definidas con el parámetro `-nl` o 192 por defecto, y usar el espejado sólo en aquellas imágenes detectadas como simétricas.
+
+Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un 'buffer' la imagen número n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el 'buffer'. Cualquier operación con una imagen requiere su carga previa en dicho 'buffer'. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera para la carga desde el disco , además de cierto tiempo para realizar la descompresión de la imagen tanto en cinta como en disco. Por eso es recomendable realizar este comando en un momento adecuado, por ejemplo hacerlo al iniciar un capítulo. Si intentamos cargar una imagen que no exista, recibiremos un error 1, y si se intenta cargar una imagen cuyo fichero no existe en disco, se generará el error de disco 23.
 
 Para mostrar una imagen cargada en el buffer, usamos `DISPLAY n`, donde n tiene que ser cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
+
+También existe un método alternativo para mostrar imágenes, que es el comando `BLIT`, el cual nos permite copiar un fragmento en lugar de una imagen completa en pantalla, además de poder indicar su posición en la misma. El formato del comando es `BLIT xo, yo, ancho, alto AT xd, yd`, y tienes más detalles sobre ella en su [sección](#blit-varexpression-varexpression-varexpression-varexpression-at-varexpression-varexpression) correspondiente. `BLIT` es más versátil que `DISPLAY`, pero también es más lento, y también requiere que haya una imagen cargada en el 'buffer' de imagen con `PICTURE` previamente y sobreescribirá cualquier cosa que hubiese en pantalla en la posición donde se dibuje.
 
 ---
 
@@ -1227,7 +1209,7 @@ Añadir efectos de sonido con el beeper es muy sencillo. Para ello tenemos que c
 
 Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efecto a reproducir. Si se llama a este comando sin que exista un fichero de efectos cargado, será ignorado y seguirá la ejecución.
 
-No está contemplado llamar a un número de efecto que no exista en el fichero incluido.
+No está contemplado llamar a un número de efecto que no exista en el fichero incluido, así que es responsabilidad del autor tener cuidado de esta circunstancia, ya que el comportamiento en ese caso es impredecible.
 
 ---
 
@@ -1252,8 +1234,9 @@ A diferencia de con los módulos de Vortex Tracker, no se soporta el comando `LO
 Debido a las peculiaridades del formato de WyzTracker, hay que tener en cuenta una serie de consideraciones que afectarán al uso del motor con este reproductor de música:
 
 - Todos los módulos deben compartir los mismos instrumentos. El fichero de instrumentos se debe llamar `instruments.asm` y debe depositarse junto a los ficheros de módulos en el directorio `TRACKS`.
-- Se reservará la totalidad del banco 1 de la memoria del Spectrum, en el cual se almacenará el código del reproductor, los instrumentos y las melodías. Esto supone que se dispondrán de 16 Kb menos para la versión de cinta, y 8 Kb menos para la versión de Plus3.
+- *Se reservará la totalidad del banco 1_ de la memoria del Spectrum, en el cual se almacenará el código del reproductor, los instrumentos y las melodías. Esto supone que se dispondrán de 16 Kb menos para la versión de cinta, y 8 Kb menos para la versión de Plus3.
 - Las diferentes melodías serán comprimidas para ahorrar espacio y cada vez que se cargue una de ellas, será descomprimida en el espacio restante del banco 1. El compilador generará un error si alguna de las melodías incluidas no cabe en ese espacio restante.
+- No se soportan efectos de sonido.
 
 ---
 
@@ -1498,6 +1481,7 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 
 - David Beazley por [PLY](https://www.dabeaz.com/ply/ply.html)
 - Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0).
+- Sylvain Glaize por la versión del descompresor [ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0).
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).

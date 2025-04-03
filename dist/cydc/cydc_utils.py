@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024 Sergio Chico
+# Copyright (c) 2025 Sergio Chico
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,11 @@
 import sys
 import os
 import subprocess
+import json
 
 from string import Template
+from mkp3fs import Plus3DosFilesystem
+from cydc_csc import ScreenCompress
 
 
 class AsmTemplate(Template):
@@ -117,7 +120,89 @@ def bytes2str(list_bytes=[], b_str=""):
     return b_str
 
 
-def make_plus3_dsk(mkp3fs_path, filename, label=None, filelist=[], disk_720=False):
+def get_image_config(fpath):
+    txt = None
+    file_data = None
+    res = True
+    try:
+        if os.path.isfile(fpath):
+            with open(fpath, "r") as f:
+                file_data = json.load(f)
+            res = isinstance(file_data, list)
+            if res:
+                for scr_cfg in file_data:
+                    res = isinstance(scr_cfg, dict)
+                    if not res:
+                        break
+                    else:
+                        res = set(scr_cfg.keys()) == set(
+                            ["id", "num_lines", "force_mirror"]
+                        )
+                        if res:
+                            res = isinstance(scr_cfg["id"], int) and scr_cfg[
+                                "id"
+                            ] in range(256)
+                            if not res:
+                                break
+                            res = isinstance(scr_cfg["num_lines"], int) and scr_cfg[
+                                "num_lines"
+                            ] in range(1, 193)
+                            if not res:
+                                break
+                            res = isinstance(scr_cfg["force_mirror"], bool)
+                            if not res:
+                                break
+            if not res:
+                file_data = None
+                txt = f"ERROR: Invalid JSON format for file {fpath}\n"
+    except UnicodeDecodeError:
+        txt = f"ERROR: Invalid encoding of file: {fpath}\n"
+        res = False
+    except json.JSONDecodeError:
+        txt = f"ERROR: Invalid JSON file: {fpath}\n"
+        res = False
+    except OSError:
+        txt = f"ERROR: Can't open file: {fpath}\n"
+        res = False
+    return (
+        res,
+        file_data,
+        txt,
+    )
+
+
+def compress_screen_file(fpath, num_lines=192, force_mirror=False, verbose=False):
+    if os.path.isfile(fpath):
+        with open(fpath, "rb") as f:
+            b = list(f.read())
+            if verbose:
+                print(f"Compressing file {fpath}...")
+            csc = ScreenCompress(b)
+            cb, txt = csc.convert_to_CSC(num_lines=num_lines, force_mirror=force_mirror)
+            if verbose:
+                txt = txt.splitlines()
+                for line in txt:
+                    print(line)
+            return cb
+    return None
+
+
+def make_plus3_dsk(filename, label=None, filelist=[], disk_720=False, verbose=False):
+    p3fs = Plus3DosDiskUtil(verbose=verbose)
+    for filepath in filelist:
+        p3fs.add_file_path(filepath)
+    if not p3fs.make_plus3_disk(
+        dsk_file=filename,
+        label=label,
+        size720=disk_720,
+        timestamp=False,
+        cpmonly=True,
+        dosonly=False,
+    ):
+        raise OSError
+
+
+def make_plus3_dsk_old(mkp3fs_path, filename, label=None, filelist=[], disk_720=False):
 
     mkp3fs_path = os.path.abspath(
         mkp3fs_path
@@ -155,3 +240,13 @@ def file_must_be_generated(src_file_path, prod_file_path):
     prod_mtime = os.path.getmtime(prod_file_path)
 
     return prod_mtime <= src_mtime
+
+
+class Plus3DosDiskUtil(Plus3DosFilesystem):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        super().__init__()
+
+    def report(self, s):
+        if self.verbose:
+            print(f"{s}\n", end="")
