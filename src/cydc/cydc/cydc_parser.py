@@ -1914,7 +1914,7 @@ class CydcParser(object):
             else:
                 p[0] = ("PUSH_RANDOM", ("CONSTANT", [p[3]]))
         elif len(p) == 4:
-            p[0] = ("PUSH_RANDOM", 0)
+            p[0] = ("PUSH_RANDOM", 255)
         else:
             p[0] = None
 
