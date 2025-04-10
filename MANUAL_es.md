@@ -433,8 +433,8 @@ Consulta la referencia de [comandos](#comandos) para saber cuáles de ellos los 
 
 Por último, hay una serie de comandos especiales llamados **funciones**. Estos comandos no pueden usarse por sí solos, sino que deben usarse dentro de una expresión numérica, ya que devuelven un valor a emplear dentro de ella.
 
-- **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
-- **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(0)`.
+- **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression**.
+- **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(255)`.
 - **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
 - **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada (sólo teclado).
 - **KEMPSTON()** Devuelve los botones pulsados en un joystick kempston conectado al Spectrum.
@@ -444,7 +444,7 @@ Por último, hay una serie de comandos especiales llamados **funciones**. Estos 
 - **POSX()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 - **LASTPOS(ID)**: Devuelve el índice de la última posición del array dado.
 
-Así que, por ejemplo `SET variable_no TO RANDOM(6)`, asigna a la variable _variable_no_ un número aleatorio del 0 al 5. Y de la misma manera, podemos operar con ellos: `SET variable_no TO RANDOM(6) + @var + 1`
+Así que, por ejemplo `SET variable_no TO RANDOM(6)`, asigna a la variable _variable_no_ un número aleatorio del 0 al 6. Y de la misma manera, podemos operar con ellos: `SET variable_no TO RANDOM(6) + @var + 1`
 
 ---
 
@@ -1019,11 +1019,11 @@ Los parámetros, por órden, son:
 
 ### RANDOM(expression)
 
-_Función_ que devuelve un número aleatorio entre 0 y el valor indicado en **expression** menos uno. Si se indica cero, el resultado será como si fuese entre 0 y 255.
+_Función_ que devuelve un número aleatorio entre 0 y el valor indicado en **expression**. El máximo es 255.
 
 ### RANDOM()
 
-_Función_ que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `SET variable_no TO RANDOM(0)`.
+_Función_ que devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(255)`.
 
 ### RANDOM(expression, expression)
 
