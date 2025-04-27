@@ -1245,7 +1245,7 @@ UPDATE_OPTIONS_POS:
     add hl, de
     djnz 1b
     ret
-2:  ld a, 7                      ; ERROR
+2:  ld a, 8                      ; ERROR if option is lost
     jp SYS_ERROR
 
 CLEAR_LINE:

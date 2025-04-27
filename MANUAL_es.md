@@ -1442,6 +1442,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - Error 5: No hay un módulo de música cargado para reproducir.
 - Error 6: Código de instrucción inválido.
 - Error 7: Acceso a posición del array fuera del rango.
+- Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
