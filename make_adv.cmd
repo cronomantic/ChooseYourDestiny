@@ -18,7 +18,7 @@ REM Loading screen
 SET LOAD_SCR="./IMAGES/LOAD.scr"
 
 REM Parameters for compiler
-SET CYDC_EXTRA_PARAMS=-wyz -v
+SET CYDC_EXTRA_PARAMS=
 
 REM Run emulator after compilation (none/internal/default)
 REM     -None: Do nothing
