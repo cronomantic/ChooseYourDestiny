@@ -65,6 +65,14 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
     - [PRINT varexpression](#print-varexpression)
+    - [PAGEPAUSE expression](#pagepause-expression)
+    - [INK varexpression](#ink-varexpression)
+    - [PAPER varexpression](#paper-varexpression)
+    - [BORDER varexpression](#border-varexpression)
+    - [BRIGHT varexpression](#bright-varexpression)
+    - [FLASH varexpression](#flash-varexpression)
+    - [NEWLINE expression](#newline-expression)
+    - [NEWLINE](#newline)
     - [BACKSPACE expression](#backspace-expression)
     - [BACKSPACE](#backspace)
     - [SFX varexpression](#sfx-varexpression)
@@ -834,6 +842,38 @@ Prints as many spaces as indicated in the parameter. It is the equivalent of `RE
 
 Prints the indicated numeric value.
 
+### PAGEPAUSE expression
+
+Controls whether the player is prompted to continue after the current text area is completely filled, displaying an animated wait icon (parameter \<> 0) or scrolling up the text and continuing printing (parameter = 0).
+
+### INK varexpression
+
+Defines the character color (ink). Values ​​0-7, corresponding to the Spectrum colors.
+
+### PAPER varexpression
+
+Defines the background color (paper). Values ​​0-7, corresponding to the Spectrum colors.
+
+### BORDER varexpression
+
+Defines the border color, values ​​0-7.
+
+### BRIGHT varexpression
+
+Turns brightness on or off (0 off, 1 on).
+
+### FLASH varexpression
+
+Turns flashing on or off (0 off, 1 on).
+
+### NEWLINE expression
+
+Prints newlines equal to the number specified in the parameter (0 is 256)
+
+### NEWLINE
+
+Equivalent to `NEWLINE 1`.
+
 ### BACKSPACE expression
 
 Moves the print cursor back by the number of positions specified in the parameter (0 is 256), deleting the character at the new position and replacing it with a space. The character size used is the space (number 32).
@@ -1194,7 +1234,7 @@ The process is quite simple, but it has some dependent steps, so it is recommend
 
 To make things easier, a program called `make_adventure.py` is included that will do all of these tasks for us, as well as the corresponding `make_adv.cmd` scripts for Windows and `make_adv.sh` for UNIX to run it.
 
-The `make_adventure.py` program will automatically find and compress SCR files that conform to the given name format (number from 0 to 255 with 3 digits) within the `.\IMAGES` directory. It will do the same for modules within the `.\TRACKS` directory that conform to the name format. It will then compile the `test.txt` file and generate the `tokens.json` file with the abbreviations, if it did not already exist. If you want the abbreviation file to be generated again, simply deleting it will cause the script to tell the compiler to generate it again. It will also automatically check for a sound effects file called `SFX.ASM` that needs to be generated with **BeepFX**, and if a JSON file with the character set called `charset.json` exists, it will also use that.
+The `make_adventure.py` program will automatically search for and compress SCR files that conform to the established filename format (a 3-digit number from 0 to 255) in the `.\IMAGES` directory. It will do the same with any modules in the `.\TRACKS` directory that conform to the filename format. It will then compile the `test.txt` file and generate the `tokens.json` file with the abbreviations, if it doesn't already exist. If you want to regenerate the abbreviations file (it's recommended to do so when you're running out of memory or are finishing the adventure), simply deleting it will tell the compiler to regenerate it. It will also automatically search for a sound effects file called `SFX.ASM` that should be generated with **BeepFX**, and if a JSON file with the character set called `charset.json` exists, it will use that as well.
 
 This program needs the `dist` and `tools` directories with their contents to perform the process. The peculiarities of each operating system are detailed below:
 

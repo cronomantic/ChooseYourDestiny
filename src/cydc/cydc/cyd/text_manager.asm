@@ -1223,7 +1223,6 @@ SCROLL_WIN:
     ld (ix-2), a
     ld (ix-4), 1
     call CLEAR_RECT
-    ;TODO: Check this??
     ld a, (NUM_OPTIONS)
     or a
     call nz, UPDATE_OPTIONS_POS
