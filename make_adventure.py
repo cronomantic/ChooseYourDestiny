@@ -406,7 +406,7 @@ def main():
 
     try:
         print("Compiling the script...")
-        print(cydc_params)
+        #print(cydc_params)
         run_exec(python_path, cydc_params)
     except OSError as os1:
         err = _("ERROR: Error running CYDC.") + str(os1)
