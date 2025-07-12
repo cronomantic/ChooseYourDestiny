@@ -1,0 +1,179 @@
+Metadata-Version: 2.1
+Name: asciibars
+Version: 0.0.3
+Summary: Bar charts in ASCII
+Home-page: https://github.com/andreabonetti/asciibars
+Author: Andrea Bonetti
+Author-email: 
+Keywords: Documentation,Bar chart,Plot,Python module,Visualization
+Classifier: Development Status :: 3 - Alpha
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.0
+Classifier: Programming Language :: Python :: 3.1
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: Other Audience
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Text Processing
+Classifier: Topic :: Documentation
+Classifier: Topic :: Office/Business
+Classifier: Topic :: Other/Nonlisted Topic
+Classifier: Topic :: Printing
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Classifier: Topic :: Software Development :: Documentation
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: OS Independent
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: Unix
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# asciibars
+
+`asciibars` is a Python module for plotting bar charts in ASCII.
+
+## How to install it
+
+```
+pip install asciibars
+```
+
+## How to use it
+
+Import the module:
+```
+import asciibars
+```
+
+Define your data with both labels and counts:
+```
+data_p = [
+    ('Gigi',        64  ),
+    ('Carletto',    12  ),
+    ('Silvio',      0   ),
+    ('Priscilla',   30  ),
+    ('Rodolfo',     57  ),
+    ('Sigismondo',  70  )
+]
+```
+
+Generate your bar chart in ASCII:
+```
+asciibars.plot(data_p)
+```
+
+The command above will print:
+```
+Gigi       | 64 ██████████████████
+Carletto   | 12 ███
+Silvio     |  0 ▏
+Priscilla  | 30 █████████
+Rodolfo    | 57 ████████████████
+Sigismondo | 70 ████████████████████
+```
+
+## Arguments of asciibars.plot
+
+| Input      | Type           | Description                            |
+| ---------- | -------------- | -------------------------------------- |
+| data       | [(str, float)] | data array with labels and count       |
+| sep_lc     | str            | label-count separator                  |
+| unit       | str            | string unit for bar                    |
+| zero       | str            | string for bar when equal to zero      |
+| max_length | int            | maximum bar length in plot             |
+| neg_unit   | str            | negated bar unit (e.g., '░')           |
+| neg_max    | int            | maximum value when negated bar is used |
+| count_pf   | str            | count postfix (e.g., '%')              |
+
+
+## Examples
+
+Please find more examples below.
+
+
+```
+asciibars.plot(data_p,sep_lc=' -> ',unit='▓',max_length=40)
+
+Gigi       -> 64 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+Carletto   -> 12 ▓▓▓▓▓▓▓
+Silvio     ->  0 ▏
+Priscilla  -> 30 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+Rodolfo    -> 57 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+Sigismondo -> 70 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+```
+
+```
+asciibars.plot(data_p,unit='▓',neg_unit='░')
+
+Gigi       | 64 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░
+Carletto   | 12 ▓▓▓░░░░░░░░░░░░░░░░░
+Silvio     |  0 ░░░░░░░░░░░░░░░░░░░░
+Priscilla  | 30 ▓▓▓▓▓▓▓▓▓░░░░░░░░░░░
+Rodolfo    | 57 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░
+Sigismondo | 70 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+```
+
+```
+asciibars.plot(data_p,unit='▓',neg_unit='░',neg_max=100,count_pf='%')
+
+Gigi       | 64% ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░
+Carletto   | 12% ▓▓░░░░░░░░░░░░░░░░░░
+Silvio     |  0% ░░░░░░░░░░░░░░░░░░░░
+Priscilla  | 30% ▓▓▓▓▓▓░░░░░░░░░░░░░░
+Rodolfo    | 57% ▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░
+Sigismondo | 70% ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
+                                 100%
+```
+
+```
+data_pn = [
+    ('One',     64  ),
+    ('Two',     38  ),
+    ('Three',   0   ),
+    ('Four',    -18 ),
+    ('Five',    -30 )
+]
+
+asciibars.plot(data_pn,sep_lc=' ',count_pf='%')
+
+One    64%       ██████████████
+Two    38%       ████████
+Three   0%       ▏
+Four  -18%   ████
+Five  -30% ██████
+```
+
+## Change log
+Please find the change log [here](CHANGELOG.md).
+
+## Acknowledgments
+Thanks to:
+- [Alex](https://alexwlchan.net/) for inspiring this work with [this blog post](https://alexwlchan.net/2018/05/ascii-bar-charts/).
+- [Jinhang Jiang](https://www.linkedin.com/in/jinhangjiang/) for the tutorial on [how to publish your first Python package](https://towardsdatascience.com/an-end-to-end-guide-to-publish-your-python-package-bdb56639662c).
+
+# CHANGELOG
+
+The dates are reported as YYYY-MM-DD.
+
+## Version 0.0.1 2022-12-26
+1. Alpha release
+
+## Version 0.0.2 2022-12-26
+1. Improved readme
+
+## Version 0.0.3 2022-12-26
+1. README: added pip install command
