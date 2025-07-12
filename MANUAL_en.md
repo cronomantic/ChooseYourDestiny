@@ -10,8 +10,8 @@ In addition, it can also display compressed images stored on the same disk, as w
 
 - [Choose Your Destiny Manual](#choose-your-destiny-manual)
   - [Requirements and Installation](#requirements-and-installation)
-    - [Windows](#windows)
-    - [Linux, BSDs and compatible](#linux-bsds-and-compatible)
+    - [Windows Installation](#windows-installation)
+    - [Linux, BSDs and UNIX-like Installation](#linux-bsds-and-unix-like-installation)
   - [CYDC (Compiler)](#cydc-compiler)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Basic Syntax](#basic-syntax)
@@ -124,13 +124,13 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Vortex Tracker Music](#vortex-tracker-music)
   - [WyzTracker Music](#wyztracker-music)
   - [How to generate an adventure](#how-to-generate-an-adventure)
-    - [Windows](#windows-1)
-    - [Linux, BSDs](#linux-bsds)
+    - [Windows version](#windows-version)
+    - [Linux, BSDs and Unices version](#linux-bsds-and-unices-version)
   - [Examples](#examples)
   - [Character set](#character-set)
   - [Error codes](#error-codes)
   - [Acknowledgements](#acknowledgements)
-  - [License](#license)
+  - [Licenses](#licenses)
 
 ---
 
@@ -146,11 +146,11 @@ If you upgrade from an older version, it is recommended NOT to overwrite it. It 
 
 Here are the more detailed instructions for each operating system:
 
-### Windows
+### Windows Installation
 
 Installation is easy, just unzip the corresponding ZIP file downloaded from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository. In this case, everything is included in the package. Windows 10 or higher, 64-bit version is required (32-bit not supported).
 
-### Linux, BSDs and compatible
+### Linux, BSDs and UNIX-like Installation
 
 For these systems, the requirements are:
 
@@ -1238,7 +1238,7 @@ The `make_adventure.py` program will automatically search for and compress SCR f
 
 This program needs the `dist` and `tools` directories with their contents to perform the process. The peculiarities of each operating system are detailed below:
 
-### Windows
+### Windows version
 
 As an example, the file `make_adv.cmd` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
 
@@ -1292,7 +1292,7 @@ REM --------------------------------------
 
 The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\zesarux` folder, after compilation it will run automatically with the appropriate options.
 
-### Linux, BSDs
+### Linux, BSDs and Unices version
 
 As an example, the file `make_adv.sh` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
 
@@ -1344,6 +1344,8 @@ A number of examples are available to test the engine's capabilities and learn f
 - The `examples\Golden_Axe_select_character` folder teaches you about the `FILLATTR` and `CHOOSE IF CHANGED...` commands. The `IMAGES` subfolder contains test images.
 
 - The `examples\windows` folder contains a simple example that illustrates the use of the `WINDOW` command.
+
+- In the `examples\SCUMM_16` folder, there's an example of a SCUMM-style menu for creating such an adventure. And in the `examples\delerict` folder, there's the skeleton of a more complete adventure, including object and location handling logic.
 
 A TAP file with the compiled result is included in each directory so you can test them live on an emulator.
 
@@ -1455,29 +1457,55 @@ These errors appear when accessing the disk, when searching for more pieces of t
 
 ## Acknowledgements
 
-- David Beazley for [PLY](https://www.dabeaz.com/ply/ply.html)
-- Einar Saukas for the [ZX0](https://github.com/einar-saukas/ZX0) compressor.
+- David Beazley by [PLY](https://github.com/dabeaz/ply)
+- Einar Saukas for the compressor [ZX0](https://github.com/einar-saukas/ZX0).
+- Mokona for their version of the [ZX0 compressor for Python](https://gitea.zaclys.com/Mokona/pyZX0.git).
 - Sylvain Glaize for the decompressor version [ZX0 for Python](https://gitea.zaclys.com/Mokona/pyZX0).
 - DjMorgul for the abbreviation finder, adapted from [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
-- Shiru for [BeepFx](http://shiru.untergrund.net).
+- Shiru by [BeepFx](http://shiru.untergrund.net).
 - Seasip for mkp3fs from [Taptools](http://www.seasip.info/ZX/unix.html).
+- [Sergey.V.Bulba](http://bulba.untergrund.net) for the Vortex Tracker player.
+- Augusto Ruiz for the [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer).
+- To the team behind the [sjasmplus](https://github.com/z00m128/sjasmplus) assembler.
 - [Tranqui69](https://mastodon.social/@tranqui69) for the logo.
-- XimoKom and Fran Kapilla for their invaluable help in testing the engine.
-- Pablo Martínez Merino for help with testing on Linux and examples.
-- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ for giving me the Plus3 bug.
-- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) and [Javi Ortiz](https://twitter.com/tbrazil_speccy) for spreading the word.
-- To the [CAAD](https://caad.club) for their support.
+- XimoKom, Javier Fopiani, and Fran Kapilla for their invaluable help testing the engine.
+- Pablo Martínez Merino for help with Linux testing and examples.
+- Sergio ThePoPe for getting me interested in Plus3.
+- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe), and [Javi Ortiz](https://twitter.com/tbrazil_speccy) for sharing the story.
+- To the AD Adventure Club [CAAD](https://caad.club) for their support.
+- To all the members of the [`Choose your Destiny` Telegram group](https://t.me/+aUfKiqBUc2FiNDhk).
 
 ---
 
-## License
+## Licenses
 
-Copyright (c) 2025 Sergio Chico
+This software package is subject to different licenses depending on its components:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without  restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+- The compiler is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+- The interpreter (the executable portion on the target machine) is licensed under the following license:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR  PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```text
+Choose Your Destiny
 
-As an exception, the file `cydc_txt_compress.py` is licensed under [GPLv2](https://www.gnu.org/licenses) and is based on [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT) by DjMorgul.
+Copyright (c) 2025 Sergio Chico (Cronomantic)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+- The above copyright notice and/or one of the project logos must be prominently displayed both on the loading screen and/or within the programs that include this Software, as well as on the download website in the case of a digital copy and/or on the cover page in the case of a physical copy.
+
+- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0) is licensed under a [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
+
+- The [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) is licensed under the [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE) license.
+
+- [PLY](https://github.com/dabeaz/ply) and the [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) do not have specific licenses; a license similar to BSD or MIT is assumed.
+
+- [BeepFx](http://shiru.untergrund.net) is licensed under the [WTFPL v.2](https://wtfpl2.com).
+
+In simple terms, this means that if you use this engine to make a game, you must always indicate on the loading screen or within the game itself that it was made with `CYD` or use one of the project logos (included in the `assets` directory). You must also do so on the download website if you distribute the game online, and on the box or media container if you distribute it physically. Aside from the above condition, the game you create **ALWAYS** remains your property and authorship; you can sell or distribute it without having to publish the source code or artwork.
+However, the tool is licensed under the AGPL, which means that if you modify it or create your own version, you are required to publish the code and indicate that it is based on this project.
