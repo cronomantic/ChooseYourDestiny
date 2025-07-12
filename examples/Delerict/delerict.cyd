@@ -1,0 +1,1428 @@
+[[
+
+    /* Constantes */
+    CONST SpaceSuitIdObj = 0
+    CONST MultitoolIdObj = 1
+    CONST GunIdObj = 2
+    CONST HatchShipIdObj = 3
+
+    CONST ObjCanBeCarriedMask   = 0b00000001
+    CONST ObjCanBeWearMask      = 0b00000010
+    CONST ObjCanBeListedMask    = 0b00000100
+    CONST ObjCanBeOpenedMask    = 0b00001000
+    CONST ObjCanBeTurnedOnMask  = 0b00010000
+    CONST ObjIsAContainerMask   = 0b00100000
+
+
+    /*
+        La localización 0 es el "cajón desastre" o localización vacía, para hacer desaparecer objetos
+        La localización 255 es cuando se tiene un objeto.
+        La localización 254 es cuando se lleva puesto.
+    */
+    
+    CONST NoLoc = 0
+    CONST WearLoc = 254
+    CONST CarriedLoc = 255
+
+    CONST ShipCabinLoc = 1
+    CONST ShipMainAreaLoc = 2
+    CONST ShipAirlockLoc = 3
+    CONST ShipHoldLoc = 4
+    CONST ShipEngineRoomLoc = 5
+
+
+    CONST ShipHatchOpenFlag = 0b00000001
+    CONST ShipCabinetOpenFlag = 0b00000010
+
+
+/*
+        0 - Examinar
+        1 - Usar
+        2 - Coger
+        3 - Dejar
+        4 - Ponerse
+        5 - Quitarse
+        6 - Encender
+        7 - Apagar
+        8 - Abrir
+        9 - Cerrar
+*/
+
+    CONST CommandExamine = 0
+    CONST CommandUse = 1
+    CONST CommandTake = 2
+    CONST CommandDrop = 3
+    CONST CommandWear = 4
+    CONST CommandTakeOff = 5
+    CONST CommandTurnOn = 6
+    CONST CommandTurnOff = 7
+    CONST CommandOpen = 8
+    CONST CommandClose = 9
+
+    
+    /* Área de variables */
+
+    DECLARE 0 AS locObjs           /* Objeto inicial del listado */
+    /* Localización objetos */
+    DECLARE 0 AS locObjSpaceSuit
+    DECLARE 1 AS locObjMultitool
+    DECLARE 2 AS locObjGun
+    DECLARE 3 AS locHatchShip
+
+
+    DECLARE 128 AS loc   /* Localización actual */
+    DECLARE 129 AS flagA /* Flags 1
+
+        Bit 0 -> Escotilla abierta
+        Bit 1 -> Armario abierto
+
+    */
+
+    /* Variables temporales */
+    DECLARE 248 AS tmp0
+    DECLARE 249 AS tmp1
+    DECLARE 250 AS tmp2
+    DECLARE 251 AS tmp3
+    DECLARE 252 AS tmp4
+    DECLARE 253 AS tmp5
+    DECLARE 254 AS tmp6
+    DECLARE 255 AS tmp7
+
+    
+    /* Salidas de la localización actual */
+    DECLARE 240 AS currLocationNorth
+    DECLARE 241 AS currLocationSouth
+    DECLARE 242 AS currLocationEast
+    DECLARE 243 AS currLocationWest
+    DECLARE 244 AS currLocationUp
+    DECLARE 245 AS currLocationDown
+    DECLARE 246 AS currLocationEnter
+    DECLARE 247 AS currLocationExit
+
+    /* Variables de menú */
+    DECLARE 239 AS prevSelOptionCommand
+    DECLARE 238 AS colorSelOptionCommand
+    DECLARE 237 AS activeCommandMenu
+    DECLARE 236 AS prevSelOptionObject
+
+    DECLARE 235 AS selectedCommand /*
+        0 - Examinar
+        1 - Usar
+        2 - Coger
+        3 - Dejar
+        4 - Ponerse
+        5 - Quitarse
+        6 - Encender
+        7 - Apagar
+        8 - Encender
+        9 - Apagar
+    */
+    DECLARE 234 AS selectedObject /* Id objeto actualmente seleccionado */
+
+    DECLARE 233 AS listObjectLen /* Número de objetos en la lista */
+
+    DECLARE 232 AS listObjectPos /* Position of the selection on the list */
+
+    /* Establecer localizaciones iniciales */
+    DIM objectDefaultLocations(128) = { 
+        2,  /* Traje espacial */
+        5,  /* Multiherramienta */
+        0,  /* Pistola */
+        2,  /* Esclusa */
+        0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0
+    }
+
+    DIM objectAttr(128) = {
+        ObjCanBeCarriedMask | ObjCanBeWearMask | ObjCanBeListedMask,  /* Traje espacial */
+        ObjCanBeCarriedMask | ObjCanBeListedMask,  /* Multiherramienta */
+        ObjCanBeCarriedMask | ObjCanBeListedMask,  /* Pistola */
+        ObjCanBeOpenedMask,  /* Esclusa */
+        0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0
+    }
+
+    /* Lista objetos interacción */
+    DIM objectsListMenu(256)
+
+
+#Setup   
+    PAGEPAUSE 1
+
+    /* Pantalla completa */
+    WINDOW 0
+    MARGINS 0,0,32,24
+    CLEAR
+
+    /* Ventana de estado */
+    WINDOW 2
+    MARGINS 0,0,32,1
+    PAPER 5
+    CLEAR
+
+    /* Ventana de texto */
+    WINDOW 1
+    MARGINS 0,10,32,20-10
+    CLEAR
+
+    /* Ventanas de comandos */
+    WINDOW 3
+    MARGINS 0,21,15,3
+    PAPER 0
+    CLEAR
+
+    /* Ventana de selección */
+    WINDOW 4
+    MARGINS 20,23,12,1
+    PAPER 0
+    CLEAR
+
+    GOSUB ClearObjectList
+
+#Start
+    SET flagA TO 0
+    SET loc TO 1
+    SET activeCommandMenu TO 0
+
+    LET tmp0 = 0
+    LET tmp1 = @@locObjs
+    /*LASTPOS(objectDefaultLocations)*/
+    WHILE (@tmp0 <= LASTPOS(objectDefaultLocations))
+        LET [tmp1] = objectDefaultLocations(@tmp0)
+        LET tmp0 = @tmp0 + 1
+        LET tmp1 = @tmp1 + 1
+    WEND
+
+    GOSUB DrawMarquee
+
+
+#MainLoop
+    GOSUB PreActionsLocation
+    GOSUB GenerateCurrLocationExits
+
+    WINDOW 1
+    CHARSET 0
+    CLEAR
+    GOSUB DescribeCurrentLocation
+    GOSUB ShowObjectsCurrentLocation
+
+    /* Activar menú */
+    SET tmp0 TO 0
+    GOSUB EnableCommandMenu
+
+    GOTO MainLoop
+
+
+/*
+
+    Uses: tmp0
+*/
+#DrawMarquee
+    PICTURE 1
+    BLIT 0, 20, 32, 4 AT 0, 20
+
+#ClearMenu
+    /* Con esto dibujamos el menú sin activarlo */
+    SET tmp0 TO 1
+    GOSUB EnableCommandMenu
+
+#ClearObjectMenu
+    PICTURE 2
+    BLIT 0, 0, 3, 3 AT 16, 21
+    FILLATTR 20, 21, 2, 2, ATTRVAL(6,0,1,0)
+    FILLATTR 23, 21, 2, 2, ATTRVAL(6,0,1,0)
+    FILLATTR 26, 21, 2, 2, ATTRVAL(4,0,1,0)
+    FILLATTR 29, 21, 2, 2, ATTRVAL(2,0,1,0)
+    WINDOW 4
+    CLEAR
+    RETURN
+
+/*
+    Exits for current locations
+*/
+#GenerateCurrLocationExits
+    LET currLocationNorth = 0
+    LET currLocationSouth = 0
+    LET currLocationEast = 0
+    LET currLocationWest = 0
+    LET currLocationUp = 0
+    LET currLocationDown = 0
+    LET currLocationEnter = 0
+    LET currLocationExit = 0
+    IF @loc = ShipCabinLoc  THEN
+        /* Cabina */
+        LET currLocationSouth = ShipMainAreaLoc
+    ELSEIF @loc = ShipMainAreaLoc THEN
+        /* Sala de estar */
+        LET currLocationNorth = ShipCabinLoc 
+        LET currLocationSouth = ShipAirlockLoc
+        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+            LET currLocationDown = ShipHoldLoc
+        ENDIF
+    ELSEIF @loc = ShipAirlockLoc THEN
+        /* Esclusa */
+        LET currLocationNorth = ShipMainAreaLoc
+    ELSEIF @loc = ShipHoldLoc THEN
+        /* Bodega */
+        LET currLocationSouth = ShipEngineRoomLoc
+        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+            LET currLocationUp = ShipMainAreaLoc
+        ENDIF
+    ELSEIF @loc = ShipEngineRoomLoc THEN
+        /* Sala de máquinas */
+        LET currLocationNorth = ShipHoldLoc
+    ENDIF
+    RETURN
+
+#DescribeCurrentLocation
+    /* Mostrar texto de la localización */
+    IF @loc = ShipCabinLoc THEN
+        GOTO DescLoc1
+    ELSEIF @loc = ShipMainAreaLoc THEN
+        GOTO DescLoc2
+    ELSEIF @loc = ShipAirlockLoc THEN
+        GOTO DescLoc3
+    ELSEIF @loc = ShipHoldLoc THEN
+        GOTO DescLoc4
+    ELSEIF @loc = ShipEngineRoomLoc THEN
+        GOTO DescLoc5
+    ENDIF
+    GOTO DescLoc0
+
+/*
+    Muestra los objetos del inventario
+    Usa tmp3, tmp4, tmp5, tmp6
+*/
+#ListInventory
+    CHARSET 0
+    WINDOW 1
+    SET tmp4 TO 1
+    /* Objetos que llevas */
+    SET tmp5 TO @@locObjs
+    SET tmp6 TO 0
+    WHILE (@tmp5 < (@@locObjs + 128))
+        IF [@tmp5] = CarriedLoc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
+            IF @tmp6 = 0 THEN
+                ]]Llevas encima [[
+            ELSE
+                ]], [[
+            ENDIF
+            SET tmp3 TO @tmp5 - @@locObjs
+            GOSUB PrintObject
+            SET tmp6 TO @tmp6 + 1
+        ENDIF
+        SET tmp5 TO @tmp5 + 1
+    WEND
+    IF @tmp6 <> 0 THEN 
+        ]].[[
+    ELSE
+        ]]No llevas nada.[[
+    ENDIF
+    NEWLINE
+    /* Objetos puestos */
+    SET tmp5 TO @@locObjs
+    SET tmp6 TO 0
+    WHILE (@tmp5 < (@@locObjs + 128))
+        IF [@tmp5] = WearLoc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
+            IF @tmp6 = 0 THEN
+                ]]Tienes puesto [[
+            ELSE
+                ]], [[
+            ENDIF
+            SET tmp3 TO @tmp5 - @@locObjs
+            GOSUB PrintObject
+            SET tmp6 TO @tmp6 + 1
+        ENDIF
+        SET tmp5 TO @tmp5 + 1
+    WEND
+    IF @tmp6 <> 0 THEN 
+        ]].[[
+    ELSE
+        ]]No tienes nada puesto.[[
+    ENDIF
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+    
+
+/*
+    Muestra los objetos en la localidad actual
+    Parámetros:
+        - tmp4: Si es distinto de cero se imprime con determinante.
+
+    Usa tmp3, tmp4, tmp5, tmp6
+*/
+#ShowObjectsCurrentLocation
+    SET tmp4 TO 1
+    SET tmp5 TO @@locObjs
+    SET tmp6 TO 0
+    WHILE (@tmp5 < (@@locObjs + 128))
+        IF [@tmp5] = @loc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
+            IF @tmp6 = 0 THEN
+                ]]Aquí hay [[
+            ELSE
+                ]], [[
+            ENDIF
+            SET tmp3 TO @tmp5 - @@locObjs
+            GOSUB PrintObject
+            SET tmp6 TO @tmp6 + 1
+        ENDIF
+        SET tmp5 TO @tmp5 + 1
+    WEND
+    IF @tmp6 <> 0 THEN 
+        ]].[[
+        NEWLINE
+    ENDIF
+    RETURN
+
+/*
+    Imprime un objeto
+    Parámetros:
+        - tmp3: Índice del objeto a mostrar.
+        - tmp4: Si es distinto de cero se imprime con determinante.
+
+    Usa tmp4, tmp3
+*/
+#PrintObject
+    IF @tmp4 = 0 THEN
+        IF @tmp3 = SpaceSuitIdObj THEN ]]Traje espacial[[
+        ELSEIF @tmp3 = MultitoolIdObj THEN ]]Multiherramienta[[
+        ELSEIF @tmp3 = GunIdObj THEN ]]Pistola[[
+        ELSEIF @tmp3 = HatchShipIdObj THEN ]]Escotilla[[
+        ENDIF
+    ELSE
+        IF @tmp4 = 1 THEN
+            IF @tmp3 = SpaceSuitIdObj THEN ]]un [[
+            ELSEIF @tmp3 = MultitoolIdObj THEN ]]una [[
+            ELSEIF @tmp3 = GunIdObj THEN ]]una [[
+            ELSEIF @tmp3 = HatchShipIdObj THEN ]]una [[
+            ENDIF
+        ELSEIF @tmp4 = 2 THEN
+            IF @tmp3 = SpaceSuitIdObj THEN ]]el [[
+            ELSEIF @tmp3 = MultitoolIdObj THEN ]]la [[
+            ELSEIF @tmp3 = GunIdObj THEN ]]la [[
+            ELSEIF @tmp3 = HatchShipIdObj THEN ]]la [[
+            ENDIF
+        ENDIF
+        IF @tmp3 = SpaceSuitIdObj THEN ]]traje espacial[[
+        ELSEIF @tmp3 = MultitoolIdObj THEN ]]multiherramienta[[
+        ELSEIF @tmp3 = GunIdObj THEN ]]pistola[[
+        ELSEIF @tmp3 = HatchShipIdObj THEN ]]escotilla[[
+        ENDIF
+    ENDIF
+    RETURN
+
+
+/*
+    parameters: tmp7 = Location
+    returns: tmp5 = numObjects
+
+    Uses: tmp6, tmp5, tmp7
+
+*/
+#CountObjectsInLocation
+    LET tmp5 = 0
+    LET tmp6 = @@locObjs
+    WHILE (@tmp6 < (@@locObjs + 128))
+        IF ([@tmp6] = @tmp7 AND ((objectAttr(@tmp6) & ObjCanBeListedMask) <> 0)) THEN
+            LET tmp5 = @tmp5 + 1
+        ENDIF
+        LET tmp6 = @tmp6 + 1
+    WEND
+    RETURN
+
+/* 
+    Uses tmp7
+*/
+#ClearObjectList
+    LET tmp7 = 0
+    WHILE ()
+        LET objectsListMenu(@tmp7) = 0
+        IF @tmp7 = 255 THEN
+            LET listObjectLen = 0
+            RETURN
+        ENDIF
+        LET tmp7 = @tmp7 + 1
+    WEND
+
+/*
+    Paramenter: tmp3 = id of object to show.
+    Uses : tmp3
+*/
+#ShowObjectIcon
+    PICTURE 2
+    IF @selectedObject = SpaceSuitIdObj THEN
+        BLIT 3, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = MultitoolIdObj THEN
+        BLIT 9, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = GunIdObj THEN
+        BLIT 6, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = HatchShipIdObj THEN
+        BLIT 12, 0, 3, 3 AT 16, 21
+    ELSE
+        BLIT 0, 0, 3, 3 AT 16, 21
+    ENDIF
+    RETURN
+
+#EnableObjectMenu
+    IF @selectedCommand = CommandExamine THEN /* Examinar */
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes examinar nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandUse THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes usar nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandOpen THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes abrir nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandClose THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes cerrar nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandTake THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeCarriedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes coger nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandDrop THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = CarriedLoc AND ((objectAttr(@tmp6) & ObjCanBeCarriedMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes dejar nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandWear THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = CarriedLoc AND ((objectAttr(@tmp6) & ObjCanBeWearMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes ponerte nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandTakeOff THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = WearLoc AND ((objectAttr(@tmp6) & ObjCanBeWearMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes quitarte nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandTurnOn THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes encender nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSEIF @selectedCommand = CommandTurnOff THEN
+        GOSUB ClearObjectList
+        LET tmp7 = 0        /* Obj list counter */
+        LET tmp6 = 0        /* obj location counter */
+        WHILE (@tmp6 < 128)
+            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        LET tmp6 = 0
+        WHILE (@tmp6 < 128)
+            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
+                LET objectsListMenu(@tmp7) = @tmp6
+                LET tmp7 = @tmp7 + 1
+            ENDIF
+            LET tmp6 = @tmp6 + 1
+        WEND
+        IF @tmp7 = 0 THEN
+            WINDOW 1
+            CHARSET 0
+        ]]No puedes apagar nada.[[
+            WAITKEY
+            NEWLINE
+            RETURN
+        ELSE
+            LET listObjectLen = @tmp7
+        ENDIF
+    ELSE
+        RETURN
+    ENDIF
+
+    LET listObjectPos = 0
+    LET selectedObject = objectsListMenu(@listObjectPos)
+    LET prevSelOptionObject = 0
+    GOSUB DrawSelectedObject
+#ObjectMenu
+    MENUCONFIG 1,0,@prevSelOptionObject,0
+    /* Left */
+    OPTION GOTO SelPrevObject
+    /* Right */
+    OPTION GOTO SelNextObject
+    /* Select */
+    OPTION GOTO SelObjSelect
+    /* Cancel */
+    OPTION GOTO SelObjCancel
+    CHOOSE IF CHANGED THEN GOSUB ChObjectMenu
+    CLEAROPTIONS
+    RETURN
+
+#ChObjectMenu
+    IF @prevSelOptionObject = 0 THEN
+        FILLATTR 20, 21, 2, 2, ATTRVAL(6,0,1,0)
+    ELSEIF @prevSelOptionObject = 1 THEN
+        FILLATTR 23, 21, 2, 2, ATTRVAL(6,0,1,0)
+    ELSEIF @prevSelOptionObject = 2 THEN
+        FILLATTR 26, 21, 2, 2, ATTRVAL(4,0,1,0)
+    ELSEIF @prevSelOptionObject = 3 THEN
+        FILLATTR 29, 21, 2, 2, ATTRVAL(2,0,1,0)
+    ENDIF
+    LET prevSelOptionObject = OPTIONSEL()
+    IF @prevSelOptionObject = 0 THEN
+        FILLATTR 20, 21, 2, 2, ATTRVAL(6,1,1,0)
+    ELSEIF @prevSelOptionObject = 1 THEN
+        FILLATTR 23, 21, 2, 2, ATTRVAL(6,1,1,0)
+    ELSEIF @prevSelOptionObject = 2 THEN
+        FILLATTR 26, 21, 2, 2, ATTRVAL(4,1,1,0)
+    ELSEIF @prevSelOptionObject = 3 THEN
+        FILLATTR 29, 21, 2, 2, ATTRVAL(2,1,1,0)
+    ELSE
+        GOTO ClearObjectMenu
+    ENDIF
+    RETURN
+
+#SelNextObject
+    IF (@listObjectPos = 255) OR ((@listObjectPos + 1) = @listObjectLen) THEN
+        LET listObjectPos = 0
+    ELSE
+        LET listObjectPos = @listObjectPos + 1
+    ENDIF
+    LET selectedObject = objectsListMenu(@listObjectPos)
+    GOSUB DrawSelectedObject
+    GOTO ObjectMenu
+
+#SelPrevObject
+    IF (@listObjectPos = 0) THEN
+        LET listObjectPos = @listObjectLen - 1
+    ELSE
+        LET listObjectPos = @listObjectPos - 1
+    ENDIF
+    LET selectedObject = objectsListMenu(@listObjectPos)
+    GOSUB DrawSelectedObject
+    GOTO ObjectMenu
+
+#SelObjSelect
+    GOTO ClearObjectMenu
+    RETURN
+
+#SelObjCancel
+    LET selectedObject = 0xFF
+    GOTO ClearObjectMenu
+    RETURN
+
+#DrawSelectedObject
+    WINDOW 4
+    CLEAR
+    LET tmp4 = 0
+    LET tmp3 = @selectedObject
+    GOSUB PrintObject
+    IF @selectedObject = SpaceSuitIdObj THEN
+        
+    ELSEIF @selectedObject = MultitoolIdObj THEN
+        
+    ELSEIF @selectedObject = GunIdObj THEN
+        
+    ELSEIF @selectedObject = HatchShipIdObj THEN
+        
+    ELSE /* 0xFF */
+        GOTO ClearObjectMenu
+    ENDIF
+
+    GOTO ShowObjectIcon
+  
+
+
+/*******************************************************/
+/*
+    Parámetros:
+        activeCommandMenu: Indica el menú actualmente activo
+        tmp0: Si es distinto de cero, no activa los menús, solo imprime el texto.
+    
+    Usa tmp0, 
+*/
+#EnableCommandMenu
+    IF @activeCommandMenu = 0 THEN
+        GOTO CommandMenu1
+    ELSEIF @activeCommandMenu = 1 THEN
+        GOTO CommandMenu2
+    ELSEIF @activeCommandMenu = 2 THEN
+        GOTO MovementMenu
+    ENDIF
+    GOTO OptionMenu
+
+#CommandMenu1
+    WINDOW 3
+    CLEAR
+    CHARSET 1
+    MENUCONFIG 1,3,4,0
+    LET prevSelOptionCommand = 4
+    LET activeCommandMenu = 0
+    AT 0, 0
+    OPTION GOTO TurnOnObject
+]]Encender[[
+    AT 5, 0
+    OPTION GOTO MovementMenu
+]]Ir a ...[[
+    AT 10, 0
+    OPTION GOTO TakeObject
+]]Coger[[
+    AT 0, 1
+    OPTION GOTO UseObject
+]]Usar[[
+    AT 5, 1
+    OPTION GOTO CommandMenu2
+]]  -<>-[[
+    AT 10, 1
+    OPTION GOTO WearObject
+]]Ponerse[[
+    AT 0, 2
+    OPTION GOTO OpenObject
+]]Abrir[[
+    AT 5, 2
+    OPTION GOTO ExamineObject
+]]Examinar[[
+    AT 10, 2
+    OPTION GOTO DescribeLocation
+]]Mirar[[
+    IF @tmp0 = 0 THEN
+        CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
+    ENDIF
+    CLEAROPTIONS
+    RETURN
+
+#CommandMenu2
+    WINDOW 3
+    CLEAR
+    CHARSET 1
+    MENUCONFIG 1,3,4,0
+    LET prevSelOptionCommand = 4
+    LET activeCommandMenu = 1
+    AT 0, 0
+    OPTION GOTO TurnOffObject
+]]Apagar[[
+    AT 5, 0
+    OPTION GOTO ListInventory
+]]Inventar.[[
+    AT 10, 0
+    OPTION GOTO DropObject
+]]Dejar[[
+    AT 0, 1
+    OPTION GOTO UseObject
+]]Usar[[
+    AT 5, 1
+    OPTION GOTO CommandMenu1
+]]  -<>-[[
+    AT 10, 1
+    OPTION GOTO TakeOffObject
+]]Quitarse[[
+    AT 0, 2
+    OPTION GOTO CloseObject
+]]Cerrar[[
+    AT 5, 2
+    OPTION GOTO ExamineObject
+]]Examinar[[
+    AT 10, 2
+    OPTION GOTO OptionMenu
+]]Opciones[[
+    IF @tmp0 = 0 THEN
+        CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
+    ENDIF
+    CLEAROPTIONS
+    RETURN
+
+#MovementMenu
+    WINDOW 3
+    CLEAR
+    CHARSET 1
+    MENUCONFIG 1,3,4,0
+    LET prevSelOptionCommand = 4
+    LET activeCommandMenu = 2
+    AT 0, 0
+    OPTION GOTO GoUp
+]]Subir[[
+    AT 5, 0
+    OPTION GOTO GoNorth
+]]Norte[[
+    AT 10, 0
+    OPTION GOTO GoEnter
+]]Entrar[[
+    AT 0, 1
+    OPTION GOTO GoWest
+]]Oeste[[
+    AT 5, 1
+    OPTION GOTO CommandMenu1
+]]  -<>-[[
+    AT 10, 1
+    OPTION GOTO GoEast
+]]Este[[
+    AT 0, 2
+    OPTION GOTO GoDown
+]]Bajar[[
+    AT 5, 2
+    OPTION GOTO GoSouth
+]]Sur[[
+    AT 10, 2
+    OPTION GOTO GoExit
+]]Salir[[
+    IF @tmp0 = 0 THEN
+        CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
+    ENDIF
+    CLEAROPTIONS
+    RETURN
+
+#OptionMenu
+    WINDOW 3
+    CLEAR
+    CHARSET 1
+    MENUCONFIG 1,3,4,0
+    LET prevSelOptionCommand = 4
+    LET activeCommandMenu = 3
+    AT 0, 0
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 5, 0
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 10, 0
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 0, 1
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 5, 1
+    OPTION GOTO CommandMenu2
+]]  -<>-[[
+    AT 10, 1
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 0, 2
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 5, 2
+    OPTION GOTO DoCommandMenu
+]] [[
+    AT 10, 2
+    OPTION GOTO DoCommandMenu
+]] [[
+    IF @tmp0 = 0 THEN
+        CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
+    ENDIF
+    CLEAROPTIONS
+    RETURN
+
+#ChCommandMenu
+    LET colorSelOptionCommand = ATTRVAL(7,0,0,0)
+    GOSUB CommandMenuHighlight
+    IF @activeCommandMenu = 1 THEN
+        LET colorSelOptionCommand = ATTRVAL(7,2,0,0)
+    ELSEIF @activeCommandMenu = 2 THEN
+        LET colorSelOptionCommand = ATTRVAL(7,4,0,0)
+    ELSE
+        LET colorSelOptionCommand = ATTRVAL(7,1,0,0)
+    ENDIF
+    LET prevSelOptionCommand = OPTIONSEL()
+#CommandMenuHighlight
+    IF @prevSelOptionCommand = 0 THEN
+        FILLATTR 0,21+0,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 1 THEN
+        FILLATTR 5,21+0,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 2 THEN
+        FILLATTR 10,21+0,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 3 THEN
+        FILLATTR 0,21+1,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 4 THEN
+        FILLATTR 5,21+1,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 5 THEN
+        FILLATTR 10,21+1,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 6 THEN
+        FILLATTR 0,21+2,5,1,@colorSelOptionCommand
+    ELSEIF @prevSelOptionCommand = 7 THEN
+        FILLATTR 5,21+2,5,1,@colorSelOptionCommand
+    ELSE
+        FILLATTR 10,21+2,5,1,@colorSelOptionCommand
+    ENDIF
+    RETURN
+
+/******************************************************************************************************************************/
+/* Comandos */
+#DescribeLocation /* Hard return to redescribe the location */
+    RETURN
+
+#GoNorth
+    IF (@currLocationNorth = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationNorth
+    RETURN
+#GoSouth
+    IF (@currLocationSouth = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationSouth
+    RETURN
+#GoEast
+    IF (@currLocationEast = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationEast
+    RETURN
+#GoWest
+    IF (@currLocationWest = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationWest
+    RETURN
+#GoUp
+    IF (@currLocationUp = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationUp
+    RETURN
+#GoDown
+    IF (@currLocationDown = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationDown
+    RETURN
+#GoEnter
+    IF (@currLocationEnter = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationEnter
+    RETURN
+#GoExit
+    IF (@currLocationExit = 0) THEN
+        GOTO NoValidExit
+    ENDIF
+    LET loc = @currLocationExit
+    RETURN
+
+#NoValidExit
+    CHARSET 0
+    WINDOW 1
+]]No puedes ir en esa dirección.[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+
+#ExamineObject
+    LET selectedCommand = CommandExamine
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = SpaceSuitIdObj THEN
+        GOSUB DescObj0
+    ELSEIF @selectedObject = MultitoolIdObj THEN
+        GOSUB DescObj1
+    ELSEIF @selectedObject = GunIdObj THEN
+        GOSUB DescObj2
+    ELSEIF @selectedObject = HatchShipIdObj THEN
+        GOSUB DescObj3
+    ELSE
+        GOSUB DescObj255
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#OpenObject
+    LET selectedCommand = CommandOpen
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = HatchShipIdObj THEN
+        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
+            ]]La escotilla ya está abierta.[[
+            WAITKEY
+            NEWLINE
+        ELSE
+            LET flagA = @flagA | ShipHatchOpenFlag
+            ]]Abres la escotilla.[[
+            WAITKEY
+            NEWLINE
+        ENDIF
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#CloseObject
+    LET selectedCommand = CommandOpen
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = HatchShipIdObj THEN
+        IF (@flagA & ShipHatchOpenFlag) = 0 THEN
+            ]]La escotilla ya está cerrada.[[
+            WAITKEY
+            NEWLINE
+        ELSE
+            LET flagA = @flagA & (!ShipHatchOpenFlag)
+            ]]Cierras la escotilla.[[
+            WAITKEY
+            NEWLINE
+        ENDIF
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#TakeObject
+    LET selectedCommand = CommandTake
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    LET tmp3 = @selectedObject + @@locObjs
+    LET [tmp3] = CarriedLoc
+
+    CHARSET 0
+    WINDOW 1
+    ]]Coges [[
+    LET tmp4 = 2
+    LET tmp3 = @selectedObject
+    GOSUB PrintObject
+    ]].[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+#DropObject
+    LET selectedCommand = CommandDrop
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    LET tmp3 = @selectedObject + @@locObjs
+    LET [tmp3] = @loc
+
+    CHARSET 0
+    WINDOW 1
+    ]]Dejas [[
+    LET tmp4 = 2
+    LET tmp3 = @selectedObject
+    GOSUB PrintObject
+    ]].[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+#WearObject
+    LET selectedCommand = CommandWear
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    LET tmp3 = @selectedObject + @@locObjs
+    LET [tmp3] = WearLoc
+
+    CHARSET 0
+    WINDOW 1
+    ]]Te pones [[
+    LET tmp4 = 2
+    LET tmp3 = @selectedObject
+    GOSUB PrintObject
+    ]].[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+#TakeOffObject
+    LET selectedCommand = CommandTakeOff
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    LET tmp3 = @selectedObject + @@locObjs
+    LET [tmp3] = CarriedLoc
+
+    CHARSET 0
+    WINDOW 1
+    ]]Te quitas [[
+    LET tmp4 = 2
+    LET tmp3 = @selectedObject
+    GOSUB PrintObject
+    ]].[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+#TurnOnObject
+    LET selectedCommand = CommandTurnOn
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#TurnOffObject
+    LET selectedCommand = CommandTurnOff
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#UseObject
+    LET selectedCommand = CommandUse
+    LET selectedObject = 0xFF
+    GOSUB EnableObjectMenu
+    IF @selectedObject = 0xFF THEN
+        RETURN
+    ENDIF
+
+    GOTO EnableCommandMenu
+
+#DoCommandMenu
+    CHARSET 0
+    WINDOW 1
+    WAITKEY
+    RETURN
+
+
+/******************************************************************************************************************************/
+#PreActionsLocation
+    /* Mover la esclusa a las dos zonas de la nave donde está */
+    IF @loc = ShipMainAreaLoc OR @loc = ShipHoldLoc THEN
+        LET locHatchShip = @loc
+    ENDIF
+    RETURN
+
+/******************************************************************************************************************************/
+/* Descripciones de localizaciones */
+#DescLoc0
+]]No deberías estar aquí... ERROR ERROR ERROR
+[[
+    RETURN
+
+#DescLoc1
+]]Estás en la cabina de mandos de la cápsula de atraque, la cual has conseguido atracar a una de las esclusas del pecio alienígena.
+A través de la ventana principal divisas tu nave, la "Carl Sagan", suspendida en la eternidad...
+Se puede acceder al resto de la nave yendo al SUR.
+[[
+    RETURN
+
+#DescLoc2
+]]El habitáculo principal donde residiría la tripulación de exploración del pecio.
+Pequeños habitáculos personales llenan las paredes y el techo. Todos vacíos, excepto el tuyo...
+Un agrio recuerdo de la tripulación perdida por culpa de un sistema de hibernación poco probado...
+Puedes ir al NORTE para acceder a la cabina de mandos y a la cámara estanca al SUR. En el suelo hay una escotilla [[
+    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+        ]]abierta[[
+    ELSE
+        ]]cerrada[[
+    ENDIF 
+]] para bajar a la bodega.
+[[
+    RETURN
+
+#DescLoc3
+]]La exclusa al exterior de la cápsula, y actualmente acoplada a una puerta de acceso de la nave alienígena.
+En la pared tienes los controles de la cámara estanca.
+[[
+    RETURN
+
+#DescLoc4
+]]La "bodega" de la cápsula (tomando prestado el término marítimo).
+Básicamente es la zona de almacenaje donde se guardan los víveres, respuestos y todos los utensilios que se pudiesen necesitar.
+Al SUR está la "sala de máquinas". En la pared hay un armario [[
+    IF (@flagA & ShipCabinetOpenFlag) <> 0 THEN /* Armario abierta */
+        ]]abierto[[
+    ELSE
+        ]]cerrado[[
+    ENDIF 
+]] y una escotilla [[
+    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+        ]]abierta[[
+    ELSE
+        ]]cerrada[[
+    ENDIF 
+]] en el techo.
+[[
+    RETURN
+
+#DescLoc5
+]]En esta sala se encuentra el reactor principal de la nave y los motores para realizar mantenimiento o reparaciones básicas.
+El zumbido de la maquinaria es constante y la radiación es alta, con lo que mejor no pasar demasiado tiempo aquí...
+Al NORTE tienes el acceso a la bodega.
+[[
+    RETURN
+
+/******************************************************************************************************************************/
+/* Descripciones de objetos */
+#DescObj255
+]]Objeto nulo... ERROR ERROR ERROR
+[[
+    RETURN
+
+#DescObj0
+]]Un traje espacial. Indispensable para poder sobrevivir en el vacío del espacio o en entornos hostiles para la vida humana por un tiempo...
+[[
+    RETURN
+
+#DescObj1
+]]Una multiherramienta. Como su nombre indica, una herramienta multiusos para poder atornillar, taladrar, limar, etc. Una caja de herramientas en uno.
+[[
+    RETURN
+
+#DescObj2
+]]Una pistola electromagnética. Impulsa mediante campos electromagnéticos pequeños balines de metal.
+[[
+    RETURN
+
+#DescObj3
+]]La esclusa que permite el paso entre las dos cubiertas de la nave. [[
+    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
+    ]]Está abierta, con lo que puedes acceder a la otra cubierta de la nave.
+[[
+    ELSE
+    ]]Está cerrada.
+[[
+    ENDIF
+
+    RETURN
+
+
+/******************************************************************************************************************************/
+]]

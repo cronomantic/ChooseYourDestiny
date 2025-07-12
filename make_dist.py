@@ -102,6 +102,10 @@ DIST_FILES = [
     "dist/cydc_cli.py",
     "IMAGES/readme.txt",
     "TRACKS/readme.txt",
+    "documentation/es/MANUAL_es.pdf",
+    "documentation/en/MANUAL_en.pdf",
+    "documentation/es/TUTORIAL_es.pdf",
+    "documentation/en/TUTORIAL_en.pdf",
 ]
 DIST_FILES_WIN32 = [
     "make_adv.cmd",
