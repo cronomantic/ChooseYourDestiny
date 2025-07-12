@@ -92,7 +92,6 @@ DIST_DIRS_LINUX = [] + DIST_DIRS
 DIST_FILES = [
     "make_adventure.py",
     "LICENSE",
-    "LICENSE_GPL",
     "version.txt",
     "test.cyd",
     "MANUAL_es.md",
