@@ -1,37 +1,26 @@
+# -- coding: utf-8 -*-
 #
-# MIT License
+# Choose Your Destiny.
 #
-# Copyright (c) 2025 Sergio Chico
+# Copyright (C) 2024 Sergio Chico <cronomantic@gmail.com>
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys
-import os
-import gettext
-import argparse
-import json
-import re
-import copy
+import sys, os, gettext, argparse, json, re, copy, math
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -39,9 +28,15 @@ from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
 from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
 
-
 from cyd import *
 from cydc_utils import *
+
+try:
+    import asciibars
+
+    abarAvailable = True
+except ImportError:
+    abarAvailable = False
 
 
 def dir_path(string):
@@ -103,6 +98,9 @@ def main():
     )
     gettext.textdomain(exec)
     _ = gettext.gettext
+
+    timer = Timer()
+    tmp_timer = Timer()
 
     arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
 
@@ -312,9 +310,14 @@ def main():
         output_name = os.path.splitext(os.path.basename(args.input))
         output_name = output_name[0]
 
+    if verbose >= 1:
+        print(_(f"Parameters parsed in {tmp_timer}"))
+
     ######################################################################
+
     tokens = None
     if args.import_tokens_file is not None:
+        tmp_timer.reset()
         input_token_file = args.import_tokens_file
         if not os.path.isfile(input_token_file):
             sys.exit(_("Path to token file does not exist."))
@@ -336,11 +339,14 @@ def main():
                 if not isinstance(t, str):
                     sys.exit(_("ERROR: The token import file has not a valid format."))
             tokens = jsonToken
+        if verbose >= 1:
+            print(_(f"Tokens imported in {tmp_timer}"))
 
     ######################################################################
     # Importing Font
     font = CydcFont()
     if args.import_charset is not None:
+        tmp_timer.reset()
         input_charset_file = args.import_charset
         jsonCharset = None
         if not os.path.isfile(input_charset_file):
@@ -396,12 +402,15 @@ def main():
                         _("ERROR: The charset import file has not a valid format.")
                     )
         font.loadCharset(jsonCharset)
+        if verbose >= 1:
+            print(_(f"Character set loaded in {tmp_timer}"))
 
     ######################################################################
 
     if verbose > 0:
         print(_("Parsing code..."))
 
+    tmp_timer.reset()
     parser = CydcParser()
     parser.build()
     code = parser.parse(input=text, verbose=(verbose >= 3))
@@ -412,11 +421,13 @@ def main():
         for e in parser.errors:
             print("ERROR:" + e)
         sys.exit(1)
+    print(_(f"Code parsing completed ({tmp_timer})"))
 
     ######################################################################
 
     if verbose > 0:
         print(_("Compressing texts..."))
+    tmp_timer.reset()
 
     # Recollecting strings for tokenization
     strings = []
@@ -452,6 +463,8 @@ def main():
 
     del txtComp
 
+    print(_(f"Text compression completed ({tmp_timer})"))
+
     ######################################################################
 
     # Exporting current font
@@ -479,6 +492,7 @@ def main():
         result, images_json, error_txt = get_image_config(images_json_path)
         if not result:
             sys.exit(_(error_txt))
+        tmp_timer.reset()
         for i in range(256):
             fpath = os.path.join(args.images_path, f"{i:03d}.scr")
             dpath = os.path.join(args.images_path, f"{i:03d}.csc")
@@ -513,12 +527,14 @@ def main():
                     blocks.append(t)
                     if (model == "plus3") and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
+        print(_(f"Images processing completed ({tmp_timer})"))
 
     has_tracks = False
     wyz_instruments = ""
     wyz_tracks = dict()
     wyz_tracks_sizes = dict()
     if args.tracks_path is not None and model != "48k":
+        tmp_timer.reset()
         if args.use_wyz_tracker:
             # Using WYZ tracker
             if verbose > 0:
@@ -566,6 +582,7 @@ def main():
                         blocks.append(t)
                         if not has_tracks:
                             has_tracks = True
+        print(_(f"Tracks processing completed ({tmp_timer})"))
 
     loading_scr = None
     if args.load_scr_file is not None:
@@ -579,6 +596,8 @@ def main():
         else:
             sys.exit(_("ERROR: Can't open load SCR file."))
 
+    ######################################################################
+    tmp_timer.reset()
     ######################################################################
     use_wyz_tracker = has_tracks and args.use_wyz_tracker
 
@@ -816,11 +835,34 @@ def main():
 
     print("\nRAM usage:\n-----------------")
     total_bytes = 0
+    bars_data = []
     for i, v in enumerate(available_banks):
         total_bytes += len(v)
-        print(
-            f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free: {available_bank_size[i]} bytes."
+        if abarAvailable:
+            bars_data.append(
+                (
+                    f"Bank [{spectrum_banks[i]}]: {len(v)} / {available_bank_size[i]} bytes",
+                    math.ceil(
+                        (len(v) * 100.0) / (len(v) + available_bank_size[i]) * 100.0
+                    )
+                    / 100.0,
+                )
+            )
+        else:
+            print(
+                f"Bank [{spectrum_banks[i]}]: {len(v)} Bytes / Free: {available_bank_size[i]} bytes."
+            )
+    if abarAvailable:
+        asciibars.plot(
+            bars_data,
+            sep_lc=" -> ",
+            count_pf="%",
+            max_length=20,
+            unit="▓",
+            neg_unit="░",
+            neg_max=100,
         )
+
     if use_wyz_tracker:
         print(_("Bank [1]: Reserved for WyzTracker."))
 
@@ -837,12 +879,29 @@ def main():
     print(f"- {available_bytes} bytes available.")
     print(f"- {total_bytes} bytes used.")
     print(f"- {available_bytes-total_bytes} bytes free.")
+    if abarAvailable:
+        bars_data = [
+            (
+                "- RAM usage",
+                math.ceil(((total_bytes * 100.0) / available_bytes) * 100.0) / 100.0,
+            )
+        ]
+        asciibars.plot(
+            bars_data,
+            sep_lc=": ",
+            count_pf="%",
+            max_length=40,
+            unit="▓",
+            neg_unit="░",
+            neg_max=100,
+        )
 
     if verbose >= 1:
         print("\nIndex:\n-----------------")
         for i, v in enumerate(index):
             print(f"Type={v[0]} Index={v[1]} Bank={v[2]} Start Address=${v[3]:04X}")
-        print()
+
+    print()
 
     # Cutting the spectrum banks not used from the list
     spectrum_banks = spectrum_banks[0 : len(available_banks)]
@@ -980,6 +1039,8 @@ def main():
                 sys.exit("ERROR: could not create DSK file")
 
     ######################################################################
+    print(_(f"TAP/DSK generation completed ({tmp_timer})"))
+    print(_(f"Compilation successful in {timer}"))
     sys.exit(0)
 
 

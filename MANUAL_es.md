@@ -10,8 +10,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
   - [Requerimientos e Instalación](#requerimientos-e-instalación)
-    - [Windows](#windows)
-    - [Linux, BSDs y compatibles](#linux-bsds-y-compatibles)
+    - [Instalación en Windows](#instalación-en-windows)
+    - [Instalación en Linux, BSDs y compatibles](#instalación-en-linux-bsds-y-compatibles)
   - [CYDC (Compilador)](#cydc-compilador)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis Básica](#sintaxis-básica)
@@ -125,13 +125,13 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Melodías Vortex Tracker](#melodías-vortex-tracker)
   - [Melodías WyzTracker](#melodías-wyztracker)
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
-    - [Windows](#windows-1)
+    - [Windows](#windows)
     - [Linux, BSDs](#linux-bsds)
   - [Ejemplos](#ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
-  - [Licencia](#licencia)
+  - [Licencias](#licencias)
 
 ---
 
@@ -147,11 +147,11 @@ Si se actualiza una versión más antigua, es recomendable NO sobrescribirla. Es
 
 Estas son las instrucciones más detalladas para cada sistema operativo:
 
-### Windows
+### Instalación en Windows
 
 La instalación es sencilla, simplemente descomprimir el fichero ZIP correspondiente descargado de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio. En este caso, está todo incluido en el paquete. Se requiere Windows 10 o superior, versión de 64 bits (32 bits no soportados).
 
-### Linux, BSDs y compatibles
+### Instalación en Linux, BSDs y compatibles
 
 Para estos sistemas, los requerimientos son:
 
@@ -1370,6 +1370,8 @@ Dispones de una serie de ejemplos para comprobar las capacidades del motor y apr
 
 - En la carpeta `examples\windows` tienes un ejemplo sencillo que ilustra el uso del comando `WINDOW`.
 
+- En la carpeta `examples\SCUMM_16` hay un ejemplo de un menú tipo SCUMM para hacer una aventura de este tipo. Y en la carpeta `examples\delerict` hay un esqueleto de otra aventura más completa, que incluye lógica de manejo de objetos y localidades.
+
 Se incluye en cada directorio un fichero TAP con el resultado compilado para que poder probarlos en vivo en un emulador.
 
 Para compilarlos por uno mismo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
@@ -1437,7 +1439,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 
 - Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
 - Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
-- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION`.
+- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION` declarada.
 - Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
 - Error 5: No hay un módulo de música cargado para reproducir.
 - Error 6: Código de instrucción inválido.
@@ -1480,28 +1482,55 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 
 ## Referencias y agradecimientos
 
-- David Beazley por [PLY](https://www.dabeaz.com/ply/ply.html)
+- David Beazley por [PLY](https://github.com/dabeaz/ply)
 - Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0).
+- Mokona por su versión del [compresor ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0.git).
 - Sylvain Glaize por la versión del descompresor [ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0).
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
+- [Sergey.V.Bulba](http://bulba.untergrund.net) por el reproductor de Vortex Tracker.
+- Augusto Ruiz por el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer).
+- Al equipo responsable del ensamblador [sjasmplus](https://github.com/z00m128/sjasmplus).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
 - XimoKom, Javier Fopiani y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
-- 𝕊𝕖𝕣𝕘𝕚𝕠 ᵗʰᴱᵖᴼᵖᴱ por meterme el gusanillo del Plus3.
+- Sergio ThePoPe por meterme el gusanillo del Plus3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y [Javi Ortiz](https://twitter.com/tbrazil_speccy) por la difusión.
 - Al Club de Aventuras AD [CAAD](https://caad.club) por el apoyo.
+- A todos los miembros del [grupo de Telegram de `Choose your Destiny`](https://t.me/+aUfKiqBUc2FiNDhk).
 
 ---
 
-## Licencia
+## Licencias
 
-Copyright (c) 2025 Sergio Chico
+Este paquete de software está sometido a diferentes licencias dependiendo de sus componentes:
 
-Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
+- El compilador está bajo licencia [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
-El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
-EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
+- El intérprete (la parte ejecutable en la máquina objetivo) se encuentra bajo la siguiente licencia:
 
-Como excepción, el fichero `cydc_txt_compress.py` está bajo licencia [GPLv2](https://www.gnu.org/licenses) y está basado en [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT) de DjMorgul.
+```text
+Choose Your Destiny 
+
+Copyright (c) 2025 Sergio Chico (Cronomantic)
+
+Por la presente se concede permiso, libre de cargos, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el "Software"), a utilizar el Software sin restricción, incluyendo sin limitación los derechos a usar, copiar, modificar, fusionar, publicar, distribuir, y/o vender copias del Software, y a permitir a las personas a las que se les proporcione el Software a hacer lo mismo, sujeto a las siguientes condiciones:
+
+- El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
+
+- El aviso del copyright anterior y/o uno de los logotipos del proyecto deben estar indicados de forma visible tanto en la pantalla de carga y/o dentro de los propios programas que incluyan este Software, así como en la web de descarga en caso de copia digital y/o en la portada en caso de copia física.
+
+- EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
+```
+
+- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0), está sometido a licencia [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
+
+- El [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) está bajo licencia [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE)
+
+- [PLY](https://github.com/dabeaz/ply) y el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) no tienen licencias específicas, se asume una licencia similar a BSD o MIT.
+
+- [BeepFx](http://shiru.untergrund.net) está bajo licencia [WTFPL v.2](https://wtfpl2.com).
+
+En términos sencillos, significa que si usas este motor para hacer un juego, siempre tienes que indicar en la pantalla de carga o dentro del propio juego que se ha realizado con `CYD` o usar alguno de los logotipos de proyecto (incluidos en el directorio `assets`). También debes hacerlo en la web de descarga si distribuyes el juego online, y en la caja o recipiente del medio si lo distribuyes de forma física. Aparte de la anterior condición, el juego realizado **SIEMPRE** será de tu propiedad y autoría; puedes venderlo o distribuirlo sin necesitad de publicar el código fuente ni recursos artísticos.
+Sin embargo, la herramienta está bajo licencia AGPL, lo que significa que si la modificas o haces una versión propia, tienes obligación de publicar el código e indicar que está basado en este proyecto.
