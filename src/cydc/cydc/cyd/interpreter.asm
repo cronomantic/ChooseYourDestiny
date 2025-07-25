@@ -1271,6 +1271,9 @@ OP_CHOOSE_W:
     jp z, .inkey
     jr 3b
 .count_elapsed:
+    ld a, $FF
+    ld (SELECTED_OPTION), a 
+    ld (SELECTED_OPTION_VALUE), a 
     ld hl, TIMEOUT_OPTION
     jr 3f
 .selected:
@@ -1281,10 +1284,10 @@ OP_CHOOSE_W:
     add a, 2
     ld l, a
     ld h, HIGH OPTIONS_TABLE
-3:  ld a, (hl)      ;Store selected option value
+    ld a, (hl)      ;Store selected option value
     inc hl
     ld (SELECTED_OPTION_VALUE), a 
-    ld c, (hl)               ;C= if is GOSUB
+3:  ld c, (hl)               ;C= if is GOSUB
     inc hl
     xor a
     ld (NUM_OPTIONS), a
