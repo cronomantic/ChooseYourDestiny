@@ -36,6 +36,7 @@ from __future__ import print_function
 
 import sys
 import os
+import json
 import shutil
 import subprocess
 import threading
@@ -58,19 +59,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 
 
-# PIL/Pillow is optional – tkinter can only load PNG natively on Tk 8.6+,
-# so we fall back gracefully if the image cannot be loaded.
-try:
-    from PIL import Image, ImageTk
-
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
-
-
-# ── Version ──────────────────────────���─────────────────────────────────────────
+# ── Version ────────────────────────────────────────────────────────────────────
 VERSION = "1.0.0"
-PROGRAM_TITLE = f"Make Adventure GUI {VERSION}"
+PROGRAM_TITLE = f"Choose Your Destiny GUI {VERSION}"
 
 # Logo file to use in the header (relative to the project root).
 # Primary: cyddeluxe_small.png (39 KB, ideal size for GUI)
@@ -84,6 +75,110 @@ LOGO_CANDIDATES = [
 
 # Maximum logo height in pixels for the header
 LOGO_MAX_HEIGHT = 80
+
+# Settings file name (saved next to the script)
+SETTINGS_FILE = "cyd_gui_settings.json"
+
+# Current settings format version – bump when adding/removing keys
+SETTINGS_VERSION = 1
+
+
+# ── Settings persistence ──────────────────────────────────────────────────────
+
+def _settings_path(curr_path):
+    """Return the full path to the settings JSON file."""
+    return os.path.join(curr_path, SETTINGS_FILE)
+
+
+def load_settings(curr_path):
+    """Load settings from the JSON file.  Returns a dict or None."""
+    path = _settings_path(curr_path)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return None
+        return data
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def save_settings(curr_path, data):
+    """Save the settings dict to the JSON file."""
+    path = _settings_path(curr_path)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except OSError:
+        pass  # Non‑critical – fail silently
+
+
+# Keys used for serialisation.  The order here defines the JSON layout.
+# Each entry: (json_key, attribute_name, type)
+#   type is "str", "int", "bool"
+_SETTINGS_KEYS = [
+    # Project
+    ("game_name",          "var_game_name",          "str"),
+    ("target",             "var_target",             "str"),
+    # Paths
+    ("output_path",        "var_output_path",        "str"),
+    ("images_path",        "var_images_path",        "str"),
+    ("tracks_path",        "var_tracks_path",        "str"),
+    ("sfx_file",           "var_sfx_file",           "str"),
+    ("load_scr",           "var_load_scr",           "str"),
+    ("tokens_file",        "var_tokens_file",        "str"),
+    ("charset_file",       "var_charset_file",       "str"),
+    ("sjasmplus",          "var_sjasmplus",          "str"),
+    # Compiler
+    ("image_lines",        "var_image_lines",        "int"),
+    ("min_length",         "var_min_length",         "int"),
+    ("max_length",         "var_max_length",         "int"),
+    ("superset_limit",     "var_superset_limit",     "int"),
+    ("verbose",            "var_verbose",            "bool"),
+    ("slice_texts",        "var_slice_texts",        "bool"),
+    ("trim_interpreter",   "var_trim_interpreter",   "bool"),
+    ("show_bytecode",      "var_show_bytecode",      "bool"),
+    ("use_wyz",            "var_use_wyz",            "bool"),
+    ("disk_720",           "var_disk_720",           "bool"),
+    ("pause_after_load",   "var_pause_after_load",   "str"),
+    # Post-build
+    ("run_emulator",       "var_run_emulator",       "str"),
+    ("backup_cyd",         "var_backup_cyd",         "bool"),
+]
+
+
+def _collect_settings(app):
+    """Read all tk variables into a plain dict for JSON serialisation."""
+    data = {"_version": SETTINGS_VERSION}
+    for json_key, attr_name, _ in _SETTINGS_KEYS:
+        var = getattr(app, attr_name, None)
+        if var is not None:
+            data[json_key] = var.get()
+    return data
+
+
+def _apply_settings(app, data):
+    """Write values from a loaded dict into the tk variables."""
+    if not isinstance(data, dict):
+        return
+    for json_key, attr_name, typ in _SETTINGS_KEYS:
+        if json_key not in data:
+            continue
+        var = getattr(app, attr_name, None)
+        if var is None:
+            continue
+        value = data[json_key]
+        try:
+            if typ == "int":
+                var.set(int(value))
+            elif typ == "bool":
+                var.set(bool(value))
+            else:
+                var.set(str(value))
+        except (ValueError, tk.TclError):
+            pass  # Skip invalid values silently
 
 
 # ── Helpers (from make_adventure.py) ───────────────────────────────────────────
@@ -150,28 +245,20 @@ def load_logo_image(curr_path, max_height=LOGO_MAX_HEIGHT):
     """Try to load the project logo, returning a PhotoImage or None.
 
     Tries each candidate in LOGO_CANDIDATES order.
-    If Pillow is available, resizes with high‑quality LANCZOS filter.
-    Otherwise uses tk.PhotoImage (Tk 8.6+ supports PNG natively) and
-    applies subsample to reduce the size.
+    Uses tk.PhotoImage which supports PNG natively on Tk 8.6+.
+    Applies subsample to reduce the size if needed.
     """
     for candidate in LOGO_CANDIDATES:
         logo_path = os.path.join(curr_path, candidate)
         if not os.path.isfile(logo_path):
             continue
         try:
-            if PIL_AVAILABLE:
-                img = Image.open(logo_path)
-                ratio = max_height / img.height
-                new_size = (int(img.width * ratio), max_height)
-                img = img.resize(new_size, Image.LANCZOS)
-                return ImageTk.PhotoImage(img)
-            else:
-                photo = tk.PhotoImage(file=logo_path)
-                if photo.height() > max_height and photo.height() > 0:
-                    factor = photo.height() // max_height
-                    if factor >= 2:
-                        photo = photo.subsample(factor, factor)
-                return photo
+            photo = tk.PhotoImage(file=logo_path)
+            if photo.height() > max_height and photo.height() > 0:
+                factor = photo.height() // max_height
+                if factor >= 2:
+                    photo = photo.subsample(factor, factor)
+            return photo
         except Exception:
             continue
     return None
@@ -222,9 +309,14 @@ class SettingsDialog(tk.Toplevel):
         notebook.add(tab_post, text="  Post‑build  ")
         self._build_post_tab(tab_post)
 
-        # ── Close button ───────────────────────────────────────────────────
+        # ── Bottom buttons ─────────────────────────────────────────────────
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X, padx=8, pady=8)
+
+        ttk.Button(
+            btn_frame, text="Reset to Defaults", command=self._reset_defaults
+        ).pack(side=tk.LEFT)
+
         ttk.Button(btn_frame, text="Close", command=self.destroy).pack(side=tk.RIGHT)
 
     # ── Paths tab ──────────────────────────────────────────────────────────
@@ -376,6 +468,25 @@ class SettingsDialog(tk.Toplevel):
         if path:
             var.set(path)
 
+    # ── Reset to defaults ──────────────────────────────────────────────────
+
+    def _reset_defaults(self):
+        """Reset all settings to their default values."""
+        if not messagebox.askyesno(
+            "Reset to Defaults",
+            "Are you sure you want to reset all settings to their default values?",
+            parent=self,
+        ):
+            return
+        self.app._set_defaults()
+        # Also delete the saved settings file
+        path = _settings_path(self.app.paths["curr_path"])
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
 
 # ── Main Application ──────────────────────────────────────────────────────────
 
@@ -392,49 +503,87 @@ class MakeAdventureGUI:
         self.compiling = False
         self._logo_photo = None  # prevent GC of PhotoImage
 
-        # ── Variables ──────────────────────────────────────────────────────
-        self.var_game_name = tk.StringVar(value="test")
-        self.var_target = tk.StringVar(value="128k")
-        self.var_image_lines = tk.IntVar(value=192)
-        self.var_output_path = tk.StringVar(value=self.paths["curr_path"])
-        self.var_images_path = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "IMAGES")
-        )
-        self.var_tracks_path = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "TRACKS")
-        )
-        self.var_sfx_file = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "SFX.ASM")
-        )
-        self.var_load_scr = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "IMAGES", "LOAD.scr")
-        )
-        self.var_tokens_file = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "tokens.json")
-        )
-        self.var_charset_file = tk.StringVar(
-            value=os.path.join(self.paths["curr_path"], "charset.json")
-        )
-        self.var_sjasmplus = tk.StringVar(value=self.paths["sjasmplus_path"])
+        # ── Create tk variables ────────────────────────────────────────────
+        self.var_game_name = tk.StringVar()
+        self.var_target = tk.StringVar()
+        self.var_image_lines = tk.IntVar()
+        self.var_output_path = tk.StringVar()
+        self.var_images_path = tk.StringVar()
+        self.var_tracks_path = tk.StringVar()
+        self.var_sfx_file = tk.StringVar()
+        self.var_load_scr = tk.StringVar()
+        self.var_tokens_file = tk.StringVar()
+        self.var_charset_file = tk.StringVar()
+        self.var_sjasmplus = tk.StringVar()
+        self.var_min_length = tk.IntVar()
+        self.var_max_length = tk.IntVar()
+        self.var_superset_limit = tk.IntVar()
+        self.var_verbose = tk.BooleanVar()
+        self.var_slice_texts = tk.BooleanVar()
+        self.var_trim_interpreter = tk.BooleanVar()
+        self.var_show_bytecode = tk.BooleanVar()
+        self.var_use_wyz = tk.BooleanVar()
+        self.var_disk_720 = tk.BooleanVar()
+        self.var_pause_after_load = tk.StringVar()
+        self.var_run_emulator = tk.StringVar()
+        self.var_backup_cyd = tk.BooleanVar()
 
-        # Compiler option variables
-        self.var_min_length = tk.IntVar(value=3)
-        self.var_max_length = tk.IntVar(value=30)
-        self.var_superset_limit = tk.IntVar(value=100)
-        self.var_verbose = tk.BooleanVar(value=False)
-        self.var_slice_texts = tk.BooleanVar(value=False)
-        self.var_trim_interpreter = tk.BooleanVar(value=False)
-        self.var_show_bytecode = tk.BooleanVar(value=False)
-        self.var_use_wyz = tk.BooleanVar(value=False)
-        self.var_disk_720 = tk.BooleanVar(value=False)
-        self.var_pause_after_load = tk.StringVar(value="")
-
-        # Post‑build variables
-        self.var_run_emulator = tk.StringVar(value="none")
-        self.var_backup_cyd = tk.BooleanVar(value=False)
+        # Set defaults first, then override with saved settings
+        self._set_defaults()
+        self._load_settings()
 
         self._build_ui()
         self._set_window_icon()
+
+        # Save settings on close
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    # ── Defaults ───────────────────────────────────────────────────────────
+
+    def _set_defaults(self):
+        """Set all variables to their default values."""
+        curr = self.paths["curr_path"]
+        self.var_game_name.set("test")
+        self.var_target.set("128k")
+        self.var_image_lines.set(192)
+        self.var_output_path.set(curr)
+        self.var_images_path.set(os.path.join(curr, "IMAGES"))
+        self.var_tracks_path.set(os.path.join(curr, "TRACKS"))
+        self.var_sfx_file.set(os.path.join(curr, "SFX.ASM"))
+        self.var_load_scr.set(os.path.join(curr, "IMAGES", "LOAD.scr"))
+        self.var_tokens_file.set(os.path.join(curr, "tokens.json"))
+        self.var_charset_file.set(os.path.join(curr, "charset.json"))
+        self.var_sjasmplus.set(self.paths["sjasmplus_path"])
+        self.var_min_length.set(3)
+        self.var_max_length.set(30)
+        self.var_superset_limit.set(100)
+        self.var_verbose.set(False)
+        self.var_slice_texts.set(False)
+        self.var_trim_interpreter.set(False)
+        self.var_show_bytecode.set(False)
+        self.var_use_wyz.set(False)
+        self.var_disk_720.set(False)
+        self.var_pause_after_load.set("")
+        self.var_run_emulator.set("none")
+        self.var_backup_cyd.set(False)
+
+    # ── Settings persistence ───────────────────────────────────────────────
+
+    def _load_settings(self):
+        """Load saved settings from disk and apply them."""
+        data = load_settings(self.paths["curr_path"])
+        if data is not None:
+            _apply_settings(self, data)
+
+    def _save_settings(self):
+        """Collect current settings and write them to disk."""
+        data = _collect_settings(self)
+        save_settings(self.paths["curr_path"], data)
+
+    def _on_close(self):
+        """Called when the window is closed – save settings and exit."""
+        self._save_settings()
+        self.root.destroy()
 
     # ── UI Construction ────────────────────────────────────────────────────
 
@@ -556,11 +705,7 @@ class MakeAdventureGUI:
         if not os.path.isfile(icon_path):
             return
         try:
-            if PIL_AVAILABLE:
-                img = Image.open(icon_path)
-                self._icon_photo = ImageTk.PhotoImage(img)
-            else:
-                self._icon_photo = tk.PhotoImage(file=icon_path)
+            self._icon_photo = tk.PhotoImage(file=icon_path)
             self.root.iconphoto(True, self._icon_photo)
         except Exception:
             pass  # Non‑critical – skip silently
@@ -595,6 +740,9 @@ class MakeAdventureGUI:
         """Validate inputs and start compilation in a background thread."""
         if self.compiling:
             return
+
+        # Save settings before compiling (in case of crash)
+        self._save_settings()
 
         # ── Validation ─────────────────────────────────────────────────────
         curr_path = self.paths["curr_path"]
