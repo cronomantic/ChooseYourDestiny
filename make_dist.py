@@ -105,6 +105,7 @@ DIST_FILES = [
     "documentation/en/MANUAL_en.pdf",
     "documentation/es/TUTORIAL_es.pdf",
     "documentation/en/TUTORIAL_en.pdf",
+    "make_adventure_gui.py",
 ]
 DIST_FILES_WIN32 = [
     "make_adv.cmd",
@@ -114,9 +115,11 @@ DIST_FILES_WIN32 = [
     "dist/csc.exe",
     "dist/cyd_chr_conv.cmd",
     "dist/cydc.cmd",
+    "make_adventure_gui.cmd",
 ] + DIST_FILES
 DIST_FILES_LINUX = [
     "make_adv.sh",
+    "make_adventure_gui.sh",
     "dist/csc",
 ] + DIST_FILES
 
