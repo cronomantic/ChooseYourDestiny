@@ -1,0 +1,7 @@
+site-packages
+python314.zip
+.
+tkinter
+
+# Uncomment to run site.main() automatically
+#import site

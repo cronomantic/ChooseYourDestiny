@@ -64,6 +64,7 @@ START_LOADER:
     ; Clear screen
     DI
     LD SP, @STACK_ADDRESS
+
     XOR A
     OUT (254), A                    ;Black border
     LD HL, LD_SCR_ADDR              ;pixels
