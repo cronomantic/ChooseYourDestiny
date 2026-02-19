@@ -8,15 +8,15 @@
 # it under the terms of the GNU Affero General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#  
+#
 
 from ply import lex as lex
 
@@ -201,6 +201,7 @@ class CydcLexer(object):
         "COMMA",
     ]
     tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "SHIFT_L", "SHIFT_R"]
+    tokens += ["INCREMENT", "DECREMENT"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
@@ -273,6 +274,8 @@ class CydcLexer(object):
 
     t_COLON = r":"
     t_AT_CHAR = r"@"
+    t_INCREMENT = r"\+="
+    t_DECREMENT = r"-="
     t_NOT_EQUALS = r"<>"
     t_LESS_EQUALS = r"<="
     t_MORE_EQUALS = r">="

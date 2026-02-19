@@ -43,6 +43,14 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [LET \[varID\] = varexpression](#let-varid--varexpression-1)
     - [LET varID = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2)
     - [LET \[varID\] = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2-1)
+    - [SET arrayID (varexpression1) TO varexpression2](#set-arrayid-varexpression1-to-varexpression2)
+    - [LET arrayID (varexpression1) = varexpression2](#let-arrayid-varexpression1--varexpression2)
+    - [LET varID += varexpression](#let-varid--varexpression-2)
+    - [LET \[varID\] += varexpression](#let-varid--varexpression-3)
+    - [LET varID -= varexpression](#let-varid---varexpression)
+    - [LET \[varID\] -= varexpression](#let-varid---varexpression-1)
+    - [LET arrayID(varexpression1) += varexpression2](#let-arrayidvarexpression1--varexpression2)
+    - [LET arrayID(varexpression1) -= varexpression2](#let-arrayidvarexpression1---varexpression2)
     - [END](#end)
     - [CLEAR](#clear)
     - [CENTER](#center)
@@ -405,7 +413,12 @@ The available operands are:
 - Bit shift left: `SET variable TO @variable << 2`
 - Bit shift right: `SET variable TO @variable >> 2`
 
-The result of a numeric expression cannot be greater than 255 (1 byte) or less than zero (negative numbers are not supported). If both limits are exceeded when performing the operations, the result will be adjusted to the corresponding limit, that is, if an addition exceeds 255, it will be adjusted to 255 and a subtraction that gives a result less than zero will be set to zero.
+The most common operation performed with variables is incrementing or decrementing them by a specific value. `CYD` provides two abbreviated ways to do this:
+
+- `LET variable += 2`, which is equivalent to `SET variable TO @variable + 2` or `LET variable = @variable + 2`.
+- `LET variable -= 1`, which is equivalent to `SET variable TO @variable - 1` or `LET variable = @variable - 1`.
+
+The result of a numeric expression cannot be greater than 255 (1 byte) or less than zero (negative numbers are not supported). If, when performing operations, both limits are exceeded, the result will be adjusted to the corresponding limit. That is, if a sum exceeds 255, it will be adjusted to 255, and a subtraction that results in a value less than zero will be zero. Therefore, negative numbers do not exist.
 
 One thing to note is that binary operators are not the same as the logical operators of conditional expressions described below. An **&** is not the same as an **AND**. Binary operators perform the corresponding operations on the bits of the variable.
 
@@ -738,6 +751,38 @@ Assigns the value of _varexpression1_ to the variable _varID_, _varexpression2_ 
 ### LET [varID] = {varexpression1, varexpression2,...}
 
 Assigns the value of _varexpression1_ to the variable whose index corresponds to the contents of _varID_, _varexpression2_ to the variable whose index corresponds to the contents of _varID_+1, and so on.
+
+### SET arrayID (varexpression1) TO varexpression2
+
+Assigns the value _varexpression2_ to the position _varexpression1_ of the array _arrayID_.
+
+### LET arrayID (varexpression1) = varexpression2
+
+Assigns the value _varexpression2_ to the position _varexpression1_ of the array _arrayID_.
+
+### LET varID += varexpression
+
+Increments the variable _varID_ with the value of _varexpression_.
+
+### LET [varID] += varexpression
+
+Increments the variable whose index corresponds to the content of _varID_ with the value of _varexpression_.
+
+### LET varID -= varexpression
+
+Decrements the variable _varID_ with the value of _varexpression_.
+
+### LET [varID] -= varexpression
+
+Decrements the variable whose index corresponds to the content of _varID_ with the value of _varexpression_.
+
+### LET arrayID(varexpression1) += varexpression2
+
+Increments the value at position _varexpression1_ of the array _arrayID_ with the value _varexpression2_.
+
+### LET arrayID(varexpression1) -= varexpression2
+
+Decrements the value at position _varexpression1_ of the array _arrayID_ with the value _varexpression2_.
 
 ### END
 
@@ -1214,6 +1259,8 @@ Due to the peculiarities of the WyzTracker format, several considerations must b
 - *The entire bank 1 of the Spectrum's memory will be reserved, where the player code, instruments, and melodies will be stored. This means that 16 KB less will be available for the tape version, and 8 KB less for the Plus3 version.
 - The different melodies will be compressed to save space, and each time one is loaded, it will be decompressed into the remaining space in bank 1. The compiler will generate an error if any of the included melodies do not fit in this remaining space.
 - Sound effects are not supported.
+
+To enable WyzTracker support, you must use the `-wyz` parameter when compiling your adventure. To make things easier, you can include it in the `CYDC_EXTRA_PARAMS` variable in the `make_adv.cmd` program if you're using Windows or `make_adv.sh` if you're using Linux. WyzTracker and Vortex Tracker support are mutually exclusive; they cannot be used simultaneously in the same adventure.
 
 ---
 

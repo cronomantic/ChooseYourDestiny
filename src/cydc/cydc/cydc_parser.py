@@ -1374,13 +1374,45 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_inc_dec_array_value(self, p):
+        """
+        statement : LET ID LPAREN varexpression RPAREN INCREMENT varexpression
+                  | LET ID LPAREN varexpression RPAREN DECREMENT varexpression
+        """
+        if len(p) == 8 and self._symbol_usage(p[2], SymbolType.ARRAY, p.lineno(2)):
+
+            array_index = []
+            if isinstance(p[4], list):
+                array_index += p[4]
+            else:
+                array_index += [p[4]]
+
+            p[0] = array_index.copy()
+            p[0].append(("PUSH_VAL_ARRAY", p[2], 0, 0))
+
+            if isinstance(p[7], list):
+                p[0] += p[7]
+            else:
+                p[0] += [p[7]]
+
+            if p[6] == "+=":
+                p[0].append(("ADD",))
+            elif p[6] == "-=":
+                p[0].append(("SUB",))
+            else:
+                self.errors.append(f"Symbol on line {p.lineno(6)} invalid")
+            p[0] += array_index
+            p[0].append(("POP_VAL_ARRAY", p[2], 0, 0))
+        else:
+            p[0] = None
+
     def p_statement_set_array_value(self, p):
         """
         statement : SET ID LPAREN varexpression RPAREN TO varexpression
                   | LET ID LPAREN varexpression RPAREN EQUALS varexpression
         """
         if len(p) == 8 and self._symbol_usage(p[2], SymbolType.ARRAY, p.lineno(2)):
-            if isinstance(p[4], list):
+            if isinstance(p[7], list):
                 p[0] = p[7]
             else:
                 p[0] = [p[7]]
@@ -1425,6 +1457,52 @@ class CydcParser(object):
                     break
         else:
             p[0] = None
+
+    def p_statement_inc_dec_ind(self, p):
+        """
+        statement : LET LCARET variableID RCARET INCREMENT varexpression
+                  | LET LCARET variableID RCARET DECREMENT varexpression
+        """
+        if len(p) == 7 and self._is_valid_var(p[3]):
+
+            p[0] = []
+            p[0].append(("PUSH_DI", ("VARIABLE", p[3], 0)))
+
+            if isinstance(p[6], list):
+                p[0] += p[6]
+            else:
+                p[0] += [p[6]]
+
+            if p[5] == "+=":
+                p[0].append(("ADD",))
+            elif p[5] == "-=":
+                p[0].append(("SUB",))
+            else:
+                self.errors.append(f"Symbol on line {p.lineno(5)} invalid")
+            p[0].append(("POP_SET_DI", ("VARIABLE", p[3], 0)))
+
+    def p_statement_inc_dec_dir(self, p):
+        """
+        statement : LET variableID INCREMENT varexpression
+                  | LET variableID DECREMENT varexpression
+        """
+        if len(p) == 5 and self._is_valid_var(p[2]):
+
+            p[0] = []
+            p[0].append(("PUSH_I", ("VARIABLE", p[2], 0)))
+
+            if isinstance(p[4], list):
+                p[0] += p[4]
+            else:
+                p[0] += [p[4]]
+
+            if p[3] == "+=":
+                p[0].append(("ADD",))
+            elif p[3] == "-=":
+                p[0].append(("SUB",))
+            else:
+                self.errors.append(f"Symbol on line {p.lineno(3)} invalid")
+            p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
     def p_statement_set_ind(self, p):
         """
@@ -1641,6 +1719,8 @@ class CydcParser(object):
             p[0].append(("CP_LT",))
         elif p[2] == ">":
             p[0].append(("CP_MT",))
+        else:
+            self.errors.append(f"Symbol on line {p.lineno(2)} invalid")
 
     def p_varexpression_binop(self, p):
         """
@@ -1675,6 +1755,8 @@ class CydcParser(object):
                 p[0].append(("SHIFT_L",))
             elif p[2] == ">>":
                 p[0].append(("SHIFT_R",))
+            else:
+                self.errors.append(f"Symbol on line {p.lineno(2)} invalid")
 
     def p_varexpression_min(self, p):
         """
@@ -2112,6 +2194,8 @@ class CydcParser(object):
             p[0] = p[1] << p[3]
         elif p[2] == ">>":
             p[0] = p[1] >> p[3]
+        else:
+            self.errors.append(f"Symbol on line {p.lineno(2)} invalid")
 
     def p_expression_group(self, p):
         "expression : LPAREN expression RPAREN"

@@ -29,6 +29,9 @@ SET RUN_EMULATOR=none
 REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
 SET BACKUP_CYD=no
 
+REM Maximum number of backup files mantained. With value 0, it does noy delete anything.
+SET BACKUP_MAX_FILES=0
+
 REM --------------------------------------
 %~dp0\dist\python\python %~dp0\make_adventure.py -n %GAME% %CYDC_EXTRA_PARAMS% -il %IMGLINES% -scr %LOAD_SCR% %TARGET%
 IF ERRORLEVEL 1 GOTO ERROR
@@ -36,8 +39,26 @@ ECHO ---------------------
 ECHO Success!
 
 if "%BACKUP_CYD%"=="yes" (
-if not exist %~dp0\BACKUP\NUL mkdir %~dp0\BACKUP
-COPY %~dp0\%GAME%.cyd "%~dp0\BACKUP\%GAME%_%DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%_%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%.cyd" 1>NUL
+    if not exist %~dp0\BACKUP\NUL mkdir %~dp0\BACKUP
+    
+    IF %BACKUP_MAX_FILES% NEQ 0 (
+        REM Backup rotation
+        SETLOCAL ENABLEDELAYEDEXPANSION
+        SET count=0
+        FOR /F "delims=" %%F IN ('DIR "%~dp0\BACKUP\*.cyd" /B /O:D') DO (
+            SET /A count+=1
+        )
+        IF !count! GEQ %BACKUP_MAX_FILES% (
+            FOR /F "delims=" %%F IN ('DIR "%~dp0\BACKUP\*.cyd" /B /O:D') DO (
+                DEL "%~dp0\BACKUP\%%F"
+                GOTO :DONE_DEL
+            )
+        )
+        :DONE_DEL
+        ENDLOCAL
+    )
+
+    COPY %~dp0\%GAME%.cyd "%~dp0\BACKUP\%GAME%_%DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%_%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%.cyd" 1>NUL
 )
 
 REM DEFAULT EMULATOR (windows default)
@@ -88,3 +109,4 @@ SET LOAD_SCR=
 SET CYDC_EXTRA_PARAMS=
 SET RUN_EMULATOR=
 SET BACKUP_CYD=
+SET BACKUP_MAX_FILES=
