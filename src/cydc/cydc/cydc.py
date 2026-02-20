@@ -411,7 +411,7 @@ def main():
         print(_("Parsing code..."))
 
     tmp_timer.reset()
-    parser = CydcParser()
+    parser = CydcParser(gettext)
     parser.build()
     code = parser.parse(input=text, verbose=(verbose >= 3))
     if verbose >= 2:
