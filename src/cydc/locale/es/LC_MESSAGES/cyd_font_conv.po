@@ -1,0 +1,85 @@
+# Spanish translations for ChooseYourDestiny package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ChooseYourDestiny 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-20 15:14+0000\n"
+"PO-Revision-Date: 2026-02-20 15:07+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/cydc/cyd_chr_conv.py:90
+msgid "ERROR: Invalid python version"
+msgstr "ERROR: Versión de Python no válida"
+
+#: src/cydc/cyd_chr_conv.py:97
+msgid "WIDTH_LOW"
+msgstr "ANCHO_BAJO"
+
+#: src/cydc/cyd_chr_conv.py:100
+msgid "Width of the characters of the lower character set"
+msgstr "Anchura de los caracteres del conjunto de caracteres inferior"
+
+#: src/cydc/cyd_chr_conv.py:106
+msgid "WIDTH_HIGH"
+msgstr "ANCHO_ALTO"
+
+#: src/cydc/cyd_chr_conv.py:109
+msgid "Width of the characters of the upper character set"
+msgstr "Anchura de los caracteres del conjunto de caracteres superior"
+
+#: src/cydc/cyd_chr_conv.py:117
+msgid "show program's version number and exit"
+msgstr "mostrar el número de versión del programa y salir"
+
+#: src/cydc/cyd_chr_conv.py:124
+msgid "Verbose mode"
+msgstr "Modo detallado"
+
+#: src/cydc/cyd_chr_conv.py:129
+msgid "input.chr"
+msgstr "entrada.chr"
+
+#: src/cydc/cyd_chr_conv.py:131
+msgid "input filename, supports .chr, .ch8, .ch6 and .ch4 extensions"
+msgstr "nombre del archivo de entrada, admite extensiones .chr, .ch8, .ch6 y .ch4"
+
+#: src/cydc/cyd_chr_conv.py:137
+msgid "output.json"
+msgstr "salida.json"
+
+#: src/cydc/cyd_chr_conv.py:138
+msgid "output JSON font file for CYDC"
+msgstr "archivo de fuente JSON de salida para CYDC"
+
+#: src/cydc/cyd_chr_conv.py:144
+msgid "ERROR: File not found:"
+msgstr "ERROR: Archivo no encontrado:"
+
+#: src/cydc/cyd_chr_conv.py:146
+msgid "ERROR: Not a valid path:"
+msgstr "ERROR: No es una ruta válida:"
+
+#: src/cydc/cyd_chr_conv.py:153
+msgid "ERROR: Path to input file does not exist."
+msgstr "ERROR: La ruta al archivo de entrada no existe."
+
+#: src/cydc/cyd_chr_conv.py:160 src/cydc/cyd_chr_conv.py:168
+msgid "ERROR: Invalid input file size"
+msgstr "ERROR: Tamaño del archivo de entrada no válido"
+
+#: src/cydc/cyd_chr_conv.py:174
+msgid "ERROR: Invalid input file extension"
+msgstr "ERROR: Extensión del archivo de entrada no válida"
+
+#: src/cydc/cyd_chr_conv.py:207
+msgid "ERROR: creating output file "
+msgstr "ERROR: al crear el archivo de salida "

@@ -26,7 +26,126 @@
 
 import shutil
 import os
+import struct
 import zipfile
+
+
+def compile_po_to_mo(po_path, mo_path):
+    """Compile a gettext .po file into a binary .mo file (pure Python).
+
+    Produces a little-endian MO file (magic 0xDE120495) compatible with the
+    GNU gettext runtime and Python's ``gettext`` module.
+    """
+
+    def _unescape(s):
+        out = []
+        i = 0
+        while i < len(s):
+            if s[i] == "\\" and i + 1 < len(s):
+                c = s[i + 1]
+                if c == "n":
+                    out.append("\n")
+                elif c == "t":
+                    out.append("\t")
+                elif c == "r":
+                    out.append("\r")
+                elif c == '"':
+                    out.append('"')
+                elif c == "\\":
+                    out.append("\\")
+                else:
+                    out.append(s[i])
+                    i += 1
+                    continue
+                i += 2
+            else:
+                out.append(s[i])
+                i += 1
+        return "".join(out)
+
+    catalog = {}        # msgid (str) → msgstr (str)
+    msgid = msgstr = ""
+    in_id = in_str = False
+
+    def _save():
+        if in_str:
+            catalog[msgid] = msgstr
+
+    with open(po_path, encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                _save()
+                in_id = in_str = False
+                continue
+            if line.startswith("msgid "):
+                _save()
+                in_id, in_str = True, False
+                msgid = _unescape(line[6:].strip()[1:-1])
+                msgstr = ""
+            elif line.startswith("msgstr "):
+                in_id, in_str = False, True
+                msgstr = _unescape(line[7:].strip()[1:-1])
+            elif line.startswith('"') and line.endswith('"'):
+                s = _unescape(line[1:-1])
+                if in_id:
+                    msgid += s
+                elif in_str:
+                    msgstr += s
+    _save()
+
+    # Keep header (msgid == "") and entries that have a non-empty translation.
+    entries = sorted(
+        [
+            (k.encode("utf-8"), v.encode("utf-8"))
+            for k, v in catalog.items()
+            if v or k == ""
+        ],
+        key=lambda e: e[0],
+    )
+    N = len(entries)
+
+    # MO layout (all uint32, little-endian):
+    #   header         28 bytes  (7 × uint32)
+    #   orig table     N × 8 bytes
+    #   trans table    N × 8 bytes
+    #   orig strings   (NUL-terminated, packed)
+    #   trans strings  (NUL-terminated, packed)
+    O = 28           # offset of original-strings table
+    T = O + N * 8    # offset of translated-strings table
+    S = T + N * 8    # first byte of string data
+
+    orig_blob = b"\x00".join(k for k, _ in entries) + (b"\x00" if N else b"")
+    tran_blob = b"\x00".join(v for _, v in entries) + (b"\x00" if N else b"")
+
+    orig_table = b""
+    tran_table = b""
+    orig_pos = S
+    tran_pos = S + len(orig_blob)
+    for k, v in entries:
+        orig_table += struct.pack("<II", len(k), orig_pos)
+        tran_table += struct.pack("<II", len(v), tran_pos)
+        orig_pos += len(k) + 1
+        tran_pos += len(v) + 1
+
+    os.makedirs(os.path.dirname(mo_path), exist_ok=True)
+    with open(mo_path, "wb") as fh:
+        fh.write(struct.pack("<7I", 0x950412DE, 0, N, O, T, 0, T + N * 8))
+        fh.write(orig_table)
+        fh.write(tran_table)
+        fh.write(orig_blob)
+        fh.write(tran_blob)
+    print(f"  Compiled {os.path.relpath(po_path)} → {os.path.relpath(mo_path)}")
+
+
+def compile_locale_dir(locale_dir):
+    """Walk *locale_dir* and compile every .po file to its sibling .mo file."""
+    for dirpath, _, filenames in os.walk(locale_dir):
+        for fname in filenames:
+            if fname.endswith(".po"):
+                po = os.path.join(dirpath, fname)
+                mo = os.path.splitext(po)[0] + ".mo"
+                compile_po_to_mo(po, mo)
 
 currentPath = os.path.dirname(__file__)
 
@@ -84,8 +203,30 @@ for file in SRC_FILES:
     os.makedirs(os.path.dirname(dstPath), exist_ok=True)
     shutil.copy(srcPath, dstPath)
 
+# Compile .po → .mo for all locale directories
+LOCALE_DIRS = [
+    os.path.join(currentPath, "locale"),
+    os.path.join(currentPath, SRC_PATH, "cydc", "locale"),
+    os.path.join(currentPath, SRC_PATH, "locale"),
+]
+print("Compiling translations...")
+for locale_dir in LOCALE_DIRS:
+    compile_locale_dir(locale_dir)
 
-DIST_DIRS = ["assets", "examples", "dist/cydc"]
+# Copy locale directories for the cydc and cyd_font_conv domains into dist/
+shutil.copytree(
+    os.path.join(currentPath, SRC_PATH, "cydc", "locale"),
+    os.path.join(currentPath, DST_PATH, "cydc", "locale"),
+    dirs_exist_ok=True,
+)
+shutil.copytree(
+    os.path.join(currentPath, SRC_PATH, "locale"),
+    os.path.join(currentPath, DST_PATH, "locale"),
+    dirs_exist_ok=True,
+)
+
+
+DIST_DIRS = ["assets", "examples", "dist/cydc", "locale", "dist/locale"]
 DIST_DIRS_WIN32 = ["dist/python"] + DIST_DIRS
 DIST_DIRS_LINUX = [] + DIST_DIRS
 
