@@ -405,7 +405,7 @@ def main():
     ]
 
     try:
-        print("Compiling the script...")
+        print(_("Compiling the script..."))
         #print(cydc_params)
         run_exec(python_path, cydc_params)
     except OSError as os1:
@@ -413,7 +413,7 @@ def main():
         sys.exit(err)
 
     if args.model == "plus3":
-        print("Cleaning...")
+        print(_("Cleaning..."))
         files_to_clean = ["SCRIPT.DAT", "DISK", "CYD.BIN"]
         for f in files_to_clean:
             p = os.path.join(args.output_path, f)

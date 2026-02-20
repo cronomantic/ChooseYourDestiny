@@ -41,6 +41,7 @@ import shutil
 import subprocess
 import threading
 import datetime
+import gettext
 
 if os.name == "nt":
     _embed_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "dist", "python")
@@ -58,6 +59,13 @@ if os.name == "nt":
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, filedialog, messagebox, scrolledtext, colorchooser
+
+
+# ── Internationalisation ──────────────────────────────────────────────────────
+_LOCALE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
+gettext.bindtextdomain("make_adventure_gui", _LOCALE_DIR)
+gettext.textdomain("make_adventure_gui")
+_ = gettext.gettext
 
 
 # ── Version ────────────────────────────────────────────────────────────────────
@@ -303,22 +311,22 @@ class SettingsDialog(tk.Toplevel):
 
         # ── Tab 1: Paths ───────────────────────────────────────────────────
         tab_paths = ttk.Frame(notebook)
-        notebook.add(tab_paths, text="  Paths  ")
+        notebook.add(tab_paths, text=_("  Paths  "))
         self._build_paths_tab(tab_paths)
 
         # ── Tab 2: Compiler ────────────────────────────────────────────────
         tab_compiler = ttk.Frame(notebook)
-        notebook.add(tab_compiler, text="  Compiler  ")
+        notebook.add(tab_compiler, text=_("  Compiler  "))
         self._build_compiler_tab(tab_compiler)
 
         # ── Tab 3: Post‑build ──────────────────────────────────────────────
         tab_post = ttk.Frame(notebook)
-        notebook.add(tab_post, text="  Post‑build  ")
+        notebook.add(tab_post, text=_("  Post‑build  "))
         self._build_post_tab(tab_post)
 
         # ── Tab 4: Appearance ──────────────────────────────────────────────
         tab_appearance = ttk.Frame(notebook)
-        notebook.add(tab_appearance, text="  Appearance  ")
+        notebook.add(tab_appearance, text=_("  Appearance  "))
         self._build_appearance_tab(tab_appearance)
 
         # ── Bottom buttons ─────────────────────────────────────────────────
@@ -326,28 +334,28 @@ class SettingsDialog(tk.Toplevel):
         btn_frame.pack(fill=tk.X, padx=8, pady=8)
 
         ttk.Button(
-            btn_frame, text="Reset to Defaults", command=self._reset_defaults
+            btn_frame, text=_("Reset to Defaults"), command=self._reset_defaults
         ).pack(side=tk.LEFT)
 
-        ttk.Button(btn_frame, text="Close", command=self.destroy).pack(side=tk.RIGHT)
+        ttk.Button(btn_frame, text=_("Close"), command=self.destroy).pack(side=tk.RIGHT)
 
     # ── Paths tab ──────────────────────────────────────────────────────────
 
     def _build_paths_tab(self, parent):
         pad = {"padx": 6, "pady": 3}
-        frame = ttk.LabelFrame(parent, text="File & Directory Paths")
+        frame = ttk.LabelFrame(parent, text=_("File & Directory Paths"))
         frame.pack(fill=tk.BOTH, expand=True, **pad)
         frame.columnconfigure(1, weight=1)
 
         path_rows = [
-            ("Output path:", self.app.var_output_path, "dir"),
-            ("Images path:", self.app.var_images_path, "dir"),
-            ("Tracks path:", self.app.var_tracks_path, "dir"),
-            ("SFX ASM file:", self.app.var_sfx_file, "file"),
-            ("Loading screen (.scr):", self.app.var_load_scr, "file"),
-            ("Tokens file:", self.app.var_tokens_file, "file"),
-            ("Charset file:", self.app.var_charset_file, "file"),
-            ("SjASMPlus executable:", self.app.var_sjasmplus, "file"),
+            (_("Output path:"), self.app.var_output_path, "dir"),
+            (_("Images path:"), self.app.var_images_path, "dir"),
+            (_("Tracks path:"), self.app.var_tracks_path, "dir"),
+            (_("SFX ASM file:"), self.app.var_sfx_file, "file"),
+            (_("Loading screen (.scr):"), self.app.var_load_scr, "file"),
+            (_("Tokens file:"), self.app.var_tokens_file, "file"),
+            (_("Charset file:"), self.app.var_charset_file, "file"),
+            (_("SjASMPlus executable:"), self.app.var_sjasmplus, "file"),
         ]
 
         for i, (label, var, kind) in enumerate(path_rows):
@@ -358,7 +366,7 @@ class SettingsDialog(tk.Toplevel):
                 cmd = lambda v=var: self._browse_dir(v)
             else:
                 cmd = lambda v=var: self._browse_file(v)
-            ttk.Button(frame, text="Browse…", command=cmd).grid(
+            ttk.Button(frame, text=_("Browse…"), command=cmd).grid(
                 row=i, column=2, **pad
             )
 
@@ -368,10 +376,10 @@ class SettingsDialog(tk.Toplevel):
         pad = {"padx": 6, "pady": 3}
 
         # Image settings
-        img_frame = ttk.LabelFrame(parent, text="Image Settings")
+        img_frame = ttk.LabelFrame(parent, text=_("Image Settings"))
         img_frame.pack(fill=tk.X, **pad)
 
-        ttk.Label(img_frame, text="Image lines (1–192):").grid(
+        ttk.Label(img_frame, text=_("Image lines (1–192):")).grid(
             row=0, column=0, sticky=tk.W, **pad
         )
         ttk.Spinbox(
@@ -383,25 +391,25 @@ class SettingsDialog(tk.Toplevel):
         ).grid(row=0, column=1, sticky=tk.W, **pad)
         ttk.Label(
             img_frame,
-            text="Number of horizontal lines used in SCR files",
+            text=_("Number of horizontal lines used in SCR files"),
             foreground="gray",
         ).grid(row=0, column=2, sticky=tk.W, **pad)
 
         # Abbreviation search
-        abbr = ttk.LabelFrame(parent, text="Abbreviation Search")
+        abbr = ttk.LabelFrame(parent, text=_("Abbreviation Search"))
         abbr.pack(fill=tk.X, **pad)
 
-        ttk.Label(abbr, text="Min length:").grid(row=0, column=0, sticky=tk.W, **pad)
+        ttk.Label(abbr, text=_("Min length:")).grid(row=0, column=0, sticky=tk.W, **pad)
         ttk.Spinbox(
             abbr, textvariable=self.app.var_min_length, from_=1, to=100, width=6
         ).grid(row=0, column=1, sticky=tk.W, **pad)
 
-        ttk.Label(abbr, text="Max length:").grid(row=0, column=2, sticky=tk.W, **pad)
+        ttk.Label(abbr, text=_("Max length:")).grid(row=0, column=2, sticky=tk.W, **pad)
         ttk.Spinbox(
             abbr, textvariable=self.app.var_max_length, from_=1, to=100, width=6
         ).grid(row=0, column=3, sticky=tk.W, **pad)
 
-        ttk.Label(abbr, text="Superset limit:").grid(
+        ttk.Label(abbr, text=_("Superset limit:")).grid(
             row=1, column=0, sticky=tk.W, **pad
         )
         ttk.Spinbox(
@@ -409,7 +417,7 @@ class SettingsDialog(tk.Toplevel):
         ).grid(row=1, column=1, sticky=tk.W, **pad)
 
         # Flags
-        flags = ttk.LabelFrame(parent, text="Flags")
+        flags = ttk.LabelFrame(parent, text=_("Flags"))
         flags.pack(fill=tk.X, **pad)
 
         checks = [
@@ -426,9 +434,9 @@ class SettingsDialog(tk.Toplevel):
             )
 
         # Pause after load
-        pause_frame = ttk.LabelFrame(parent, text="Pause After Load")
+        pause_frame = ttk.LabelFrame(parent, text=_("Pause After Load"))
         pause_frame.pack(fill=tk.X, **pad)
-        ttk.Label(pause_frame, text="Seconds (empty = no pause):").grid(
+        ttk.Label(pause_frame, text=_("Seconds (empty = no pause):")).grid(
             row=0, column=0, sticky=tk.W, **pad
         )
         ttk.Entry(
@@ -440,12 +448,12 @@ class SettingsDialog(tk.Toplevel):
     def _build_post_tab(self, parent):
         pad = {"padx": 6, "pady": 3}
 
-        emu_frame = ttk.LabelFrame(parent, text="Run Emulator After Compilation")
+        emu_frame = ttk.LabelFrame(parent, text=_("Run Emulator After Compilation"))
         emu_frame.pack(fill=tk.X, **pad)
         for val, label in [
-            ("none", "Do nothing"),
-            ("internal", "Internal (Zesarux in ./tools/zesarux/)"),
-            ("default", "System default application"),
+            ("none", _("Do nothing")),
+            ("internal", _("Internal (Zesarux in ./tools/zesarux/)")),
+            ("default", _("System default application")),
         ]:
             ttk.Radiobutton(
                 emu_frame,
@@ -454,11 +462,11 @@ class SettingsDialog(tk.Toplevel):
                 value=val,
             ).pack(anchor=tk.W, **pad)
 
-        bkp_frame = ttk.LabelFrame(parent, text="Backup")
+        bkp_frame = ttk.LabelFrame(parent, text=_("Backup"))
         bkp_frame.pack(fill=tk.X, **pad)
         ttk.Checkbutton(
             bkp_frame,
-            text="Backup .cyd file after successful compilation (to ./BACKUP/)",
+            text=_("Backup .cyd file after successful compilation (to ./BACKUP/)"),
             variable=self.app.var_backup_cyd,
         ).pack(anchor=tk.W, **pad)
 
@@ -468,10 +476,10 @@ class SettingsDialog(tk.Toplevel):
         pad = {"padx": 6, "pady": 3}
 
         # ── Application font size ──────────────────────────────────────────
-        app_frame = ttk.LabelFrame(parent, text="Application Font")
+        app_frame = ttk.LabelFrame(parent, text=_("Application Font"))
         app_frame.pack(fill=tk.X, **pad)
 
-        ttk.Label(app_frame, text="Font size:").grid(
+        ttk.Label(app_frame, text=_("Font size:")).grid(
             row=0, column=0, sticky=tk.W, **pad
         )
         ttk.Spinbox(
@@ -483,18 +491,18 @@ class SettingsDialog(tk.Toplevel):
         ).grid(row=0, column=1, sticky=tk.W, **pad)
         ttk.Label(
             app_frame,
-            text="Size of the general UI font (requires restart)",
+            text=_("Size of the general UI font (requires restart)"),
             foreground="gray",
         ).grid(row=0, column=2, sticky=tk.W, **pad)
 
         # ── Log window settings ────────────────────────────────────────────
-        log_frame = ttk.LabelFrame(parent, text="Log Window")
+        log_frame = ttk.LabelFrame(parent, text=_("Log Window"))
         log_frame.pack(fill=tk.X, **pad)
         log_frame.columnconfigure(1, weight=1)
 
         # Font family
         available_fonts = sorted(set(tkfont.families()))
-        ttk.Label(log_frame, text="Font:").grid(
+        ttk.Label(log_frame, text=_("Font:")).grid(
             row=0, column=0, sticky=tk.W, **pad
         )
         font_combo = ttk.Combobox(
@@ -506,7 +514,7 @@ class SettingsDialog(tk.Toplevel):
         font_combo.grid(row=0, column=1, sticky=tk.W, **pad)
 
         # Font size
-        ttk.Label(log_frame, text="Font size:").grid(
+        ttk.Label(log_frame, text=_("Font size:")).grid(
             row=1, column=0, sticky=tk.W, **pad
         )
         ttk.Spinbox(
@@ -518,7 +526,7 @@ class SettingsDialog(tk.Toplevel):
         ).grid(row=1, column=1, sticky=tk.W, **pad)
 
         # Foreground colour
-        ttk.Label(log_frame, text="Text colour:").grid(
+        ttk.Label(log_frame, text=_("Text colour:")).grid(
             row=2, column=0, sticky=tk.W, **pad
         )
         self._fg_swatch = tk.Label(
@@ -527,12 +535,12 @@ class SettingsDialog(tk.Toplevel):
         )
         self._fg_swatch.grid(row=2, column=1, sticky=tk.W, **pad)
         ttk.Button(
-            log_frame, text="Choose…",
+            log_frame, text=_("Choose…"),
             command=lambda: self._pick_color(self.app.var_log_fg_color, self._fg_swatch),
         ).grid(row=2, column=2, sticky=tk.W, **pad)
 
         # Background colour
-        ttk.Label(log_frame, text="Background colour:").grid(
+        ttk.Label(log_frame, text=_("Background colour:")).grid(
             row=3, column=0, sticky=tk.W, **pad
         )
         self._bg_swatch = tk.Label(
@@ -541,12 +549,12 @@ class SettingsDialog(tk.Toplevel):
         )
         self._bg_swatch.grid(row=3, column=1, sticky=tk.W, **pad)
         ttk.Button(
-            log_frame, text="Choose…",
+            log_frame, text=_("Choose…"),
             command=lambda: self._pick_color(self.app.var_log_bg_color, self._bg_swatch),
         ).grid(row=3, column=2, sticky=tk.W, **pad)
 
         # ── Preview ────────────────────────────────────────────────────────
-        preview_frame = ttk.LabelFrame(parent, text="Log Preview")
+        preview_frame = ttk.LabelFrame(parent, text=_("Log Preview"))
         preview_frame.pack(fill=tk.BOTH, expand=True, **pad)
 
         self._preview_text = tk.Text(
@@ -555,22 +563,22 @@ class SettingsDialog(tk.Toplevel):
             fg=self.app.var_log_fg_color.get(),
             bg=self.app.var_log_bg_color.get(),
         )
-        self._preview_text.insert(tk.END, "This is a preview of the log window.\n")
+        self._preview_text.insert(tk.END, _("This is a preview of the log window.") + "\n")
         self._preview_text.insert(tk.END, "ABCDEFghijklmn 0123456789 !@#$%\n")
-        self._preview_text.insert(tk.END, "Compilation finished successfully!")
+        self._preview_text.insert(tk.END, _("Compilation finished successfully!"))
         self._preview_text.configure(state=tk.DISABLED)
         self._preview_text.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
         # Apply button
         ttk.Button(
-            parent, text="Apply Appearance",
+            parent, text=_("Apply Appearance"),
             command=self._apply_and_refresh,
         ).pack(pady=(0, 6))
 
     def _pick_color(self, var, swatch):
         """Open colour picker and update the variable and swatch."""
         colour = colorchooser.askcolor(
-            initialcolor=var.get(), parent=self, title="Choose colour",
+            initialcolor=var.get(), parent=self, title=_("Choose colour"),
         )
         if colour and colour[1]:
             var.set(colour[1])
@@ -616,8 +624,8 @@ class SettingsDialog(tk.Toplevel):
     def _reset_defaults(self):
         """Reset all settings to their default values."""
         if not messagebox.askyesno(
-            "Reset to Defaults",
-            "Are you sure you want to reset all settings to their default values?",
+            _("Reset to Defaults"),
+            _("Are you sure you want to reset all settings to their default values?"),
             parent=self,
         ):
             return
@@ -764,7 +772,7 @@ class MakeAdventureGUI:
 
         tk.Label(
             title_frame,
-            text="Choose Your Destiny",
+            text=_("Choose Your Destiny"),
             font=("Helvetica", 16, "bold"),
             fg="#e0e0e0",
             bg="#1a1a2e",
@@ -782,12 +790,12 @@ class MakeAdventureGUI:
         main_frame.pack(fill=tk.X, padx=8, pady=(8, 4))
 
         pad = {"padx": 6, "pady": 4}
-        project_frame = ttk.LabelFrame(main_frame, text="Project")
+        project_frame = ttk.LabelFrame(main_frame, text=_("Project"))
         project_frame.pack(fill=tk.X, **pad)
 
         # Game name
         r = 0
-        ttk.Label(project_frame, text="Game name:").grid(
+        ttk.Label(project_frame, text=_("Game name:")).grid(
             row=r, column=0, sticky=tk.W, **pad
         )
         ttk.Entry(project_frame, textvariable=self.var_game_name, width=25).grid(
@@ -795,13 +803,13 @@ class MakeAdventureGUI:
         )
         ttk.Label(
             project_frame,
-            text="(the .cyd file must match this name)",
+            text=_("(the .cyd file must match this name)"),
             foreground="gray",
         ).grid(row=r, column=2, sticky=tk.W, **pad)
 
         # Target
         r += 1
-        ttk.Label(project_frame, text="Target:").grid(
+        ttk.Label(project_frame, text=_("Target:")).grid(
             row=r, column=0, sticky=tk.W, **pad
         )
         target_frame = ttk.Frame(project_frame)
@@ -821,17 +829,17 @@ class MakeAdventureGUI:
 
         ttk.Button(
             btn_area,
-            text="⚙  Configure…",
+            text=_("⚙  Configure…"),
             command=self._open_settings,
         ).pack(side=tk.LEFT, padx=(6, 4))
 
         self.btn_compile = ttk.Button(
-            btn_area, text="▶  Compile", command=self._on_compile
+            btn_area, text=_("▶  Compile"), command=self._on_compile
         )
         self.btn_compile.pack(side=tk.LEFT, padx=(0, 4))
 
         self.btn_clear_log = ttk.Button(
-            btn_area, text="Clear Log", command=self._clear_log
+            btn_area, text=_("Clear Log"), command=self._clear_log
         )
         self.btn_clear_log.pack(side=tk.LEFT)
 
@@ -839,7 +847,7 @@ class MakeAdventureGUI:
         self.progress.pack(side=tk.RIGHT, padx=(4, 6))
 
         # ── Build output log ───────────────────────────────────────────────
-        log_frame = ttk.LabelFrame(self.root, text="Build Output")
+        log_frame = ttk.LabelFrame(self.root, text=_("Build Output"))
         log_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
 
         self.log = scrolledtext.ScrolledText(
@@ -931,27 +939,27 @@ class MakeAdventureGUI:
         curr_path = self.paths["curr_path"]
         game_name = self.var_game_name.get().strip()
         if not game_name:
-            messagebox.showerror("Error", "Game name cannot be empty.")
+            messagebox.showerror(_("Error"), _("Game name cannot be empty."))
             return
 
         input_file = os.path.join(curr_path, f"{game_name}.cyd")
         if not os.path.isfile(input_file):
             messagebox.showerror(
-                "Error", f"Input file does not exist:\n{input_file}"
+                _("Error"), _("Input file does not exist:\n") + input_file
             )
             return
 
         sjasmplus = self.var_sjasmplus.get().strip()
         if not os.path.isfile(sjasmplus):
             messagebox.showerror(
-                "Error", f"SjASMPlus executable not found:\n{sjasmplus}"
+                _("Error"), _("SjASMPlus executable not found:\n") + sjasmplus
             )
             return
 
         output_path = self.var_output_path.get().strip()
         if not os.path.isdir(output_path):
             messagebox.showerror(
-                "Error", f"Output path does not exist:\n{output_path}"
+                _("Error"), _("Output path does not exist:\n") + output_path
             )
             return
 
@@ -964,9 +972,9 @@ class MakeAdventureGUI:
                     raise ValueError
             except ValueError:
                 messagebox.showerror(
-                    "Error",
-                    "Pause value must be a non‑negative integer (seconds) "
-                    "such that value × 50 < 65536.",
+                    _("Error"),
+                    _("Pause value must be a non‑negative integer (seconds) "
+                    "such that value × 50 < 65536."),
                 )
                 return
 
@@ -1029,7 +1037,7 @@ class MakeAdventureGUI:
         self.btn_compile.configure(state=tk.DISABLED)
         self.progress.start(15)
         self._log(f"{'─' * 60}")
-        self._log(f"Compiling '{game_name}' for {model}…")
+        self._log(_("Compiling '{}' for {}…").format(game_name, model))
         self._log(f"Command: {python_path} {' '.join(cydc_params)}")
 
         thread = threading.Thread(
@@ -1058,22 +1066,22 @@ class MakeAdventureGUI:
             if result.stderr:
                 self._log(result.stderr)
             if result.returncode != 0:
-                self._log(f"ERROR: Compiler exited with code {result.returncode}")
+                self._log(_("ERROR: Compiler exited with code {}.").format(result.returncode))
             else:
                 success = True
                 self._log("─────────────────────")
-                self._log("Compilation finished successfully!")
+                self._log(_("Compilation finished successfully!"))
         except OSError as exc:
-            self._log(f"ERROR running CYDC: {exc}")
+            self._log(_("ERROR running CYDC: {}").format(exc))
 
         # Plus3 cleanup (mirrors make_adventure.py)
         if success and model == "plus3":
-            self._log("Cleaning temporary files…")
+            self._log(_("Cleaning temporary files…"))
             for fname in ["SCRIPT.DAT", "DISK", "CYD.BIN"]:
                 p = os.path.join(output_path, fname)
                 if os.path.isfile(p):
                     os.remove(p)
-                    self._log(f"  Removed {fname}")
+                    self._log(_("  Removed {}").format(fname))
 
         # Backup (mirrors make_adv.cmd)
         if success and self.var_backup_cyd.get():
@@ -1101,9 +1109,9 @@ class MakeAdventureGUI:
         dst = os.path.join(backup_dir, f"{game_name}_{now}.cyd")
         try:
             shutil.copy2(input_file, dst)
-            self._log(f"Backup saved to {dst}")
+            self._log(_("Backup saved to {}").format(dst))
         except Exception as exc:
-            self._log(f"Backup failed: {exc}")
+            self._log(_("Backup failed: {}").format(exc))
 
     # ── Emulator launch ───────────────────────────────────────────────────
 
@@ -1117,11 +1125,11 @@ class MakeAdventureGUI:
         compiled_file = os.path.join(output_path, f"{game_name}{ext}")
 
         if not os.path.isfile(compiled_file):
-            self._log(f"Cannot run emulator – file not found: {compiled_file}")
+            self._log(_("Cannot run emulator – file not found: {}").format(compiled_file))
             return
 
         if run_mode == "default":
-            self._log(f"Opening {compiled_file} with default application…")
+            self._log(_("Opening {} with default application…").format(compiled_file))
             try:
                 if os.name == "nt":
                     os.startfile(compiled_file)
@@ -1130,7 +1138,7 @@ class MakeAdventureGUI:
                 else:
                     subprocess.Popen(["xdg-open", compiled_file])
             except Exception as exc:
-                self._log(f"Failed to open file: {exc}")
+                self._log(_("Failed to open file: {}").format(exc))
 
         elif run_mode == "internal":
             zesarux_dir = os.path.join(self.paths["tools_path"], "zesarux")
@@ -1139,7 +1147,7 @@ class MakeAdventureGUI:
             else:
                 zesarux = os.path.join(zesarux_dir, "zesarux")
             if not os.path.isfile(zesarux):
-                self._log(f"Zesarux not found at {zesarux}")
+                self._log(_("Zesarux not found at {}").format(zesarux))
                 return
 
             machine_map = {"plus3": "P341", "128k": "128k", "48k": "48k"}
@@ -1159,11 +1167,11 @@ class MakeAdventureGUI:
                 machine_map[model],
                 compiled_file,
             ]
-            self._log(f"Launching Zesarux: {zesarux} {' '.join(zparams)}")
+            self._log(_("Launching Zesarux: {} {}").format(zesarux, ' '.join(zparams)))
             try:
                 subprocess.Popen([zesarux] + zparams, cwd=zesarux_dir)
             except Exception as exc:
-                self._log(f"Failed to launch Zesarux: {exc}")
+                self._log(_("Failed to launch Zesarux: {}").format(exc))
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
@@ -1171,7 +1179,7 @@ class MakeAdventureGUI:
 
 def main():
     if sys.version_info[0] < 3:
-        print("ERROR: Python 3 is required.")
+        print(_("ERROR: Python 3 is required."))
         sys.exit(1)
 
     root = tk.Tk()
