@@ -56,7 +56,8 @@ if os.name == "nt":
 
 # Now it is safe to import tkinter
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, scrolledtext
+import tkinter.font as tkfont
+from tkinter import ttk, filedialog, messagebox, scrolledtext, colorchooser
 
 
 # ── Version ────────────────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ LOGO_MAX_HEIGHT = 80
 SETTINGS_FILE = "cyd_gui_settings.json"
 
 # Current settings format version – bump when adding/removing keys
-SETTINGS_VERSION = 1
+SETTINGS_VERSION = 2
 
 
 # ── Settings persistence ──────────────────────────────────────────────────────
@@ -146,6 +147,12 @@ _SETTINGS_KEYS = [
     # Post-build
     ("run_emulator",       "var_run_emulator",       "str"),
     ("backup_cyd",         "var_backup_cyd",         "bool"),
+    # Appearance
+    ("app_font_size",      "var_app_font_size",      "int"),
+    ("log_font_family",    "var_log_font_family",    "str"),
+    ("log_font_size",      "var_log_font_size",      "int"),
+    ("log_fg_color",       "var_log_fg_color",       "str"),
+    ("log_bg_color",       "var_log_bg_color",       "str"),
 ]
 
 
@@ -309,6 +316,11 @@ class SettingsDialog(tk.Toplevel):
         notebook.add(tab_post, text="  Post‑build  ")
         self._build_post_tab(tab_post)
 
+        # ── Tab 4: Appearance ──────────────────────────────────────────────
+        tab_appearance = ttk.Frame(notebook)
+        notebook.add(tab_appearance, text="  Appearance  ")
+        self._build_appearance_tab(tab_appearance)
+
         # ── Bottom buttons ─────────────────────────────────────────────────
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X, padx=8, pady=8)
@@ -450,7 +462,138 @@ class SettingsDialog(tk.Toplevel):
             variable=self.app.var_backup_cyd,
         ).pack(anchor=tk.W, **pad)
 
-    # ── Browse helpers ─────────────────────────────────────────────────────
+    # ── Appearance tab ──────────────────────────────────────────────────
+
+    def _build_appearance_tab(self, parent):
+        pad = {"padx": 6, "pady": 3}
+
+        # ── Application font size ──────────────────────────────────────────
+        app_frame = ttk.LabelFrame(parent, text="Application Font")
+        app_frame.pack(fill=tk.X, **pad)
+
+        ttk.Label(app_frame, text="Font size:").grid(
+            row=0, column=0, sticky=tk.W, **pad
+        )
+        ttk.Spinbox(
+            app_frame,
+            textvariable=self.app.var_app_font_size,
+            from_=7,
+            to=24,
+            width=6,
+        ).grid(row=0, column=1, sticky=tk.W, **pad)
+        ttk.Label(
+            app_frame,
+            text="Size of the general UI font (requires restart)",
+            foreground="gray",
+        ).grid(row=0, column=2, sticky=tk.W, **pad)
+
+        # ── Log window settings ────────────────────────────────────────────
+        log_frame = ttk.LabelFrame(parent, text="Log Window")
+        log_frame.pack(fill=tk.X, **pad)
+        log_frame.columnconfigure(1, weight=1)
+
+        # Font family
+        available_fonts = sorted(set(tkfont.families()))
+        ttk.Label(log_frame, text="Font:").grid(
+            row=0, column=0, sticky=tk.W, **pad
+        )
+        font_combo = ttk.Combobox(
+            log_frame,
+            textvariable=self.app.var_log_font_family,
+            values=available_fonts,
+            width=28,
+        )
+        font_combo.grid(row=0, column=1, sticky=tk.W, **pad)
+
+        # Font size
+        ttk.Label(log_frame, text="Font size:").grid(
+            row=1, column=0, sticky=tk.W, **pad
+        )
+        ttk.Spinbox(
+            log_frame,
+            textvariable=self.app.var_log_font_size,
+            from_=6,
+            to=32,
+            width=6,
+        ).grid(row=1, column=1, sticky=tk.W, **pad)
+
+        # Foreground colour
+        ttk.Label(log_frame, text="Text colour:").grid(
+            row=2, column=0, sticky=tk.W, **pad
+        )
+        self._fg_swatch = tk.Label(
+            log_frame, width=4, relief=tk.SUNKEN,
+            bg=self.app.var_log_fg_color.get(),
+        )
+        self._fg_swatch.grid(row=2, column=1, sticky=tk.W, **pad)
+        ttk.Button(
+            log_frame, text="Choose…",
+            command=lambda: self._pick_color(self.app.var_log_fg_color, self._fg_swatch),
+        ).grid(row=2, column=2, sticky=tk.W, **pad)
+
+        # Background colour
+        ttk.Label(log_frame, text="Background colour:").grid(
+            row=3, column=0, sticky=tk.W, **pad
+        )
+        self._bg_swatch = tk.Label(
+            log_frame, width=4, relief=tk.SUNKEN,
+            bg=self.app.var_log_bg_color.get(),
+        )
+        self._bg_swatch.grid(row=3, column=1, sticky=tk.W, **pad)
+        ttk.Button(
+            log_frame, text="Choose…",
+            command=lambda: self._pick_color(self.app.var_log_bg_color, self._bg_swatch),
+        ).grid(row=3, column=2, sticky=tk.W, **pad)
+
+        # ── Preview ────────────────────────────────────────────────────────
+        preview_frame = ttk.LabelFrame(parent, text="Log Preview")
+        preview_frame.pack(fill=tk.BOTH, expand=True, **pad)
+
+        self._preview_text = tk.Text(
+            preview_frame, height=4, wrap=tk.WORD,
+            font=(self.app.var_log_font_family.get(), self.app.var_log_font_size.get()),
+            fg=self.app.var_log_fg_color.get(),
+            bg=self.app.var_log_bg_color.get(),
+        )
+        self._preview_text.insert(tk.END, "This is a preview of the log window.\n")
+        self._preview_text.insert(tk.END, "ABCDEFghijklmn 0123456789 !@#$%\n")
+        self._preview_text.insert(tk.END, "Compilation finished successfully!")
+        self._preview_text.configure(state=tk.DISABLED)
+        self._preview_text.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+
+        # Apply button
+        ttk.Button(
+            parent, text="Apply Appearance",
+            command=self._apply_and_refresh,
+        ).pack(pady=(0, 6))
+
+    def _pick_color(self, var, swatch):
+        """Open colour picker and update the variable and swatch."""
+        colour = colorchooser.askcolor(
+            initialcolor=var.get(), parent=self, title="Choose colour",
+        )
+        if colour and colour[1]:
+            var.set(colour[1])
+            swatch.configure(bg=colour[1])
+            self._refresh_preview()
+
+    def _refresh_preview(self):
+        """Update the preview text widget with current settings."""
+        if not hasattr(self, "_preview_text"):
+            return
+        self._preview_text.configure(
+            font=(self.app.var_log_font_family.get(), self.app.var_log_font_size.get()),
+            fg=self.app.var_log_fg_color.get(),
+            bg=self.app.var_log_bg_color.get(),
+        )
+
+    def _apply_and_refresh(self):
+        """Apply appearance settings to the main app and refresh preview."""
+        self._refresh_preview()
+        self.app._apply_appearance()
+        self.app._save_settings()
+
+    # ── Browse helpers ─────────────────────────────────────────────────────────
 
     def _browse_dir(self, var):
         path = filedialog.askdirectory(
@@ -527,12 +670,19 @@ class MakeAdventureGUI:
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
         self.var_backup_cyd = tk.BooleanVar()
+        # Appearance
+        self.var_app_font_size = tk.IntVar()
+        self.var_log_font_family = tk.StringVar()
+        self.var_log_font_size = tk.IntVar()
+        self.var_log_fg_color = tk.StringVar()
+        self.var_log_bg_color = tk.StringVar()
 
         # Set defaults first, then override with saved settings
         self._set_defaults()
         self._load_settings()
 
         self._build_ui()
+        self._apply_appearance()
         self._set_window_icon()
 
         # Save settings on close
@@ -566,6 +716,12 @@ class MakeAdventureGUI:
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
         self.var_backup_cyd.set(False)
+        # Appearance defaults
+        self.var_app_font_size.set(9)
+        self.var_log_font_family.set("Courier")
+        self.var_log_font_size.set(9)
+        self.var_log_fg_color.set("#000000")
+        self.var_log_bg_color.set("#ffffff")
 
     # ── Settings persistence ───────────────────────────────────────────────
 
@@ -715,6 +871,33 @@ class MakeAdventureGUI:
     def _open_settings(self):
         """Open the settings/configuration dialog."""
         SettingsDialog(self.root, self)
+
+    # ── Appearance ─────────────────────────────────────────────────────────
+
+    def _apply_appearance(self):
+        """Apply appearance settings to the application and the log widget."""
+        # ── Application font size ──────────────────────────────────────────
+        app_size = self.var_app_font_size.get()
+        if app_size < 7:
+            app_size = 9
+        default_font = tkfont.nametofont("TkDefaultFont")
+        default_font.configure(size=app_size)
+        text_font = tkfont.nametofont("TkTextFont")
+        text_font.configure(size=app_size)
+
+        # ── Log widget ─────────────────────────────────────────────────────
+        log_family = self.var_log_font_family.get() or "Courier"
+        log_size = self.var_log_font_size.get()
+        if log_size < 6:
+            log_size = 9
+        log_fg = self.var_log_fg_color.get() or "#000000"
+        log_bg = self.var_log_bg_color.get() or "#ffffff"
+
+        self.log.configure(
+            font=(log_family, log_size),
+            fg=log_fg,
+            bg=log_bg,
+        )
 
     # ── Logging ────────────────────────────────────────────────────────────
 
