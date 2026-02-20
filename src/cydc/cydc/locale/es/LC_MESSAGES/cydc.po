@@ -319,7 +319,7 @@ msgid "Tracks processing completed ({tmp_timer})"
 msgstr "Procesamiento de pistas completado ({tmp_timer})"
 
 #: src/cydc/cydc/cydc.py:590
-msgid "Reading loaging screen..."
+msgid "Reading loading screen..."
 msgstr "Leyendo pantalla de carga..."
 
 #: src/cydc/cydc/cydc.py:595
