@@ -587,7 +587,7 @@ def main():
     loading_scr = None
     if args.load_scr_file is not None:
         if verbose > 0:
-            print(_("Reading loaging screen..."))
+            print(_("Reading loading screen..."))
         if os.path.isfile(args.load_scr_file):
             with open(args.load_scr_file, "rb") as f:
                 loading_scr = list(f.read())
