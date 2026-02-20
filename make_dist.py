@@ -84,8 +84,20 @@ for file in SRC_FILES:
     os.makedirs(os.path.dirname(dstPath), exist_ok=True)
     shutil.copy(srcPath, dstPath)
 
+# Copy locale directories for the cydc and cyd_font_conv domains into dist/
+shutil.copytree(
+    os.path.join(currentPath, SRC_PATH, "cydc", "locale"),
+    os.path.join(currentPath, DST_PATH, "cydc", "locale"),
+    dirs_exist_ok=True,
+)
+shutil.copytree(
+    os.path.join(currentPath, SRC_PATH, "locale"),
+    os.path.join(currentPath, DST_PATH, "locale"),
+    dirs_exist_ok=True,
+)
 
-DIST_DIRS = ["assets", "examples", "dist/cydc"]
+
+DIST_DIRS = ["assets", "examples", "dist/cydc", "locale", "dist/locale"]
 DIST_DIRS_WIN32 = ["dist/python"] + DIST_DIRS
 DIST_DIRS_LINUX = [] + DIST_DIRS
 
