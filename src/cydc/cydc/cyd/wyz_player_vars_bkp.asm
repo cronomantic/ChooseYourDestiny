@@ -1,0 +1,97 @@
+; VARIABLES__________________________
+;MUSICA **** EL ORDEN DE LAS VARIABLES ES FIJO ******
+
+SONG:           DB     00               ;DBNº DE CANCION
+TEMPO:          DB     00               ;DB TEMPO
+TTEMPO:         DB     00               ;DB CONTADOR TEMPO
+PUNTERO_A:      DW     00               ;DW PUNTERO DEL CANAL A
+PUNTERO_B:      DW     00               ;DW PUNTERO DEL CANAL B
+PUNTERO_C:      DW     00               ;DW PUNTERO DEL CANAL C
+
+CANAL_A:        DW     BUFFER_DEC       ;DW DIRECION DE INICIO DE LA MUSICA A
+CANAL_B:        DW     00               ;DW DIRECION DE INICIO DE LA MUSICA B
+CANAL_C:        DW     00               ;DW DIRECION DE INICIO DE LA MUSICA C
+
+PUNTERO_P_A:    DW     00               ;DW PUNTERO PAUTA CANAL A
+PUNTERO_P_B:    DW     00               ;DW PUNTERO PAUTA CANAL B
+PUNTERO_P_C:    DW     00               ;DW PUNTERO PAUTA CANAL C
+
+PUNTERO_P_A0:   DW     00               ;DW INI PUNTERO PAUTA CANAL A
+PUNTERO_P_B0:   DW     00               ;DW INI PUNTERO PAUTA CANAL B
+PUNTERO_P_C0:   DW     00               ;DW INI PUNTERO PAUTA CANAL C
+
+
+PUNTERO_P_DECA: DW     00               ;DW PUNTERO DE INICIO DEL DECODER CANAL A
+PUNTERO_P_DECB: DW     00               ;DW PUNTERO DE INICIO DEL DECODER CANAL B
+PUNTERO_P_DECC: DW     00               ;DW PUNTERO DE INICIO DEL DECODER CANAL C
+
+PUNTERO_DECA:   DW     00               ;DW PUNTERO DECODER CANAL A
+PUNTERO_DECB:   DW     00               ;DW PUNTERO DECODER CANAL B
+PUNTERO_DECC:   DW     00               ;DW PUNTERO DECODER CANAL C       
+
+REG_NOTA_A:     DB     00               ;DB REGISTRO DE LA NOTA EN EL CANAL A
+		    	DB     00               ;VACIO
+REG_NOTA_B:     DB     00               ;DB REGISTRO DE LA NOTA EN EL CANAL B
+		    	DB     00               ;VACIO
+REG_NOTA_C:     DB     00               ;DB REGISTRO DE LA NOTA EN EL CANAL C
+		    	DB     00               ;VACIO
+
+;CANAL DE EFECTOS - ENMASCARA OTRO CANAL
+
+PUNTERO_P:      DW     00               ;DW PUNTERO DEL CANAL EFECTOS
+CANAL_P:        DW     00               ;DW DIRECION DE INICIO DE LOS EFECTOS
+PUNTERO_P_DECP: DW     00               ;DW PUNTERO DE INICIO DEL DECODER CANAL P
+PUNTERO_DECP:   DW     00               ;DW PUNTERO DECODER CANAL P
+
+PSG_REG:        DB     00,00,00,00,00,00,00,10111000B,00,00,00,00,00,00,00    ;DB [11] BUFFER DE REGISTROS DEL PSG
+PSG_REG_SEC:    DB     00,00,00,00,00,00,00,10111000B,00,00,00,00,00,00,00    ;DB [11] BUFFER SECUNDARIO DE REGISTROS DEL PSG
+
+;EFECTOS DE SONIDO
+
+N_SONIDO:       DB      0               ;DB : NUMERO DE SONIDO
+PUNTERO_SONIDO: DW      0               ;DW : PUNTERO DEL SONIDO QUE SE REPRODUCE
+
+;EFECTOS
+
+; N_EFECTO:       DB      0               ;DB : NUMERO DE SONIDO
+; PUNTERO_EFECTO: DW      0               ;DW : PUNTERO DEL SONIDO QUE SE REPRODUCE
+; CANAL_EFECTOS:  DB      1               ; CANAL DE SFX
+ENVOLVENTE:     DB      0               ;DB : FORMA DE LA ENVOLVENTE
+									    ;BIT 0    : FRECUENCIA CANAL ON/OFF
+									    ;BIT 1-2  : RATIO 
+									    ;BIT 3-3  : FORMA
+
+BUFFER_DEC:     DB      $00     
+
+WYZ_SWITCHES:
+INTERR:         DB     00       ;INTERRUPTORES 1=ON 0=OFF
+							    ;BIT 0=CARGA CANCION ON/OFF
+							    ;BIT 1=PLAYER ON/OFF
+							    ;BIT 2=SONIDOS ON/OFF
+							    ;BIT 3=EFECTOS ON/OFF
+								;BIT 4=LOOP ON/OFF
+
+TABLA_PAUTAS:   DW      $0
+TABLA_SONIDOS:  DW      $0
+DATOS_NOTAS:    DW      $0
+
+
+;; INCLUIR LOS DATOS DE LA MUSICA (PATTERNS/EFFECTS)
+;INCLUDE "instruments.asm"
+
+;SONG_0:
+;	INCBIN "song_0.mus.bin"
+
+;; Añadir entradas para cada canción
+				
+;TABLA_SONG:
+;	DW      SONG_0
+
+;; INCLUIR LOS EFECTOS DE SONIDO:
+;INCLUDE "effects.asm"
+
+BUFFERS_CANALES:
+				DEFS 	$120
+
+;; LA CANCION ACTUAL SE DESCOMPRIME AQUI:
+;BUFFER_UNPACK:	
