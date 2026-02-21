@@ -92,8 +92,7 @@ class CydcLexer(object):
         }
 
     states = (
-        ("text", "exclusive"),
-        #        ("comment", "exclusive"),
+        ("rawtext", "exclusive"),
     )
 
     reserved = {
@@ -229,48 +228,49 @@ class CydcLexer(object):
         if self.lexer is not None:
             self.lexer.lexpos = value
 
-    def t_open_text(self, t):
-        r"\[\["
+    def t_close_code(self, t):
+        r"\]\]"
         self.txt_pos = t.lexer.lexpos
-        t.lexer.begin("text")
+        t.lexer.begin("rawtext")
         return None
 
     def t_ERROR_CLOSE_TEXT(self, t):
-        r"\]\]"
+        r"\[\["
+        # Found [[ while in INITIAL (code) state - this is an error
+        # Should only see [[ in rawtext state
         t.type = "ERROR_CLOSE_TEXT"
         t.value = t.lexer.lineno
         return t
 
-    def t_text_TEXT(self, t):
-        r"\]\]"
-        # t.lexer.lineno += t.value.count("\n")
+    def t_rawtext_open_code(self, t):
+        r"\[\["
+        # Extract raw text that was between the previous ]] and this [[
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos - 2]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
-            t.lexer.begin("INITIAL")  # Enter 'ccode' state
+            t.lexer.begin("INITIAL")  # Enter code state
             return t
         else:
-            t.lexer.begin("INITIAL")
-            return None
+            t.lexer.begin("INITIAL")  # Enter code state, no text to emit
+            return self.token()  # Get next token from code
 
     def t_comment(self, t):
         r"/\*(.|\n|\r|\r\n)*?\*/"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
-    # Ignored characters
-    t_ignore = " \t"
-    t_text_ignore = ""
-
-    def t_text_NEWLINE_CHAR(self, t):
+    # --- RAWTEXT state: accumulate raw text, ignore code keywords ---
+    t_rawtext_ignore = " \t"
+    
+    def t_rawtext_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
         return None
 
-    def t_NEWLINE_CHAR(self, t):
-        r"(\n|\r|\r\n)+"
-        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
-        return t
+    def t_rawtext_error(self, t):
+        t.lexer.skip(1)
+
+    # ---- CODE state (INITIAL): tokenize statements ---
 
     t_COLON = r":"
     t_AT_CHAR = r"@"
@@ -298,6 +298,14 @@ class CydcLexer(object):
     t_RCARET = r"\]"
     t_LCURLY = r"\{"
     t_RCURLY = r"\}"
+    
+    # Ignored characters in code mode
+    t_INITIAL_ignore = " \t"
+    
+    def t_INITIAL_NEWLINE_CHAR(self, t):
+        r"(\n|\r|\r\n)+"
+        t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
+        return t
 
     def t_SHORT_LABEL(self, t):
         r"\#[a-zA-Z_][a-zA-Z0-9_]*"
@@ -339,15 +347,12 @@ class CydcLexer(object):
         t.type = self.reserved.get(t.value.upper(), "ID")  # Check for reserved words
         return t
 
-    def t_text_error(self, t):
-        t.lexer.skip(1)
-
     def t_INITIAL_error(self, t):
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
 
-    # EOF handling rule
-    def t_text_eof(self, t):
+    # EOF handling in rawtext state - emit remaining text
+    def t_rawtext_eof(self, t):
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
@@ -355,11 +360,6 @@ class CydcLexer(object):
             return t
         else:
             return None
-
-    # def t_eof(self, t):
-    #     more = "\n"
-    #     self.lexer.input(more)
-    #     return self.lexer.token()
 
     def t_error(self, t):
         t.lexer.skip(1)  # just skip chars
@@ -372,6 +372,8 @@ class CydcLexer(object):
         self.txt_pos = 0
         self.texts = []
         self.lexer.input(data)
+        # Start in rawtext state (code is inside [[ ... ]])
+        self.lexer.begin("rawtext")
 
     def token(self):
         return self.lexer.token()

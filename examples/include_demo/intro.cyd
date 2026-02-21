@@ -1,0 +1,12 @@
+[[PAPER 0 : INK 7 : BORDER 0 : CLEAR]]
+[[CENTER]]
+Welcome to the INCLUDE Demo Adventure!
+[[NEWLINE : NEWLINE : NEWLINE]]
+[[INK 3]]
+This adventure demonstrates how to use
+the INCLUDE directive to organize your
+code across multiple files.
+[[INK 7]]
+[[NEWLINE : NEWLINE]]
+Press any key to begin...
+[[WAITKEY]]
