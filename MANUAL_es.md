@@ -285,6 +285,65 @@ Indicar que los caracteres del 128 al 144 son especiales, ya que se usan para lo
 
 ## Sintaxis Básica
 
+### Inclusión de Archivos Externos
+
+Para proyectos más grandes, puedes organizar tu aventura en múltiples archivos fuente usando la directiva `INCLUDE`. Esto te permite dividir tu código en módulos lógicos (por ejemplo, archivos separados para diferentes capítulos, subrutinas comunes, declaraciones de variables, etc.).
+
+**Sintaxis:**
+```cyd
+INCLUDE "archivo.cyd"
+```
+
+**Ejemplo:**
+```cyd
+[[ INCLUDE "variables.cyd" ]]
+[[ INCLUDE "funciones_comunes.cyd" ]]
+[[ INCLUDE "capitulo1.cyd" ]]
+
+#Inicio
+Comienzas tu aventura...
+```
+
+**Características:**
+- La directiva `INCLUDE` no distingue entre mayúsculas y minúsculas (`INCLUDE`, `include` o `Include` funcionan igual)
+- Las rutas de archivo pueden ser relativas o absolutas
+- Las rutas relativas se resuelven desde el directorio que contiene el archivo con la directiva `INCLUDE`
+- Los archivos pueden incluir otros archivos (inclusiones anidadas) hasta una profundidad máxima de 20 niveles
+- Las inclusiones circulares (archivo A incluye B, B incluye A) se detectan y se reportan como errores
+- La directiva puede ir seguida de comentarios: `INCLUDE "archivo.cyd" // Cargar utilidades`
+- Se admiten comillas simples y dobles: `INCLUDE "archivo.cyd"` o `INCLUDE 'archivo.cyd'`
+
+**Ejemplo de estructura de proyecto:**
+```
+mi_aventura/
+  ├── principal.cyd     (punto de entrada principal)
+  ├── variables.cyd     (declaraciones DECLARE)
+  ├── funciones.cyd     (subrutinas comunes)
+  └── capitulos/
+      ├── intro.cyd
+      ├── capitulo1.cyd
+      └── capitulo2.cyd
+```
+
+**principal.cyd:**
+```cyd
+[[ INCLUDE "variables.cyd" ]]
+[[ INCLUDE "funciones.cyd" ]]
+
+#Inicio
+[[ INCLUDE "capitulos/intro.cyd" ]]
+[[ GOTO Capitulo1 ]]
+
+#Capitulo1
+[[ INCLUDE "capitulos/capitulo1.cyd" ]]
+```
+
+El preprocesador expandirá todas las directivas `INCLUDE` antes de que comience la compilación real, combinando todos los archivos fuente en un solo archivo para su procesamiento.
+
+---
+
+### Bloques de Código y Texto
+
 Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 
 Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que haya en medio se considera un comentario.
@@ -351,6 +410,31 @@ También se permite una versión acortada de las etiquetas precediendo el caract
 ```
 
 Los comandos disponibles están descritos en su [sección](#comandos) correspondiente.
+
+### Modo Colon Estricto (Enforced Colon Syntax)
+
+A partir de la versión 1.2.x, el compilador aplica **Modo Colon Estricto por defecto**. Esto significa que cuando hay múltiples declaraciones de código en la misma línea dentro de bloques `[[ ]]`, **deben** estar separadas por dos puntos (`:`)
+
+**Sintaxis correcta** (Modo Colon Estricto habilitado - POR DEFECTO):
+```cyd
+[[ PRINT "Hola" : INK 5 : GOTO Label1 ]]
+[[ SET mivar TO 10 : WAITKEY : END ]]
+```
+
+**Sintaxis incorrecta** (faltan dos puntos):
+```cyd
+[[ PRINT "Hola" INK 5 GOTO Label1 ]]  <-- ERROR: Las declaraciones deben estar separadas por dos puntos
+```
+
+**Si necesitas soportar código antiguo** sin separadores de dos puntos, pasa el parámetro `--no-strict-colons` al compilador:
+```bash
+cydc_cli.py --no-strict-colons 48k entrada.cyd sjasmplus salida
+```
+
+**Puntos clave:**
+- Los saltos de línea separan automáticamente las declaraciones, así que los dos puntos solo son necesarios cuando hay múltiples comandos en la misma línea
+- Los dos puntos son opcionales con el parámetro `--no-strict-colons` para compatibilidad retroactiva
+- Este cambio mejora la legibilidad del código y previene ambigüedades en el análisis
 
 ---
 
@@ -1362,6 +1446,42 @@ REM --------------------------------------
 - La variable `BACKUP_CYD` con el valor `yes` hace una copia de seguridad del fichero actual dentro del directorio `.\BACKUP`. Cada copia añade al nombre del fichero la fecha en la cual se creó.
 
 El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
+
+### Compilador GUI (make_adventure_gui v1.0.0)
+
+Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o líneas de comandos, la herramienta **make_adventure_gui** proporciona una GUI multiplataforma para compilar aventuras Choose Your Destiny.
+
+**Características:**
+- Soporte multiplataforma (Windows, Linux, macOS con Python 3.11+)
+- Python integrado en Windows (sin necesidad de instalar Python por separado)
+- 26 opciones configurables incluyendo objetivos de compilación, rutas y acciones posteriores a la compilación
+- Persistencia de configuración (recordada entre sesiones)
+- Soporte completo de internacionalización (español incluido)
+- Visualización en tiempo real del resultado de la compilación
+
+**Lanzando la GUI:**
+
+**Windows:**
+```batch
+make_adventure_gui.cmd
+```
+
+**Linux/macOS:**
+```bash
+./make_adventure_gui.sh
+```
+
+**Opciones Configurables:**
+
+| Categoría | Opciones |
+|-----------|----------|
+| **Proyecto** | Nombre del juego, Objetivo (48k/128k/plus3) |
+| **Rutas** | Directorio de salida, Ruta de imágenes, Ruta de pistas, Archivo SFX, Pantalla de carga, Archivo de tokens, Conjunto de caracteres |
+| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Trimizar código intérprete, Mostrar bytecode, Modo colon estricto, Soporte WyzTracker, Disco 720KB |
+| **Post-Compilación** | Ejecutar emulador después de compilar, Respaldar archivo CYD |
+| **Apariencia** | Tamaño de fuente, Familia/tamaño/colores de fuente de registro |
+
+Todos los archivos compilados se colocan en el directorio de salida especificado, y la GUI mostrará mensajes de compilación detallados para depuración si es necesario.
 
 ### Linux, BSDs
 

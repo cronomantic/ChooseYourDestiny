@@ -32,7 +32,7 @@ class SymbolType(Enum):
 
 class CydcParser(object):
 
-    def __init__(self, gettext=None):
+    def __init__(self, gettext=None, strict_colon_mode=True):
         self.lexer = CydcLexer()
         self.tokens = self.lexer.get_tokens()
         self.parser = None
@@ -41,6 +41,10 @@ class CydcParser(object):
         self.symbols_used = dict()
         self.hidden_label_counter = 0
         self.debug = False
+        # Backwards compatibility: require colons between code statements
+        # When True: statements like "PRINT x GOTO Label" require "PRINT x : GOTO Label"
+        # When False: allows "PRINT x GOTO Label" (old behavior)
+        self.strict_colon_mode = strict_colon_mode
         import builtins
         self._ = gettext.gettext if gettext is not None else builtins.__dict__.get('_', lambda x: x)
 
@@ -115,16 +119,26 @@ class CydcParser(object):
                 else:
                     p[0].append(p[2])
 
-    # def p_statements_dup(self, p):
-    #     """
-    #     statements  : statements if_statement
-    #                 | statements loop_while_statement
-    #                 | statements loop_do_until_statement
-    #                 | statements statement
-    #     """
-    #     if len(p) == 3 and p[1] and p[2]:
-    #         self.errors.append(self._(f"Missing colon in line {p.lineno(2)}"))
-    #         raise SyntaxError
+    def p_statements_no_colon(self, p):
+        """
+        statements  : statements if_statement
+                    | statements loop_while_statement
+                    | statements loop_do_until_statement
+                    | statements statement
+        """
+        if len(p) == 3 and p[1] and p[2]:
+            if self.strict_colon_mode:
+                # In strict mode, report error but continue parsing
+                self.errors.append(self._(f"Colon required between statements on same line (line {p.lineno(2)})"))
+        
+        p[0] = p[1]
+        if not p[0]:
+            p[0] = []
+        if p[2]:
+            if isinstance(p[2], list):
+                p[0] += p[2]
+            else:
+                p[0].append(p[2])
 
     def p_statements(self, p):
         """

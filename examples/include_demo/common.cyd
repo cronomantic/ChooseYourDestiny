@@ -1,0 +1,29 @@
+[[
+// Common utility subroutines
+
+#ShowStatus
+INK 6
+PRINT "Health: "
+PRINT @PlayerHealth
+PRINT " | Gold: "
+PRINT @PlayerGold
+INK 7
+NEWLINE
+RETURN
+
+#GameOver
+CLEAR
+CENTER
+INK 2
+BRIGHT 1
+PRINT "GAME OVER"
+INK 7
+BRIGHT 0
+NEWLINE : NEWLINE
+PRINT "You have died..."
+NEWLINE : NEWLINE
+PRINT "Press any key to restart"
+WAITKEY
+GOTO Start
+RETURN
+]]

@@ -283,6 +283,65 @@ Note that characters 128 to 144 are special, as they are used for cursors and wi
 
 ## Basic Syntax
 
+### Including External Files
+
+For larger projects, you can organize your adventure into multiple source files using the `INCLUDE` directive. This allows you to split your code into logical modules (e.g., separate files for different chapters, common subroutines, variable declarations, etc.).
+
+**Syntax:**
+```cyd
+INCLUDE "filename.cyd"
+```
+
+**Example:**
+```cyd
+[[ INCLUDE "variables.cyd" ]]
+[[ INCLUDE "common_functions.cyd" ]]
+[[ INCLUDE "chapter1.cyd" ]]
+
+#Start
+You begin your adventure...
+```
+
+**Features:**
+- The `INCLUDE` directive is case-insensitive (`INCLUDE`, `include`, or `Include` all work)
+- File paths can be relative or absolute
+- Relative paths are resolved from the directory containing the file with the `INCLUDE` directive
+- Files can include other files (nested includes) up to a maximum depth of 20 levels
+- Circular includes (file A includes B, B includes A) are detected and reported as errors
+- The directive can be followed by comments: `INCLUDE "file.cyd" // Load utilities`
+- Both single and double quotes are supported: `INCLUDE "file.cyd"` or `INCLUDE 'file.cyd'`
+
+**Example project structure:**
+```
+my_adventure/
+  ├── main.cyd          (main entry point)
+  ├── variables.cyd     (DECLARE statements)
+  ├── functions.cyd     (common subroutines)
+  └── chapters/
+      ├── intro.cyd
+      ├── chapter1.cyd
+      └── chapter2.cyd
+```
+
+**main.cyd:**
+```cyd
+[[ INCLUDE "variables.cyd" ]]
+[[ INCLUDE "functions.cyd" ]]
+
+#Start
+[[ INCLUDE "chapters/intro.cyd" ]]
+[[ GOTO Chapter1 ]]
+
+#Chapter1
+[[ INCLUDE "chapters/chapter1.cyd" ]]
+```
+
+The preprocessor will expand all `INCLUDE` directives before the actual compilation begins, combining all source files into a single file for processing.
+
+---
+
+### Code Blocks and Text
+
 Commands for the interpreter are enclosed within two pairs of brackets, open and closed respectively. Any text outside of this is considered "printable text", including spaces and line breaks, and will be presented as such by the interpreter. Commands are separated from each other by line breaks or colons if they are on the same line.
 
 Comments within code are delimited by `/*` and `*/`, everything in between is considered a comment.
@@ -349,6 +408,31 @@ LABEL Location1]]You are in location 1. Where do you want to go?
 ```
 
 The available commands are described in their corresponding [section](#commands).
+
+### Strict Colon Mode (Syntax Enforcement)
+
+As of version 1.2.x, the compiler enforces **Strict Colon Mode by default**. This means that when multiple code statements are placed on the same line within `[[ ]]` blocks, they **must** be separated by colons (`:`)
+
+**Correct syntax** (Strict Colon Mode enabled - DEFAULT):
+```cyd
+[[ PRINT "Hello" : INK 5 : GOTO Label1 ]]
+[[ SET myvar TO 10 : WAITKEY : END ]]
+```
+
+**Incorrect syntax** (missing colons):
+```cyd
+[[ PRINT "Hello" INK 5 GOTO Label1 ]]  <-- ERROR: Statements must be separated by colons
+```
+
+**If you need to support old code** without colon separators, pass the `--no-strict-colons` flag to the compiler:
+```bash
+cydc_cli.py --no-strict-colons 48k input.cyd sjasmplus output
+```
+
+**Key points:**
+- Line breaks automatically separate statements, so colons are only needed when multiple commands are on the same line
+- Colons are optional with the `--no-strict-colons` flag for backwards compatibility
+- This change improves code readability and prevents parsing ambiguities
 
 ---
 
@@ -1042,6 +1126,17 @@ The parameters, in order, are:
 
 _Function_ that returns the attribute value in Spectrum screen format, that is, a byte with bits in FBPPPIII format (F = Flash, B = Bright, P = Paper, I = Ink).
 
+### ATTRMASK (expression COMMA expression COMMA expression COMMA expression)
+
+_Function_ that returns a mask value, used in the `PUTATTR` and `FILLATTR` commands.
+
+The parameters, in order, are:
+
+- Ink mask. If the value is zero, we preserve the screen value, and if it is one we use the new value.
+- Paper mask. If the value is zero, we preserve the screen value, and if it is one we use the new value.
+- Bright mask. If the value is zero, we preserve the screen value, and if it is one we use the new value.
+- Flash mask. If the value is zero, we preserve the screen value, and if it is one we use the new value.
+
 ### RANDOM(expression)
 
 _Function_ that returns a random number between 0 and the value specified in **expression**. The maximum value is 255.
@@ -1338,6 +1433,42 @@ REM --------------------------------------
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
 
 The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\zesarux` folder, after compilation it will run automatically with the appropriate options.
+
+### GUI Compiler (make_adventure_gui v1.0.0)
+
+For those who prefer a graphical interface instead of editing scripts or command lines, the **make_adventure_gui** tool provides a cross-platform GUI for compiling Choose Your Destiny adventures.
+
+**Features:**
+- Cross-platform support (Windows, Linux, macOS with Python 3.11+)
+- Embedded Python on Windows (no separate Python installation needed)
+- 26 configurable options including compilation targets, paths, and post-build actions
+- Settings persistence (remembered between sessions)
+- Full internationalization support (Spanish included)
+- Real-time compilation output display
+
+**Launching the GUI:**
+
+**Windows:**
+```batch
+make_adventure_gui.cmd
+```
+
+**Linux/macOS:**
+```bash
+./make_adventure_gui.sh
+```
+
+**Configurable Options:**
+
+| Category | Options |
+|----------|----------|
+| **Project** | Game name, Target (48k/128k/plus3) |
+| **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set |
+| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Trim interpreter code, Show bytecode, Strict colon mode, WyzTracker support, 720KB disk |
+| **Post-Build** | Run emulator after compilation, Backup CYD file |
+| **Appearance** | Font size, Log font family/size, Log text/background colors |
+
+All compiled output files are placed in the specified output directory, and the GUI will display detailed compilation messages for debugging if needed.
 
 ### Linux, BSDs and Unices version
 
