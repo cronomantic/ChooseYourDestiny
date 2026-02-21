@@ -1762,7 +1762,7 @@ class CydcParser(object):
         """
         varexpression : MIN LPAREN varexpression COMMA varexpression RPAREN
         """
-        if len(p) == 4 and p[3] and p[5]:
+        if len(p) == 7 and p[3] and p[5]:
             p[0] = []
             if isinstance(p[3], list):
                 p[0] += p[3]
@@ -1780,7 +1780,7 @@ class CydcParser(object):
         """
         varexpression : MAX LPAREN varexpression COMMA varexpression RPAREN
         """
-        if len(p) == 4 and p[3] and p[5]:
+        if len(p) == 7 and p[3] and p[5]:
             p[0] = []
             if isinstance(p[3], list):
                 p[0] += p[3]
@@ -1797,7 +1797,7 @@ class CydcParser(object):
     def p_varexpression_unop(self, p):
         "varexpression : NOT_B varexpression %prec UNOT_B"
         if isinstance(p[2], list):
-            p[0] = p[2].append(("NOT_B",))
+            p[0] = p[2] + [("NOT_B",)]
         else:
             p[0] = [p[2], ("NOT_B",)]
 
