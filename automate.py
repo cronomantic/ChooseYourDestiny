@@ -6,7 +6,7 @@ Automates common development and release tasks.
 
 This script provides a unified interface to:
 - Update locale files (.po)
-- Compile locales (.po → .mo)
+- Compile locales (.po -> .mo)
 - Run regression tests
 - Generate PDF documentation
 - Create distribution packages
@@ -66,10 +66,10 @@ def run_command(cmd, cwd=None, shell=None):
             )
         return True
     except subprocess.CalledProcessError as e:
-        print(f"\n✗ Command failed with exit code {e.returncode}")
+        print(f"\n[X] Command failed with exit code {e.returncode}")
         return False
     except FileNotFoundError as e:
-        print(f"\n✗ Command not found: {e}")
+        print(f"\n[X] Command not found: {e}")
         return False
 
 
@@ -90,7 +90,7 @@ def update_locales(base_path):
 def compile_locales(base_path):
     """Compile .po files to .mo files."""
     print("\n" + "=" * 60)
-    print("STEP 1b: Compiling Locale Files (.po → .mo)")
+    print("STEP 1b: Compiling Locale Files (.po -> .mo)")
     print("=" * 60)
     
     # The compilation is done automatically by make_dist.py
@@ -107,10 +107,10 @@ def compile_locales(base_path):
         sys.path.insert(0, str(base_path))
         import make_dist
         make_dist.compile_translations(base_path, "src/cydc")
-        print("✓ Locale files compiled successfully")
+        print("[OK] Locale files compiled successfully")
         return True
     except Exception as e:
-        print(f"✗ Error compiling locales: {e}")
+        print(f"[X] Error compiling locales: {e}")
         return False
 
 
@@ -188,6 +188,47 @@ def update_wiki(base_path):
     return run_command([sys.executable, str(script)], cwd=base_path)
 
 
+def update_wiki(base_path):
+    """Update GitHub Wiki."""
+    print("\n" + "=" * 60)
+    print("STEP 5: Updating GitHub Wiki")
+    print("=" * 60)
+    
+    script = base_path / "update_wiki.py"
+    if not script.exists():
+        print(f"[X] Error: {script} not found")
+        return False
+    
+    return run_command([sys.executable, str(script)], cwd=base_path)
+
+
+def setup_python(base_path, arch="64bit", version="3.14.3", no_download=False):
+    """Setup embedded Python."""
+    print("\n" + "=" * 60)
+    print("STEP: Setting up Embedded Python")
+    print("=" * 60)
+    
+    script = base_path / "setup_embedded_python.py"
+    if not script.exists():
+        print(f"[X] Error: {script} not found")
+        return False
+    
+    cmd = [sys.executable, str(script)]
+    
+    # Add architecture
+    if arch == "32bit":
+        cmd.append("--32bit")
+    
+    # Add version
+    cmd.extend(["--python-version", version])
+    
+    # Add no-download flag
+    if no_download:
+        cmd.append("--no-download")
+    
+    return run_command(cmd, cwd=base_path)
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -246,6 +287,32 @@ Examples:
         help="Full release workflow (all tasks including wiki)"
     )
     
+    # Embedded Python setup
+    parser.add_argument(
+        "--setup-python",
+        action="store_true",
+        help="Install and configure embedded Python"
+    )
+    
+    parser.add_argument(
+        "--python-arch",
+        choices=["32bit", "64bit"],
+        default="64bit",
+        help="Python architecture for embedded setup (default: 64bit)"
+    )
+    
+    parser.add_argument(
+        "--python-version",
+        default="3.14.3",
+        help="Python version to install (default: 3.14.3)"
+    )
+    
+    parser.add_argument(
+        "--no-download",
+        action="store_true",
+        help="Use existing Python cache without downloading"
+    )
+    
     # Distribution options
     parser.add_argument(
         "--platform",
@@ -256,7 +323,7 @@ Examples:
     args = parser.parse_args()
     
     # If no tasks specified, show help
-    if not any([args.locales, args.tests, args.pdf, args.dist, args.wiki, args.all, args.release]):
+    if not any([args.locales, args.tests, args.pdf, args.dist, args.wiki, args.all, args.release, args.setup_python]):
         parser.print_help()
         return 0
     
@@ -269,6 +336,33 @@ Examples:
     
     # Determine which tasks to run
     tasks = []
+    
+    if args.setup_python:
+        # Handle Python setup separately
+        print("=" * 60)
+        print("ChooseYourDestiny Automation Toolkit")
+        print("=" * 60)
+        print(f"Working directory: {base_path}")
+        
+        print("\n" + "=" * 60)
+        print("SETUP: Installing Embedded Python")
+        print("=" * 60)
+        
+        success = setup_python(
+            base_path,
+            arch=args.python_arch,
+            version=args.python_version,
+            no_download=args.no_download
+        )
+        
+        print("\n" + "=" * 60)
+        if success:
+            print("[OK] Python setup completed successfully!")
+        else:
+            print("[FAILED] Python setup failed")
+        print("=" * 60)
+        
+        return 0 if success else 1
     
     if args.release:
         tasks = ["locales", "tests", "pdf", "dist", "wiki"]
@@ -293,41 +387,41 @@ Examples:
     
     if "locales" in tasks:
         if not update_locales(base_path):
-            print("\n✗ Locale update failed")
+            print("\n[X] Locale update failed")
             success = False
         else:
             # Compile locales after updating
             if not compile_locales(base_path):
-                print("\n✗ Locale compilation failed")
+                print("\n[X] Locale compilation failed")
                 success = False
     
     if success and "tests" in tasks:
         if not run_tests(base_path):
-            print("\n✗ Tests failed")
+            print("\n[X] Tests failed")
             success = False
     
     if success and "pdf" in tasks:
         if not generate_pdfs(base_path):
-            print("\n✗ PDF generation failed")
+            print("\n[X] PDF generation failed")
             success = False
     
     if success and "dist" in tasks:
         platform_arg = args.platform if args.platform else None
         if not create_distributions(base_path, platform_arg):
-            print("\n✗ Distribution creation failed")
+            print("\n[X] Distribution creation failed")
             success = False
     
     if success and "wiki" in tasks:
         if not update_wiki(base_path):
-            print("\n✗ Wiki update failed (you may need to commit changes)")
+            print("\n[X] Wiki update failed (you may need to commit changes)")
             # Don't set success = False, as this is non-critical
     
     # Final summary
     print("\n" + "=" * 60)
     if success:
-        print("✓ All tasks completed successfully!")
+        print("[OK] All tasks completed successfully!")
     else:
-        print("✗ Some tasks failed - see messages above")
+        print("[FAILED] Some tasks failed - see messages above")
     print("=" * 60)
     
     return 0 if success else 1

@@ -67,7 +67,7 @@ def t_rawtext_open_code(self, t):
         return t                    # Emit TEXT token
     else:
         t.lexer.begin("INITIAL")
-        return self.token()         # Skip empty text
+        return None                 # Skip empty text
 ```
 
 **Change:** Now emits accumulated TEXT and enters code mode (INITIAL)

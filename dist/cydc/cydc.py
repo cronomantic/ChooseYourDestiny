@@ -27,6 +27,7 @@ from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
 from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
+from cydc_preprocessor import CydcPreprocessor, PreprocessorError
 
 from cyd import *
 from cydc_utils import *
@@ -309,8 +310,26 @@ def main():
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
 
-    with open(args.input, "r", encoding="utf-8") as f:
-        text = f.read()
+    # Preprocess the input file to handle #include directives
+    if verbose > 0:
+        print(_("Preprocessing includes..."))
+    tmp_timer.reset()
+    
+    try:
+        preprocessor = CydcPreprocessor(
+            max_depth=20, 
+            base_path=os.path.dirname(os.path.abspath(args.input))
+        )
+        text = preprocessor.preprocess(args.input)
+        
+        if verbose >= 1:
+            included_count = len(preprocessor.included_files) - 1  # -1 for main file
+            if included_count > 0:
+                print(_(f"Preprocessed {included_count} include file(s) in {tmp_timer}"))
+            else:
+                print(_(f"Preprocessing completed in {tmp_timer}"))
+    except PreprocessorError as e:
+        sys.exit(_("ERROR: ") + str(e))
 
     if output_name is None:
         output_name = os.path.splitext(os.path.basename(args.input))

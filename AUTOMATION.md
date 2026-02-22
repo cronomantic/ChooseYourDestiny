@@ -159,65 +159,99 @@ Instala y personaliza una distribución de Python embebido para facilitar la dis
 - Descarga Python embebido desde python.org
 - Soporta arquitecturas 32-bit y 64-bit
 - Sistema de versiones flexible y fácil de actualizar
-- Cachea descargas por versión/arquitectura y limpia ZIPs antiguos al cambiar
-- Instala automáticamente pip y paquetes requeridos
-- Verifica disponibilidad de tkinter (incluido en distribución de python.org)
-- Configura correctamente el .pth para importar módulos
+- Cachea descargas por versión/arquitectura
+- Instala paquetes directamente desde PyPI (sin pip)
+- Extrae tkinter desde la distribución completa de Python
+- Configura `Lib/site-packages` para hacer paquetes accesibles
+- Actualiza automáticamente el archivo `._pth` de Python (python314._pth, etc.)
+- Crea `sitecustomize.py` como respaldo de configuración de rutas
 
-**Uso directo:**
-```bash
+**Uso directo (PowerShell en Windows):**
+```powershell
 python setup_embedded_python.py                           # Setup 64-bit Python (última)
 python setup_embedded_python.py --list-versions           # Ver versiones soportadas
 python setup_embedded_python.py --32bit                   # Setup 32-bit Python
-python setup_embedded_python.py --python-version 3.13.1   # Versión específica
+python setup_embedded_python.py --python-version 3.14.3   # Versión específica
 python setup_embedded_python.py --no-download             # Usar instalación existente
 ```
 
 **Versiones soportadas (ver `--list-versions` para lista completa):**
-- 3.14.x (última)
-- 3.13.x
-- 3.12.x
-- 3.11.x
+- 3.14.3, 3.14.2, 3.14.1, 3.14.0
+- 3.13.1, 3.13.0
+- 3.12.8, 3.12.7
+- 3.11.9, 3.11.8
 
 **Agregar nuevas versiones:**
 1. Editar `setup_embedded_python.py`
-2. Agregar entrada en el diccionario `PYTHON_VERSIONS`
+2. Agregar entrada en el diccionario `PYTHON_VERSIONS` con formato: `"X.Y.Z": "XYZ"`
 3. Asegurar que la versión existe en python.org
 
 Ejemplo:
 ```python
 PYTHON_VERSIONS = {
-    "3.15.0": "315",  # Nueva entrada
-    "3.14.1": "314",
+    "3.15.0": "3150",  # Nueva entrada (formato: "XYZ" de la versión)
+    "3.14.3": "3143",
     ...
 }
 ```
 
+**Etapas de instalación (8 pasos automáticos):**
+
+1. **Descarga de distribuciones** - Descarga Python embebido + completo desde python.org (con caché)
+2. **Extracción del embebido** - Extrae la distribución embebida a `dist/python/`
+3. **Instalación de tkinter** - Extrae tcl/, DLLs y módulos tkinter desde distribución completa
+4. **Instalación de paquetes** - Descarga e instala paquetes desde PyPI a `Lib/site-packages/`
+5. **Configuración de sitecustomize.py** - Crea sitecustomize.py como respaldo para configuración de sys.path
+6. **Verificación de tkinter** - Crea ventana de prueba para verificar tkinter funciona
+7. **Limpieza de caché** - Elimina archivos temporales (mantiene get-pip.py en caché)
+8. **Actualización de ._pth** - Modifica `python314._pth` (u otro versión) para incluir `Lib\site-packages`
+
 **Qué instala:**
-1. Python embebido en `dist/python/`
-2. pip (gestor de paquetes)
-3. Paquetes adicionales desde `src/cydc/requirements.txt`:
-   - progressbar (barras de progreso)
-   - asciibars (gráficos ASCII)
-   - Y otros especificados en requirements.txt
+- Python embebido en `dist/python/`
+- tkinter y todas sus dependencias (tcl/, DLLs)
+- Paquetes desde `src/cydc/requirements.txt`:
+  - progressbar (barras de progreso)
+  - asciibars (gráficos ASCII)
+  - altgraph, packaging, pefile, setuptools, pywin32-ctypes
+  - (PyInstaller comentado: requiere Python < 3.14)
 
 **Acerca de tkinter:**
-- El script DESCARGA automáticamente la versión completa de Python (no embebida) desde python.org
-- EXTRAE tkinter de esa descarga
-- COPIA los archivos necesarios al Python embebido
-- LIMPIA los archivos temporales automáticamente
+- El script descarga automáticamente la versión completa de Python (no embebida)
+- Extrae tkinter y todas sus bibliotecas necesarias (tcl/, DLLs)
+- Copia los archivos al Python embebido
+- Verifica funcionamiento creando una ventana Tk temporal
 - **No requiere intervención manual** - todo es transparente
 
-**Después de ejecutar:**
-- Python está completamente configurado en `dist/python/`
-- tkinter está incluido y listo para usar
-- Se puede usar directamente: `dist/python/python.exe script.py`
-- Los scripts batch/shell ya lo usan automáticamente
-- Todos los paquetes están listos para importar
-- Interfaces gráficas con tkinter funcionarán correctamente
+**Acerca de pip:**
+- El script **NO instala pip** (innecesario para este proceso)
+- Los paquetes se descargan e instalan directamente desde PyPI
+- Método: Descarga de ruedas (.whl) o código fuente (.tar.gz) y extracción directa a site-packages
+- Ventaja: Funciona incluso cuando pip no está disponible en Python embebido
 
-**Verificación limpia:**
-- Ejecuta `dist/python/python.exe verify_embedded_python.py` para comprobar imports clave
+**Instalación de paquetes (sin necesidad de pip):**
+- Usa la API JSON de PyPI para obtener URLs de distribuciones
+- Descarga ruedas (.whl) o código fuente (.tar.gz) directamente
+- Extrae contenido directamente a `Lib/site-packages/`
+- Proceso completamente automatizado, sin intervención de pip
+
+**Después de ejecutar:**
+- Python está configurado en `dist/python/`
+- tkinter está incluido y verificado funcional
+- Todos los paquetes en `Lib/site-packages/` son importables
+- sys.path configura automáticamente para encontrar paquetes
+- Se puede usar: `dist/python/python.exe script.py`
+- Los scripts batch/shell ya lo usan automáticamente
+- Ejemplo: `import progressbar` funciona sin problemas
+
+**Verificación de instalación:**
+```powershell
+# Verificar que los paquetes se importan
+$python = "E:\proyectos\ChooseYourDestiny\dist\python\python.exe"
+& $python -c "import progressbar; import tkinter; import setuptools; print('✓ Todos los paquetes importan correctamente')"
+
+# Ver sys.path
+& $python -c "import sys; [print(p) for p in sys.path]"
+```
 
 ---
 

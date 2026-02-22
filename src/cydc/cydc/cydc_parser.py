@@ -59,7 +59,6 @@ class CydcParser(object):
         ),
         ("left", "SHIFT_L", "SHIFT_R"),
         ("left", "PLUS", "MINUS"),
-        ("left", "TIMES", "DIVIDE"),
         ("left", "OR_B"),
         ("left", "AND_B"),
         ("right", "UNOT_B"),
@@ -118,6 +117,26 @@ class CydcParser(object):
                     p[0] += p[2]
                 else:
                     p[0].append(p[2])
+
+    def p_statements_text_transitions(self, p):
+        """
+        statements  : text_statement if_statement
+                    | text_statement loop_while_statement
+                    | text_statement loop_do_until_statement
+                    | text_statement statement
+        """
+        # Text naturally separates code blocks - no colon required
+        p[0] = []
+        if p[1]:
+            if isinstance(p[1], list):
+                p[0] += p[1]
+            else:
+                p[0].append(p[1])
+        if p[2]:
+            if isinstance(p[2], list):
+                p[0] += p[2]
+            else:
+                p[0].append(p[2])
 
     def p_statements_no_colon(self, p):
         """
@@ -308,8 +327,7 @@ class CydcParser(object):
 
     def p_then_statement(self, p):
         """
-        then_statement :   THEN if_statement
-                       |   THEN if_subprogram
+        then_statement :   THEN if_subprogram
         """
         if len(p) == 3 and p[2]:
             p[0] = []
@@ -322,7 +340,6 @@ class CydcParser(object):
         """
         else_statement :   ELSEIF boolexpression then_statement else_statement
                        |   ELSE if_subprogram
-                       |   ELSE if_statement
                        |   empty
         """
         p[0] = []
@@ -1663,12 +1680,11 @@ class CydcParser(object):
     def p_varexpression_nl(self, p):
         """
         varexpression_nl    : varexpression newline_seq
-                            | newline_seq
         """
-        if len(p) == 2:
-            p[0] = None
-        elif len(p) == 3 and p[1]:
+        if len(p) == 3 and p[1]:
             p[0] = p[1]
+        else:
+            p[0] = None
 
     def p_boolexpression_binop(self, p):
         """
@@ -2131,19 +2147,16 @@ class CydcParser(object):
     def p_constexpression_nl(self, p):
         """
         constexpression_nl  : constexpression newline_seq
-                            | newline_seq
         """
-        if len(p) == 2:
-            p[0] = None
-        elif len(p) == 3 and p[1]:
+        if len(p) == 3 and p[1]:
             p[0] = p[1]
+        else:
+            p[0] = None
 
     def p_constexpression_binop(self, p):
         """
         constexpression : constexpression PLUS constexpression
                         | constexpression MINUS constexpression
-                        | constexpression TIMES constexpression
-                        | constexpression DIVIDE constexpression
                         | constexpression AND_B constexpression
                         | constexpression OR_B constexpression
                         | constexpression SHIFT_L constexpression
@@ -2187,8 +2200,6 @@ class CydcParser(object):
         """
         expression : expression PLUS expression
                   | expression MINUS expression
-                  | expression TIMES expression
-                  | expression DIVIDE expression
                   | expression AND_B expression
                   | expression OR_B expression
                   | expression SHIFT_L expression
@@ -2198,10 +2209,6 @@ class CydcParser(object):
             p[0] = p[1] + p[3]
         elif p[2] == "-":
             p[0] = p[1] - p[3]
-        elif p[2] == "*":
-            p[0] = p[1] * p[3]
-        elif p[2] == "/":
-            p[0] = p[1] / p[3]
         elif p[2] == "&":
             p[0] = p[1] & p[3]
         elif p[2] == "|":
@@ -2287,12 +2294,10 @@ class CydcParser(object):
             self.symbols_used.clear()
             self.errors.clear()
             self.hidden_label_counter = 0
-            cinput, cerrors = self._code_text_reversal(input)
-            self.errors += cerrors
-            if len(self.errors) > 0:
-                return []
+            # No need for code_text_reversal with refactored lexer (JSP/PHP style)
+            # Text outside [[ ]], code inside [[ ]]
             parse_result = self.parser.parse(
-                cinput, lexer=self.lexer, debug=self.debug, tracking=True
+                input, lexer=self.lexer, debug=self.debug, tracking=True
             )
             if not self._check_symbols():
                 return []
@@ -2406,64 +2411,70 @@ class CydcParser(object):
         self.hidden_label_counter += 1
         return l
 
-    def _code_text_reversal(self, text):
-        code = ""
-        skip = False
-        is_text = True
-        errors = []
-        curr_text = ""
-        curr_code = ""
-        curr_line = 0
-        curr_pos = 0
-        last_c_line = 0
-        last_c_pos = 0
-        for i, c in enumerate(text):
-            if skip:
-                curr_pos += 1
-                skip = False
-            elif (i + 1) < len(text):
-                if text[i] == "[" and text[i + 1] == "[":
-                    if not is_text:
-                        errors.append(
-                            f"Invalid code opening on line {curr_line} at {curr_pos}"
-                        )
-                        break
-                    skip = True
-                    is_text = False
-                    last_c_line = curr_line
-                    last_c_pos = curr_pos
-                    if len(curr_text) > 0:
-                        curr_code += "[[" + curr_text + "]]"
-                    else:  # with no text, adding a space to act as a separator
-                        curr_code += " "
-                    curr_text = ""
-                elif text[i] == "]" and text[i + 1] == "]":
-                    if is_text:
-                        errors.append(
-                            f"Invalid code closure on line {curr_line} at {curr_pos}"
-                        )
-                        break
-                    skip = True
-                    is_text = True
-                    if len(curr_code) > 0:
-                        code += curr_code
-                    curr_code = ""
-                elif is_text:
-                    curr_text += c
-                else:
-                    curr_code += c
-                if c == "\n":
-                    curr_line += 1
-                    curr_pos = 0
-                else:
-                    curr_pos += 1
-        if not is_text and len(errors) == 0:
-            errors.append(f"Invalid code closure on line {last_c_line} at {last_c_pos}")
-        # Adding trailing text if exists
-        if len(curr_text) > 0:
-            code += "[[" + curr_text + "]]"
-
-        return (code, errors)
+    # LEGACY: _code_text_reversal is no longer needed with refactored lexer
+    # The refactored lexer (JSP/PHP style) handles text/code boundaries correctly:
+    # - Text outside [[ ]] is tokenized as TEXT
+    # - Code inside [[ ]] is tokenized as statements
+    # This function was used with the old backwards lexer semantics
+    #
+    # def _code_text_reversal(self, text):
+    #     code = ""
+    #     skip = False
+    #     is_text = True
+    #     errors = []
+    #     curr_text = ""
+    #     curr_code = ""
+    #     curr_line = 0
+    #     curr_pos = 0
+    #     last_c_line = 0
+    #     last_c_pos = 0
+    #     for i, c in enumerate(text):
+    #         if skip:
+    #             curr_pos += 1
+    #             skip = False
+    #         elif (i + 1) < len(text):
+    #             if text[i] == "[" and text[i + 1] == "[":
+    #                 if not is_text:
+    #                     errors.append(
+    #                         f"Invalid code opening on line {curr_line} at {curr_pos}"
+    #                     )
+    #                     break
+    #                 skip = True
+    #                 is_text = False
+    #                 last_c_line = curr_line
+    #                 last_c_pos = curr_pos
+    #                 if len(curr_text) > 0:
+    #                     curr_code += "[[" + curr_text + "]]"
+    #                 else:  # with no text, adding a space to act as a separator
+    #                     curr_code += " "
+    #                 curr_text = ""
+    #             elif text[i] == "]" and text[i + 1] == "]":
+    #                 if is_text:
+    #                     errors.append(
+    #                         f"Invalid code closure on line {curr_line} at {curr_pos}"
+    #                     )
+    #                     break
+    #                 skip = True
+    #                 is_text = True
+    #                 if len(curr_code) > 0:
+    #                     code += curr_code
+    #                 curr_code = ""
+    #             elif is_text:
+    #                 curr_text += c
+    #             else:
+    #                 curr_code += c
+    #             if c == "\n":
+    #                 curr_line += 1
+    #                 curr_pos = 0
+    #             else:
+    #                 curr_pos += 1
+    #     if not is_text and len(errors) == 0:
+    #         errors.append(f"Invalid code closure on line {last_c_line} at {last_c_pos}")
+    #     # Adding trailing text if exists
+    #     if len(curr_text) > 0:
+    #         code += "[[" + curr_text + "]]"
+    #
+    #     return (code, errors)
 
     # def _check_symbol(self, symbol, expected_type, lineno):
     #     if symbol in self.symbols.keys():

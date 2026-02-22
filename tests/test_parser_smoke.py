@@ -43,7 +43,7 @@ class TestParserSmokeTests(unittest.TestCase):
 
     def test_parse_goto(self):
         """Parse GOTO statement."""
-        self.assertTrue(self._parse_safely(self.parser_lenient, "[[GOTO Label]]"))
+        self.assertTrue(self._parse_safely(self.parser_lenient, "[[GOTO MyLabel]]"))
 
     def test_parse_label(self):
         """Parse LABEL statement."""
@@ -59,21 +59,21 @@ class TestParserSmokeTests(unittest.TestCase):
 
     def test_parse_simple_if(self):
         """Parse simple IF statement."""
-        self.assertTrue(self._parse_safely(self.parser_lenient, "[[IF 1 THEN PRINT 1 ENDIF]]"))
+        self.assertTrue(self._parse_safely(self.parser_lenient, "[[IF 1 = 1 THEN PRINT 1 ENDIF]]"))
 
     def test_parse_if_else(self):
         """Parse IF-ELSE statement."""
-        code = "[[IF 1 THEN PRINT 1 ELSE PRINT 2 ENDIF]]"
+        code = "[[IF 1 = 1 THEN PRINT 1 ELSE PRINT 2 ENDIF]]"
         self.assertTrue(self._parse_safely(self.parser_lenient, code))
 
     def test_parse_while_loop(self):
         """Parse WHILE loop."""
-        code = "[[WHILE ( 1 ) PRINT 1 WEND]]"
+        code = "[[WHILE ( 1 = 1 ) PRINT 1 WEND]]"
         self.assertTrue(self._parse_safely(self.parser_lenient, code))
 
     def test_parse_do_until(self):
         """Parse DO-UNTIL loop."""
-        code = "[[DO PRINT 1 UNTIL 0]]"
+        code = "[[DO PRINT 1 UNTIL (1 = 1)]]"
         self.assertTrue(self._parse_safely(self.parser_lenient, code))
 
     def test_parse_set_statement(self):
@@ -86,7 +86,7 @@ class TestParserSmokeTests(unittest.TestCase):
 
     def test_parse_option_goto(self):
         """Parse OPTION statement."""
-        self.assertTrue(self._parse_safely(self.parser_lenient, "[[OPTION GOTO Label]]"))
+        self.assertTrue(self._parse_safely(self.parser_lenient, "[[OPTION GOTO MyLabel]]"))
 
     def test_parse_choose(self):
         """Parse CHOOSE statement."""

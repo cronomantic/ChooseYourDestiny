@@ -63,12 +63,12 @@ The screen has been cleared.
         """Test various statement combinations in strict mode."""
         statements = [
             "[[END]]",
-            "[[GOTO Label]]",
+            "[[GOTO MyLabel]]",
             "[[LABEL MyLabel]]",
             "[[PRINT 1]]",
             "[[CLEAR]]",
             "[[BORDER 0 : INK 7]]",
-            "[[IF 1 THEN PRINT 1 ENDIF]]",
+            "[[IF 1 = 1 THEN PRINT 1 ENDIF]]",
             "[[SET 0 TO 100]]",
         ]
         
@@ -85,12 +85,12 @@ The screen has been cleared.
         """Test various statement combinations in lenient mode."""
         statements = [
             "[[END]]",
-            "[[GOTO Label]]",
+            "[[GOTO MyLabel]]",
             "[[LABEL MyLabel]]",
             "[[PRINT 1]]",
             "[[CLEAR]]",
             "[[BORDER 0 INK 7]]",
-            "[[IF 1 THEN PRINT 1 ENDIF]]",
+            "[[IF 1 = 1 THEN PRINT 1 ENDIF]]",
             "[[SET 0 TO 100]]",
         ]
         
@@ -253,8 +253,8 @@ class TestIntegrationEdgeCases(unittest.TestCase):
 
     def test_deeply_nested_if(self):
         """Test deeply nested IF statements."""
-        nested_if = "[[IF 1 THEN "
-        nested_if += "IF 1 THEN " * 5
+        nested_if = "[[IF 1 = 1 THEN "
+        nested_if += "IF 1 = 1 THEN " * 5
         nested_if += "PRINT 1"
         nested_if += " ENDIF" * 5
         nested_if += " ENDIF]]"
