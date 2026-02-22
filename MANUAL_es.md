@@ -19,7 +19,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Control de flujo y expresiones condicionales](#control-de-flujo-y-expresiones-condicionales)
   - [Asignaciones e indirección](#asignaciones-e-indirección)
   - [Constantes](#constantes)
-  - [Arrays o &#34;secuencias&#34;](#arrays-o-secuencias)
+  - [Arrays o "secuencias"](#arrays-o-secuencias)
   - [Listado de comandos](#listado-de-comandos)
     - [LABEL ID](#label-id)
     - [#ID](#id)
@@ -290,26 +290,21 @@ Indicar que los caracteres del 128 al 144 son especiales, ya que se usan para lo
 Para proyectos más grandes, puedes organizar tu aventura en múltiples archivos fuente usando la directiva `INCLUDE`. Esto te permite dividir tu código en módulos lógicos (por ejemplo, archivos separados para diferentes capítulos, subrutinas comunes, declaraciones de variables, etc.).
 
 **Sintaxis:**
-
 ```cyd
 INCLUDE "archivo.cyd"
 ```
 
 **Ejemplo:**
-
 ```cyd
-[[ 
-INCLUDE "variables.cyd"
-INCLUDE "funciones_comunes.cyd"
-INCLUDE "capitulo1.cyd"
+[[ INCLUDE "variables.cyd" ]]
+[[ INCLUDE "funciones_comunes.cyd" ]]
+[[ INCLUDE "capitulo1.cyd" ]]
 
 #Inicio
-]]
 Comienzas tu aventura...
 ```
 
 **Características:**
-
 - La directiva `INCLUDE` no distingue entre mayúsculas y minúsculas (`INCLUDE`, `include` o `Include` funcionan igual)
 - Las rutas de archivo pueden ser relativas o absolutas
 - Las rutas relativas se resuelven desde el directorio que contiene el archivo con la directiva `INCLUDE`
@@ -319,7 +314,6 @@ Comienzas tu aventura...
 - Se admiten comillas simples y dobles: `INCLUDE "archivo.cyd"` o `INCLUDE 'archivo.cyd'`
 
 **Ejemplo de estructura de proyecto:**
-
 ```
 mi_aventura/
   ├── principal.cyd     (punto de entrada principal)
@@ -332,7 +326,6 @@ mi_aventura/
 ```
 
 **principal.cyd:**
-
 ```cyd
 [[ INCLUDE "variables.cyd" ]]
 [[ INCLUDE "funciones.cyd" ]]
@@ -423,26 +416,22 @@ Los comandos disponibles están descritos en su [sección](#comandos) correspond
 A partir de la versión 1.2.x, el compilador aplica **Modo Colon Estricto por defecto**. Esto significa que cuando hay múltiples declaraciones de código en la misma línea dentro de bloques `[[ ]]`, **deben** estar separadas por dos puntos (`:`)
 
 **Sintaxis correcta** (Modo Colon Estricto habilitado - POR DEFECTO):
-
 ```cyd
 [[ PRINT "Hola" : INK 5 : GOTO Label1 ]]
 [[ SET mivar TO 10 : WAITKEY : END ]]
 ```
 
 **Sintaxis incorrecta** (faltan dos puntos):
-
 ```cyd
 [[ PRINT "Hola" INK 5 GOTO Label1 ]]  <-- ERROR: Las declaraciones deben estar separadas por dos puntos
 ```
 
 **Si necesitas soportar código antiguo** sin separadores de dos puntos, pasa el parámetro `--no-strict-colons` al compilador:
-
 ```bash
 cydc_cli.py --no-strict-colons 48k entrada.cyd sjasmplus salida
 ```
 
 **Puntos clave:**
-
 - Los saltos de línea separan automáticamente las declaraciones, así que los dos puntos solo son necesarios cuando hay múltiples comandos en la misma línea
 - Los dos puntos son opcionales con el parámetro `--no-strict-colons` para compatibilidad retroactiva
 - Este cambio mejora la legibilidad del código y previene ambigüedades en el análisis
@@ -782,7 +771,7 @@ Declara la constante _ID_ con el valor de _expression_.
 
 Crea un array de nombre _ID_ con tantos elementos como se indique en _expression_. El número de elementos no puede ser mayor de 256.
 
-### DIM ID(expression) =
+### DIM ID(expression) = {expression, expression...}
 
 Igual que [DIM ID(expression)](#dim-idexpression), pero asignando valores separados por comas.
 
@@ -827,11 +816,11 @@ Asigna el valor de _varexpression_ a la variable _varID_.
 
 Asigna el valor de _varexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
 
-### SET varID TO
+### SET varID TO {varexpression1, varexpression2,...}
 
 Asigna el valor de _varexpression1_ a la variable _varID_,  _varexpression2_ a la variable _varID_+1, y así.
 
-### SET [varID] TO
+### SET [varID] TO {varexpression1, varexpression2,...}
 
 Asigna el valor de _varexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _varexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
@@ -843,11 +832,11 @@ Asigna el valor de _varexpression_ a la variable _varID_.
 
 Asigna el valor de _varexpression_ a la variable cuyo índice corresponde con el contenido de _varID_.
 
-### LET varID =
+### LET varID = {varexpression1, varexpression2,...}
 
 Asigna el valor de _varexpression1_ a la variable _varID_,  _varexpression2_ a la variable _varID_+1, y así.
 
-### LET [varID] =
+### LET [varID] = {varexpression1, varexpression2,...}
 
 Asigna el valor de _varexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _varexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
 
@@ -1463,7 +1452,6 @@ El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado 
 Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o líneas de comandos, la herramienta **make_adventure_gui** proporciona una GUI multiplataforma para compilar aventuras Choose Your Destiny.
 
 **Características:**
-
 - Soporte multiplataforma (Windows, Linux, macOS con Python 3.11+)
 - Python integrado en Windows (sin necesidad de instalar Python por separado)
 - 26 opciones configurables incluyendo objetivos de compilación, rutas y acciones posteriores a la compilación
@@ -1474,26 +1462,24 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 **Lanzando la GUI:**
 
 **Windows:**
-
 ```batch
 make_adventure_gui.cmd
 ```
 
 **Linux/macOS:**
-
 ```bash
 ./make_adventure_gui.sh
 ```
 
 **Opciones Configurables:**
 
-| Categoría                  | Opciones                                                                                                                                                                                                               |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Proyecto**          | Nombre del juego, Objetivo (48k/128k/plus3)                                                                                                                                                                            |
-| **Rutas**             | Directorio de salida, Ruta de imágenes, Ruta de pistas, Archivo SFX, Pantalla de carga, Archivo de tokens, Conjunto de caracteres                                                                                     |
-| **Compilador**        | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Trimizar código intérprete, Mostrar bytecode, Modo colon estricto, Soporte WyzTracker, Disco 720KB |
-| **Post-Compilación** | Ejecutar emulador después de compilar, Respaldar archivo CYD                                                                                                                                                          |
-| **Apariencia**        | Tamaño de fuente, Familia/tamaño/colores de fuente de registro                                                                                                                                                       |
+| Categoría | Opciones |
+|-----------|----------|
+| **Proyecto** | Nombre del juego, Objetivo (48k/128k/plus3) |
+| **Rutas** | Directorio de salida, Ruta de imágenes, Ruta de pistas, Archivo SFX, Pantalla de carga, Archivo de tokens, Conjunto de caracteres |
+| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Trimizar código intérprete, Mostrar bytecode, Modo colon estricto, Soporte WyzTracker, Disco 720KB |
+| **Post-Compilación** | Ejecutar emulador después de compilar, Respaldar archivo CYD |
+| **Apariencia** | Tamaño de fuente, Familia/tamaño/colores de fuente de registro |
 
 Todos los archivos compilados se colocan en el directorio de salida especificado, y la GUI mostrará mensajes de compilación detallados para depuración si es necesario.
 
@@ -1538,12 +1524,19 @@ CYDC_EXTRA_PARAMS=
 Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos:
 
 - En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`. Solo funciona en los ordenadores de 128K.
+
 - En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
+
 - En la carpeta `examples\guess_the_number` hay un ejemplo de uso para menús de múltiples columnas.
+
 - En la carpeta `examples\input_test` se muestra cómo leer desde el teclado y el uso de la indirección para simular arrays.
+
 - En la carpeta `examples\blit` se muestra el uso del comando `BLIT`, con ejemplos progresivamente más avanzados en `examples\blit_island`, `examples\Rocky_Horror_Show` y `examples\CYD_presents`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+
 - En la carpeta `examples\Golden_Axe_select_character` podrás aprender sobre los comandos `FILLATTR` y `CHOOSE IF CHANGED...`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+
 - En la carpeta `examples\windows` tienes un ejemplo sencillo que ilustra el uso del comando `WINDOW`.
+
 - En la carpeta `examples\SCUMM_16` hay un ejemplo de un menú tipo SCUMM para hacer una aventura de este tipo. Y en la carpeta `examples\delerict` hay un esqueleto de otra aventura más completa, que incluye lógica de manejo de objetos y localidades.
 
 Se incluye en cada directorio un fichero TAP con el resultado compilado para que poder probarlos en vivo en un emulador.
@@ -1561,23 +1554,23 @@ El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño 
 Los carácteres corresponden con el ASCII estándar, excepto los carácteres propios del castellano, que corresponden a las siguientes posiciones para los dos juegos de caracteres:
 
 | Carácter | Posición 6x8 | Posición 4x8 |
-| --------- | ------------- | ------------- |
-| 'ª'      | 16            | 144           |
-| '¡'      | 17            | 145           |
-| '¿'      | 18            | 146           |
-| '«'      | 19            | 147           |
-| '»'      | 20            | 148           |
-| 'á'      | 21            | 149           |
-| 'é'      | 22            | 150           |
-| 'í'      | 23            | 151           |
-| 'ó'      | 24            | 152           |
-| 'ú'      | 25            | 153           |
-| 'ñ'      | 26            | 154           |
-| 'Ñ'      | 27            | 155           |
-| 'ç'      | 28            | 156           |
-| 'Ç'      | 29            | 157           |
-| 'ü'      | 30            | 158           |
-| 'Ü'      | 31            | 159           |
+| -------- | ------------ | ------------ |
+| 'ª'      | 16           | 144          |
+| '¡'      | 17           | 145          |
+| '¿'      | 18           | 146          |
+| '«'      | 19           | 147          |
+| '»'      | 20           | 148          |
+| 'á'      | 21           | 149          |
+| 'é'      | 22           | 150          |
+| 'í'      | 23           | 151          |
+| 'ó'      | 24           | 152          |
+| 'ú'      | 25           | 153          |
+| 'ñ'      | 26           | 154          |
+| 'Ñ'      | 27           | 155          |
+| 'ç'      | 28           | 156          |
+| 'Ç'      | 29           | 157          |
+| 'ü'      | 30           | 158          |
+| 'Ü'      | 31           | 159          |
 
 Los caracteres por encima del valor 127 (empezando desde cero) hasta el 143 (ambos incluidos) son especiales. Son utilizados como iconos en las opciones, es decir, en donde aparece una opción cuando se procesa el comando `OPTION`, y como indicadores de espera con un `WAITKEY` o al cambiar de página si el comando `PAGEPAUSE` está activo.
 
@@ -1681,6 +1674,7 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 Este paquete de software está sometido a diferentes licencias dependiendo de sus componentes:
 
 - El compilador está bajo licencia [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
+
 - El intérprete (la parte ejecutable en la máquina objetivo) se encuentra bajo la siguiente licencia:
 
 ```text
@@ -1698,8 +1692,11 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 ```
 
 - [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0), está sometido a licencia [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
+
 - El [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) está bajo licencia [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE)
+
 - [PLY](https://github.com/dabeaz/ply) y el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) no tienen licencias específicas, se asume una licencia similar a BSD o MIT.
+
 - [BeepFx](http://shiru.untergrund.net) está bajo licencia [WTFPL v.2](https://wtfpl2.com).
 
 En términos sencillos, significa que si usas este motor para hacer un juego, siempre tienes que indicar en la pantalla de carga o dentro del propio juego que se ha realizado con `CYD` o usar alguno de los logotipos de proyecto (incluidos en el directorio `assets`). También debes hacerlo en la web de descarga si distribuyes el juego online, y en la caja o recipiente del medio si lo distribuyes de forma física. Aparte de la anterior condición, el juego realizado **SIEMPRE** será de tu propiedad y autoría; puedes venderlo o distribuirlo sin necesitad de publicar el código fuente ni recursos artísticos.
