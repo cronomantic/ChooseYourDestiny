@@ -19,7 +19,7 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Flow control and conditional expressions](#flow-control-and-conditional-expressions)
   - [Assignments and indirection](#assignments-and-indirection)
   - [Constants](#constants)
-  - [Arrays or "sequences"](#arrays-or-sequences)
+  - [Arrays or &#34;sequences&#34;](#arrays-or-sequences)
   - [List of commands](#list-of-commands)
     - [LABEL ID](#label-id)
     - [#ID](#id)
@@ -276,7 +276,7 @@ Supported parameters:
 - **charset.chr**: Input character set.
 - **charset.json**: File with the character set for the compiler.
 
-The default character width is 6 for the lower character set (from 1st to 127th) and 4 for the upper character set (from 145th to 256th), but these values ​​can be changed with the `-w` and `-W` parameters respectively.
+The default character width is 6 for the lower character set (from 1st to 127th) and 4 for the upper character set (from 145th to 256th), but these values can be changed with the `-w` and `-W` parameters respectively.
 Note that characters 128 to 144 are special, as they are used for cursors and will always have a width of 8, so the font size will be ignored for those characters. If you want to define a specific width for each character you will have to edit it in the output JSON file. You can find more information in the [Character set](#character-set) section.
 
 ---
@@ -288,21 +288,26 @@ Note that characters 128 to 144 are special, as they are used for cursors and wi
 For larger projects, you can organize your adventure into multiple source files using the `INCLUDE` directive. This allows you to split your code into logical modules (e.g., separate files for different chapters, common subroutines, variable declarations, etc.).
 
 **Syntax:**
+
 ```cyd
 INCLUDE "filename.cyd"
 ```
 
 **Example:**
+
 ```cyd
-[[ INCLUDE "variables.cyd" ]]
-[[ INCLUDE "common_functions.cyd" ]]
-[[ INCLUDE "chapter1.cyd" ]]
+[[ 
+INCLUDE "variables.cyd"
+INCLUDE "common_functions.cyd"
+INCLUDE "chapter1.cyd"
 
 #Start
+]]
 You begin your adventure...
 ```
 
 **Features:**
+
 - The `INCLUDE` directive is case-insensitive (`INCLUDE`, `include`, or `Include` all work)
 - File paths can be relative or absolute
 - Relative paths are resolved from the directory containing the file with the `INCLUDE` directive
@@ -312,6 +317,7 @@ You begin your adventure...
 - Both single and double quotes are supported: `INCLUDE "file.cyd"` or `INCLUDE 'file.cyd'`
 
 **Example project structure:**
+
 ```
 my_adventure/
   ├── main.cyd          (main entry point)
@@ -324,6 +330,7 @@ my_adventure/
 ```
 
 **main.cyd:**
+
 ```cyd
 [[ INCLUDE "variables.cyd" ]]
 [[ INCLUDE "functions.cyd" ]]
@@ -414,22 +421,26 @@ The available commands are described in their corresponding [section](#commands)
 As of version 1.2.x, the compiler enforces **Strict Colon Mode by default**. This means that when multiple code statements are placed on the same line within `[[ ]]` blocks, they **must** be separated by colons (`:`)
 
 **Correct syntax** (Strict Colon Mode enabled - DEFAULT):
+
 ```cyd
 [[ PRINT "Hello" : INK 5 : GOTO Label1 ]]
 [[ SET myvar TO 10 : WAITKEY : END ]]
 ```
 
 **Incorrect syntax** (missing colons):
+
 ```cyd
 [[ PRINT "Hello" INK 5 GOTO Label1 ]]  <-- ERROR: Statements must be separated by colons
 ```
 
 **If you need to support old code** without colon separators, pass the `--no-strict-colons` flag to the compiler:
+
 ```bash
 cydc_cli.py --no-strict-colons 48k input.cyd sjasmplus output
 ```
 
 **Key points:**
+
 - Line breaks automatically separate statements, so colons are only needed when multiple commands are on the same line
 - Colons are optional with the `--no-strict-colons` flag for backwards compatibility
 - This change improves code readability and prevents parsing ambiguities
@@ -438,7 +449,7 @@ cydc_cli.py --no-strict-colons 48k input.cyd sjasmplus output
 
 ## Variables and Numeric Expressions
 
-Numeric constant values ​​can be expressed in base 10 by default, in hexadecimal with the prefix `0x`, or in binary with the prefix `0b`. For example, `240` would be decimal, `0xF0` in hexadecimal, and `0b11110000` in binary.
+Numeric constant values can be expressed in base 10 by default, in hexadecimal with the prefix `0x`, or in binary with the prefix `0b`. For example, `240` would be decimal, `0xF0` in hexadecimal, and `0b11110000` in binary.
 
 There are 256 one-byte containers (from 0 to 255) available to the programmer to store values, perform operations, and compare them. They constitute the state of the program. From this point on, they may be called variables, flags, or "variables" interchangeably throughout this document.
 
@@ -768,7 +779,7 @@ Declare the constant _ID_ with the value of _expression_.
 
 Create an array named _ID_ with as many elements as indicated by _expression_. The number of elements cannot exceed 256.
 
-### DIM ID(expression) = {expression, expression...}
+### DIM ID(expression) =
 
 Same as [DIM ID(expression)](#dim-idexpression), but assigning comma-separated values.
 
@@ -812,11 +823,11 @@ Assigns the value of _varexpression_ to the variable _varID_.
 
 Assigns the value of _varexpression_ to the variable whose index corresponds to the contents of _varID_.
 
-### SET varID TO {varexpression1, varexpression2,...}
+### SET varID TO
 
 Assigns the value of _varexpression1_ to the variable _varID_, _varexpression2_ to the variable _varID_+1, and so on.
 
-### SET [varID] TO {varexpression1, varexpression2,...}
+### SET [varID] TO
 
 Assigns the value of _varexpression1_ to the variable whose index corresponds to the content of _varID_, _varexpression2_ to the variable whose index corresponds to the content of _varID_+1, and so on.
 
@@ -828,11 +839,11 @@ Assigns the value of _varexpression_ to the variable _varID_.
 
 Assigns the value of _varexpression_ to the variable whose index corresponds to the content of _varID_.
 
-### LET varID = {varexpression1, varexpression2,...}
+### LET varID =
 
 Assigns the value of _varexpression1_ to the variable _varID_, _varexpression2_ to the variable _varID_+1, and so on.
 
-### LET [varID] = {varexpression1, varexpression2,...}
+### LET [varID] =
 
 Assigns the value of _varexpression1_ to the variable whose index corresponds to the contents of _varID_, _varexpression2_ to the variable whose index corresponds to the contents of _varID_+1, and so on.
 
@@ -961,7 +972,7 @@ Prints the character indicated by its corresponding number.
 
 ### REPCHAR expression, expression
 
-Prints the character indicated in the first parameter as many times as the number indicated in the second parameter. Both values ​​have a size of 1 byte, that is, val from 0 to 255. Also, if the number of times is zero, the character will be repeated 256 times instead of none.
+Prints the character indicated in the first parameter as many times as the number indicated in the second parameter. Both values have a size of 1 byte, that is, val from 0 to 255. Also, if the number of times is zero, the character will be repeated 256 times instead of none.
 
 ### TAB expression
 
@@ -977,15 +988,15 @@ Controls whether the player is prompted to continue after the current text area 
 
 ### INK varexpression
 
-Defines the character color (ink). Values ​​0-7, corresponding to the Spectrum colors.
+Defines the character color (ink). Values 0-7, corresponding to the Spectrum colors.
 
 ### PAPER varexpression
 
-Defines the background color (paper). Values ​​0-7, corresponding to the Spectrum colors.
+Defines the background color (paper). Values 0-7, corresponding to the Spectrum colors.
 
 ### BORDER varexpression
 
-Defines the border color, values ​​0-7.
+Defines the border color, values 0-7.
 
 ### BRIGHT varexpression
 
@@ -1261,7 +1272,7 @@ The result of the load can be consulted with the `SAVERESULT()` function.
 
 ### SAVERESULT()
 
-_Function_ that returns the result of the last `SAVE` or `LOAD` operation. The possible values ​​are the following:
+_Function_ that returns the result of the last `SAVE` or `LOAD` operation. The possible values are the following:
 
 0. Correct result.
 1. Error when loading/saving on tape/disk. In the case of a tape, operation interrupted with **BREAK**.
@@ -1384,7 +1395,7 @@ This program needs the `dist` and `tools` directories with their contents to per
 
 As an example, the file `make_adv.cmd` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
 
-You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header: 
+You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header:
 
 ```batch
 REM ---- Configuration variables ----------
@@ -1420,16 +1431,16 @@ REM --------------------------------------
 ```
 
 - The variable `TARGET` is the output system and format, with these possible options:
--- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
--- 128k: Generates a TAP file for Spectrum 128K.
--- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
+  -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
+  -- 128k: Generates a TAP file for Spectrum 128K.
+  -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
 - The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
--- none: If we do not want it to do this.
--- internal: Executes the compiled file under Zesarux which must be inside the `.\tools\zesarux\` directory.
--- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
+  -- none: If we do not want it to do this.
+  -- internal: Executes the compiled file under Zesarux which must be inside the `.\tools\zesarux\` directory.
+  -- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
 
 The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\zesarux` folder, after compilation it will run automatically with the appropriate options.
@@ -1439,6 +1450,7 @@ The script will produce a DSK or TAP file (depending on the format selected in `
 For those who prefer a graphical interface instead of editing scripts or command lines, the **make_adventure_gui** tool provides a cross-platform GUI for compiling Choose Your Destiny adventures.
 
 **Features:**
+
 - Cross-platform support (Windows, Linux, macOS with Python 3.11+)
 - Embedded Python on Windows (no separate Python installation needed)
 - 26 configurable options including compilation targets, paths, and post-build actions
@@ -1449,24 +1461,26 @@ For those who prefer a graphical interface instead of editing scripts or command
 **Launching the GUI:**
 
 **Windows:**
+
 ```batch
 make_adventure_gui.cmd
 ```
 
 **Linux/macOS:**
+
 ```bash
 ./make_adventure_gui.sh
 ```
 
 **Configurable Options:**
 
-| Category | Options |
-|----------|----------|
-| **Project** | Game name, Target (48k/128k/plus3) |
-| **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set |
-| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Trim interpreter code, Show bytecode, Strict colon mode, WyzTracker support, 720KB disk |
-| **Post-Build** | Run emulator after compilation, Backup CYD file |
-| **Appearance** | Font size, Log font family/size, Log text/background colors |
+| Category             | Options                                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Project**    | Game name, Target (48k/128k/plus3)                                                                                                                                   |
+| **Paths**      | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set                                                                     |
+| **Compiler**   | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Trim interpreter code, Show bytecode, Strict colon mode, WyzTracker support, 720KB disk |
+| **Post-Build** | Run emulator after compilation, Backup CYD file                                                                                                                      |
+| **Appearance** | Font size, Log font family/size, Log text/background colors                                                                                                          |
 
 All compiled output files are placed in the specified output directory, and the GUI will display detailed compilation messages for debugging if needed.
 
@@ -1474,7 +1488,7 @@ All compiled output files are placed in the specified output directory, and the 
 
 As an example, the file `make_adv.sh` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
 
-You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header: 
+You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header:
 
 ```bash
 # ---- Configuration variables ----------
@@ -1499,9 +1513,9 @@ CYDC_EXTRA_PARAMS=
 ```
 
 - The variable `TARGET` is the output system and format, with these possible options:
--- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
--- 128k: Generates a TAP file for Spectrum 128K.
--- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
+  -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
+  -- 128k: Generates a TAP file for Spectrum 128K.
+  -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 
@@ -1510,19 +1524,12 @@ CYDC_EXTRA_PARAMS=
 A number of examples are available to test the engine's capabilities and learn from them:
 
 - In the folder `examples\test` there is an extended sample of the example included in the [Syntax](#syntax) section. There are test images in the directory `examples\test\IMAGES`, and a test song inside its directory `examples\test\TRACKS`. It only works on 128K computers.
-
 - In the folder `examples\ETPA_example` you have an example of the beginning of a simple "Choose Your Own Adventure" type book, which is somewhat more advanced. There are test images in `examples\ETPA_example\IMAGES`
-
 - In the folder `examples\guess_the_number` there is a usage example for multi-column menus.
-
 - The `examples\input_test` folder demonstrates how to read from the keyboard and the use of indirection to simulate arrays.
-
 - The `BLIT` command is demonstrated in the `examples\blit` folder, with progressively more advanced examples in `examples\blit_island`, `examples\Rocky_Horror_Show`, and `examples\CYD_presents`. Test images are included in the `IMAGES` subfolder.
-
 - The `examples\Golden_Axe_select_character` folder teaches you about the `FILLATTR` and `CHOOSE IF CHANGED...` commands. The `IMAGES` subfolder contains test images.
-
 - The `examples\windows` folder contains a simple example that illustrates the use of the `WINDOW` command.
-
 - In the `examples\SCUMM_16` folder, there's an example of a SCUMM-style menu for creating such an adventure. And in the `examples\delerict` folder, there's the skeleton of a more complete adventure, including object and location handling logic.
 
 A TAP file with the compiled result is included in each directory so you can test them live on an emulator.
@@ -1540,23 +1547,23 @@ The engine supports a character set of 256 characters, with a height of 8 pixels
 The characters correspond to standard ASCII, except for the Spanish characters, which correspond to the following positions for both character sets:
 
 | Character | Position 6x8 | Position 4x8 |
-| -------- | ------------ | ------------ |
-| 'ª' | 16 | 144 |
-| '¡' | 17 | 145 |
-| '¿' | 18 | 146 |
-| '«' | 19 | 147 |
-| '»' | 20 | 148 |
-| 'á' | 21 | 149 |
-| 'é' | 22 | 150 |
-| 'í' | 23 | 151 |
-| 'ó' | 24 | 152 |
-| 'ú' | 25 | 153 |
-| 'ñ' | 26 | 154 |
-| 'Ñ' | 27 | 155 |
-| 'ç' | 28 | 156 |
-| 'Ç' | 29 | 157 |
-| 'ü' | 30 | 158 |
-| 'Ü' | 31 | 159 |
+| --------- | ------------ | ------------ |
+| 'ª'      | 16           | 144          |
+| '¡'      | 17           | 145          |
+| '¿'      | 18           | 146          |
+| '«'      | 19           | 147          |
+| '»'      | 20           | 148          |
+| 'á'      | 21           | 149          |
+| 'é'      | 22           | 150          |
+| 'í'      | 23           | 151          |
+| 'ó'      | 24           | 152          |
+| 'ú'      | 25           | 153          |
+| 'ñ'      | 26           | 154          |
+| 'Ñ'      | 27           | 155          |
+| 'ç'      | 28           | 156          |
+| 'Ç'      | 29           | 157          |
+| 'ü'      | 30           | 158          |
+| 'Ü'      | 31           | 159          |
 
 Characters above the value 127 (starting from zero) to 143 (both included) are special. They are used as icons in options, i.e. where an option appears when the `OPTION` command is processed, and as wait indicators with a `WAITKEY` or when changing pages if the `PAGEPAUSE` command is active.
 
@@ -1660,7 +1667,6 @@ These errors appear when accessing the disk, when searching for more pieces of t
 This software package is subject to different licenses depending on its components:
 
 - The compiler is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
-
 - The interpreter (the executable portion on the target machine) is licensed under the following license:
 
 ```text
@@ -1678,11 +1684,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 ```
 
 - [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0) is licensed under a [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
-
 - The [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) is licensed under the [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE) license.
-
 - [PLY](https://github.com/dabeaz/ply) and the [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) do not have specific licenses; a license similar to BSD or MIT is assumed.
-
 - [BeepFx](http://shiru.untergrund.net) is licensed under the [WTFPL v.2](https://wtfpl2.com).
 
 In simple terms, this means that if you use this engine to make a game, you must always indicate on the loading screen or within the game itself that it was made with `CYD` or use one of the project logos (included in the `assets` directory). You must also do so on the download website if you distribute the game online, and on the box or media container if you distribute it physically. Aside from the above condition, the game you create **ALWAYS** remains your property and authorship; you can sell or distribute it without having to publish the source code or artwork.

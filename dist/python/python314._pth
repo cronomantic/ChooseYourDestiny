@@ -1,7 +1,9 @@
-site-packages
+Lib/site-packages
 python314.zip
+DLLs
+Lib
 .
-tkinter
 
+tcl
 # Uncomment to run site.main() automatically
 #import site

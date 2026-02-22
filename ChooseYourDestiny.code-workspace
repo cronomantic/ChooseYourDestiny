@@ -10,5 +10,9 @@
 			"path": "../chooseyourdestiny-highlighter"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"C:/Python314/python.exe": true
+		}
+	}
 }

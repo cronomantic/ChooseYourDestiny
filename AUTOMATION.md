@@ -7,6 +7,7 @@ Este documento describe el sistema de automatización que simplifica las tareas 
 - [Requisitos](#requisitos)
 - [Script Principal: automate.py](#script-principal-automatepy)
 - [Scripts Individuales](#scripts-individuales)
+  - [setup_embedded_python.py](#setup_embedded_pythonpy)
   - [update_locales.py](#update_localespy)
   - [make_pdf.bat / make_pdf.sh](#make_pdfbat--make_pdfsh)
   - [update_wiki.py](#update_wikipy)
@@ -67,6 +68,13 @@ python automate.py [opciones]
 
 - `--platform {windows|linux|macos|all}` - Plataforma objetivo para distribución
 
+### Opciones Disponibles - Configuración de Python Embebido
+
+- `--setup-python` - Instalar y personalizar Python embebido
+- `--python-arch {32bit|64bit}` - Arquitectura del Python a instalar (default: 64bit)
+- `--python-version VERSION` - Versión de Python a instalar (default: 3.14.0)
+- `--no-download` - Usar instalación existente sin descargar
+
 ### Ejemplos de Uso
 
 ```bash
@@ -84,35 +92,55 @@ python automate.py --release
 
 # Crear distribuciones para todas las plataformas
 python automate.py --dist --platform all
+
+# Instalar Python embebido (64-bit, versión más reciente)
+python automate.py --setup-python
+
+# Instalar Python embebido 32-bit
+python automate.py --setup-python --python-arch 32bit
+
+# Instalar versión específica de Python
+python automate.py --setup-python --python-version 3.13.1
+
+# Reinstalar Python sin descargar nuevamente
+python automate.py --setup-python --no-download
 ```
 
 ### Secuencia de Ejecución
 
 Cuando se ejecutan múltiples tareas, se procesan en este orden:
 
-1. **Actualizar locales** (`--locales`)
+1. **Configurar Python** (`--setup-python`)
+   - Descarga Python embebido desde python.org
+   - Configura el archivo .pth para sys.path
+   - Instala pip
+   - Verifica disponibilidad de tkinter (debe copiarse manualmente si no está)
+   - Instala paquetes desde requirements.txt
+   - Verifica la instalación completa
+
+2. **Actualizar locales** (`--locales`)
    - Extrae cadenas traducibles del código fuente Python
    - Actualiza archivos .po preservando traducciones existentes
    - Compila .po a .mo automáticamente
 
-2. **Ejecutar tests** (`--tests`)
+3. **Ejecutar tests** (`--tests`)
    - Tests del lexer (análisis léxico)
    - Tests del parser (análisis sintáctico)
    - Tests de integración (compilación completa)
    - Genera reporte de cobertura si está disponible
 
-3. **Generar PDFs** (`--pdf`)
+4. **Generar PDFs** (`--pdf`)
    - MANUAL_es.pdf y MANUAL_en.pdf
    - TUTORIAL_es.pdf y TUTORIAL_en.pdf
    - Incluye tabla de contenidos automática
 
-4. **Crear distribuciones** (`--dist`)
+5. **Crear distribuciones** (`--dist`)
    - Copia archivos fuente a dist/
    - Compila traducciones
    - Crea ZIP con nombramiento automático basado en versión git
    - Soporta Windows, Linux y macOS
 
-5. **Actualizar wiki** (`--wiki`)
+6. **Actualizar wiki** (`--wiki`)
    - Verifica cambios en repositorio wiki
    - Solicita confirmación antes de hacer commit
    - Hace push a GitHub
@@ -120,6 +148,78 @@ Cuando se ejecutan múltiples tareas, se procesan en este orden:
 ---
 
 ## Scripts Individuales
+
+### setup_embedded_python.py
+
+Instala y personaliza una distribución de Python embebido para facilitar la distribución de herramientas.
+
+**Ubicación:** Raíz del proyecto
+
+**Características principales:**
+- Descarga Python embebido desde python.org
+- Soporta arquitecturas 32-bit y 64-bit
+- Sistema de versiones flexible y fácil de actualizar
+- Cachea descargas por versión/arquitectura y limpia ZIPs antiguos al cambiar
+- Instala automáticamente pip y paquetes requeridos
+- Verifica disponibilidad de tkinter (incluido en distribución de python.org)
+- Configura correctamente el .pth para importar módulos
+
+**Uso directo:**
+```bash
+python setup_embedded_python.py                           # Setup 64-bit Python (última)
+python setup_embedded_python.py --list-versions           # Ver versiones soportadas
+python setup_embedded_python.py --32bit                   # Setup 32-bit Python
+python setup_embedded_python.py --python-version 3.13.1   # Versión específica
+python setup_embedded_python.py --no-download             # Usar instalación existente
+```
+
+**Versiones soportadas (ver `--list-versions` para lista completa):**
+- 3.14.x (última)
+- 3.13.x
+- 3.12.x
+- 3.11.x
+
+**Agregar nuevas versiones:**
+1. Editar `setup_embedded_python.py`
+2. Agregar entrada en el diccionario `PYTHON_VERSIONS`
+3. Asegurar que la versión existe en python.org
+
+Ejemplo:
+```python
+PYTHON_VERSIONS = {
+    "3.15.0": "315",  # Nueva entrada
+    "3.14.1": "314",
+    ...
+}
+```
+
+**Qué instala:**
+1. Python embebido en `dist/python/`
+2. pip (gestor de paquetes)
+3. Paquetes adicionales desde `src/cydc/requirements.txt`:
+   - progressbar (barras de progreso)
+   - asciibars (gráficos ASCII)
+   - Y otros especificados en requirements.txt
+
+**Acerca de tkinter:**
+- El script DESCARGA automáticamente la versión completa de Python (no embebida) desde python.org
+- EXTRAE tkinter de esa descarga
+- COPIA los archivos necesarios al Python embebido
+- LIMPIA los archivos temporales automáticamente
+- **No requiere intervención manual** - todo es transparente
+
+**Después de ejecutar:**
+- Python está completamente configurado en `dist/python/`
+- tkinter está incluido y listo para usar
+- Se puede usar directamente: `dist/python/python.exe script.py`
+- Los scripts batch/shell ya lo usan automáticamente
+- Todos los paquetes están listos para importar
+- Interfaces gráficas con tkinter funcionarán correctamente
+
+**Verificación limpia:**
+- Ejecuta `dist/python/python.exe verify_embedded_python.py` para comprobar imports clave
+
+---
 
 ### update_locales.py
 
