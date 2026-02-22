@@ -49,7 +49,7 @@ class TestLexerSmokeTests(unittest.TestCase):
 
     def test_goto_statement(self):
         """Test GOTO statement doesn't crash."""
-        code = "[[GOTO Label]]"
+        code = "[[GOTO MyLabel]]"
         tokens = self._tokenize_safely(code)
         self.assertTrue(len(tokens) >= 0)
 
@@ -246,7 +246,7 @@ class TestLexerTokenGeneration(unittest.TestCase):
 
     def test_token_types_are_strings(self):
         """Verify token types are valid strings."""
-        self.lexer.input("[[GOTO Label]]")
+        self.lexer.input("[[GOTO MyLabel]]")
         while True:
             tok = self.lexer.token()
             if not tok:
@@ -277,7 +277,7 @@ class TestLexerConsistency(unittest.TestCase):
 
     def test_same_code_same_tokens(self):
         """Verify same code produces same tokens on multiple runs."""
-        code = "[[PRINT 1 : GOTO Label]]"
+        code = "[[PRINT 1 : GOTO MyLabel]]"
         
         tokens1 = self._get_token_sequence(code)
         self.lexer = CydcLexer()

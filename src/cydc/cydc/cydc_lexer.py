@@ -199,7 +199,7 @@ class CydcLexer(object):
         "AT_CHAR",
         "COMMA",
     ]
-    tokens += ["PLUS", "MINUS", "TIMES", "DIVIDE", "EQUALS", "SHIFT_L", "SHIFT_R"]
+    tokens += ["PLUS", "MINUS", "EQUALS", "SHIFT_L", "SHIFT_R"]
     tokens += ["INCREMENT", "DECREMENT"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
@@ -252,7 +252,7 @@ class CydcLexer(object):
             return t
         else:
             t.lexer.begin("INITIAL")  # Enter code state, no text to emit
-            return self.token()  # Get next token from code
+            return None
 
     def t_comment(self, t):
         r"/\*(.|\n|\r|\r\n)*?\*/"
@@ -288,8 +288,6 @@ class CydcLexer(object):
     t_OR_B = r"\|"
     t_PLUS = r"\+"
     t_MINUS = r"-"
-    t_TIMES = r"\*"
-    t_DIVIDE = r"/"
     t_EQUALS = r"="
     t_LPAREN = r"\("
     t_RPAREN = r"\)"
@@ -372,7 +370,7 @@ class CydcLexer(object):
         self.txt_pos = 0
         self.texts = []
         self.lexer.input(data)
-        # Start in rawtext state (code is inside [[ ... ]])
+        # Always start in rawtext state (JSP/PHP style - code inside [[ ]])
         self.lexer.begin("rawtext")
 
     def token(self):

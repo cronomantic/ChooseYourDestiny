@@ -18,9 +18,9 @@ import tempfile
 import shutil
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "cydc"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "cydc", "cydc"))
 
-from cydc.cydc_preprocessor import CydcPreprocessor, PreprocessorError
+from cydc_preprocessor import CydcPreprocessor, PreprocessorError
 
 
 class TestPreprocessorBasic(unittest.TestCase):

@@ -122,7 +122,7 @@ def compile_po_to_mo(po_path, mo_path):
         fh.write(tran_table)
         fh.write(orig_blob)
         fh.write(tran_blob)
-    print(f"  Compiled {os.path.relpath(po_path)} → {os.path.relpath(mo_path)}")
+    print(f"  Compiled {os.path.relpath(po_path)} -> {os.path.relpath(mo_path)}")
 
 
 def compile_locale_dir(locale_dir):
@@ -353,7 +353,7 @@ def create_distribution_zip(current_path, target_platform, version_string):
                 files_missing += 1
     
     file_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
-    print(f"  ✓ Created: {zip_filename} ({file_size_mb:.2f} MB)")
+    print(f"  [OK] Created: {zip_filename} ({file_size_mb:.2f} MB)")
     print(f"  Files: {files_added} added, {files_missing} missing")
     
     return zip_path
@@ -446,10 +446,10 @@ Examples:
         try:
             create_distribution_zip(current_path, target_platform, version_string)
         except Exception as e:
-            print(f"  ✗ Error creating {target_platform} package: {e}")
+            print(f"  [X] Error creating {target_platform} package: {e}")
             continue
     
-    print("\n✓ Distribution build complete!")
+    print("\n[OK] Distribution build complete!")
     return 0
 
 
