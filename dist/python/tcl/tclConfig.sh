@@ -21,19 +21,19 @@ TCL_PATCH_LEVEL='8.6.15'
 TCL_CC='cl'
 
 # -D flags for use with the C compiler.
-TCL_DEFS='-nologo -c /D_ATL_XP_TARGETING  /DHAVE_CPUID=1 -W3 -wd4311 -wd4312 -wd4090 -wd4146 -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13\tcl_ThreadedDynamic\  -fp:strict -O2 -GS -GL -MD -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\win" -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\generic"  -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\libtommath"  /DMP_PREC=4 /Dinline=__inline /DHAVE_ZLIB=1 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /DMP_FIXED_CUTOFFS /DSTDC_HEADERS /DUSE_NMAKE=1 /DHAVE_STDINT_H=1 /DHAVE_INTTYPES_H=1 /DHAVE_STDBOOL_H=1 /DTCL_THREADS=1 /DUSE_THREAD_ALLOC=1 /DNDEBUG /DTCL_CFG_OPTIMIZED   /DBUILD_tcl'
+TCL_DEFS='-nologo -c /D_ATL_XP_TARGETING  /DHAVE_CPUID=1 -W3 -wd4311 -wd4312 -wd4090 -wd4146 -wd4311 -wd4312 -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13\tcl_ThreadedDynamic\  -fp:strict -O2 -GS -GL -MD -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\win" -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\generic"  -I"D:\a\1\b\externals\tcl-core-8.6.15.0\win\..\libtommath"  /DMP_PREC=4 /Dinline=__inline /DHAVE_ZLIB=1 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /DMP_FIXED_CUTOFFS /DSTDC_HEADERS /DUSE_NMAKE=1 /DHAVE_STDINT_H=1 /DHAVE_INTTYPES_H=1 /DHAVE_STDBOOL_H=1 /DTCL_THREADS=1 /DUSE_THREAD_ALLOC=1 /DNDEBUG /DTCL_CFG_OPTIMIZED /DTCL_CFG_DO64BIT   /DBUILD_tcl'
 
 # If TCL was built with debugging symbols, generated libraries contain
 # this string at the end of the library name (before the extension).
 TCL_DBGX=t
 
 # Default flags used in an optimized and debuggable build, respectively.
-TCL_CFLAGS_DEBUG='-nologo -c -W3 -YX -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13\tcl_ThreadedDynamic\ -MDd'
-TCL_CFLAGS_OPTIMIZE='-nologo -c -W3 -YX -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13\tcl_ThreadedDynamic\ -MD'
+TCL_CFLAGS_DEBUG='-nologo -c -W3 -YX -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13\tcl_ThreadedDynamic\ -MDd'
+TCL_CFLAGS_OPTIMIZE='-nologo -c -W3 -YX -FpD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13\tcl_ThreadedDynamic\ -MD'
 
 # Default linker flags used in an optimized and debuggable build, respectively.
-TCL_LDFLAGS_DEBUG='-nologo -machine:IX86 -debug -debugtype:cv'
-TCL_LDFLAGS_OPTIMIZE='-nologo -machine:IX86 -release -opt:ref -opt:icf,3'
+TCL_LDFLAGS_DEBUG='-nologo -machine:AMD64 -debug -debugtype:cv'
+TCL_LDFLAGS_OPTIMIZE='-nologo -machine:AMD64 -release -opt:ref -opt:icf,3'
 
 # Flag, 1: we built a shared lib, 0 we didn't
 TCL_SHARED_BUILD=1
@@ -52,11 +52,11 @@ TCL_LIBS='kernel32.lib advapi32.lib netapi32.lib user32.lib userenv.lib ws2_32.l
 
 # Top-level directory in which Tcl's platform-independent files are
 # installed.
-TCL_PREFIX='D:\a\1\a\win32'
+TCL_PREFIX='D:\a\1\a\amd64'
 
 # Top-level directory in which Tcl's platform-specific files (e.g.
 # executables) are installed.
-TCL_EXEC_PREFIX='D:\a\1\a\win32\bin'
+TCL_EXEC_PREFIX='D:\a\1\a\amd64\bin'
 
 # Flags to pass to cc when compiling the components of a shared library:
 TCL_SHLIB_CFLAGS=''
@@ -68,7 +68,7 @@ TCL_CFLAGS_WARNING='-W3'
 TCL_EXTRA_CFLAGS='-YX'
 
 # Base command to use for combining object files into a shared library:
-TCL_SHLIB_LD='link -nologo -machine:IX86  -ltcg -release -opt:ref -opt:icf,3 -nodefaultlib:libucrt.lib -dll'
+TCL_SHLIB_LD='link -nologo -machine:AMD64  -ltcg -release -opt:ref -opt:icf,3 -nodefaultlib:libucrt.lib -dll'
 
 # Base command to use for combining object files into a static library:
 TCL_STLIB_LD='lib -nologo'
@@ -108,15 +108,15 @@ TCL_LIB_FLAG='tcl86t.lib'
 
 # String to pass to linker to pick up the Tcl library from its
 # build directory.
-TCL_BUILD_LIB_SPEC='D:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13\tcl86t.lib'
+TCL_BUILD_LIB_SPEC='D:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13\tcl86t.lib'
 
 # String to pass to linker to pick up the Tcl library from its
 # installed directory.
-TCL_LIB_SPEC='D:\a\1\a\win32\lib\tcl86t.lib'
+TCL_LIB_SPEC='D:\a\1\a\amd64\lib\tcl86t.lib'
 
 # String to pass to the compiler so that an extension can
 # find installed Tcl headers.
-TCL_INCLUDE_SPEC='-ID:\a\1\a\win32\include'
+TCL_INCLUDE_SPEC='-ID:\a\1\a\amd64\include'
 
 # Indicates whether a version numbers should be used in -l switches
 # ("ok" means it's safe to use switches like -ltcl7.5;  "nodots" means
@@ -148,7 +148,7 @@ TCL_SRC_DIR='D:\a\1\b\externals\tcl-core-8.6.15.0\win\..'
 # List of standard directories in which to look for packages during
 # "package require" commands.  Contains the "prefix" directory plus also
 # the "exec_prefix" directory, if it is different.
-TCL_PACKAGE_PATH='D:\a\1\a\win32\lib'
+TCL_PACKAGE_PATH='D:\a\1\a\amd64\lib'
 
 # Tcl supports stub.
 TCL_SUPPORTS_STUBS=1
@@ -161,17 +161,17 @@ TCL_STUB_LIB_FLAG='tclstub86.lib'
 
 # String to pass to linker to pick up the Tcl stub library from its
 # build directory.
-TCL_BUILD_STUB_LIB_SPEC='-LD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13 tclstub86.lib'
+TCL_BUILD_STUB_LIB_SPEC='-LD:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13 tclstub86.lib'
 
 # String to pass to linker to pick up the Tcl stub library from its
 # installed directory.
-TCL_STUB_LIB_SPEC='-LD:\a\1\a\win32\lib tclstub86.lib'
+TCL_STUB_LIB_SPEC='-LD:\a\1\a\amd64\lib tclstub86.lib'
 
 # Path to the Tcl stub library in the build directory.
-TCL_BUILD_STUB_LIB_PATH='D:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_VC13\tclstub86.lib'
+TCL_BUILD_STUB_LIB_PATH='D:\a\1\b\externals\tcl-core-8.6.15.0\win\Release_AMD64_VC13\tclstub86.lib'
 
 # Path to the Tcl stub library in the install directory.
-TCL_STUB_LIB_PATH='D:\a\1\a\win32\lib\tclstub86.lib'
+TCL_STUB_LIB_PATH='D:\a\1\a\amd64\lib\tclstub86.lib'
 
 # Flag, 1: we built Tcl with threads enabled, 0 we didn't
 TCL_THREADS=1
