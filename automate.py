@@ -188,6 +188,46 @@ def update_wiki(base_path):
     return run_command([sys.executable, str(script)], cwd=base_path)
 
 
+def setup_embedded_python(base_path, arch="64bit", python_version=None, no_download=False):
+    """
+    Setup and customize embedded Python.
+    
+    Args:
+        base_path: Path to the project root
+        arch: "32bit" or "64bit"
+        python_version: Python version to install (e.g., "3.14.0")
+        no_download: Skip downloading, use existing installation
+    
+    Returns:
+        True if setup completed successfully
+    """
+    print("\n" + "=" * 60)
+    version_str = python_version if python_version else "latest"
+    print(f"STEP: Setting up Embedded Python {version_str} ({arch})")
+    print("=" * 60)
+    
+    script = base_path / "setup_embedded_python.py"
+    if not script.exists():
+        print(f"✗ Error: {script} not found")
+        return False
+    
+    cmd = [sys.executable, str(script), "--dist", str(base_path / "dist")]
+    
+    # Add architecture flag
+    if arch == "32bit":
+        cmd.append("--32bit")
+    
+    # Add Python version if specified
+    if python_version:
+        cmd.extend(["--python-version", python_version])
+    
+    # Add no-download flag if requested
+    if no_download:
+        cmd.append("--no-download")
+    
+    return run_command(cmd, cwd=base_path)
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -200,6 +240,11 @@ Examples:
   python automate.py --dist --platform all    Create all distributions
   python automate.py --pdf --wiki             Generate PDFs and update wiki
   python automate.py --release                Full release workflow
+  
+  python automate.py --setup-python           Setup embedded Python (64-bit, latest)
+  python automate.py --setup-python --python-arch 32bit    Setup 32-bit Python
+  python automate.py --setup-python --python-version 3.13.1  Setup specific version
+  python automate.py --setup-python --no-download          Use existing Python
         """
     )
     
@@ -235,6 +280,12 @@ Examples:
     )
     
     parser.add_argument(
+        "--setup-python",
+        action="store_true",
+        help="Setup and customize embedded Python"
+    )
+    
+    parser.add_argument(
         "--all",
         action="store_true",
         help="Run all tasks (except wiki update)"
@@ -253,10 +304,32 @@ Examples:
         help="Target platform for distribution"
     )
     
+    # Python setup options
+    parser.add_argument(
+        "--python-arch",
+        choices=["32bit", "64bit"],
+        default="64bit",
+        help="Architecture for embedded Python (default: 64bit)"
+    )
+    
+    parser.add_argument(
+        "--python-version",
+        type=str,
+        default=None,
+        help="Python version to install (e.g., 3.14.0, 3.13.1, 3.12.7)"
+    )
+    
+    parser.add_argument(
+        "--no-download",
+        action="store_true",
+        help="Skip downloading Python, use existing installation"
+    )
+    
     args = parser.parse_args()
     
     # If no tasks specified, show help
-    if not any([args.locales, args.tests, args.pdf, args.dist, args.wiki, args.all, args.release]):
+    if not any([args.locales, args.tests, args.pdf, args.dist, args.wiki, 
+                args.setup_python, args.all, args.release]):
         parser.print_help()
         return 0
     
@@ -275,6 +348,8 @@ Examples:
     elif args.all:
         tasks = ["locales", "tests", "pdf", "dist"]
     else:
+        if args.setup_python:
+            tasks.append("setup_python")
         if args.locales:
             tasks.append("locales")
         if args.tests:
@@ -290,6 +365,11 @@ Examples:
     
     # Execute tasks
     success = True
+    
+    if "setup_python" in tasks:
+        if not setup_embedded_python(base_path, args.python_arch, args.python_version, args.no_download):
+            print("\n✗ Python setup failed")
+            success = False
     
     if "locales" in tasks:
         if not update_locales(base_path):
