@@ -17,10 +17,10 @@ include_demo/
 ## How It Works
 
 ### main.cyd
-The main file is the entry point. It includes all the other files and defines the main flow:
+The main file is the entry point. It contains all `INCLUDE` directives inside a single `[[]]` code block and defines the main flow:
 - Includes `variables.cyd` for variable declarations
 - Includes `common.cyd` for shared subroutines
-- Uses `INCLUDE` to load each chapter at the appropriate point
+- Uses `INCLUDE` to load each chapter at the appropriate labels
 
 ### variables.cyd
 Contains all variable declarations in one place:
@@ -29,7 +29,7 @@ Contains all variable declarations in one place:
 - HasSword
 - CurrentRoom
 
-This makes it easy to see all game state variables at a glance.
+This makes it easy to see all game state variables at a glance. Each included file has its own `[[]]` blocks.
 
 ### common.cyd
 Contains reusable subroutines that are used throughout the adventure:
@@ -41,6 +41,15 @@ Each chapter is in its own file, making it easy to:
 - Work on different parts of the adventure independently
 - Test individual chapters
 - Keep the code organized
+
+## Important Technical Notes
+
+- **INCLUDE Directive**: Must be placed inside `[[ ]]` code blocks
+- **Included Files**: Can have their own `[[ ]]` blocks; the preprocessor automatically handles this by closing and reopening blocks as needed
+- **Comments**: CYD uses `/* */` for comments, not `//`
+- **Error Reporting**: When errors occur in included files, the compiler reports the correct filename and line number
+- **Nesting**: Files can include other files up to 20 levels deep
+- **Circular Includes**: Detected and reported as errors
 
 ## Compiling This Adventure
 

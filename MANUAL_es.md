@@ -305,13 +305,17 @@ Comienzas tu aventura...
 ```
 
 **Características:**
+- La directiva `INCLUDE` debe ser colocada dentro de bloques de código `[[ ]]`
 - La directiva `INCLUDE` no distingue entre mayúsculas y minúsculas (`INCLUDE`, `include` o `Include` funcionan igual)
 - Las rutas de archivo pueden ser relativas o absolutas
 - Las rutas relativas se resuelven desde el directorio que contiene el archivo con la directiva `INCLUDE`
 - Los archivos pueden incluir otros archivos (inclusiones anidadas) hasta una profundidad máxima de 20 niveles
 - Las inclusiones circulares (archivo A incluye B, B incluye A) se detectan y se reportan como errores
-- La directiva puede ir seguida de comentarios: `INCLUDE "archivo.cyd" // Cargar utilidades`
+- Los archivos incluidos pueden tener sus propios bloques `[[ ]]`; el preprocesador maneja esto automáticamente
+- Los mensajes de error mostrarán el nombre de archivo y número de línea correctos de los archivos incluidos
 - Se admiten comillas simples y dobles: `INCLUDE "archivo.cyd"` o `INCLUDE 'archivo.cyd'`
+
+**Nota sobre comentarios:** CYD utiliza `/* */` para comentarios. Aunque el patrón de la directiva `INCLUDE` ignorará el texto que siga después del nombre del archivo (p. ej., `INCLUDE "archivo.cyd" // nota`), esto depende de detalles de implementación y no se recomienda. Use comentarios `/* */` apropiados en su lugar.
 
 **Ejemplo de estructura de proyecto:**
 ```

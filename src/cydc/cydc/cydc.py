@@ -320,7 +320,7 @@ def main():
             max_depth=20, 
             base_path=os.path.dirname(os.path.abspath(args.input))
         )
-        text = preprocessor.preprocess(args.input)
+        text, line_map = preprocessor.preprocess(args.input)
         
         if verbose >= 1:
             included_count = len(preprocessor.included_files) - 1  # -1 for main file
@@ -437,6 +437,7 @@ def main():
 
     tmp_timer.reset()
     parser = CydcParser(gettext, strict_colon_mode=not args.no_strict_colons)
+    parser.set_line_map(line_map)  # Set line map for better error reporting
     parser.build()
     code = parser.parse(input=text, verbose=(verbose >= 3))
     if verbose >= 2:

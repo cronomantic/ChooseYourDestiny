@@ -132,6 +132,29 @@ La suite cubre explícitamente (nunca deben fallar):
 
 Si CUALQUIERA de estas pruebas falla, hay una regresión seria.
 
+### Regresión de Ejemplos (TestExamplesRegression)
+
+Esta suite valida que todos los ejemplos del directorio `examples/` compilan correctamente:
+
+- ✓ **blit.cyd** - Sistema de gráficos BLIT
+- ✓ **choose.cyd** - Sistema OPTION/CHOOSE
+- ✓ **gosub.cyd** - Subrutinas con GOSUB/RETURN
+- ✓ **goto.cyd** - Control de flujo con GOTO/LABEL
+- ✓ **inclusion.cyd** - Prueba básica de inclusión
+- ✓ **include_demo** - Demo completo con INCLUDE (main.cyd, common.cyd, variables.cyd)
+- ✓ **input.cyd** - Entrada de usuario con INPUT
+- ✓ **logic.cyd** - Operaciones lógicas AND/OR/NOT
+- ✓ **operators.cyd** - Operadores aritméticos y de comparación
+- ✓ **print.cyd** - Sistema PRINT y formateo
+- ✓ **sound.cyd** - Sistema de sonido
+- ✓ **sprite.cyd** - Sistema de sprites
+- ✓ **variables.cyd** - Sistema de variables
+
+Estos tests garantizan que:
+1. El preprocessor maneja correctamente archivos INCLUDE con bloques `[[]]`
+2. Todas las características del lenguaje funcionan en código real
+3. Los ejemplos de la documentación siempre son válidos
+
 ## Archivos de Configuración
 
 - `__init__.py` - Marca esta carpeta como paquete Python
@@ -189,10 +212,13 @@ test:regression:
 |--------|---------|--------|
 | test_lexer_smoke.py | 30 | ✅ Pasando |
 | test_parser_smoke.py | 27 | ✅ Pasando |
+| test_preprocessor.py | 23 | ✅ Pasando |
 | test_lexer.py | ~35 | ⚠️ Detalladas |
 | test_parser.py | ~30 | ⚠️ Detalladas |
-| test_integration.py | ~30 | ⚠️ Detalladas |
+| test_integration.py | ~37 | ⚠️ Detalladas |
 | **TOTAL SMOKE** | **57** | **✅ 100%** |
+| **TOTAL PREPROCESSOR** | **23** | **✅ 100%** |
+| **TOTAL EXAMPLES** | **14** | **✅ 100%** |
 
 ## Notas de Desarrollo
 

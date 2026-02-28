@@ -22,11 +22,11 @@ include_example/
 ### main.cyd
 ```cyd
 [[
-// Load configuration and common functions
+/* Load configuration and common functions */
 INCLUDE "config/variables.cyd"
 INCLUDE "lib/common.cyd"
 
-// Setup initial state
+/* Setup initial state */
 PAPER 0
 INK 7
 BORDER 0
@@ -51,14 +51,14 @@ CLEAR
 ### config/variables.cyd
 ```cyd
 [[
-// Game state variables
+/* Game state variables */
 DECLARE 0 AS PlayerHealth
 DECLARE 1 AS PlayerGold
 DECLARE 2 AS HasSword
 DECLARE 3 AS HasKey
 DECLARE 4 AS CurrentChapter
 
-// Initialize variables
+/* Initialize variables */
 SET @PlayerHealth TO 100
 SET @PlayerGold TO 0
 SET @HasSword TO 0
@@ -70,7 +70,7 @@ SET @CurrentChapter TO 1
 ### lib/common.cyd
 ```cyd
 [[
-// Common utility functions
+/* Common utility functions */
 
 #ShowStatus
 INK 6
@@ -185,8 +185,11 @@ make_adventure.py -n MyAdventure 48k main.cyd path/to/sjasmplus output/
 
 ## Important Notes
 
+- The `INCLUDE` directive must be placed inside `[[ ]]` code blocks
 - The `INCLUDE` directive is processed before compilation
 - Circular includes (A includes B, B includes A) are detected and cause errors
 - Maximum include depth is 20 levels
-- Relative paths are resolved from the file containing the INCLUDE directive
-- The preprocessor will report file and line numbers for any include-related errors
+- Relative paths are resolved from the directory containing the file with the INCLUDE directive
+- Included files can have their own `[[ ]]` blocks; the preprocessor handles this automatically
+- Error messages will show the original filename and line number where errors occur
+- CYD uses `/* */` for comments, not `//`

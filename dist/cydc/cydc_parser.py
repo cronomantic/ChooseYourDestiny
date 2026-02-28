@@ -45,8 +45,34 @@ class CydcParser(object):
         # When True: statements like "PRINT x GOTO Label" require "PRINT x : GOTO Label"
         # When False: allows "PRINT x GOTO Label" (old behavior)
         self.strict_colon_mode = strict_colon_mode
+        self.line_map = None  # Maps preprocessed line numbers to original source locations
         import builtins
         self._ = gettext.gettext if gettext is not None else builtins.__dict__.get('_', lambda x: x)
+    
+    def set_line_map(self, line_map):
+        """
+        Set the line mapping from preprocessor.
+        
+        Args:
+            line_map: Dictionary mapping output line numbers to SourceLocation
+        """
+        self.line_map = line_map
+    
+    def _format_error_location(self, line_num):
+        """
+        Format error location using line map if available.
+        
+        Args:
+            line_num: Line number in preprocessed output
+            
+        Returns:
+            Formatted location string (e.g., "file.cyd:42" or "line 42")
+        """
+        if self.line_map and line_num in self.line_map:
+            loc = self.line_map[line_num]
+            return f"{loc.filename}:{loc.line_num}"
+        else:
+            return f"line {line_num}"
 
     precedence = (
         (
@@ -148,7 +174,8 @@ class CydcParser(object):
         if len(p) == 3 and p[1] and p[2]:
             if self.strict_colon_mode:
                 # In strict mode, report error but continue parsing
-                self.errors.append(self._(f"Colon required between statements on same line (line {p.lineno(2)})"))
+                loc = self._format_error_location(p.lineno(2))
+                self.errors.append(self._(f"Colon required between statements on same line ({loc})"))
         
         p[0] = p[1]
         if not p[0]:
@@ -390,7 +417,8 @@ class CydcParser(object):
 
     def p_text_statement_close_error(self, p):
         "text_statement : ERROR_CLOSE_TEXT"
-        self.errors.append(self._(f"Invalid opening code token in line {p[1]}"))
+        loc = self._format_error_location(p[1])
+        self.errors.append(self._(f"Invalid opening code token in {loc}"))
         p[0] = None
 
     def p_text_statement_text_error(self, p):
@@ -400,8 +428,9 @@ class CydcParser(object):
             if isinstance(t[1], list):
                 for err in t[1]:
                     print(err)
+                    loc = self._format_error_location(err[0])
                     self.errors.append(self._(
-                        f"Invalid character '{err[2]}' (\\u{ord(err[2]):04x}) in line {err[0]} and position {err[1]}"
+                        f"Invalid character '{err[2]}' (\\u{ord(err[2]):04x}) in {loc} and position {err[1]}"
                     ))
             else:
                 self.errors.append(self._(f"Undefined codification error"))
@@ -460,13 +489,14 @@ class CydcParser(object):
         statement : GOTO error
                 | GOTO
         """
+        loc = self._format_error_location(p.lineno(1))
         if len(p) != 3:
             self.errors.append(self._(
-                f"Syntax error on GOTO at line {p.lineno(1)}, missing identifier."
+                f"Syntax error on GOTO at {loc}, missing identifier."
             ))
         else:
             self.errors.append(self._(
-                f"Syntax error on GOTO at line {p.lineno(1)}, invalid identifier."
+                f"Syntax error on GOTO at {loc}, invalid identifier."
             ))
 
     def p_statement_gosub(self, p):
@@ -481,13 +511,14 @@ class CydcParser(object):
         statement : GOSUB error
                 | GOSUB
         """
+        loc = self._format_error_location(p.lineno(1))
         if len(p) != 3:
             self.errors.append(self._(
-                f"Syntax error on GOSUB at line {p.lineno(1)}, missing identifier."
+                f"Syntax error on GOSUB at {loc}, missing identifier."
             ))
         else:
             self.errors.append(self._(
-                f"Syntax error on GOSUB at line {p.lineno(1)}, invalid identifier."
+                f"Syntax error on GOSUB at {loc}, invalid identifier."
             ))
 
     def p_statement_label(self, p):
