@@ -43,14 +43,6 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [LET \[varID\] = varexpression](#let-varid--varexpression-1)
     - [LET varID = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2)
     - [LET \[varID\] = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2-1)
-    - [SET arrayID (varexpression1) TO varexpression2](#set-arrayid-varexpression1-to-varexpression2)
-    - [LET arrayID (varexpression1) = varexpression2](#let-arrayid-varexpression1--varexpression2)
-    - [LET varID += varexpression](#let-varid--varexpression-2)
-    - [LET \[varID\] += varexpression](#let-varid--varexpression-3)
-    - [LET varID -= varexpression](#let-varid---varexpression)
-    - [LET \[varID\] -= varexpression](#let-varid---varexpression-1)
-    - [LET arrayID(varexpression1) += varexpression2](#let-arrayidvarexpression1--varexpression2)
-    - [LET arrayID(varexpression1) -= varexpression2](#let-arrayidvarexpression1---varexpression2)
     - [END](#end)
     - [CLEAR](#clear)
     - [CENTER](#center)
@@ -285,69 +277,6 @@ Indicar que los caracteres del 128 al 144 son especiales, ya que se usan para lo
 
 ## Sintaxis Básica
 
-### Inclusión de Archivos Externos
-
-Para proyectos más grandes, puedes organizar tu aventura en múltiples archivos fuente usando la directiva `INCLUDE`. Esto te permite dividir tu código en módulos lógicos (por ejemplo, archivos separados para diferentes capítulos, subrutinas comunes, declaraciones de variables, etc.).
-
-**Sintaxis:**
-```cyd
-INCLUDE "archivo.cyd"
-```
-
-**Ejemplo:**
-```cyd
-[[ INCLUDE "variables.cyd" ]]
-[[ INCLUDE "funciones_comunes.cyd" ]]
-[[ INCLUDE "capitulo1.cyd" ]]
-
-#Inicio
-Comienzas tu aventura...
-```
-
-**Características:**
-- La directiva `INCLUDE` debe ser colocada dentro de bloques de código `[[ ]]`
-- La directiva `INCLUDE` no distingue entre mayúsculas y minúsculas (`INCLUDE`, `include` o `Include` funcionan igual)
-- Las rutas de archivo pueden ser relativas o absolutas
-- Las rutas relativas se resuelven desde el directorio que contiene el archivo con la directiva `INCLUDE`
-- Los archivos pueden incluir otros archivos (inclusiones anidadas) hasta una profundidad máxima de 20 niveles
-- Las inclusiones circulares (archivo A incluye B, B incluye A) se detectan y se reportan como errores
-- Los archivos incluidos pueden tener sus propios bloques `[[ ]]`; el preprocesador maneja esto automáticamente
-- Los mensajes de error mostrarán el nombre de archivo y número de línea correctos de los archivos incluidos
-- Se admiten comillas simples y dobles: `INCLUDE "archivo.cyd"` o `INCLUDE 'archivo.cyd'`
-
-**Nota sobre comentarios:** CYD utiliza `/* */` para comentarios. Aunque el patrón de la directiva `INCLUDE` ignorará el texto que siga después del nombre del archivo (p. ej., `INCLUDE "archivo.cyd" // nota`), esto depende de detalles de implementación y no se recomienda. Use comentarios `/* */` apropiados en su lugar.
-
-**Ejemplo de estructura de proyecto:**
-```
-mi_aventura/
-  ├── principal.cyd     (punto de entrada principal)
-  ├── variables.cyd     (declaraciones DECLARE)
-  ├── funciones.cyd     (subrutinas comunes)
-  └── capitulos/
-      ├── intro.cyd
-      ├── capitulo1.cyd
-      └── capitulo2.cyd
-```
-
-**principal.cyd:**
-```cyd
-[[ INCLUDE "variables.cyd" ]]
-[[ INCLUDE "funciones.cyd" ]]
-
-#Inicio
-[[ INCLUDE "capitulos/intro.cyd" ]]
-[[ GOTO Capitulo1 ]]
-
-#Capitulo1
-[[ INCLUDE "capitulos/capitulo1.cyd" ]]
-```
-
-El preprocesador expandirá todas las directivas `INCLUDE` antes de que comience la compilación real, combinando todos los archivos fuente en un solo archivo para su procesamiento.
-
----
-
-### Bloques de Código y Texto
-
 Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 
 Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que haya en medio se considera un comentario.
@@ -503,12 +432,7 @@ Los operandos disponibles son:
 - Desplazamiento de bits a la izquierda: `SET variable TO @variable << 2`
 - Desplazamiento de bits a la derecha: `SET variable TO @variable >> 2`
 
-La operación más común que se realiza con las variables es incrementarlas o dectrementarlas un determinado valor. `CYD` dispone de dos formas abreviadas para ello:
-
-- `LET variable += 2` que equivale a `SET variable TO @variable + 2` ó `LET variable = @variable + 2`.
-- `LET variable -= 1` que equivale a `SET variable TO @variable - 1` ó `LET variable = @variable - 1`.
-
-El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero. Por tanto, no existen números negativos.
+El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
 
 Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits del variable.
 
@@ -843,38 +767,6 @@ Asigna el valor de _varexpression1_ a la variable _varID_,  _varexpression2_ a l
 ### LET [varID] = {varexpression1, varexpression2,...}
 
 Asigna el valor de _varexpression1_ a la variable cuyo índice corresponde con el contenido de _varID_, _varexpression2_ a la variable cuyo índice corresponde con el contenido de _varID_+1, y así.
-
-### SET arrayID (varexpression1) TO varexpression2
-
-Asigna el valor _varexpression2_ a la posición _varexpression1_ del array _arrayID_.
-
-### LET arrayID (varexpression1) = varexpression2
-
-Asigna el valor _varexpression2_ a la posición _varexpression1_ del array _arrayID_.
-
-### LET varID += varexpression
-
-Incrementa de la variable _varID_ con el valor de _varexpression_.
-
-### LET [varID] += varexpression
-
-Incrementa la variable cuyo índice corresponde con el contenido de _varID_ con el valor de _varexpression_.
-
-### LET varID -= varexpression
-
-Decrementa de la variable _varID_ con el valor de _varexpression_.
-
-### LET [varID] -= varexpression
-
-Decrementa la variable cuyo índice corresponde con el contenido de _varID_ con el valor de _varexpression_.
-
-### LET arrayID(varexpression1) += varexpression2
-
-Incrementa el valor de la posición _varexpression1_ del array _arrayID_ con el valor _varexpression2_.
-
-### LET arrayID(varexpression1) -= varexpression2
-
-Decrementa el valor de la posición _varexpression1_ del array _arrayID_ con el valor _varexpression2_.
 
 ### END
 
@@ -1371,8 +1263,6 @@ Debido a las peculiaridades del formato de WyzTracker, hay que tener en cuenta u
 - Las diferentes melodías serán comprimidas para ahorrar espacio y cada vez que se cargue una de ellas, será descomprimida en el espacio restante del banco 1. El compilador generará un error si alguna de las melodías incluidas no cabe en ese espacio restante.
 - No se soportan efectos de sonido.
 
-Para activar el soporte de WyzTracker, es necesario usar el parámetro `-wyz`cuando se compile la aventura. Para facilitar la tarea, puedes incluirlo en la variable `CYDC_EXTRA_PARAMS` del programa `make_adv.cmd` si estás en Windows o `make_adv.sh` si usas Linux. El soporte de WyzTracker y el de Vortex Tracker son excluyentes, no se pueden usar a la vez en la misma aventura.
-
 ---
 
 ## Cómo generar una aventura
@@ -1525,27 +1415,204 @@ CYDC_EXTRA_PARAMS=
 
 ## Ejemplos
 
-Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos:
+Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos. Cada ejemplo está diseñado para ilustrar características específicas del lenguaje CYD, desde conceptos básicos hasta técnicas avanzadas.
 
-- En la carpeta `examples\test` hay una muestra ampliada del ejemplo incluido en la sección de [Sintaxis](#sintaxis). Se incluye imágenes de prueba en el directorio `examples\test\IMAGES`, y una canción de prueba dentro de su directorio `examples\test\TRACKS`. Solo funciona en los ordenadores de 128K.
+### Ejemplos Básicos
 
-- En la carpeta `examples\ETPA_ejemplo` tienes un ejemplo del comienzo de un libro tipo "Elije Tu Propia Aventura" simple, que resulta algo más avanzado. Se incluyen imágenes de prueba en `examples\ETPA_ejemplo\IMAGES`
+#### `examples\test` - Introducción al motor
+**Nivel:** Principiante | **Requiere:** ZX Spectrum 128K
 
-- En la carpeta `examples\guess_the_number` hay un ejemplo de uso para menús de múltiples columnas.
+Este es el ejemplo perfecto para empezar. Demuestra los conceptos fundamentales del motor:
+- **Sistema de opciones y navegación:** Implementa un menú básico con `OPTION` y `CHOOSE`, mostrando cómo crear ramificaciones en la historia.
+- **Variables y operaciones:** Usa variables para llevar la cuenta de objetos ("gamusinos") y realizar operaciones aritméticas básicas.
+- **Música y sonido:** Incluye una canción de ejemplo en el directorio `TRACKS` y demuestra cómo reproducir música con `PLAY` y `LOOP`.
+- **Imágenes:** Carga y muestra imágenes SCR desde el directorio `IMAGES` usando `PICTURE` y `DISPLAY`.
+- **Control de flujo:** Ilustra el uso de `GOTO`, `LABEL`, `WAITKEY` y limpieza de pantalla con `CLEAR`.
 
-- En la carpeta `examples\input_test` se muestra cómo leer desde el teclado y el uso de la indirección para simular arrays.
+Este ejemplo es una versión ampliada del código mostrado en la sección de [Sintaxis](#sintaxis) del manual.
 
-- En la carpeta `examples\blit` se muestra el uso del comando `BLIT`, con ejemplos progresivamente más avanzados en `examples\blit_island`, `examples\Rocky_Horror_Show` y `examples\CYD_presents`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+#### `examples\multicolumn_menu` - Menús en múltiples columnas
+**Nivel:** Principiante
 
-- En la carpeta `examples\Golden_Axe_select_character` podrás aprender sobre los comandos `FILLATTR` y `CHOOSE IF CHANGED...`. En la subcarpeta `IMAGES` se incluyen las imágenes de prueba.
+Demuestra cómo organizar opciones en múltiples columnas para crear menús más compactos y visualmente atractivos:
+- **Configuración de menú:** Usa `MENUCONFIG 1,2` para definir un menú de 1 fila y 2 columnas.
+- **Distribución visual:** Muestra cómo colocar opciones lado a lado en lugar de verticalmente.
+- **Casos de uso:** Ideal para juegos con muchas opciones, selección de personajes, inventarios, etc.
 
-- En la carpeta `examples\windows` tienes un ejemplo sencillo que ilustra el uso del comando `WINDOW`.
+#### `examples\guess_the_number` - Juego de adivinanzas
+**Nivel:** Principiante-Intermedio
 
-- En la carpeta `examples\SCUMM_16` hay un ejemplo de un menú tipo SCUMM para hacer una aventura de este tipo. Y en la carpeta `examples\delerict` hay un esqueleto de otra aventura más completa, que incluye lógica de manejo de objetos y localidades.
+Un juego completo de "adivina el número" que ilustra:
+- **Números aleatorios:** Genera un número secreto usando `RANDOM(1, 32)`.
+- **Menú de 6 columnas:** Usa `MENUCONFIG 1,6` para crear un menú compacto con 32 opciones (números del 1 al 32).
+- **Lógica de juego:** Compara el intento del jugador con el número secreto y da pistas ("más alto"/"más bajo").
+- **Gestión de variables:** Demuestra cómo usar variables para almacenar el número secreto y los intentos del jugador.
 
-Se incluye en cada directorio un fichero TAP con el resultado compilado para que poder probarlos en vivo en un emulador.
+Este ejemplo es excelente para aprender a crear juegos interactivos simples.
 
-Para compilarlos por uno mismo, simplemente habría que copiar los ficheros y directorios del ejemplo que quieras probar en el directorio principal de la distribución y ejecutar `make_adv.cmd`. Recuerda borrar (y guardar si fuese el caso) los ficheros que ya existiesen antes.
+#### `examples\input_test` - Entrada de teclado y arrays
+**Nivel:** Intermedio
+
+Ejemplo técnico que muestra características avanzadas de manejo de datos:
+- **Lectura de teclado:** Captura de entrada del usuario usando `INKEY()` para leer teclas pulsadas.
+- **Simulación de arrays:** Usa indirección con corchetes `[@ptr]` para crear y manipular arrays de caracteres.
+- **Gestión de cadenas:** Implementa funciones para imprimir y editar cadenas de texto de hasta 16 caracteres.
+- **Subrutinas:** Demuestra el uso de `GOSUB` y `RETURN` para crear funciones reutilizables (`inputStr` y `printStr`).
+- **Edición interactiva:** Permite borrar caracteres con DELETE y muestra un cursor parpadeante.
+
+Este ejemplo es fundamental para entender cómo trabajar con datos más complejos y crear interfaces de entrada personalizadas.
+
+#### `examples\windows` - Ventanas múltiples
+**Nivel:** Principiante-Intermedio
+
+Ilustra el sistema de ventanas para dividir la pantalla en diferentes áreas:
+- **Definición de ventanas:** Crea 4 ventanas usando `WINDOW` y `MARGINS`.
+- **Áreas independientes:** Cada ventana tiene su propio color de texto (`INK`) y se puede limpiar independientemente.
+- **Navegación entre ventanas:** Demuestra cómo cambiar entre ventanas para imprimir texto en diferentes áreas.
+- **Casos de uso:** Útil para crear interfaces tipo SCUMM, separar descripción de acciones, mostrar estadísticas permanentes, etc.
+
+### Ejemplos de Nivel Intermedio
+
+#### `examples\ETPA_ejemplo` - Libro "Elige Tu Propia Aventura"
+**Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
+
+Implementación completa de los primeros párrafos de un libro "Elige Tu Propia Aventura" (ETPA):
+- **Narrativa ramificada:** Demuestra cómo crear una historia con múltiples caminos y finales usando `OPTION` y `GOTO`.
+- **Variables de configuración:** Usa variables para controlar modos de visualización (solo texto vs. con imágenes, posición de imágenes).
+- **Sistema de color:** Diferencia entre texto narrativo y opciones usando diferentes colores de tinta.
+- **Gestión de imágenes:** Carga imágenes SCR para ilustrar escenas clave de la aventura.
+- **Estructura modular:** Organiza el código con etiquetas para cada párrafo/sección (`LABEL s1`, `LABEL s2`, etc.).
+- **Subrutinas de pantalla:** Usa `GOSUB Pantalla` para gestionar diferentes modos de presentación.
+
+Este ejemplo es ideal para crear aventuras conversacionales o librojuegos interactivos.
+
+#### `examples\include_demo` - Organización multi-archivo
+**Nivel:** Intermedio
+
+Demuestra el uso del sistema `INCLUDE` para organizar proyectos grandes:
+- **Separación de código:** El archivo principal `main.cyd` incluye otros archivos con `INCLUDE "archivo.cyd"`.
+- **Organización modular:**
+  - `variables.cyd`: Declaraciones de variables
+  - `common.cyd`: Subrutinas compartidas
+  - `intro.cyd`: Secuencia de introducción
+  - `chapter1.cyd` y `chapter2.cyd`: Capítulos independientes
+- **Mantenibilidad:** Facilita el trabajo en equipo y la organización de proyectos complejos.
+- **Reutilización:** Las subrutinas comunes pueden compartirse entre múltiples capítulos.
+
+Consulta el archivo `examples\include_demo\README.md` para más detalles.
+
+### Ejemplos Avanzados de Gráficos
+
+#### `examples\blit` - Introducción a BLIT
+**Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
+
+Introducción al comando `BLIT` para copiar sprites y gráficos:
+- **Copia básica de gráficos:** Usa `BLIT x, y, width, height AT col, row` para copiar secciones de una imagen.
+- **Loop de renderizado:** Combina `BLIT` con bucles `WHILE` para rellenar la pantalla con un patrón.
+- **Concepto fundamental:** Base para entender animaciones y gráficos más complejos.
+
+#### `examples\blit_island` - Gráficos avanzados
+**Nivel:** Intermedio-Avanzado
+
+Ejemplo más sofisticado del uso de `BLIT`:
+- **Composición de escenas:** Construye escenas complejas combinando múltiples sprites.
+- **Optimización:** Demuestra técnicas para dibujar eficientemente.
+- **Sprites múltiples:** Gestión de varios elementos gráficos en pantalla.
+
+#### `examples\Rocky_Horror_Show` - Animación de personajes
+**Nivel:** Avanzado
+
+Implementa una pantalla de selección de personajes tipo arcade:
+- **Animación frame-by-frame:** Usa `BLIT` para crear animaciones cambiando los fotogramas.
+- **Timing preciso:** Combina `WAIT` con `BLIT` para controlar la velocidad de animación.
+- **Sprites grandes:** Manejo de personajes de mayor tamaño en pantalla.
+
+#### `examples\CYD_presents` - Efectos visuales complejos
+**Nivel:** Avanzado
+
+Ejemplo técnicamente impresionante con efectos visuales:
+- **Efectos de presentación:** Implementa animaciones tipo "demo scene" del Spectrum.
+- **Sincronización:** Coordina múltiples elementos visuales con música.
+- **Técnicas avanzadas:** Combina `BLIT`, `WAIT`, `PICTURE` y efectos de color.
+
+La serie `blit` → `blit_island` → `Rocky_Horror_Show` → `CYD_presents` forma una progresión natural para dominar los gráficos en CYD.
+
+#### `examples\Golden_Axe_select_character` - Selección dinámica con colores
+**Nivel:** Avanzado | **Requiere:** Imágenes en `IMAGES`
+
+Recrea una pantalla de selección de personajes tipo Golden Axe:
+- **Detección de cambio de opción:** Usa `CHOOSE IF CHANGED THEN GOSUB` para ejecutar código cuando el jugador mueve el cursor.
+- **Efectos de color dinámicos:** Usa `FILLATTR` para cambiar los atributos de color de áreas de la pantalla en tiempo real.
+- **Resaltado de selección:** Ilumina el personaje seleccionado con un efecto de parpadeo usando bucles.
+- **Efectos de fade out:** Implementa un efecto de desvanecimiento dividiendo la pantalla en 4 secciones con `FADEOUT`.
+- **Información contextual:** Muestra texto descriptivo que cambia según el personaje seleccionado.
+- **Funciones auxiliares:** `OPTIONSEL()` devuelve el índice de la opción actualmente seleccionada.
+
+Este ejemplo es perfecto para crear menús de selección visualmente atractivos e interactivos.
+
+### Ejemplos de Proyectos Completos
+
+#### `examples\SCUMM_16` - Interfaz tipo SCUMM/LucasArts
+**Nivel:** Avanzado
+
+Implementación completa de una interfaz de aventura gráfica tipo SCUMM (como Monkey Island o Maniac Mansion):
+- **Ventanas múltiples:** Divide la pantalla en área de gráficos, área de texto y área de verbos.
+- **Menú de verbos:** Implementa un menú de 9 verbos (3x3) en la parte inferior de la pantalla.
+- **Sistema de dos niveles:** Primer nivel para seleccionar verbo, segundo nivel para seleccionar objeto/dirección.
+- **Visualización de sprites:** Usa `BLIT` para copiar la imagen de localidad y los verbos.
+- **Gestión de objetos:** Imprime una lista de objetos visibles en la localidad.
+- **Charset personalizado:** Carga un juego de caracteres de 4x8 para texto más compacto usando `CHARSET 1`.
+- **Retroalimentación visual:** Cambia el color del verbo seleccionado con `FILLATTR`.
+- **Organización modular:** Usa subrutinas para imprimir objetos, direcciones y gestionar la selección.
+
+Este ejemplo es una plantilla excelente para crear aventuras gráficas de tipo point-and-click.
+
+#### `examples\Delerict` - Aventura completa con motor propio
+**Nivel:** Avanzado-Experto | **Requiere:** Imágenes en `IMAGES`
+
+Esqueleto de una aventura espacial completa con todos los sistemas necesarios:
+- **Sistema completo de objetos:**
+  - Propiedades de objetos (se puede llevar, llevar puesto, abrir, encender, etc.)
+  - Máscara de bits para flags de objetos usando constantes binarias (`0b00000001`)
+  - Gestión de localización de objetos (llevado, puesto, en el suelo, etc.)
+- **Sistema de localidades:**
+  - Descripciones de localizaciones
+  - Salidas en 8 direcciones (N, S, E, W, Arriba, Abajo, Entrar, Salir)
+  - Flags de localidad (puertas abiertas/cerradas, etc.)
+- **Sistema de comandos:**
+  - 10 verbos implementados (Examinar, Usar, Coger, Dejar, Ponerse, Quitarse, Encender, Apagar, Abrir, Cerrar)
+  - Parser de acciones con objeto directo
+  - Validación de acciones según propiedades de objetos
+- **Uso extensivo de constantes:** Define constantes con `CONST` para hacer el código más legible.
+- **Arquitectura escalable:** Diseñado para añadir fácilmente nuevos objetos, localidades y comandos.
+- **1428 líneas de código:** Demuestra cómo estructurar proyectos grandes.
+
+Este es el ejemplo más complejo y sirve como base para crear aventuras de texto tradicionales o híbridas (texto + gráficos). Estudiar este código es una clase magistral en programación estructurada con CYD.
+
+### Cómo usar los ejemplos
+
+**Para probarlos sin compilar:**
+Cada directorio incluye un archivo `.tap` precompilado que puedes cargar directamente en tu emulador de ZX Spectrum favorito.
+
+**Para compilarlos tú mismo:**
+1. Copia el contenido de la carpeta del ejemplo al directorio raíz de la distribución de CYD.
+2. **Importante:** Si tienes archivos propios, guárdalos antes, ya que se sobrescribirán.
+3. Ejecuta `make_adv.cmd` (Windows) o `./make_adv.sh` (Linux/macOS).
+4. El archivo `.tap` resultante estará listo para probar.
+
+**Recomendación de estudio:**
+Se recomienda estudiar los ejemplos en este orden para una curva de aprendizaje gradual:
+1. `test` → Conceptos básicos
+2. `multicolumn_menu` → Menús
+3. `guess_the_number` → Lógica de juego
+4. `windows` → Interfaz dividida
+5. `input_test` → Entrada avanzada
+6. `ETPA_ejemplo` → Narrativa ramificada
+7. `include_demo` → Organización de código
+8. `blit` → `blit_island` → `Rocky_Horror_Show` → `CYD_presents` → Gráficos progresivamente más complejos
+9. `Golden_Axe_select_character` → Efectos visuales dinámicos
+10. `SCUMM_16` → Interfaz completa tipo LucasArts
+11. `Delerict` → Motor de aventura completo
 
 ---
 

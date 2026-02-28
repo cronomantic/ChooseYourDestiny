@@ -25,6 +25,7 @@ class CydcLexer(object):
     def __init__(self):
         self.lexer = None
         self.txt_pos = 0
+        self.errors = []
         self.special_chars = [
             c.decode("iso-8859-15")
             for c in (
@@ -185,6 +186,7 @@ class CydcLexer(object):
     tokens = [
         "TEXT",
         "COLON",
+        "CODE_BLOCK_END",
         "ERROR_CLOSE_TEXT",
         "NEWLINE_CHAR",
         "ERROR_TEXT",
@@ -231,8 +233,9 @@ class CydcLexer(object):
     def t_close_code(self, t):
         r"\]\]"
         self.txt_pos = t.lexer.lexpos
+        t.type = "CODE_BLOCK_END"
         t.lexer.begin("rawtext")
-        return None
+        return t
 
     def t_ERROR_CLOSE_TEXT(self, t):
         r"\[\["
@@ -346,7 +349,12 @@ class CydcLexer(object):
         return t
 
     def t_INITIAL_error(self, t):
-        print("Illegal character '%s'" % t.value[0])
+        self.errors.append({
+            "line": t.lexer.lineno,
+            "column": 0,
+            "char": t.value[0],
+            "message": "Illegal character",
+        })
         t.lexer.skip(1)
 
     # EOF handling in rawtext state - emit remaining text
@@ -360,6 +368,12 @@ class CydcLexer(object):
             return None
 
     def t_error(self, t):
+        self.errors.append({
+            "line": t.lexer.lineno,
+            "column": 0,
+            "char": t.value[0],
+            "message": "Illegal character",
+        })
         t.lexer.skip(1)  # just skip chars
 
     # Build the lexer
@@ -369,6 +383,7 @@ class CydcLexer(object):
     def input(self, data):
         self.txt_pos = 0
         self.texts = []
+        self.errors = []
         self.lexer.input(data)
         # Always start in rawtext state (JSP/PHP style - code inside [[ ]])
         self.lexer.begin("rawtext")
@@ -423,11 +438,16 @@ class CydcLexer(object):
                 line += 1
             elif ord(char) > 127:
                 errors.append((line, pos, char))
+                self.errors.append({
+                    "line": line,
+                    "column": pos,
+                    "char": char,
+                    "message": "Undefined codification error",
+                })
                 pos += 1
             else:
                 pos += 1
         if len(errors) > 0:
-            print(errors)
             token_type = "ERROR_TEXT"
             token_value = ("ERROR_TEXT", errors)
         else:

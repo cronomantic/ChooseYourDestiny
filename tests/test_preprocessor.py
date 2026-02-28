@@ -287,6 +287,36 @@ INCLUDE "missing.cyd"
         # Should mention the file that tried to include
         self.assertIn("main.cyd", error_msg.lower())
 
+    def test_collects_multiple_include_errors(self):
+        """Test that preprocessor accumulates multiple include errors before stopping."""
+        preprocessor = CydcPreprocessor(base_path=self.test_dir, max_errors=10)
+        filepath = self._write_file("main.cyd", """[[
+INCLUDE "missing1.cyd"
+INCLUDE "missing2.cyd"
+INCLUDE "missing3.cyd"
+]]""")
+
+        with self.assertRaises(PreprocessorError):
+            preprocessor.preprocess(filepath)
+
+        self.assertEqual(len(preprocessor.errors), 3)
+        self.assertFalse(preprocessor.max_errors_reached)
+
+    def test_preprocessor_respects_max_error_limit(self):
+        """Test preprocessor stops collecting errors at configured max_errors."""
+        preprocessor = CydcPreprocessor(base_path=self.test_dir, max_errors=2)
+        filepath = self._write_file("main.cyd", """[[
+INCLUDE "missing1.cyd"
+INCLUDE "missing2.cyd"
+INCLUDE "missing3.cyd"
+]]""")
+
+        with self.assertRaises(PreprocessorError):
+            preprocessor.preprocess(filepath)
+
+        self.assertEqual(len(preprocessor.errors), 2)
+        self.assertTrue(preprocessor.max_errors_reached)
+
 
 class TestPreprocessorEdgeCases(unittest.TestCase):
     """Test edge cases and special scenarios."""

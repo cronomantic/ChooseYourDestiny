@@ -30,9 +30,13 @@ class SymbolType(Enum):
     ARRAY = 4
 
 
+class MaxErrorsReached(Exception):
+    pass
+
+
 class CydcParser(object):
 
-    def __init__(self, gettext=None, strict_colon_mode=True):
+    def __init__(self, gettext=None, strict_colon_mode=True, max_errors=20):
         self.lexer = CydcLexer()
         self.tokens = self.lexer.get_tokens()
         self.parser = None
@@ -45,9 +49,20 @@ class CydcParser(object):
         # When True: statements like "PRINT x GOTO Label" require "PRINT x : GOTO Label"
         # When False: allows "PRINT x GOTO Label" (old behavior)
         self.strict_colon_mode = strict_colon_mode
+        self.max_errors = max(1, int(max_errors))
+        self.max_errors_reached = False
         self.line_map = None  # Maps preprocessed line numbers to original source locations
         import builtins
         self._ = gettext.gettext if gettext is not None else builtins.__dict__.get('_', lambda x: x)
+
+    def _append_error(self, msg):
+        if len(self.errors) >= self.max_errors:
+            self.max_errors_reached = True
+            raise MaxErrorsReached()
+        self.errors.append(msg)
+        if len(self.errors) >= self.max_errors:
+            self.max_errors_reached = True
+            raise MaxErrorsReached()
     
     def set_line_map(self, line_map):
         """
@@ -173,9 +188,15 @@ class CydcParser(object):
         """
         if len(p) == 3 and p[1] and p[2]:
             if self.strict_colon_mode:
-                # In strict mode, report error but continue parsing
-                loc = self._format_error_location(p.lineno(2))
-                self.errors.append(self._(f"Colon required between statements on same line ({loc})"))
+                # In strict mode, check if statements are on the same line
+                # We need to get the line of the last statement in p[1]
+                # Since p[1] is a list of statements, we check if the new statement
+                # is on a different line by comparing line numbers
+                if hasattr(p.slice[1], 'lineno') and hasattr(p.slice[2], 'lineno'):
+                    if p.slice[1].lineno == p.slice[2].lineno:
+                        # Only report error if they're actually on the same line
+                        loc = self._format_error_location(p.lineno(2))
+                        self.errors.append(self._(f"Colon required between statements on same line ({loc})"))
         
         p[0] = p[1]
         if not p[0]:
@@ -192,6 +213,10 @@ class CydcParser(object):
                     | statements COLON loop_while_statement
                     | statements COLON loop_do_until_statement
                     | statements COLON statement
+                    | statements CODE_BLOCK_END if_statement
+                    | statements CODE_BLOCK_END loop_while_statement
+                    | statements CODE_BLOCK_END loop_do_until_statement
+                    | statements CODE_BLOCK_END statement
                     | if_statement
                     | loop_do_until_statement
                     | loop_while_statement
@@ -2274,13 +2299,16 @@ class CydcParser(object):
     def p_newline_seq(self, p):
         """
         newline_seq : newline_seq NEWLINE_CHAR
+                    | newline_seq CODE_BLOCK_END
                     | NEWLINE_CHAR
+                    | CODE_BLOCK_END
         """
         p[0] = None
 
     def p_loop_empty(self, p):
         """
         loop_empty : loop_empty NEWLINE_CHAR
+                   | loop_empty CODE_BLOCK_END
                    | empty
         """
         pass
@@ -2309,7 +2337,34 @@ class CydcParser(object):
                 msg = self._("Syntax error at line {}: Missing UNTIL for DO").format(self.parser.symstack[pos_while].lineno)
             else:
                 msg = self._("Syntax error")
-        self.errors.append(msg)
+        self._append_error(msg)
+
+        if p is None:
+            return
+
+        # Error recovery: skip tokens until a safe synchronization point
+        # to continue parsing and collect additional errors.
+        sync_tokens = {
+            "NEWLINE_CHAR",
+            "COLON",
+            "ENDIF",
+            "WEND",
+            "UNTIL",
+            "ELSE",
+            "THEN",
+            "CHOOSE",
+            "END",
+        }
+
+        while True:
+            tok = self.parser.token()
+            if not tok:
+                break
+            if tok.type in sync_tokens:
+                self.parser.errok()
+                return tok
+
+        self.parser.errok()
 
     def build(self):
         self.lexer.build()
@@ -2324,14 +2379,51 @@ class CydcParser(object):
             self.symbols.clear()
             self.symbols_used.clear()
             self.errors.clear()
+            self.max_errors_reached = False
             self.hidden_label_counter = 0
             # No need for code_text_reversal with refactored lexer (JSP/PHP style)
             # Text outside [[ ]], code inside [[ ]]
-            parse_result = self.parser.parse(
-                input, lexer=self.lexer, debug=self.debug, tracking=True
-            )
+            try:
+                parse_result = self.parser.parse(
+                    input, lexer=self.lexer, debug=self.debug, tracking=True
+                )
+            except MaxErrorsReached:
+                parse_result = None
+
+            try:
+                for lexer_error in self.lexer.errors:
+                    line_num = lexer_error.get("line", 0)
+                    column_num = lexer_error.get("column", 0)
+                    char = lexer_error.get("char", "")
+                    location = self._format_error_location(line_num)
+                    if column_num > 0:
+                        location = f"{location}, col {column_num}"
+                    if char:
+                        self._append_error(
+                            self._("Lexer error: {} '{}' at {}.").format(
+                                lexer_error.get("message", "Lexer error"),
+                                char,
+                                location,
+                            )
+                        )
+                    else:
+                        self._append_error(
+                            self._("Lexer error: {} at {}.").format(
+                                lexer_error.get("message", "Lexer error"),
+                                location,
+                            )
+                        )
+            except MaxErrorsReached:
+                pass
+
+            if len(self.errors) > self.max_errors:
+                self.errors = self.errors[: self.max_errors]
+                self.max_errors_reached = True
             if not self._check_symbols():
                 return []
+            if len(self.errors) > self.max_errors:
+                self.errors = self.errors[: self.max_errors]
+                self.max_errors_reached = True
             return parse_result
 
     def debug_p(self, p):

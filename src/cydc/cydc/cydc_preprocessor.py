@@ -45,6 +45,11 @@ class PreprocessorError(Exception):
             return self.message
 
 
+class MaxPreprocessorErrorsReached(Exception):
+    """Internal exception to stop preprocessing when error cap is reached."""
+    pass
+
+
 class CydcPreprocessor:
     """Preprocessor for CYD source files that handles INCLUDE directives."""
     
@@ -61,7 +66,7 @@ class CydcPreprocessor:
     CODE_OPEN = re.compile(r'\[\[')
     CODE_CLOSE = re.compile(r'\]\]')
     
-    def __init__(self, max_depth: int = 20, base_path: str = None):
+    def __init__(self, max_depth: int = 20, base_path: str = None, max_errors: int = 20):
         """
         Initialize the preprocessor.
         
@@ -70,11 +75,22 @@ class CydcPreprocessor:
             base_path: Base directory for resolving relative includes
         """
         self.max_depth = max_depth
+        self.max_errors = max(1, int(max_errors))
+        self.max_errors_reached = False
         self.base_path = base_path
         self.included_files: Set[str] = set()
         self.errors: List[PreprocessorError] = []
         self.line_map: Dict[int, SourceLocation] = {}  # Maps output line -> original source location
         self._output_line_num = 1  # Track current output line number
+
+    def _append_error(self, error: PreprocessorError):
+        if len(self.errors) >= self.max_errors:
+            self.max_errors_reached = True
+            raise MaxPreprocessorErrorsReached()
+        self.errors.append(error)
+        if len(self.errors) >= self.max_errors:
+            self.max_errors_reached = True
+            raise MaxPreprocessorErrorsReached()
         
     def _normalize_path(self, filepath: str) -> str:
         """
@@ -218,11 +234,14 @@ class CydcPreprocessor:
             if match:
                 # Validate that INCLUDE is inside a code block
                 if not self._is_include_in_code_block(lines, line_num - 1, match):
-                    raise PreprocessorError(
-                        f"INCLUDE directive must be inside [[ ]] code blocks",
-                        normalized_path,
-                        line_num
+                    self._append_error(
+                        PreprocessorError(
+                            f"INCLUDE directive must be inside [[ ]] code blocks",
+                            normalized_path,
+                            line_num,
+                        )
                     )
+                    continue
                 
                 include_file = match.group(1)
                 
@@ -233,27 +252,19 @@ class CydcPreprocessor:
                     include_path = include_file
                 
                 try:
-                    # Extract the part of the line before and after the INCLUDE directive
-                    line_before = line[:match.start()]
-                    line_after = line[match.end():]
-                    
-                    # Check if we're inside a code block (we validated this above)
-                    # We need to close the block before including, then reopen it after
-                    # to prevent nested [[ ]] blocks
-                    
-                    # Close the current code block before the include
-                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num)))
-                    
-                    # Add a comment marker for debugging/tracing
-                    marker_line = f"/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n"
-                    result_lines.append((marker_line, SourceLocation(display_name, line_num)))
-                    
                     # Recursively process the included file
                     included_content = self._process_file(
                         include_path,
                         depth + 1,
                         normalized_path
                     )
+
+                    # Close the current code block before the include
+                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num)))
+
+                    # Add a comment marker for debugging/tracing
+                    marker_line = f"/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n"
+                    result_lines.append((marker_line, SourceLocation(display_name, line_num)))
                     
                     result_lines.extend(included_content)
                     
@@ -266,11 +277,14 @@ class CydcPreprocessor:
                     
                 except PreprocessorError as e:
                     # Add context about where the include was found
-                    raise PreprocessorError(
-                        f"In file included from {display_name}:{line_num}: {e.message}",
-                        e.filename,
-                        e.line_num
+                    self._append_error(
+                        PreprocessorError(
+                            f"In file included from {display_name}:{line_num}: {e.message}",
+                            e.filename,
+                            e.line_num,
+                        )
                     )
+                    continue
             else:
                 # Regular line, add it with its source location
                 result_lines.append((line, SourceLocation(display_name, line_num)))
@@ -294,6 +308,7 @@ class CydcPreprocessor:
         # Reset state
         self.included_files.clear()
         self.errors.clear()
+        self.max_errors_reached = False
         self.line_map.clear()
         self._output_line_num = 1
         
@@ -301,37 +316,47 @@ class CydcPreprocessor:
         if self.base_path is None:
             self.base_path = os.path.dirname(os.path.abspath(filepath))
         
+        fatal_error = None
         try:
             # Process the main file - returns list of (line, source_location) tuples
             processed_lines_with_locs = self._process_file(filepath)
-            
-            # Build the output and line map
-            output_lines = []
-            for line_content, source_loc in processed_lines_with_locs:
-                # Record the mapping for this line
-                self.line_map[self._output_line_num] = source_loc
-                output_lines.append(line_content)
-                
-                # Count newlines in this content to track output line number
-                # (some content might have multiple lines)
-                newline_count = line_content.count('\n')
-                if newline_count > 0:
-                    # For multi-line content, map all lines to same source
-                    for i in range(1, newline_count):
-                        self._output_line_num += 1
-                        self.line_map[self._output_line_num] = source_loc
-                    self._output_line_num += 1
-                elif line_content:  # Non-empty content without newline
-                    self._output_line_num += 1
-            
-            # Join all lines into a single string
-            result = ''.join(output_lines)
-            
-            return result, self.line_map.copy()
-            
+        except MaxPreprocessorErrorsReached:
+            processed_lines_with_locs = []
         except PreprocessorError as e:
-            self.errors.append(e)
-            raise
+            fatal_error = e
+            if len(self.errors) == 0:
+                self.errors.append(e)
+
+        if len(self.errors) > 0 or fatal_error is not None:
+            if len(self.errors) > self.max_errors:
+                self.errors = self.errors[: self.max_errors]
+                self.max_errors_reached = True
+            raise self.errors[0] if len(self.errors) > 0 else fatal_error
+
+        # Build the output and line map
+        output_lines = []
+        for line_content, source_loc in processed_lines_with_locs:
+            # Record the mapping for this line
+            self.line_map[self._output_line_num] = source_loc
+            output_lines.append(line_content)
+
+            # Count newlines in this content to track output line number
+            # (some content might have multiple lines)
+            newline_count = line_content.count('\n')
+            if newline_count > 0:
+                # For multi-line content, map all lines to same source
+                for i in range(1, newline_count):
+                    self._output_line_num += 1
+                    self.line_map[self._output_line_num] = source_loc
+                self._output_line_num += 1
+            elif line_content:  # Non-empty content without newline
+                self._output_line_num += 1
+
+        # Join all lines into a single string
+        result = ''.join(output_lines)
+
+        return result, self.line_map.copy()
+
     
     def get_source_location(self, line_num: int) -> SourceLocation:
         """
