@@ -9,32 +9,31 @@ Two corridors lead away from your cell:
 
 [[OPTION GOTO LeftCorridor]]Take the left corridor
 [[OPTION GOTO RightCorridor]]Take the right corridor
-[[CHOOSE]]
-
-#LeftCorridor
-[[CLEAR]]
+[[CHOOSE
+    LABEL LeftCorridor
+    CLEAR]]
 You walk down the left corridor and find
 a treasure chest!
 [[NEWLINE : NEWLINE]]
 You open it and find 50 gold coins.
-[[SET @PlayerGold TO 50]]
-[[NEWLINE]]
-[[GOSUB ShowStatus]]
-[[NEWLINE]]
-[[WAITKEY]]
-[[GOTO Chapter2]]
-
-#RightCorridor
-[[CLEAR]]
+[[SET PlayerGold TO 50
+    NEWLINE
+    GOSUB ShowStatus
+    NEWLINE
+    WAITKEY
+    GOTO Chapter2
+    LABEL RightCorridor
+    CLEAR]]
 You walk down the right corridor when
 suddenly a trap activates!
 [[NEWLINE : NEWLINE]]
 Spikes shoot from the walls!
-[[SET @PlayerHealth TO 70]]
-[[NEWLINE]]
+[[SET PlayerHealth TO 70
+    NEWLINE]]
 You take 30 damage but manage to escape.
-[[NEWLINE]]
-[[GOSUB ShowStatus]]
-[[NEWLINE]]
-[[WAITKEY]]
-[[GOTO Chapter2]]
+[[NEWLINE
+    GOSUB ShowStatus
+    NEWLINE
+    WAITKEY
+    GOTO Chapter2
+]]

@@ -1,12 +1,8 @@
-[[
-// Common utility subroutines
+/* Common utility subroutines */
 
 #ShowStatus
 INK 6
-PRINT "Health: "
-PRINT @PlayerHealth
-PRINT " | Gold: "
-PRINT @PlayerGold
+]]Health: [[PRINT @PlayerHealth]] | Gold: [[PRINT @PlayerGold
 INK 7
 NEWLINE
 RETURN
@@ -16,14 +12,15 @@ CLEAR
 CENTER
 INK 2
 BRIGHT 1
-PRINT "GAME OVER"
+]]GAME OVER[[
 INK 7
 BRIGHT 0
-NEWLINE : NEWLINE
-PRINT "You have died..."
-NEWLINE : NEWLINE
-PRINT "Press any key to restart"
+NEWLINE
+NEWLINE
+]]You have died...[[
+NEWLINE
+NEWLINE
+]]Press any key to restart[[
 WAITKEY
 GOTO Start
 RETURN
-]]
