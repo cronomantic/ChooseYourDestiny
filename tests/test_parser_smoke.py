@@ -247,8 +247,58 @@ class TestParserRegressionPrevention(unittest.TestCase):
         
         self.assertIsNotNone(result)
 
+
+class TestParserErrorLimit(unittest.TestCase):
+    """Tests for parser max error reporting limit."""
+
+    def test_parser_stops_at_configured_error_limit(self):
+        parser = CydcParser(strict_colon_mode=False, max_errors=3)
+        parser.build()
+
+        code = """[[
+GOTO
+GOSUB
+LABEL
+PRINT
+WAIT
+]]"""
+
+        parser.errors = []
+        parser.parse(input=code)
+
+        self.assertEqual(len(parser.errors), 3)
+        self.assertTrue(parser.max_errors_reached)
+
+    def test_parser_default_error_limit_is_sane(self):
+        parser = CydcParser(strict_colon_mode=False)
+        parser.build()
+
+        self.assertEqual(parser.max_errors, 20)
+
+    def test_lexer_illegal_character_is_reported(self):
+        parser = CydcParser(strict_colon_mode=False, max_errors=10)
+        parser.build()
+
+        parser.errors = []
+        parser.parse(input="[[PRINT 1 ; PRINT 2]]")
+
+        self.assertTrue(any("Illegal character" in str(err) for err in parser.errors))
+
+    def test_shared_cap_applies_to_lexer_diagnostics(self):
+        parser = CydcParser(strict_colon_mode=False, max_errors=2)
+        parser.build()
+
+        parser.errors = []
+        parser.parse(input="[[PRINT 1 ; PRINT 2 ; PRINT 3]]")
+
+        self.assertLessEqual(len(parser.errors), 2)
+        self.assertTrue(parser.max_errors_reached)
+
     def test_realistic_adventure_scenario(self):
         """Realistic adventure scenario must work."""
+        parser = CydcParser(strict_colon_mode=False)
+        parser.build()
+
         code = """
         The scene unfolds before you...
         [[
@@ -273,8 +323,8 @@ class TestParserRegressionPrevention(unittest.TestCase):
             END
         ]]"""
         
-        self.parser.errors = []
-        result = self.parser.parse(input=code)
+        parser.errors = []
+        result = parser.parse(input=code)
         
         self.assertIsNotNone(result)
 

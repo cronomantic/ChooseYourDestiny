@@ -84,6 +84,17 @@ def pause_value(value):
     return val
 
 
+def max_errors_value(value):
+    val = int(value)
+    if val <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid value" % value)
+    return val
+
+
+def emit_error(stage, message):
+    print(f"ERROR [{stage}]: {message}")
+
+
 def main():
     """Main function"""
 
@@ -243,6 +254,13 @@ def main():
         help=_("allow statements without colon separator (backwards compatibility mode)"),
     )
     arg_parser.add_argument(
+        "--max-errors",
+        metavar=_("MAX_ERRORS"),
+        type=max_errors_value,
+        default=20,
+        help=_("maximum number of parser errors to report before stopping (default: %(default)d)"),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -318,7 +336,8 @@ def main():
     try:
         preprocessor = CydcPreprocessor(
             max_depth=20, 
-            base_path=os.path.dirname(os.path.abspath(args.input))
+            base_path=os.path.dirname(os.path.abspath(args.input)),
+            max_errors=args.max_errors,
         )
         text, line_map = preprocessor.preprocess(args.input)
         
@@ -329,7 +348,14 @@ def main():
             else:
                 print(_(f"Preprocessing completed in {tmp_timer}"))
     except PreprocessorError as e:
-        sys.exit(_("ERROR: ") + str(e))
+        if len(preprocessor.errors) > 0:
+            for prep_error in preprocessor.errors:
+                emit_error("PREPROCESSOR", str(prep_error))
+            if preprocessor.max_errors_reached:
+                emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
+        else:
+            emit_error("PREPROCESSOR", str(e))
+        sys.exit(1)
 
     if output_name is None:
         output_name = os.path.splitext(os.path.basename(args.input))
@@ -436,7 +462,11 @@ def main():
         print(_("Parsing code..."))
 
     tmp_timer.reset()
-    parser = CydcParser(gettext, strict_colon_mode=not args.no_strict_colons)
+    parser = CydcParser(
+        gettext,
+        strict_colon_mode=not args.no_strict_colons,
+        max_errors=args.max_errors,
+    )
     parser.set_line_map(line_map)  # Set line map for better error reporting
     parser.build()
     code = parser.parse(input=text, verbose=(verbose >= 3))
@@ -445,7 +475,9 @@ def main():
         parser.print_symbols()
     if len(parser.errors) > 0:
         for e in parser.errors:
-            print("ERROR:" + e)
+            emit_error("PARSER", e)
+        if parser.max_errors_reached:
+            emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
         sys.exit(1)
     print(_(f"Code parsing completed ({tmp_timer})"))
 

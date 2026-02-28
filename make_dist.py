@@ -266,6 +266,28 @@ def compile_translations(current_path, src_path):
             compile_locale_dir(locale_dir)
 
 
+def sync_wiki_manuals(current_path):
+    """Sync MANUAL_en.md and MANUAL_es.md from sibling wiki repository if available."""
+    wiki_path = os.path.join(os.path.dirname(current_path), "ChooseYourDestiny.wiki")
+    manual_map = {
+        os.path.join(wiki_path, "MANUAL_en.md"): os.path.join(current_path, "MANUAL_en.md"),
+        os.path.join(wiki_path, "MANUAL_es.md"): os.path.join(current_path, "MANUAL_es.md"),
+    }
+
+    if not os.path.exists(wiki_path):
+        print(f"Wiki repository not found, skipping manual sync: {wiki_path}")
+        return
+
+    print("Syncing manuals from wiki...")
+    for src_file, dst_file in manual_map.items():
+        if not os.path.exists(src_file):
+            print(f"  Warning: Wiki manual not found: {src_file}")
+            continue
+        os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+        shutil.copy2(src_file, dst_file)
+        print(f"  Synced {os.path.basename(src_file)}")
+
+
 def copy_translations(current_path, src_path, dst_path):
     """Copy locale directories to dist."""
     print("Copying translations...")
@@ -280,6 +302,14 @@ def copy_translations(current_path, src_path, dst_path):
     dst_locale = os.path.join(current_path, dst_path, "locale")
     if os.path.exists(src_locale):
         shutil.copytree(src_locale, dst_locale, dirs_exist_ok=True)
+
+    # Ensure copied translations in dist are compiled too
+    for locale_dir in [
+        os.path.join(current_path, dst_path, "cydc", "locale"),
+        os.path.join(current_path, dst_path, "locale"),
+    ]:
+        if os.path.exists(locale_dir):
+            compile_locale_dir(locale_dir)
 
 
 def collect_files(current_path, dirs_list, files_list):
@@ -405,6 +435,12 @@ Examples:
         action="store_true",
         help="Skip source file copying and translation compilation",
     )
+
+    parser.add_argument(
+        "--skip-doc-sync",
+        action="store_true",
+        help="Skip syncing MANUAL_en.md/MANUAL_es.md from sibling wiki repository",
+    )
     
     args = parser.parse_args()
     
@@ -424,6 +460,13 @@ Examples:
     print(f"========================================")
     print(f"Target platform(s): {', '.join(platforms)}")
     print()
+
+    if not args.skip_doc_sync:
+        sync_wiki_manuals(current_path)
+        print()
+    else:
+        print("Skipping manual sync (--skip-doc-sync)")
+        print()
     
     # Prepare source files and translations (once for all platforms)
     if not args.skip_compile:
