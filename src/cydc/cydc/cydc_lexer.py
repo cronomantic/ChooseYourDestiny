@@ -254,6 +254,10 @@ class CydcLexer(object):
             t.lexer.begin("INITIAL")  # Enter code state, no text to emit
             return None
 
+    def t_line_comment(self, t):
+        r"//[^\n\r]*"
+        return None
+
     def t_comment(self, t):
         r"/\*(.|\n|\r|\r\n)*?\*/"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))

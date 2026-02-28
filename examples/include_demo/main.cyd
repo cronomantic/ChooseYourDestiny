@@ -1,19 +1,17 @@
 [[
-// Main entry point for the INCLUDE demo adventure
-// This file demonstrates how to use INCLUDE to organize code
+/* Main entry point for the INCLUDE demo adventure */
+/* This file demonstrates how to use INCLUDE to organize code */
 
-// Load variable declarations
+/* Load variable declarations */
 INCLUDE "variables.cyd"
 
-// Load common subroutines
+/* Load common subroutines */
 INCLUDE "common.cyd"
-]]
 
 #Start
+]]
 [[INCLUDE "intro.cyd"]]
-
-#Chapter1
+[[ #Chapter1 ]]
 [[INCLUDE "chapter1.cyd"]]
-
-#Chapter2
+[[ #Chapter2 ]]
 [[INCLUDE "chapter2.cyd"]]

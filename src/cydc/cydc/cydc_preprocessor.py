@@ -49,6 +49,13 @@ class CydcPreprocessor:
         r'^\s*INCLUDE\s+["\']([^"\']+)["\']\s*(?://.*)?$',
         re.IGNORECASE | re.MULTILINE
     )
+
+    # Pattern to match [[INCLUDE "filename.cyd"]] on its own line
+    # This form inlines the file content directly (without [[ ]] wrappers)
+    CODE_INCLUDE_PATTERN = re.compile(
+        r'^\s*\[\[\s*INCLUDE\s+["\']([^"\']+)["\']\s*\]\]\s*$',
+        re.IGNORECASE
+    )
     
     def __init__(self, max_depth: int = 20, base_path: str = None):
         """
@@ -161,6 +168,8 @@ class CydcPreprocessor:
         for line_num, line in enumerate(lines, start=1):
             # Check if this line is an include directive
             match = self.INCLUDE_PATTERN.match(line)
+            if not match:
+                match = self.CODE_INCLUDE_PATTERN.match(line)
             
             if match:
                 include_file = match.group(1)
@@ -174,7 +183,7 @@ class CydcPreprocessor:
                 try:
                     # Add a comment marker for debugging/tracing
                     result_lines.append(
-                        f"// BEGIN INCLUDE: {include_file} (from {os.path.basename(normalized_path)}:{line_num})\n"
+                        f"/* BEGIN INCLUDE: {include_file} (from {os.path.basename(normalized_path)}:{line_num}) */\n"
                     )
                     
                     # Recursively process the included file
@@ -188,7 +197,7 @@ class CydcPreprocessor:
                     
                     # Add end marker
                     result_lines.append(
-                        f"// END INCLUDE: {include_file}\n"
+                        f"/* END INCLUDE: {include_file} */\n"
                     )
                     
                 except PreprocessorError as e:
