@@ -631,6 +631,11 @@ class CydcParser(object):
             p[0] = [p[2]]
         p[0].append(("POP_PRINT",))
 
+    def p_statement_print_string(self, p):
+        "statement : PRINT STRING"
+        encoded = self.lexer.replace_chars(p[2])
+        p[0] = ("TEXT", encoded)
+
     def p_statement_print_error(self, p):
         """
         statement : PRINT error
@@ -1560,6 +1565,15 @@ class CydcParser(object):
             else:
                 p[0] = [p[4]]
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
+
+    def p_statement_set_at_dir(self, p):
+        "statement : SET AT_CHAR variableID TO varexpression"
+        if len(p) == 6 and self._is_valid_var(p[3]):
+            if isinstance(p[5], list):
+                p[0] = p[5]
+            else:
+                p[0] = [p[5]]
+            p[0].append(("POP_SET", ("VARIABLE", p[3], 0)))
 
     def p_statement_choose(self, p):
         """

@@ -5,38 +5,49 @@ sits a rusty old sword.
 [[GOSUB ShowStatus]]
 [[NEWLINE]]
 
-[[OPTION GOTO TakeSword]]Take the sword
-[[OPTION GOTO OgreEncounter]]Leave it and continue
-[[CHOOSE
-    LABEL TakeSword
-    INK 6]]
+[[OPTION GOSUB TakeSword]]Take the sword
+[[OPTION GOTO LeaveRoom]]Leave it and continue
+[[CHOOSE]]
+
+#TakeSword
+[[INK 6]]
 You pick up the sword. It might be useful!
-[[SET HasSword TO 1
-    INK 7
-    NEWLINE
-    WAITKEY
-    GOTO OgreEncounter
-    LABEL OgreEncounter
-    CLEAR]]
-You approach the dungeon exit when
-a massive ogre blocks your path!
+[[SET @HasSword TO 1]]
+[[INK 7]]
+[[NEWLINE]]
+[[WAITKEY]]
+[[RETURN]]
+
+#LeaveRoom
+[[CLEAR]]
+You decide to leave the sword and press on.
 [[NEWLINE : NEWLINE]]
+A massive ogre blocks your path!
+[[NEWLINE : NEWLINE]]
+
 [[IF @HasSword = 1 THEN
     INK 2
-    ]]You draw your sword and defeat the ogre![[
+    PRINT "You draw the sword and fight!"
     INK 7
+    NEWLINE
+    PRINT "After a fierce battle, you defeat"
+    NEWLINE
+    PRINT "the ogre and escape the dungeon!"
     NEWLINE : NEWLINE
     INK 6
-    ]]YOU WIN![[
+    PRINT "YOU WIN!"
     INK 7
 ELSE
     INK 2
-    ]]Without a weapon, you cannot fight![[
+    PRINT "Without a weapon, you cannot"
+    NEWLINE
+    PRINT "defend yourself..."
     INK 7
     NEWLINE : NEWLINE
-    SET PlayerHealth TO 0
+    SET @PlayerHealth TO 0
     GOSUB GameOver
 ENDIF]]
+
 [[NEWLINE : NEWLINE]]
 [[WAITKEY]]
 [[END]]

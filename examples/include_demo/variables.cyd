@@ -1,11 +1,13 @@
-/* Variable declarations for the adventure */
+[[
+// Variable declarations for the adventure
 DECLARE 0 AS PlayerHealth
 DECLARE 1 AS PlayerGold
 DECLARE 2 AS HasSword
 DECLARE 3 AS CurrentRoom
 
-/* Initialize variables */
-SET PlayerHealth TO 100
-SET PlayerGold TO 0
-SET HasSword TO 0
-SET CurrentRoom TO 1
+// Initialize variables
+SET @PlayerHealth TO 100
+SET @PlayerGold TO 0
+SET @HasSword TO 0
+SET @CurrentRoom TO 1
+]]

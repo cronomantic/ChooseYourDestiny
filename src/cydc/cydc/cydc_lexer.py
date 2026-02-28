@@ -19,12 +19,16 @@
 #
 
 from ply import lex as lex
+from ply.lex import LexToken
+import re as _re
 
 
 class CydcLexer(object):
     def __init__(self):
         self.lexer = None
         self.txt_pos = 0
+        self._code_depth = 0
+        self._pending_token = None
         self.special_chars = [
             c.decode("iso-8859-15")
             for c in (
@@ -204,6 +208,7 @@ class CydcLexer(object):
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
+    tokens += ["STRING"]
     tokens += list(reserved.values())
 
     @property
@@ -230,22 +235,24 @@ class CydcLexer(object):
 
     def t_close_code(self, t):
         r"\]\]"
+        if self._code_depth > 0:
+            self._code_depth -= 1
+            return None
         self.txt_pos = t.lexer.lexpos
         t.lexer.begin("rawtext")
         return None
 
     def t_ERROR_CLOSE_TEXT(self, t):
         r"\[\["
-        # Found [[ while in INITIAL (code) state - this is an error
-        # Should only see [[ in rawtext state
-        t.type = "ERROR_CLOSE_TEXT"
-        t.value = t.lexer.lineno
-        return t
+        # Found [[ while already in code state - treat as nested code block
+        self._code_depth += 1
+        return None
 
     def t_rawtext_open_code(self, t):
         r"\[\["
         # Extract raw text that was between the previous ]] and this [[
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos - 2]
+        self._code_depth = 0
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
             t.lexer.begin("INITIAL")  # Enter code state
@@ -253,6 +260,26 @@ class CydcLexer(object):
         else:
             t.lexer.begin("INITIAL")  # Enter code state, no text to emit
             return None
+
+    def t_rawtext_SHORT_LABEL(self, t):
+        r"[ \t]*\#[a-zA-Z_][a-zA-Z0-9_]*[ \t]*(?:\n|\r\n|\r|$)"
+        m = _re.match(r'[ \t]*\#([a-zA-Z_][a-zA-Z0-9_]*)', t.value)
+        label_name = m.group(1)
+        t.lexer.lineno += t.value.count('\n') + (t.value.count('\r') - t.value.count('\r\n'))
+        text_before = t.lexer.lexdata[self.txt_pos : t.lexpos]
+        self.txt_pos = t.lexer.lexpos
+        t.type = "SHORT_LABEL"
+        t.value = label_name
+        if len(text_before) > 0:
+            pending = LexToken()
+            pending.type = "SHORT_LABEL"
+            pending.value = label_name
+            pending.lineno = t.lexer.lineno
+            pending.lexpos = t.lexer.lexpos
+            self._pending_token = pending
+            t.type, t.value = self._parse_string(text_before, t.lexer.lineno)
+            return t
+        return t
 
     def t_line_comment(self, t):
         r"//[^\n\r]*"
@@ -344,6 +371,11 @@ class CydcLexer(object):
             t.value = 0
         return t
 
+    def t_STRING(self, t):
+        r'"[^"\n\r]*"'
+        t.value = t.value[1:-1]  # Strip surrounding quotes
+        return t
+
     def t_ID(self, t):
         r"[a-zA-Z_][a-zA-Z0-9_]*"
         t.type = self.reserved.get(t.value.upper(), "ID")  # Check for reserved words
@@ -372,12 +404,18 @@ class CydcLexer(object):
 
     def input(self, data):
         self.txt_pos = 0
+        self._code_depth = 0
+        self._pending_token = None
         self.texts = []
         self.lexer.input(data)
         # Always start in rawtext state (JSP/PHP style - code inside [[ ]])
         self.lexer.begin("rawtext")
 
     def token(self):
+        if self._pending_token is not None:
+            tok = self._pending_token
+            self._pending_token = None
+            return tok
         return self.lexer.token()
 
     def get_tokens(self):
@@ -393,6 +431,10 @@ class CydcLexer(object):
             if not tok:
                 break
             print(tok)
+
+    def replace_chars(self, old_string):
+        """Replace carriage returns and special characters"""
+        return self._replace_chars(old_string)
 
     def _replace_chars(self, old_string):
         """Replace carriage returns and special characters"""

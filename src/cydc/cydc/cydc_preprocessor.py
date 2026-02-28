@@ -183,7 +183,7 @@ class CydcPreprocessor:
                 try:
                     # Add a comment marker for debugging/tracing
                     result_lines.append(
-                        f"/* BEGIN INCLUDE: {include_file} (from {os.path.basename(normalized_path)}:{line_num}) */\n"
+                        f"// BEGIN INCLUDE: {include_file} (from {os.path.basename(normalized_path)}:{line_num})\n"
                     )
                     
                     # Recursively process the included file
@@ -197,7 +197,7 @@ class CydcPreprocessor:
                     
                     # Add end marker
                     result_lines.append(
-                        f"/* END INCLUDE: {include_file} */\n"
+                        f"// END INCLUDE: {include_file}\n"
                     )
                     
                 except PreprocessorError as e:
