@@ -303,13 +303,17 @@ You begin your adventure...
 ```
 
 **Features:**
+- The `INCLUDE` directive must be placed inside `[[ ]]` code blocks
 - The `INCLUDE` directive is case-insensitive (`INCLUDE`, `include`, or `Include` all work)
 - File paths can be relative or absolute
 - Relative paths are resolved from the directory containing the file with the `INCLUDE` directive
 - Files can include other files (nested includes) up to a maximum depth of 20 levels
 - Circular includes (file A includes B, B includes A) are detected and reported as errors
-- The directive can be followed by comments: `INCLUDE "file.cyd" // Load utilities`
+- Included files can have their own `[[ ]]` blocks; the preprocessor automatically handles this
+- Error messages will show the correct filename and line number from included files
 - Both single and double quotes are supported: `INCLUDE "file.cyd"` or `INCLUDE 'file.cyd'`
+
+**Note about comments:** CYD uses `/* */` for comments. While the `INCLUDE` directive's pattern will ignore trailing text after the filename (e.g., `INCLUDE "file.cyd" // note`), this relies on implementation details and is not recommended. Use proper `/* */` comments instead.
 
 **Example project structure:**
 ```

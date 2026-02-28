@@ -19,7 +19,13 @@
 
 import os
 import re
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Dict, NamedTuple
+
+
+class SourceLocation(NamedTuple):
+    """Tracks the original source location of a line."""
+    filename: str
+    line_num: int
 
 
 class PreprocessorError(Exception):
@@ -45,10 +51,15 @@ class CydcPreprocessor:
     # Pattern to match INCLUDE directives with quoted filenames
     # Supports: INCLUDE "filename.cyd" (case-insensitive)
     # Can be followed by optional comments
+    # Note: This will match INCLUDE anywhere on the line, not just at the start
     INCLUDE_PATTERN = re.compile(
-        r'^\s*INCLUDE\s+["\']([^"\']+)["\']\s*(?://.*)?$',
+        r'INCLUDE\s+["\']([^"\']+)["\']\s*(?://.*)?(?:\]\])?$',
         re.IGNORECASE | re.MULTILINE
     )
+    
+    # Pattern to match code block delimiters
+    CODE_OPEN = re.compile(r'\[\[')
+    CODE_CLOSE = re.compile(r'\]\]')
     
     def __init__(self, max_depth: int = 20, base_path: str = None):
         """
@@ -62,6 +73,8 @@ class CydcPreprocessor:
         self.base_path = base_path
         self.included_files: Set[str] = set()
         self.errors: List[PreprocessorError] = []
+        self.line_map: Dict[int, SourceLocation] = {}  # Maps output line -> original source location
+        self._output_line_num = 1  # Track current output line number
         
     def _normalize_path(self, filepath: str) -> str:
         """
@@ -111,12 +124,49 @@ class CydcPreprocessor:
                 filepath
             )
     
+    def _is_include_in_code_block(self, lines: List[str], line_idx: int, include_match) -> bool:
+        """
+        Check if an INCLUDE directive at the given line is inside a code block [[ ]].
+        
+        Args:
+            lines: All lines in the file
+            line_idx: Index of the line to check (0-based)
+            include_match: The regex match object for the INCLUDE directive
+            
+        Returns:
+            True if the INCLUDE is inside a code block, False otherwise
+        """
+        line = lines[line_idx]
+        include_pos = include_match.start()
+        
+        # Count [[ and ]] on this line before the INCLUDE
+        line_before_include = line[:include_pos]
+        
+        # Count opening and closing brackets on this line before INCLUDE
+        opens_before = len(self.CODE_OPEN.findall(line_before_include))
+        closes_before = len(self.CODE_CLOSE.findall(line_before_include))
+        
+        # Track nesting level from start of file
+        nesting_level = 0
+        
+        # Process all lines before this one
+        for i in range(line_idx):
+            opens = len(self.CODE_OPEN.findall(lines[i]))
+            closes = len(self.CODE_CLOSE.findall(lines[i]))
+            nesting_level += opens - closes
+        
+        # Add the brackets before INCLUDE on current line
+        nesting_level += opens_before - closes_before
+        
+        # INCLUDE is valid if we're inside a code block (nesting_level > 0)
+        return nesting_level > 0
+    
     def _process_file(
         self, 
         filepath: str, 
         depth: int = 0,
         parent_file: str = None
-    ) -> List[str]:
+    ) -> List[Tuple[str, SourceLocation]]:
         """
         Recursively process a file and its includes.
         
@@ -126,7 +176,7 @@ class CydcPreprocessor:
             parent_file: Path to the parent file (for relative includes)
             
         Returns:
-            List of processed lines
+            List of tuples (line_content, source_location)
             
         Raises:
             PreprocessorError: If processing fails
@@ -154,15 +204,26 @@ class CydcPreprocessor:
         # Get directory of current file for resolving relative includes
         current_dir = os.path.dirname(normalized_path)
         
+        # Get display name (basename for cleaner error messages)
+        display_name = os.path.basename(normalized_path)
+        
         # Process the file line by line
         result_lines = []
         lines = content.splitlines(keepends=True)
         
         for line_num, line in enumerate(lines, start=1):
-            # Check if this line is an include directive
-            match = self.INCLUDE_PATTERN.match(line)
+            # Check if this line contains an include directive
+            match = self.INCLUDE_PATTERN.search(line)
             
             if match:
+                # Validate that INCLUDE is inside a code block
+                if not self._is_include_in_code_block(lines, line_num - 1, match):
+                    raise PreprocessorError(
+                        f"INCLUDE directive must be inside [[ ]] code blocks",
+                        normalized_path,
+                        line_num
+                    )
+                
                 include_file = match.group(1)
                 
                 # Resolve the include path relative to current file's directory
@@ -172,10 +233,20 @@ class CydcPreprocessor:
                     include_path = include_file
                 
                 try:
+                    # Extract the part of the line before and after the INCLUDE directive
+                    line_before = line[:match.start()]
+                    line_after = line[match.end():]
+                    
+                    # Check if we're inside a code block (we validated this above)
+                    # We need to close the block before including, then reopen it after
+                    # to prevent nested [[ ]] blocks
+                    
+                    # Close the current code block before the include
+                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num)))
+                    
                     # Add a comment marker for debugging/tracing
-                    result_lines.append(
-                        f"// BEGIN INCLUDE: {include_file} (from {os.path.basename(normalized_path)}:{line_num})\n"
-                    )
+                    marker_line = f"/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n"
+                    result_lines.append((marker_line, SourceLocation(display_name, line_num)))
                     
                     # Recursively process the included file
                     included_content = self._process_file(
@@ -187,24 +258,26 @@ class CydcPreprocessor:
                     result_lines.extend(included_content)
                     
                     # Add end marker
-                    result_lines.append(
-                        f"// END INCLUDE: {include_file}\n"
-                    )
+                    end_marker = f"/* END INCLUDE: {include_file} */\n"
+                    result_lines.append((end_marker, SourceLocation(display_name, line_num)))
+                    
+                    # Reopen the code block after the include
+                    result_lines.append(("[[ /* Reopen block after INCLUDE */\n", SourceLocation(display_name, line_num)))
                     
                 except PreprocessorError as e:
                     # Add context about where the include was found
                     raise PreprocessorError(
-                        f"In file included from {os.path.basename(normalized_path)}:{line_num}: {e.message}",
+                        f"In file included from {display_name}:{line_num}: {e.message}",
                         e.filename,
                         e.line_num
                     )
             else:
-                # Regular line, just add it
-                result_lines.append(line)
+                # Regular line, add it with its source location
+                result_lines.append((line, SourceLocation(display_name, line_num)))
         
         return result_lines
     
-    def preprocess(self, filepath: str) -> str:
+    def preprocess(self, filepath: str) -> Tuple[str, Dict[int, SourceLocation]]:
         """
         Preprocess a source file, expanding all includes.
         
@@ -212,7 +285,8 @@ class CydcPreprocessor:
             filepath: Path to the main source file
             
         Returns:
-            Preprocessed source code as a string
+            Tuple of (preprocessed source code, line mapping dict)
+            line_map maps output line numbers (1-based) to SourceLocation
             
         Raises:
             PreprocessorError: If preprocessing fails
@@ -220,23 +294,59 @@ class CydcPreprocessor:
         # Reset state
         self.included_files.clear()
         self.errors.clear()
+        self.line_map.clear()
+        self._output_line_num = 1
         
         # Update base path if not set
         if self.base_path is None:
             self.base_path = os.path.dirname(os.path.abspath(filepath))
         
         try:
-            # Process the main file
-            processed_lines = self._process_file(filepath)
+            # Process the main file - returns list of (line, source_location) tuples
+            processed_lines_with_locs = self._process_file(filepath)
+            
+            # Build the output and line map
+            output_lines = []
+            for line_content, source_loc in processed_lines_with_locs:
+                # Record the mapping for this line
+                self.line_map[self._output_line_num] = source_loc
+                output_lines.append(line_content)
+                
+                # Count newlines in this content to track output line number
+                # (some content might have multiple lines)
+                newline_count = line_content.count('\n')
+                if newline_count > 0:
+                    # For multi-line content, map all lines to same source
+                    for i in range(1, newline_count):
+                        self._output_line_num += 1
+                        self.line_map[self._output_line_num] = source_loc
+                    self._output_line_num += 1
+                elif line_content:  # Non-empty content without newline
+                    self._output_line_num += 1
             
             # Join all lines into a single string
-            return ''.join(processed_lines)
+            result = ''.join(output_lines)
+            
+            return result, self.line_map.copy()
             
         except PreprocessorError as e:
             self.errors.append(e)
             raise
     
-    def preprocess_string(self, content: str, base_path: str = None) -> str:
+    def get_source_location(self, line_num: int) -> SourceLocation:
+        """
+        Get the original source location for a line in the preprocessed output.
+        
+        Args:
+            line_num: Line number in preprocessed output (1-based)
+            
+        Returns:
+            SourceLocation with original filename and line number,
+            or None if not found
+        """
+        return self.line_map.get(line_num)
+    
+    def preprocess_string(self, content: str, base_path: str = None) -> Tuple[str, Dict[int, SourceLocation]]:
         """
         Preprocess source code from a string.
         
@@ -245,7 +355,7 @@ class CydcPreprocessor:
             base_path: Base directory for resolving includes
             
         Returns:
-            Preprocessed source code
+            Tuple of (preprocessed source code, line mapping dict)
             
         Raises:
             PreprocessorError: If preprocessing fails
@@ -272,9 +382,9 @@ class CydcPreprocessor:
                 f.write(content)
             
             # Process the temp file
-            result = self.preprocess(temp_path)
+            result, line_map = self.preprocess(temp_path)
             
-            return result
+            return result, line_map
             
         finally:
             # Clean up temp file
@@ -284,7 +394,7 @@ class CydcPreprocessor:
                 pass
 
 
-def preprocess_file(filepath: str, max_depth: int = 20) -> str:
+def preprocess_file(filepath: str, max_depth: int = 20) -> Tuple[str, Dict[int, SourceLocation]]:
     """
     Convenience function to preprocess a single file.
     
@@ -293,10 +403,11 @@ def preprocess_file(filepath: str, max_depth: int = 20) -> str:
         max_depth: Maximum include nesting depth
         
     Returns:
-        Preprocessed source code
+        Tuple of (preprocessed source code, line mapping dict)
         
     Raises:
         PreprocessorError: If preprocessing fails
     """
     preprocessor = CydcPreprocessor(max_depth=max_depth)
     return preprocessor.preprocess(filepath)
+

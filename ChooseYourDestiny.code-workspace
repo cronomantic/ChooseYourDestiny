@@ -15,6 +15,10 @@
 			"/^cd tests; python -m pytest test_parser_smoke\\.py::TestParserSmokeTests::test_parse_goto -v$/": {
 				"approve": true,
 				"matchCommandLine": true
+			},
+			"/^python -m unittest tests\\.test_preprocessor -v$/": {
+				"approve": true,
+				"matchCommandLine": true
 			}
 		}
 	}

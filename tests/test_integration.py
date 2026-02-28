@@ -361,5 +361,126 @@ class TestIntegrationRegressionPrevention(unittest.TestCase):
             self.fail(f"Variable operations broken: {e}")
 
 
+class TestExamplesRegression(unittest.TestCase):
+    """Test all example programs to prevent regressions."""
+
+    def setUp(self):
+        """Initialize preprocessor and parser for each test."""
+        from cydc_preprocessor import CydcPreprocessor
+        self.preprocessor = CydcPreprocessor()
+        self.parser = CydcParser(strict_colon_mode=False)
+        self.parser.build()
+        
+        # Get the examples directory path
+        self.examples_dir = Path(__file__).parent.parent / "examples"
+    
+    def _test_example_file(self, file_path: Path):
+        """Helper method to test a single example file."""
+        try:
+            # Preprocess the file (handles INCLUDE directives)
+            preprocessed_text, line_map = self.preprocessor.preprocess(str(file_path))
+            
+            # Set line map for error reporting
+            self.parser.set_line_map(line_map)
+            
+            # Parse the preprocessed text
+            self.parser.errors = []
+            result = self.parser.parse(input=preprocessed_text)
+            
+            # Check for errors
+            if self.parser.errors:
+                error_msg = f"Errors in {file_path.name}:\n" + "\n".join(self.parser.errors)
+                self.fail(error_msg)
+            
+            self.assertIsNotNone(result, f"Parser returned None for {file_path.name}")
+            
+        except Exception as e:
+            self.fail(f"Failed to compile {file_path.name}: {e}")
+    
+    def test_include_demo(self):
+        """Test include_demo example (demonstrates INCLUDE directive)."""
+        main_file = self.examples_dir / "include_demo" / "main.cyd"
+        self.assertTrue(main_file.exists(), f"include_demo/main.cyd not found")
+        self._test_example_file(main_file)
+    
+    def test_blit(self):
+        """Test blit example."""
+        test_file = self.examples_dir / "blit" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_blit_island(self):
+        """Test blit_island example."""
+        test_file = self.examples_dir / "blit_island" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_cyd_presents(self):
+        """Test CYD_presents example."""
+        test_file = self.examples_dir / "CYD_presents" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_delerict(self):
+        """Test Delerict example."""
+        test_file = self.examples_dir / "Delerict" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_etpa_ejemplo(self):
+        """Test ETPA_ejemplo example."""
+        test_file = self.examples_dir / "ETPA_ejemplo" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_golden_axe_select_character(self):
+        """Test Golden_Axe_select_character example."""
+        test_file = self.examples_dir / "Golden_Axe_select_character" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_guess_the_number(self):
+        """Test guess_the_number example."""
+        test_file = self.examples_dir / "guess_the_number" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_input_test(self):
+        """Test input_test example."""
+        test_file = self.examples_dir / "input_test" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_multicolumn_menu(self):
+        """Test multicolumn_menu example."""
+        test_file = self.examples_dir / "multicolumn_menu" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_rocky_horror_show(self):
+        """Test Rocky_Horror_Show example."""
+        test_file = self.examples_dir / "Rocky_Horror_Show" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_scumm_16(self):
+        """Test SCUMM_16 example."""
+        test_file = self.examples_dir / "SCUMM_16" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_test_folder(self):
+        """Test test folder example."""
+        test_file = self.examples_dir / "test" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+    
+    def test_windows(self):
+        """Test windows example."""
+        test_file = self.examples_dir / "windows" / "test.cyd"
+        if test_file.exists():
+            self._test_example_file(test_file)
+
+
 if __name__ == "__main__":
     unittest.main()
