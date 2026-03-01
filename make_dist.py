@@ -140,6 +140,7 @@ def get_source_files():
     return [
         "cydc_cli.py",
         "cyd_chr_conv.py",
+        "cydc/cyd_i18n.py",
         "cydc/cydc.py",
         "cydc/cydc_codegen.py",
         "cydc/cydc_font.py",
