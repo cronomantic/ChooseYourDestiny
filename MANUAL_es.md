@@ -197,7 +197,7 @@ Y con esto ya podrías usar la herramienta en Linux.
 Este programa es el compilador que traduce el texto de la aventura a un fichero TAP o DSK. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
 ```batch
-cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
+cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
@@ -205,6 +205,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               {48k,128k,plus3} input.txt SJASMPLUS_PATH OUTPUT_PATH
 ```
 
+- **\-\-lang {en,es}**: Idioma para los mensajes de salida del compilador (Inglés o Español). El valor por defecto se auto-detecta desde la configuración regional del sistema o desde la variable de entorno CYD_LANG.
 - **\-h**: Muestra la ayuda
 - **\-l MIN_LENGTH**: La longitud mínima de las abreviaturas a buscar (por defecto, 3).
 - **\-L MAX_LENGTH**: La longitud máxima de las abreviaturas a buscar (por defecto, 30).
@@ -1284,6 +1285,8 @@ Para facilitar las cosas, se incluye un programa llamado `make_adventure.py` que
 
 El programa `make_adventure.py` buscará y comprimirá automáticamente los ficheros SCR que se atengan al formato de nombre establecido (número de 0 a 255 con 3 dígitos) dentro del directorio `.\IMAGES`. Lo mismo hará con los módulos que haya dentro del directorio `.\TRACKS` que cumplan el formato de nombre. Luego compilará el fichero `test.txt` y generará el fichero `tokens.json` con las abreviaturas, si no existiese previamente. Si se desea que se vuelva a generar el fichero de abreviaturas (es recomendable hacerlo cuando se nos esté agotando la memoria o estemos finalizando la aventura), simplemente borrándolo hará que el script indique al compilador lo genere de nuevo. Además buscará de forma automática si existe un fichero de efectos de sonido llamado `SFX.ASM` que debe generarse con **BeepFX**, y si existiese un fichero JSON con el juego de caracteres llamado `charset.json`, también lo utilizará.
 
+También admite la selección de idioma para los mensajes de salida. Puedes especificar un idioma con el parámetro `--lang {en,es}` o mediante la variable de entorno `CYD_LANG`.
+
 Este programa necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Ahora se detallan las peculiaridades en cada sistema operativo:
 
 ### Windows
@@ -1350,8 +1353,9 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 - Python integrado en Windows (sin necesidad de instalar Python por separado)
 - 26 opciones configurables incluyendo objetivos de compilación, rutas y acciones posteriores a la compilación
 - Persistencia de configuración (recordada entre sesiones)
-- Soporte completo de internacionalización (español incluido)
+- Soporte completo de internacionalización (Inglés y Español) con cambio de idioma en tiempo real mediante lista desplegable
 - Visualización en tiempo real del resultado de la compilación
+- Ocultar ventana de consola en Windows para un inicio limpio
 
 **Lanzando la GUI:**
 
@@ -1362,6 +1366,24 @@ make_adventure_gui.cmd
 
 **Linux/macOS:**
 ```bash
+./make_adventure_gui.sh
+```
+
+**Selección de Idioma:**
+
+La GUI admite idiomas Español e Inglés con detección automática de tu configuración regional. Puedes cambiar el idioma en cualquier momento usando la lista desplegable **Idioma** en la cabecera - todo el texto de la interfaz se actualizará inmediatamente. La preferencia de idioma se guarda y se restaura de forma automática.
+
+También puedes pre-establecer el idioma con la variable de entorno `CYD_LANG` antes de lanzar la GUI:
+
+```batch
+REM Windows
+set CYD_LANG=es
+make_adventure_gui.cmd
+```
+
+```bash
+# Linux/macOS
+export CYD_LANG=es
 ./make_adventure_gui.sh
 ```
 

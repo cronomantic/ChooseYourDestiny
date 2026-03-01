@@ -203,7 +203,7 @@ msgstr "¿Está seguro de que desea restablecer todos los ajustes a sus valores 
 
 #: make_adventure_gui.py:775
 msgid "Choose Your Destiny"
-msgstr "Elige tu Destino"
+msgstr "Choose Your Destiny"
 
 #: make_adventure_gui.py:793
 msgid "Project"

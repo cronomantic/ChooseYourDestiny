@@ -20,7 +20,7 @@
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys, os, gettext, argparse, json, re, copy, math
+import sys, os, argparse, json, re, copy, math
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -31,6 +31,7 @@ from cydc_preprocessor import CydcPreprocessor, PreprocessorError
 
 from cyd import *
 from cydc_utils import *
+from cyd_i18n import setup_i18n
 
 try:
     import asciibars

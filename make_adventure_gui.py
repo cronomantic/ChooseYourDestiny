@@ -41,7 +41,26 @@ import shutil
 import subprocess
 import threading
 import datetime
-import gettext
+
+# Hide console window on Windows after successful initialization
+def hide_console_window():
+    """Hide the console window on Windows after GUI starts successfully."""
+    if os.name == "nt":
+        try:
+            import ctypes
+            import ctypes.wintypes
+            
+            # Get console window handle
+            kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+            user32 = ctypes.WinDLL('user32', use_last_error=True)
+            
+            hwnd = kernel32.GetConsoleWindow()
+            if hwnd:
+                # SW_HIDE = 0
+                user32.ShowWindow(hwnd, 0)
+        except Exception:
+            # Silently fail - not critical if we can't hide console
+            pass
 
 if os.name == "nt":
     _embed_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "dist", "python")
@@ -60,12 +79,17 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, filedialog, messagebox, scrolledtext, colorchooser
 
+# Import i18n from dist/cydc or src/cydc/cydc depending on location
+try:
+    from cydc.cyd_i18n import setup_i18n, get_available_languages, set_language, get_language, _
+except ImportError:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'dist'))
+    from cydc.cyd_i18n import setup_i18n, get_available_languages, set_language, get_language, _
+
 
 # ── Internationalisation ──────────────────────────────────────────────────────
 _LOCALE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
-gettext.bindtextdomain("make_adventure_gui", _LOCALE_DIR)
-gettext.textdomain("make_adventure_gui")
-_ = gettext.gettext
+setup_i18n("make_adventure_gui", locale_dir=_LOCALE_DIR)
 
 
 # ── Version ────────────────────────────────────────────────────────────────────
@@ -655,6 +679,10 @@ class MakeAdventureGUI:
         self.paths = resolve_paths()
         self.compiling = False
         self._logo_photo = None  # prevent GC of PhotoImage
+        self.available_languages = get_available_languages(_LOCALE_DIR)
+        
+        # Detect current language (from environment or system locale)
+        self.current_language = get_language()
 
         # ── Create tk variables ────────────────────────────────────────────
         self.var_game_name = tk.StringVar()
@@ -695,6 +723,9 @@ class MakeAdventureGUI:
         self._build_ui()
         self._apply_appearance()
         self._set_window_icon()
+        
+        # Hide console window on Windows after successful GUI initialization
+        hide_console_window()
 
         # Save settings on close
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -753,6 +784,45 @@ class MakeAdventureGUI:
         self._save_settings()
         self.root.destroy()
 
+    def _on_language_change(self, event=None):
+        """Handle language change from dropdown."""
+        new_lang = self.lang_var.get()
+        if new_lang == self.current_language:
+            return
+        
+        self.current_language = new_lang
+        set_language(new_lang)
+        
+        # Refresh UI with new language
+        self._refresh_ui_text()
+
+    def _refresh_ui_text(self):
+        """Refresh all UI text after language change."""
+        # Update window title
+        self.root.title(_("Choose Your Destiny GUI"))
+        
+        # Update header titles
+        self.title_main.config(text=_("Choose Your Destiny"))
+        self.title_sub.config(text=_("Cross-platform adventure compiler"))
+        
+        # Update main buttons
+        self.btn_compile.config(text=_("▶  Compile"))
+        self.btn_clear_log.config(text=_("Clear Log"))
+        
+        # Update tab labels
+        for i, (tab_id, text) in enumerate([("settings", "Settings"), ("output", "Output"), ("advanced", "Advanced")]):
+            self.notebook.tab(i, text=_(text))
+        
+        # Update settings labels
+        if hasattr(self, 'lbl_adv_name'):
+            self.lbl_adv_name.config(text=_("Adventure Name:"))
+        if hasattr(self, 'lbl_target'):
+            self.lbl_target.config(text=_("Target Platform:"))
+        if hasattr(self, 'lbl_charset'):
+            self.lbl_charset.config(text=_("Character Set:"))
+        if hasattr(self, 'lbl_lang_select'):
+            self.lbl_lang_select.config(text=_("Language:"))
+
     # ── UI Construction ────────────────────────────────────────────────────
 
     def _build_ui(self):
@@ -774,20 +844,49 @@ class MakeAdventureGUI:
         title_frame = tk.Frame(header_inner, bg="#1a1a2e")
         title_frame.pack(side=tk.LEFT, padx=(0, 12), pady=6)
 
-        tk.Label(
+        self.title_main = tk.Label(
             title_frame,
             text=_("Choose Your Destiny"),
             font=("Helvetica", 16, "bold"),
             fg="#e0e0e0",
             bg="#1a1a2e",
-        ).pack(anchor=tk.W)
-        tk.Label(
+        )
+        self.title_main.pack(anchor=tk.W)
+        
+        self.title_sub = tk.Label(
             title_frame,
             text=f"Adventure Compiler — {PROGRAM_TITLE}",
             font=("Helvetica", 9),
             fg="#8888aa",
             bg="#1a1a2e",
-        ).pack(anchor=tk.W)
+        )
+        self.title_sub.pack(anchor=tk.W)
+
+        # ── Language selector (top right) ───────────────────────────────────
+        if len(self.available_languages) > 1:
+            lang_frame = tk.Frame(header_inner, bg="#1a1a2e")
+            lang_frame.pack(side=tk.RIGHT, padx=12, pady=6)
+
+            lang_label = tk.Label(
+                lang_frame,
+                text=_("Language:"),
+                font=("Helvetica", 9),
+                fg="#8888aa",
+                bg="#1a1a2e",
+            )
+            lang_label.pack(side=tk.LEFT, padx=(0, 6))
+
+            self.lang_var = tk.StringVar(value=self.current_language)
+            lang_dropdown = ttk.Combobox(
+                lang_frame,
+                textvariable=self.lang_var,
+                values=self.available_languages,
+                state="readonly",
+                width=4,
+                font=("Helvetica", 9),
+            )
+            lang_dropdown.pack(side=tk.LEFT)
+            lang_dropdown.bind("<<ComboboxSelected>>", self._on_language_change)
 
         # ── Main settings area ─────────────────────────────────────────────
         main_frame = ttk.Frame(self.root)

@@ -197,7 +197,7 @@ And with this you could already use the tool in Linux.
 This program is the compiler that translates the adventure text into a TAP or DSK file. In addition to compiling the adventure into a file that can be interpreted by the engine, it performs a search for the best abbreviations to reduce the size of the text.
 
 ```batch
-cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
+cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
@@ -205,6 +205,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               {48k,128k,plus3} input.txt SJASMPLUS_PATH OUTPUT_PATH
 ```
 
+- **\-\-lang {en,es}**: Language for compiler output messages (English or Spanish). Default is auto-detected from system locale or CYD_LANG environment variable.
 - **\-h**: Shows the help
 - **\-l MIN_LENGTH**: The minimum length of the abbreviations to search for (default 3).
 - **\-L MAX_LENGTH**: The maximum length of the abbreviations to search for (default 30).
@@ -1272,6 +1273,8 @@ To make things easier, a program called `make_adventure.py` is included that wil
 
 The `make_adventure.py` program will automatically search for and compress SCR files that conform to the established filename format (a 3-digit number from 0 to 255) in the `.\IMAGES` directory. It will do the same with any modules in the `.\TRACKS` directory that conform to the filename format. It will then compile the `test.txt` file and generate the `tokens.json` file with the abbreviations, if it doesn't already exist. If you want to regenerate the abbreviations file (it's recommended to do so when you're running out of memory or are finishing the adventure), simply deleting it will tell the compiler to regenerate it. It will also automatically search for a sound effects file called `SFX.ASM` that should be generated with **BeepFX**, and if a JSON file with the character set called `charset.json` exists, it will use that as well.
 
+It also supports language selection for output messages. You can specify a language with the `--lang {en,es}` parameter or by setting the `CYD_LANG` environment variable.
+
 This program needs the `dist` and `tools` directories with their contents to perform the process. The peculiarities of each operating system are detailed below:
 
 ### Windows version
@@ -1337,8 +1340,9 @@ For those who prefer a graphical interface instead of editing scripts or command
 - Embedded Python on Windows (no separate Python installation needed)
 - 26 configurable options including compilation targets, paths, and post-build actions
 - Settings persistence (remembered between sessions)
-- Full internationalization support (Spanish included)
+- Full internationalization support (English and Spanish) with runtime language switching via dropdown
 - Real-time compilation output display
+- Auto-hide console window on Windows for clean startup
 
 **Launching the GUI:**
 
@@ -1349,6 +1353,24 @@ make_adventure_gui.cmd
 
 **Linux/macOS:**
 ```bash
+./make_adventure_gui.sh
+```
+
+**Language Selection:**
+
+The GUI supports Spanish and English languages with automatic detection from your system locale. You can change the language at any time using the **Language** dropdown in the header - all UI text will update immediately. The language preference is saved and restored automatically.
+
+You can also pre-set the language with the `CYD_LANG` environment variable before launching:
+
+```batch
+REM Windows
+set CYD_LANG=es
+make_adventure_gui.cmd
+```
+
+```bash
+# Linux/macOS
+export CYD_LANG=es
 ./make_adventure_gui.sh
 ```
 

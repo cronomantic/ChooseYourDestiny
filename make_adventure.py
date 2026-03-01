@@ -29,9 +29,15 @@ from operator import itemgetter, attrgetter
 
 import sys
 import os
-import gettext
 import argparse
 import subprocess
+
+# Import i18n from dist/cydc or src/cydc/cydc depending on location
+try:
+    from cydc.cyd_i18n import setup_i18n, _
+except ImportError:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'dist'))
+    from cydc.cyd_i18n import setup_i18n, _
 
 
 def run_exec(exec_path, parameter_list=[], capture_output=False):
@@ -115,13 +121,11 @@ def main():
     exec = "make_adventure"
 
     if sys.version_info[0] < 3:  # Python 2
-        sys.exit(_("ERROR: Invalid python version"))
+        print("ERROR: Invalid python version")
+        sys.exit(1)
 
-    gettext.bindtextdomain(
-        exec, os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
-    )
-    gettext.textdomain(exec)
-    _ = gettext.gettext
+    # Initialize internationalization
+    setup_i18n(exec, locale_dir="locale")
 
     # setting paths
     curr_path = os.path.abspath(os.path.dirname(__file__))
@@ -146,6 +150,12 @@ def main():
 
     arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
 
+    arg_parser.add_argument(
+        "--lang",
+        choices=["en", "es"],
+        help=_("Language for output (English or Spanish)"),
+        default=None,
+    )
     arg_parser.add_argument(
         "-n",
         "--name",

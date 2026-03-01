@@ -45,9 +45,9 @@ IF NOT EXIST "%~dp0make_adventure_gui.py" (
     EXIT /B 1
 )
 
-REM Launch GUI with pythonw (no console window)
+REM Launch GUI with python.exe (console will be hidden by the script after successful init)
 ECHO Launching GUI...
-START "" "%~dp0dist\python\pythonw.exe" "%~dp0make_adventure_gui.py" %*
+"%~dp0dist\python\python.exe" "%~dp0make_adventure_gui.py" %*
 
 REM Check if launch was successful
 IF ERRORLEVEL 1 (
