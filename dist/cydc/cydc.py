@@ -20,7 +20,7 @@
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys, os, argparse, json, re, copy, math
+import sys, os, argparse, json, re, copy, math, gettext
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
