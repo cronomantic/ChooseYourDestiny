@@ -15,12 +15,15 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [CYDC (Compilador)](#cydc-compilador)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Sintaxis Básica](#sintaxis-básica)
+    - [Modo Colon Estricto (Enforced Colon Syntax)](#modo-colon-estricto-enforced-colon-syntax)
+    - [Directiva INCLUDE (Proyectos multi-archivo)](#directiva-include-proyectos-multi-archivo)
   - [Variables y expresiones numéricas](#variables-y-expresiones-numéricas)
   - [Control de flujo y expresiones condicionales](#control-de-flujo-y-expresiones-condicionales)
   - [Asignaciones e indirección](#asignaciones-e-indirección)
   - [Constantes](#constantes)
   - [Arrays o "secuencias"](#arrays-o-secuencias)
   - [Listado de comandos](#listado-de-comandos)
+    - [INCLUDE "ruta/al/archivo.cyd"](#include-rutaalarchivocyd)
     - [LABEL ID](#label-id)
     - [#ID](#id)
     - [DECLARE expression AS ID](#declare-expression-as-id)
@@ -125,9 +128,30 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Melodías Vortex Tracker](#melodías-vortex-tracker)
   - [Melodías WyzTracker](#melodías-wyztracker)
   - [Cómo generar una aventura](#cómo-generar-una-aventura)
+    - [make\_adventure.py (helper CLI)](#make_adventurepy-helper-cli)
     - [Windows](#windows)
+    - [Compilador GUI (make\_adventure\_gui v1.0.0)](#compilador-gui-make_adventure_gui-v100)
     - [Linux, BSDs](#linux-bsds)
   - [Ejemplos](#ejemplos)
+    - [Ejemplos Básicos](#ejemplos-básicos)
+      - [`examples\test` - Introducción al motor](#examplestest---introducción-al-motor)
+      - [`examples\multicolumn_menu` - Menús en múltiples columnas](#examplesmulticolumn_menu---menús-en-múltiples-columnas)
+      - [`examples\guess_the_number` - Juego de adivinanzas](#examplesguess_the_number---juego-de-adivinanzas)
+      - [`examples\input_test` - Entrada de teclado y arrays](#examplesinput_test---entrada-de-teclado-y-arrays)
+      - [`examples\windows` - Ventanas múltiples](#exampleswindows---ventanas-múltiples)
+    - [Ejemplos de Nivel Intermedio](#ejemplos-de-nivel-intermedio)
+      - [`examples\ETPA_ejemplo` - Libro "Elige Tu Propia Aventura"](#examplesetpa_ejemplo---libro-elige-tu-propia-aventura)
+      - [`examples\include_demo` - Organización multi-archivo](#examplesinclude_demo---organización-multi-archivo)
+    - [Ejemplos Avanzados de Gráficos](#ejemplos-avanzados-de-gráficos)
+      - [`examples\blit` - Introducción a BLIT](#examplesblit---introducción-a-blit)
+      - [`examples\blit_island` - Gráficos avanzados](#examplesblit_island---gráficos-avanzados)
+      - [`examples\Rocky_Horror_Show` - Animación de personajes](#examplesrocky_horror_show---animación-de-personajes)
+      - [`examples\CYD_presents` - Efectos visuales complejos](#examplescyd_presents---efectos-visuales-complejos)
+      - [`examples\Golden_Axe_select_character` - Selección dinámica con colores](#examplesgolden_axe_select_character---selección-dinámica-con-colores)
+    - [Ejemplos de Proyectos Completos](#ejemplos-de-proyectos-completos)
+      - [`examples\SCUMM_16` - Interfaz tipo SCUMM/LucasArts](#examplesscumm_16---interfaz-tipo-scummlucasarts)
+      - [`examples\Delerict` - Aventura completa con motor propio](#examplesdelerict---aventura-completa-con-motor-propio)
+    - [Cómo usar los ejemplos](#cómo-usar-los-ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
@@ -197,15 +221,15 @@ Y con esto ya podrías usar la herramienta en Linux.
 Este programa es el compilador que traduce el texto de la aventura a un fichero TAP o DSK. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
 ```batch
-cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
+cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
-              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
-              [-wyz] [-nl NUM_LINES] [-720]
-              {48k,128k,plus3} input.txt SJASMPLUS_PATH OUTPUT_PATH
+              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-code]
+              [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
+              [-wyz] [-il NUM_IMAGE_LINES] [-720]
+              {48k,128k,plus3} input.cyd SJASMPLUS_PATH OUTPUT_PATH
 ```
 
-- **\-\-lang {en,es}**: Idioma para los mensajes de salida del compilador (Inglés o Español). El valor por defecto se auto-detecta desde la configuración regional del sistema o desde la variable de entorno CYD_LANG.
 - **\-h**: Muestra la ayuda
 - **\-l MIN_LENGTH**: La longitud mínima de las abreviaturas a buscar (por defecto, 3).
 - **\-L MAX_LENGTH**: La longitud máxima de las abreviaturas a buscar (por defecto, 30).
@@ -223,9 +247,12 @@ cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_L
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
+- **\-code**: Muestra el bytecode generado.
+- **\-\-no-strict-colons**: Permite sintaxis antigua sin separadores `:` entre sentencias en una misma línea.
+- **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
-- **\-nl NUM_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
+- **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
 - **\-720**: En caso de usar el formato Plus3, se usará una imagen de disco de 720 Kb en lugar del tamaño estándar de 180 Kb.
 
 -**{48k,128k,plus3}**: Modelo de Spectrum a emplear:
@@ -369,6 +396,23 @@ cydc_cli.py --no-strict-colons 48k entrada.cyd sjasmplus salida
 - Los saltos de línea separan automáticamente las declaraciones, así que los dos puntos solo son necesarios cuando hay múltiples comandos en la misma línea
 - Los dos puntos son opcionales con el parámetro `--no-strict-colons` para compatibilidad retroactiva
 - Este cambio mejora la legibilidad del código y previene ambigüedades en el análisis
+
+### Directiva INCLUDE (Proyectos multi-archivo)
+
+El compilador permite dividir aventuras grandes en varios archivos fuente usando `INCLUDE`.
+
+**Sintaxis:**
+```cyd
+[[ INCLUDE "capitulos/capitulo1.cyd" ]]
+```
+
+**Reglas y comportamiento:**
+- `INCLUDE` se procesa en tiempo de compilación por el preprocesador.
+- La directiva debe estar dentro de bloques de código `[[ ]]`.
+- Las rutas relativas se resuelven respecto al archivo que contiene la directiva.
+- Se admiten inclusiones anidadas hasta 20 niveles.
+- Las inclusiones circulares se detectan y se reportan como error.
+- Un archivo incluido puede incluir otros archivos.
 
 ---
 
@@ -679,6 +723,10 @@ Antes de describir los comandos, vamos a hablar resumidamente de la leyenda util
 ---
 
 Este es listado completo de comandos:
+
+### INCLUDE "ruta/al/archivo.cyd"
+
+Directiva de compilación que inserta otro archivo `.cyd` en el punto actual. Debe usarse dentro de bloques `[[ ]]`. Se resuelve antes del parseo, admite inclusiones anidadas y previene referencias circulares.
 
 ### LABEL ID
 
@@ -1219,7 +1267,7 @@ Es un listado de registros con los siguientes campos:
 - `num_lines` : Indica el número de líneas a incluir en el fichero comprimido. El mínimo es 1 y el máximo (pantalla completa) es 192.
 - `force_mirror`: Con valor `true`, forzamos a que la imagen se considere simétrica. Esto hará que se descarte la mitad derecha de la imagen y que cuando se descomprima em memoria, se dibuje en su lugar la mitad izquierda reflejada. En otro caso, este campo debe tener el valor `false`.
 
-Debemos indicar en el JSON tantos registros como imágenes queramos definir el comportamiento. Con aquellas imágenes que no estén definidas en el fichero `images.json`, se tratarán con el comportamiento normal, el cual es usar el número de líneas definidas con el parámetro `-nl` o 192 por defecto, y usar el espejado sólo en aquellas imágenes detectadas como simétricas.
+Debemos indicar en el JSON tantos registros como imágenes queramos definir el comportamiento. Con aquellas imágenes que no estén definidas en el fichero `images.json`, se tratarán con el comportamiento normal, el cual es usar el número de líneas definidas con el parámetro `-il` o 192 por defecto, y usar el espejado sólo en aquellas imágenes detectadas como simétricas.
 
 Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un 'buffer' la imagen número n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el 'buffer'. Cualquier operación con una imagen requiere su carga previa en dicho 'buffer'. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera para la carga desde el disco , además de cierto tiempo para realizar la descompresión de la imagen tanto en cinta como en disco. Por eso es recomendable realizar este comando en un momento adecuado, por ejemplo hacerlo al iniciar un capítulo. Si intentamos cargar una imagen que no exista, recibiremos un error 1, y si se intenta cargar una imagen cuyo fichero no existe en disco, se generará el error de disco 23.
 
@@ -1289,6 +1337,25 @@ También admite la selección de idioma para los mensajes de salida. Puedes espe
 
 Este programa necesita los directorios `dist` y `tools` con su contenido para realizar el proceso. Ahora se detallan las peculiaridades en cada sistema operativo:
 
+### make_adventure.py (helper CLI)
+
+`make_adventure.py` es un wrapper de ayuda sobre `cydc_cli.py` que estandariza rutas del proyecto y automatiza el manejo de tokens.
+
+```batch
+make_adventure.py [opciones] {48k,128k,plus3} [SJASMPLUS_PATH]
+```
+
+Opciones principales:
+- `--lang {en,es}`: Idioma de salida para los mensajes del helper.
+- `-n, --name NAME`: Nombre base de la aventura (espera `NAME.cyd`, por defecto `test`).
+- `-o, --output-path OUTPUT_PATH`: Directorio para los ficheros de salida.
+- `-img, --images-path`, `-trk, --tracks-path`, `-sfx, --sfx-asm-file`, `-scr, --load-scr-file`.
+- `-tok, --tokens-file`: Ruta de tokens. Si no existe, usa `-T` automáticamente; si existe, usa `-t`.
+- `-chr, --charset-file`: Ruta del JSON de caracteres (se usa si existe).
+- `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
+
+Nota: tras una compilación `plus3` correcta, limpia automáticamente los ficheros temporales `SCRIPT.DAT`, `DISK` y `CYD.BIN`.
+
 ### Windows
 
 Como ejemplo se ha incluido el fichero `make_adv.cmd` en la raíz del repositorio, que compilará la aventura de muestra incluida en el fichero `test.cyd`.
@@ -1325,6 +1392,9 @@ SET RUN_EMULATOR=none
 REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
 SET BACKUP_CYD=no
 
+REM Maximum number of backup files to keep (0 = unlimited)
+SET BACKUP_MAX_FILES=0
+
 REM --------------------------------------
 ```
 
@@ -1338,11 +1408,12 @@ REM --------------------------------------
 - La variable `CYDC_EXTRA_PARAMS` se usa para añadir parámetros extra en la llamada al compilador [cydc](#cydc-compilador).
 - La variable `RUN_EMULATOR` indica si queremos que se ejecute el programa compilado bajo un emulador con los siguientes valores posibles:
   -- none: Si no queremos que haga esto.
-  -- internal: Ejecuta el fichero compilado bajo Zesarux que debe estar dentro del directorio `.\tools\zesarux\`.
+  -- internal: Ejecuta el fichero compilado bajo ZEsarUX en `.\tools\ZEsarUX_win-11.0\`.
   -- default: Si la extensión del fichero está asociada bajo Windows con otro emulador, lo ejecutará con éste.
 - La variable `BACKUP_CYD` con el valor `yes` hace una copia de seguridad del fichero actual dentro del directorio `.\BACKUP`. Cada copia añade al nombre del fichero la fecha en la cual se creó.
+- La variable `BACKUP_MAX_FILES` limita cuántas copias se conservan por juego (`0` significa ilimitadas).
 
-El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en de la carpeta `.\tools\zesarux`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
+El guión producirá un fichero DSK o TAP (dependiendo del formato seleccionado en `TARGET`) que podrás ejecutar con tu emulador favorito. Pero si deseas acelerar más el trabajo, si te descargas [Zesarux](https://github.com/chernandezba/zesarux) y lo instalas en la carpeta `.\tools\ZEsarUX_win-11.0`, tras la compilación se ejecutará automáticamente con las opciones adecuadas.
 
 ### Compilador GUI (make_adventure_gui v1.0.0)
 
@@ -1392,8 +1463,8 @@ export CYD_LANG=es
 | Categoría | Opciones |
 |-----------|----------|
 | **Proyecto** | Nombre del juego, Objetivo (48k/128k/plus3) |
-| **Rutas** | Directorio de salida, Ruta de imágenes, Ruta de pistas, Archivo SFX, Pantalla de carga, Archivo de tokens, Conjunto de caracteres |
-| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Trimizar código intérprete, Mostrar bytecode, Modo colon estricto, Soporte WyzTracker, Disco 720KB |
+| **Rutas** | Directorio de salida, Ruta de imágenes, Ruta de pistas, Archivo SFX, Pantalla de carga, Archivo de tokens, Conjunto de caracteres, Ejecutable de SjASMPlus |
+| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Dividir textos entre bancos, Trimizar código intérprete, Mostrar bytecode, Compatibilidad de modo colon, Pausa tras carga, Soporte WyzTracker, Disco 720KB |
 | **Post-Compilación** | Ejecutar emulador después de compilar, Respaldar archivo CYD |
 | **Apariencia** | Tamaño de fuente, Familia/tamaño/colores de fuente de registro |
 
@@ -1424,6 +1495,21 @@ LOAD_SCR="./IMAGES/LOAD.scr"
 #
 # Parameters for compiler
 CYDC_EXTRA_PARAMS=
+
+# Run emulator after successful compilation (none/internal/custom)
+RUN_EMULATOR="none"
+
+# Custom emulator command (used when RUN_EMULATOR=custom)
+CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
+
+# Path to ZEsarUX (used when RUN_EMULATOR=internal)
+ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+
+# Backup CYD file after compilation (yes/no)
+BACKUP_CYD="no"
+
+# Maximum number of backup files to keep (0 = unlimited)
+BACKUP_MAX_FILES=0
 # --------------------------------------
 ```
 
@@ -1434,6 +1520,10 @@ CYDC_EXTRA_PARAMS=
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
+- `RUN_EMULATOR` admite `none`, `internal` (ZEsarUX) o `custom`.
+- `CUSTOM_EMULATOR_CMD` se usa cuando `RUN_EMULATOR=custom`.
+- `ZESARUX_PATH` define la ruta del ejecutable para el modo `internal`.
+- `BACKUP_CYD` y `BACKUP_MAX_FILES` controlan la generación y rotación de copias de seguridad.
 
 ## Ejemplos
 
@@ -1697,44 +1787,44 @@ La aplicación puede generar errores en tiempo de ejecución. Los errores son de
 
 Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
 
-- Error 1: El trozo accedido no existe. (Se intenta acceder a un fragmento no existente en el índice)
-- Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
-- Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION` declarada.
-- Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
-- Error 5: No hay un módulo de música cargado para reproducir.
-- Error 6: Código de instrucción inválido.
-- Error 7: Acceso a posición del array fuera del rango.
-- Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
+- System Error 1: El recurso accedido no existe. Es debido a que se ejecuta PICTURE o TRACK con un índice que no existe en la aventura, debido a que no se ha cargado la imagen o pista correspondiente al compilar. También sucede cuando se hace un RETURN sin hacer un GOSUB previo.
+- System Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
+- System Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION` declarada.
+- System Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
+- System Error 5: No hay un módulo de música cargado para reproducir.
+- System Error 6: Código de instrucción inválido.
+- System Error 7: Acceso a posición del array fuera del rango.
+- System Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
 
-- Error 0: Drive not ready
-- Error 1: Disk is write protected
-- Error 2: Seek fail
-- Error 3: CRC data error
-- Error 4: No data
-- Error 5: Missing address mark
-- Error 6: Unrecognised disk format
-- Error 7: Unknown disk error
-- Error 8: Disk changed whilst +3DOS was using it
-- Error 9: Unsuitable media for drive
-- Error 20: Bad filename
-- Error 21: Bad parameter
-- Error 22: Drive not found
-- Error 23: File not found
-- Error 24: File already exists
-- Error 25: End of file
-- Error 26: Disk full
-- Error 27: Directory full
-- Error 28: Read-only file
-- Error 29: File number not open (or open with wrong access)
-- Error 30: Access denied (file is in use already)
-- Error 31: Cannot rename between drives
-- Error 32: Extent missing (which should be there)
-- Error 33: Uncached (software error)
-- Error 34: File too big (trying to read or write past 8 megabytes)
-- Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
-- Error 36: Drive in use (trying to re-map or remove a drive with files open)
+- Disk Error 0: Drive not ready
+- Disk Error 1: Disk is write protected
+- Disk Error 2: Seek fail
+- Disk Error 3: CRC data error
+- Disk Error 4: No data
+- Disk Error 5: Missing address mark
+- Disk Error 6: Unrecognised disk format
+- Disk Error 7: Unknown disk error
+- Disk Error 8: Disk changed whilst +3DOS was using it
+- Disk Error 9: Unsuitable media for drive
+- Disk Error 20: Bad filename
+- Disk Error 21: Bad parameter
+- Disk Error 22: Drive not found
+- Disk Error 23: File not found
+- Disk Error 24: File already exists
+- Disk Error 25: End of file
+- Disk Error 26: Disk full
+- Disk Error 27: Directory full
+- Disk Error 28: Read-only file
+- Disk Error 29: File number not open (or open with wrong access)
+- Disk Error 30: Access denied (file is in use already)
+- Disk Error 31: Cannot rename between drives
+- Disk Error 32: Extent missing (which should be there)
+- Disk Error 33: Uncached (software error)
+- Disk Error 34: File too big (trying to read or write past 8 megabytes)
+- Disk Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
+- Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
 La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 

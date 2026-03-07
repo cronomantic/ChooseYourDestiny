@@ -75,7 +75,17 @@ class CydcLexer(object):
         self.subtitute_chars = {
             k: v for (k, v) in zip(subtitute_chars_keys, subtitute_chars_values)
         }
-        subtitute_chars_keys = [8212, 8216, 8217, 0x02F5, 0x02F6, 0x030B, 0x030F]
+        subtitute_chars_keys = [
+            8212,
+            8216,
+            8217,
+            0x02F5,
+            0x02F6,
+            0x030B,
+            0x030F,
+            0x00FD,
+            0x00DD,
+        ]
         subtitute_chars_values = [
             c.decode("iso-8859-15")
             for c in (
@@ -86,15 +96,15 @@ class CydcLexer(object):
                 b"\x22",
                 b"\x22",
                 b"\x22",
+                b"\x79",
+                b"\x59",
             )
         ]
         self.unicode_subtitute_chars = {
             k: v for (k, v) in zip(subtitute_chars_keys, subtitute_chars_values)
         }
 
-    states = (
-        ("rawtext", "exclusive"),
-    )
+    states = (("rawtext", "exclusive"),)
 
     reserved = {
         "END": "END",
@@ -264,7 +274,7 @@ class CydcLexer(object):
 
     # --- RAWTEXT state: accumulate raw text, ignore code keywords ---
     t_rawtext_ignore = " \t"
-    
+
     def t_rawtext_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
@@ -299,10 +309,10 @@ class CydcLexer(object):
     t_RCARET = r"\]"
     t_LCURLY = r"\{"
     t_RCURLY = r"\}"
-    
+
     # Ignored characters in code mode
     t_INITIAL_ignore = " \t"
-    
+
     def t_INITIAL_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
@@ -349,12 +359,14 @@ class CydcLexer(object):
         return t
 
     def t_INITIAL_error(self, t):
-        self.errors.append({
-            "line": t.lexer.lineno,
-            "column": 0,
-            "char": t.value[0],
-            "message": "Illegal character",
-        })
+        self.errors.append(
+            {
+                "line": t.lexer.lineno,
+                "column": 0,
+                "char": t.value[0],
+                "message": "Illegal character",
+            }
+        )
         t.lexer.skip(1)
 
     # EOF handling in rawtext state - emit remaining text
@@ -368,12 +380,14 @@ class CydcLexer(object):
             return None
 
     def t_error(self, t):
-        self.errors.append({
-            "line": t.lexer.lineno,
-            "column": 0,
-            "char": t.value[0],
-            "message": "Illegal character",
-        })
+        self.errors.append(
+            {
+                "line": t.lexer.lineno,
+                "column": 0,
+                "char": t.value[0],
+                "message": "Illegal character",
+            }
+        )
         t.lexer.skip(1)  # just skip chars
 
     # Build the lexer
@@ -438,12 +452,14 @@ class CydcLexer(object):
                 line += 1
             elif ord(char) > 127:
                 errors.append((line, pos, char))
-                self.errors.append({
-                    "line": line,
-                    "column": pos,
-                    "char": char,
-                    "message": "Undefined codification error",
-                })
+                self.errors.append(
+                    {
+                        "line": line,
+                        "column": pos,
+                        "char": char,
+                        "message": "Undefined codification error",
+                    }
+                )
                 pos += 1
             else:
                 pos += 1
