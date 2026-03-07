@@ -438,7 +438,7 @@ Examples:
     )
 
     parser.add_argument(
-        "--skip-doc-sync",
+        "--do-doc-sync",
         action="store_true",
         help="Skip syncing MANUAL_en.md/MANUAL_es.md from sibling wiki repository",
     )
@@ -462,11 +462,11 @@ Examples:
     print(f"Target platform(s): {', '.join(platforms)}")
     print()
 
-    if not args.skip_doc_sync:
+    if args.do_doc_sync:
         sync_wiki_manuals(current_path)
         print()
     else:
-        print("Skipping manual sync (--skip-doc-sync)")
+        print("Skipping manual sync (--do-doc-sync)")
         print()
     
     # Prepare source files and translations (once for all platforms)

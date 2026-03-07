@@ -15,12 +15,15 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [CYDC (Compiler)](#cydc-compiler)
   - [CYD Character Set Converter](#cyd-character-set-converter)
   - [Basic Syntax](#basic-syntax)
+    - [Strict Colon Mode (Syntax Enforcement)](#strict-colon-mode-syntax-enforcement)
+    - [INCLUDE Directive (Multi-file Projects)](#include-directive-multi-file-projects)
   - [Variables and Numeric Expressions](#variables-and-numeric-expressions)
   - [Flow control and conditional expressions](#flow-control-and-conditional-expressions)
   - [Assignments and indirection](#assignments-and-indirection)
   - [Constants](#constants)
   - [Arrays or "sequences"](#arrays-or-sequences)
   - [List of commands](#list-of-commands)
+    - [INCLUDE "path/to/file.cyd"](#include-pathtofilecyd)
     - [LABEL ID](#label-id)
     - [#ID](#id)
     - [DECLARE expression AS ID](#declare-expression-as-id)
@@ -90,6 +93,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [PUTATTR varexpression AT varexpression, varexpression](#putattr-varexpression-at-varexpression-varexpression)
     - [GETATTR (varexpression, varexpression)](#getattr-varexpression-varexpression)
     - [ATTRVAL (expression COMMA expression COMMA expression COMMA expression)](#attrval-expression-comma-expression-comma-expression-comma-expression)
+    - [ATTRMASK (expression COMMA expression COMMA expression COMMA expression)](#attrmask-expression-comma-expression-comma-expression-comma-expression)
     - [RANDOM(expression)](#randomexpression)
     - [RANDOM()](#random)
     - [RANDOM(expression, expression)](#randomexpression-expression)
@@ -124,9 +128,30 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Vortex Tracker Music](#vortex-tracker-music)
   - [WyzTracker Music](#wyztracker-music)
   - [How to generate an adventure](#how-to-generate-an-adventure)
+    - [make_adventure.py (CLI helper)](#make_adventurepy-cli-helper)
     - [Windows version](#windows-version)
+    - [GUI Compiler (make\_adventure\_gui v1.0.0)](#gui-compiler-make_adventure_gui-v100)
     - [Linux, BSDs and Unices version](#linux-bsds-and-unices-version)
   - [Examples](#examples)
+    - [Basic Examples](#basic-examples)
+      - [`examples\test` - Engine Introduction](#examplestest---engine-introduction)
+      - [`examples\multicolumn_menu` - Multi-column Menus](#examplesmulticolumn_menu---multi-column-menus)
+      - [`examples\guess_the_number` - Guessing Game](#examplesguess_the_number---guessing-game)
+      - [`examples\input_test` - Keyboard Input and Arrays](#examplesinput_test---keyboard-input-and-arrays)
+      - [`examples\windows` - Multiple Windows](#exampleswindows---multiple-windows)
+    - [Intermediate Examples](#intermediate-examples)
+      - [`examples\ETPA_ejemplo` - "Choose Your Own Adventure" Book](#examplesetpa_ejemplo---choose-your-own-adventure-book)
+      - [`examples\include_demo` - Multi-file Organization](#examplesinclude_demo---multi-file-organization)
+    - [Advanced Graphics Examples](#advanced-graphics-examples)
+      - [`examples\blit` - Introduction to BLIT](#examplesblit---introduction-to-blit)
+      - [`examples\blit_island` - Advanced Graphics](#examplesblit_island---advanced-graphics)
+      - [`examples\Rocky_Horror_Show` - Character Animation](#examplesrocky_horror_show---character-animation)
+      - [`examples\CYD_presents` - Complex Visual Effects](#examplescyd_presents---complex-visual-effects)
+      - [`examples\Golden_Axe_select_character` - Dynamic Selection with Colors](#examplesgolden_axe_select_character---dynamic-selection-with-colors)
+    - [Complete Project Examples](#complete-project-examples)
+      - [`examples\SCUMM_16` - SCUMM/LucasArts-style Interface](#examplesscumm_16---scummlucasarts-style-interface)
+      - [`examples\Delerict` - Complete Adventure with Custom Engine](#examplesdelerict---complete-adventure-with-custom-engine)
+    - [How to Use the Examples](#how-to-use-the-examples)
   - [Character set](#character-set)
   - [Error codes](#error-codes)
   - [Acknowledgements](#acknowledgements)
@@ -197,15 +222,15 @@ And with this you could already use the tool in Linux.
 This program is the compiler that translates the adventure text into a TAP or DSK file. In addition to compiling the adventure into a file that can be interpreted by the engine, it performs a search for the best abbreviations to reduce the size of the text.
 
 ```batch
-cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
+cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
-              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim]
-              [-wyz] [-nl NUM_LINES] [-720]
-              {48k,128k,plus3} input.txt SJASMPLUS_PATH OUTPUT_PATH
+              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-code]
+              [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
+              [-wyz] [-il NUM_IMAGE_LINES] [-720]
+              {48k,128k,plus3} input.cyd SJASMPLUS_PATH OUTPUT_PATH
 ```
 
-- **\-\-lang {en,es}**: Language for compiler output messages (English or Spanish). Default is auto-detected from system locale or CYD_LANG environment variable.
 - **\-h**: Shows the help
 - **\-l MIN_LENGTH**: The minimum length of the abbreviations to search for (default 3).
 - **\-L MAX_LENGTH**: The maximum length of the abbreviations to search for (default 30).
@@ -223,9 +248,12 @@ cydc_cli.py [-h] [--lang {en,es}] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_L
 - **\-v**: Verbose mode, gives more information about the process.
 - **\-V**: Indicates the version of the program.
 - **\-trim**: Removes code from commands that are not used in the adventure to make the interpreter smaller.
+- **\-code**: Shows the generated bytecode.
+- **\-\-no-strict-colons**: Allows old syntax without `:` separators between statements on the same line.
+- **\-\-max-errors MAX_ERRORS**: Maximum number of parser/preprocessor errors to report before stopping (default 20).
 - **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
 - **\-wyz**: Use WyzTracker music type instead of Vortex Tracker.
-- **\-nl NUM_LINES**: Number of lines to use in image files (default 192).
+- **\-il NUM_IMAGE_LINES**: Number of lines to use in image files (default 192).
 - **\-720**: If using the Plus3 format, a 720 KB disk image will be used instead of the standard 180 KB size.
 
 -**{48k,128k,plus3}**: Spectrum model to be used:
@@ -367,6 +395,23 @@ cydc_cli.py --no-strict-colons 48k input.cyd sjasmplus output
 - Line breaks automatically separate statements, so colons are only needed when multiple commands are on the same line
 - Colons are optional with the `--no-strict-colons` flag for backwards compatibility
 - This change improves code readability and prevents parsing ambiguities
+
+### INCLUDE Directive (Multi-file Projects)
+
+The compiler supports splitting large adventures into multiple source files using `INCLUDE`.
+
+**Syntax:**
+```cyd
+[[ INCLUDE "chapters/chapter1.cyd" ]]
+```
+
+**Rules and behavior:**
+- `INCLUDE` is processed at compile-time by the preprocessor.
+- The directive must be inside `[[ ]]` code blocks.
+- Paths are relative to the file containing the directive.
+- Nested includes are supported up to 20 levels.
+- Circular includes are detected and reported as errors.
+- Included files can include other files.
 
 ---
 
@@ -676,6 +721,10 @@ Before describing the commands, let's briefly discuss the legend used:
 ---
 
 Here is the full list of commands:
+
+### INCLUDE "path/to/file.cyd"
+
+Compile-time directive that inserts another `.cyd` file in the current source. It must be used inside `[[ ]]` blocks. It is resolved before parsing, supports nested includes, and prevents circular references.
 
 ### LABEL ID
 
@@ -1207,7 +1256,7 @@ It is a list of records with the following fields:
 - `num_lines`: Indicates the number of lines to include in the compressed file. The minimum is 1 and the maximum (full screen) is 192.
 - `force_mirror`: With a value of `true`, we force the image to be considered symmetrical. This will cause the right half of the image to be discarded, and when it is decompressed in memory, the mirrored left half will be drawn in its place. Otherwise, this field must be set to `false`.
 
-We must specify in the JSON as many records as images we want to define the behavior. Images not defined in the `images.json` file will be treated with normal behavior, which is to use the number of lines defined with the `-nl` parameter, or 192 by default, and to use mirroring only for images detected as symmetrical.
+We must specify in the JSON as many records as images we want to define the behavior. Images not defined in the `images.json` file will be treated with normal behavior, which is to use the number of lines defined with the `-il` parameter, or 192 by default, and to use mirroring only for images detected as symmetrical.
 
 There are two commands required to display an image: the `PICTURE n` command will load image number n into a buffer. That is, if you type `PICTURE 1`, it will load the `001.CSC` file into the buffer. Any operation on an image requires first loading it into the buffer. This is useful for controlling when the image should be loaded, as it will require waiting for the image to load from disk, in addition to allowing some time to decompress the image on both tape and disk. Therefore, it is recommended to run this command at an appropriate time, for example, at the start of a chapter. If we try to load an image that doesn't exist, we'll receive an error 1, and if we try to load an image whose file doesn't exist on disk, we'll generate a disk error 23.
 
@@ -1277,6 +1326,25 @@ It also supports language selection for output messages. You can specify a langu
 
 This program needs the `dist` and `tools` directories with their contents to perform the process. The peculiarities of each operating system are detailed below:
 
+### make_adventure.py (CLI helper)
+
+`make_adventure.py` is a helper wrapper around `cydc_cli.py` that standardizes project paths and automates token handling.
+
+```batch
+make_adventure.py [options] {48k,128k,plus3} [SJASMPLUS_PATH]
+```
+
+Main options:
+- `--lang {en,es}`: Output language for helper messages.
+- `-n, --name NAME`: Adventure base name (expects `NAME.cyd`, default `test`).
+- `-o, --output-path OUTPUT_PATH`: Directory for output files.
+- `-img, --images-path`, `-trk, --tracks-path`, `-sfx, --sfx-asm-file`, `-scr, --load-scr-file`.
+- `-tok, --tokens-file`: Token file path. If it does not exist, `-T` is used automatically; if it exists, `-t` is used.
+- `-chr, --charset-file`: Character set JSON path (used if found).
+- `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
+
+Note: after successful `plus3` builds, temporary files `SCRIPT.DAT`, `DISK`, and `CYD.BIN` are cleaned automatically.
+
 ### Windows version
 
 As an example, the file `make_adv.cmd` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
@@ -1313,6 +1381,9 @@ SET RUN_EMULATOR=none
 REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
 SET BACKUP_CYD=no
 
+REM Maximum number of backup files to keep (0 = unlimited)
+SET BACKUP_MAX_FILES=0
+
 REM --------------------------------------
 ```
 
@@ -1325,11 +1396,12 @@ REM --------------------------------------
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
 - The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
 -- none: If we do not want it to do this.
--- internal: Executes the compiled file under Zesarux which must be inside the `.\tools\zesarux\` directory.
+-- internal: Executes the compiled file under ZEsarUX in `.\tools\ZEsarUX_win-11.0\`.
 -- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
+- The variable `BACKUP_MAX_FILES` limits how many backups are kept per game (`0` means unlimited).
 
-The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\zesarux` folder, after compilation it will run automatically with the appropriate options.
+The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\ZEsarUX_win-11.0` folder, after compilation it will run automatically with the appropriate options.
 
 ### GUI Compiler (make_adventure_gui v1.0.0)
 
@@ -1379,8 +1451,8 @@ export CYD_LANG=es
 | Category | Options |
 |----------|---------|
 | **Project** | Game name, Target (48k/128k/plus3) |
-| **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set |
-| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Trim interpreter code, Show bytecode, Strict colon mode, WyzTracker support, 720KB disk |
+| **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set, SjASMPlus executable |
+| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Strict colon compatibility, Pause-after-load, WyzTracker support, 720KB disk |
 | **Post-Build** | Run emulator after compilation, Backup CYD file |
 | **Appearance** | Font size, Log font family/size, Log text/background colors |
 
@@ -1411,6 +1483,21 @@ LOAD_SCR="./LOAD.scr"
 #
 # Parameters for compiler
 CYDC_EXTRA_PARAMS=
+
+# Run emulator after successful compilation (none/internal/custom)
+RUN_EMULATOR="none"
+
+# Custom emulator command (used when RUN_EMULATOR=custom)
+CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
+
+# Path to ZEsarUX (used when RUN_EMULATOR=internal)
+ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+
+# Backup CYD file after compilation (yes/no)
+BACKUP_CYD="no"
+
+# Maximum number of backup files to keep (0 = unlimited)
+BACKUP_MAX_FILES=0
 # --------------------------------------
 ```
 
@@ -1420,6 +1507,10 @@ CYDC_EXTRA_PARAMS=
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
+- `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.
+- `CUSTOM_EMULATOR_CMD` is used when `RUN_EMULATOR=custom`.
+- `ZESARUX_PATH` defines the emulator executable path for `internal` mode.
+- `BACKUP_CYD` and `BACKUP_MAX_FILES` control automatic backup generation and retention.
 
 ## Examples
 
@@ -1683,44 +1774,44 @@ The application may generate errors at runtime. There are two types of errors, d
 
 Engine errors are, as their name indicates, errors that occur when the engine detects an anomalous situation. They are the following:
 
-- Error 1: The accessed chunk does not exist. (An attempt is made to access a chunk that does not exist in the index)
-- Error 2: Too many options have been created, the limit of possible options has been exceeded.
-- Error 3: There are no options available, a `CHOOSE` command has been launched without having any `OPTION` before.
-- Error 4: The file with the music module to load is too large, it must be less than 16Kib.
-- Error 5: There is no music module loaded to play.
-- Error 6: Invalid instruction code.
-- Error 7: Access to array position out of range.
-- Error 8: Missing option. When scrolling, the declared options shift upwards. If one of them goes over the top of the margins, this error is generated.
+- System Error 1: The accessed resource does not exist. This is because PICTURE or TRACK is being executed with an index that does not exist in the adventure, since the corresponding image or track was not loaded during compilation. It also happens when a RETURN is executed without a prior GOSUB.
+- System Error 2: Too many options have been created, the limit of possible options has been exceeded.
+- System Error 3: There are no options available, a `CHOOSE` command has been launched without having any `OPTION` before.
+- System Error 4: The file with the music module to load is too large, it must be less than 16Kib.
+- System Error 5: There is no music module loaded to play.
+- System Error 6: Invalid instruction code.
+- System Error 7: Access to array position out of range.
+- System Error 8: Missing option. When scrolling, the declared options shift upwards. If one of them goes over the top of the margins, this error is generated.
 
 Disk errors are errors that could be caused when the game engine accesses the disk, and correspond to +3DOS errors:
 
-- Error 0: Drive not ready
-- Error 1: Disk is write protected
-- Error 2: Seek fail
-- Error 3: CRC data error
-- Error 4: No data
-- Error 5: Missing address mark
-- Error 6: Unrecognised disk format
-- Error 7: Unknown disk error
-- Error 8: Disk changed whilst +3DOS was using it
-- Error 9: Unsuitable media for drive
-- Error 20: Bad filename
-- Error 21: Bad parameter
-- Error 22: Drive not found
-- Error 23: File not found
-- Error 24: File already exists
-- Error 25: End of file
-- Error 26: Disk full
-- Error 27: Directory full
-- Error 28: Read-only file
-- Error 29: File number not open (or open with wrong access)
-- Error 30: Access denied (file is in use already)
-- Error 31: Cannot rename between drives
-- Error 32: Extent missing (which should be there)
-- Error 33: Uncached (software error)
-- Error 34: File too big (trying to read or write past 8 megabytes)
-- Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
-- Error 36: Drive in use (trying to re-map or remove a drive with files open)
+- Disk Error 0: Drive not ready
+- Disk Error 1: Disk is write protected
+- Disk Error 2: Seek fail
+- Disk Error 3: CRC data error
+- Disk Error 4: No data
+- Disk Error 5: Missing address mark
+- Disk Error 6: Unrecognised disk format
+- Disk Error 7: Unknown disk error
+- Disk Error 8: Disk changed whilst +3DOS was using it
+- Disk Error 9: Unsuitable media for drive
+- Disk Error 20: Bad filename
+- Disk Error 21: Bad parameter
+- Disk Error 22: Drive not found
+- Disk Error 23: File not found
+- Disk Error 24: File already exists
+- Disk Error 25: End of file
+- Disk Error 26: Disk full
+- Disk Error 27: Directory full
+- Disk Error 28: Read-only file
+- Disk Error 29: File number not open (or open with wrong access)
+- Disk Error 30: Access denied (file is in use already)
+- Disk Error 31: Cannot rename between drives
+- Disk Error 32: Extent missing (which should be there)
+- Disk Error 33: Uncached (software error)
+- Disk Error 34: File too big (trying to read or write past 8 megabytes)
+- Disk Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
+- Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
 These errors appear when accessing the disk, when searching for more pieces of text, images, etc. If error 23 appears (File not found), it is usually because you have forgotten to include a necessary file on the disk. Other errors already indicate an error with the disk drive or the disk itself.
 
