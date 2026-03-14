@@ -280,7 +280,7 @@ def main():
     arg_parser.add_argument(
         "model",
         default="plus3",
-        choices=["48k", "128k", "plus3"],
+        choices=["48k", "128k", "plus3", "mld", "mld128"],
         help=_("Model of spectrum to target"),
         type=str.lower,
     )
@@ -592,7 +592,10 @@ def main():
     wyz_instruments = ""
     wyz_tracks = dict()
     wyz_tracks_sizes = dict()
-    if args.tracks_path is not None and model != "48k":
+    if model == "mld" and args.tracks_path is not None:
+        if verbose > 0:
+            print(_("Ignoring tracks for strict MLD 48K target."))
+    elif args.tracks_path is not None and model != "48k":
         tmp_timer.reset()
         if args.use_wyz_tracker:
             # Using WYZ tracker
@@ -735,6 +738,23 @@ def main():
                 pause_start_value=args.pause_after_load,
                 use_wyz_tracker=use_wyz_tracker,
             )
+        elif model == "mld" or model == "mld128":
+            if verbose > 0:
+                print(_("Assembling interpreter for size..."))
+            asm_size = get_asm_mld_size(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+                mld_is_128=(model == "mld128"),
+            )
         else:
             if verbose > 0:
                 print(_("Assembling interpreter for size..."))
@@ -767,6 +787,8 @@ def main():
 
     if model == "plus3" and verbose > 0:
         print(_("Memory organization for disk version..."))
+    elif (model == "mld" or model == "mld128") and verbose > 0:
+        print(_("Memory organization for MLD version..."))
     elif verbose > 0:
         print(_("Memory organization for tape version..."))
 
@@ -798,7 +820,7 @@ def main():
         code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
     )
 
-    if model == "128k":
+    if model == "128k" or model == "mld128":
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 6, 7]
         else:
@@ -1021,6 +1043,33 @@ def main():
                 use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
             )
+        elif model == "mld" or model == "mld128":
+            if verbose > 0:
+                print(_(f"Assembling Spectrum {model.upper()}..."))
+            output_name = output_name[:8]
+            do_asm_mld(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                mld_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+                mld_type="$88" if model == "mld128" else "$83",
+                mld_is_128=(model == "mld128"),
+                name=output_name,
+            )
         else:
             if verbose > 0:
                 print(_("Assembling Spectrum 48k TAP..."))
@@ -1098,7 +1147,10 @@ def main():
                 sys.exit("ERROR: could not create DSK file")
 
     ######################################################################
-    print(_(f"TAP/DSK generation completed ({tmp_timer})"))
+    if model == "mld" or model == "mld128":
+        print(_(f"{model.upper()} generation completed ({tmp_timer})"))
+    else:
+        print(_(f"TAP/DSK generation completed ({tmp_timer})"))
     print(_(f"Compilation successful in {timer}"))
     sys.exit(0)
 
