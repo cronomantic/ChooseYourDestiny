@@ -33,6 +33,12 @@ RAM_ROUTINE_ADDR EQU $5F00
 RAM_ROUTINE_ROM:
     DISP RAM_ROUTINE_ADDR
 RAM_ROUTINE:
+    ; Cache MLDoffset at DAN_MLD_OFFSET ($5C00) while slot 0 is still mapped here.
+    ; This fixes a multi-block bug (later loop iterations map data slots, so reading
+    ; (MLDoffset) would pick up garbage from the data slot instead of the loader slot).
+    ; The saved value is also read by bank_dan.asm SET_DAN_BANK at game runtime.
+    ld a, (MLDoffset)
+    ld ($5C00), a           ; DAN_MLD_OFFSET – must match bank_dan.asm
     ld hl, BLOCK_TABLE
 .next_block:
     ld a, (hl)
@@ -41,7 +47,7 @@ RAM_ROUTINE:
 
     ; Relative slot -> absolute Dandanator slot command (1..32)
     ld d, a
-    ld a, (MLDoffset)
+    ld a, ($5C00)           ; use cached value; Dandanator may be on a data slot now
     add a, d
     inc a
     call DAN_SET_SLOT_A

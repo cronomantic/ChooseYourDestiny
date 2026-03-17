@@ -166,6 +166,7 @@ def get_source_files():
         "cydc/pyZX7/pyzx7.py",
         "cydc/pyZX7/README.md",
         "cydc/pyZX7/LICENSE",
+        "cydc/cyd/bank_dan.asm",
         "cydc/cyd/bank_zx128.asm",
         "cydc/cyd/cyd_mld.asm",
         "cydc/cyd/cyd_plus3.asm",
