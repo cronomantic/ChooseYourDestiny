@@ -34,9 +34,15 @@ IMG_LOAD:
     ld c, a
     ld b, TYPE_SCR
     call FIND_IN_INDEX
+    IFDEF IS_MLD_DAN
+    ; For pure-Dandanator mld: map image's slot at 0x0000-0x3FFF.
+    ; HL = 0x0000-based offset of the compressed image within the slot.
+    call SET_DAN_BANK
+    ELSE
     or ROM48KBASIC
     call SET_RAM_BANK
-    push af
+    push af                 ; save previous RAM bank for restore later
+    ENDIF
 
     inc hl
     inc hl
@@ -115,8 +121,14 @@ IMG_LOAD:
     djnz .loop4
 
 .no_mirror:
+    IFDEF IS_MLD_DAN
+    ; Restore the script's Dandanator slot so the interpreter can continue reading.
+    ld a, (SCRIPT_BANK)
+    call SET_DAN_BANK
+    ELSE
     pop af
     call SET_RAM_BANK
+    ENDIF
     ret
 
 COPY_SCREEN:

@@ -256,6 +256,8 @@ def get_asm_mld(
     includes = t.substitute(d)
     t = get_asm_template("bank_zx128")
     includes += t.substitute(d)
+    t = get_asm_template("bank_dan")
+    includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
     t = get_asm_template("savegame_mld")
@@ -269,6 +271,8 @@ def get_asm_mld(
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
+    # IS_MLD_DAN enables pure-Dandanator slot switching in LOAD_CHUNK and IMG_LOAD.
+    asm += "    DEFINE IS_MLD_DAN\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -324,6 +328,8 @@ def get_asm_mld128(
     includes = t.substitute(d)
     t = get_asm_template("bank_zx128")
     includes += t.substitute(d)
+    t = get_asm_template("bank_dan")
+    includes += t.substitute(d)
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
     t = get_asm_template("savegame_mld")
@@ -346,6 +352,9 @@ def get_asm_mld128(
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
+    # TXT/SCR data is read from Dandanator slots in both mld and mld128.
+    # Music can still use RAM banks in mld128 through TYPE_TRK/TYPE_WYZ index entries.
+    asm += "    DEFINE IS_MLD_DAN\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -958,8 +967,26 @@ def do_asm_mld(
     mld_is_128=False,
     name="",
 ):
+    # Each aggregated code/data block is placed in one dedicated Dandanator slot.
+    # Slot layout: 0=loader/footer, 1=interpreter, 2..N=aggregated blocks.
+    slot_by_ram_bank = {}
+    current_slot = 2
+    for i, bank in enumerate(banks):
+        if bank not in slot_by_ram_bank:
+            slot_by_ram_bank[bank] = current_slot
+            current_slot += 1
+
+    # For MLD targets, TXT/SCR chunks must use Dandanator slot IDs in index.
+    # For mld128, music entries (TRK/WYZ) keep RAM-bank IDs.
+    remapped_index = []
+    for entry_type, entry_idx, entry_bank, entry_offset in index:
+        mapped_bank = entry_bank
+        if entry_type in (0, 1):  # TYPE_TXT, TYPE_SCR
+            mapped_bank = slot_by_ram_bank.get(entry_bank, entry_bank)
+        remapped_index.append((entry_type, entry_idx, mapped_bank, entry_offset))
+
     asm_ind = ""
-    for _, v in enumerate(index):
+    for _, v in enumerate(remapped_index):
         asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
         asm_ind += f"    DEFW ${v[3]:X}\n"
 
@@ -1000,38 +1027,32 @@ def do_asm_mld(
     if os.path.exists(dummy_tap):
         os.remove(dummy_tap)
 
-    payloads = []
-    payloads.append((0x8000, len(int_bytes), 0, int_bytes))
-
+    slots = {1: list(int_bytes)}
     for i, block in enumerate(blocks):
-        if i == 0:
-            offset = bank0_offset
-        else:
-            offset = 0xC000
-        payloads.append((offset, len(block), banks[i], block))
+        slot_id = slot_by_ram_bank[banks[i]]
+        slots[slot_id] = list(block)
 
-    slots = []
-    table_entries = []
+    # Entries consumed by loadermld RAM routine.
+    # Always copy interpreter to 0x8000 from slot 1.
+    table_entries = [(1, 0, 0x8000, len(int_bytes), 0)]
 
-    slots.append([])  # slot 0 reserved for loader/footer
-    current_slot = 1
-    current_offset = 0
-    slots.append([])
+    # For mld128 keep RAM-bank preload entries (needed by music managers).
+    # For strict mld do not preload block data: TXT/SCR stays in Dandanator slots.
+    if mld_is_128:
+        for i, block in enumerate(blocks):
+            if i == 0:
+                dst_addr = bank0_offset
+            else:
+                dst_addr = 0xC000
+            slot_id = slot_by_ram_bank[banks[i]]
+            table_entries.append((slot_id, 0, dst_addr, len(block), banks[i]))
 
-    for dst_addr, size, bank, blob in payloads:
-        if size == 0:
-            continue
-        if (current_offset + size) > 0x4000:
-            current_slot += 1
-            current_offset = 0
-            slots.append([])
-        table_entries.append((current_slot, current_offset, dst_addr, size, bank))
-        slots[current_slot].extend(blob)
-        current_offset += size
-
-    for i in range(1, len(slots)):
-        if len(slots[i]) < 0x4000:
-            slots[i].extend([0xFF] * (0x4000 - len(slots[i])))
+    max_slot_id = max(slots.keys())
+    for slot_id in range(1, max_slot_id + 1):
+        if slot_id not in slots:
+            slots[slot_id] = []
+        if len(slots[slot_id]) < 0x4000:
+            slots[slot_id].extend([0xFF] * (0x4000 - len(slots[slot_id])))
 
     block_table = ""
     for slot_id, src_off, dst_addr, size, bank in table_entries:
@@ -1073,8 +1094,8 @@ def do_asm_mld(
     with open(mld_path, "wb") as fout:
         with open(slot0_bin, "rb") as f0:
             fout.write(f0.read())
-        for i in range(1, len(slots)):
-            fout.write(bytearray(slots[i]))
+        for slot_id in range(1, max_slot_id + 1):
+            fout.write(bytearray(slots[slot_id]))
 
     if os.path.exists(slot0_bin):
         os.remove(slot0_bin)

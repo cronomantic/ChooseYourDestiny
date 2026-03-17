@@ -429,8 +429,9 @@ LOAD_CHUNK:
     call FIND_IN_INDEX
     ld (CHUNK_ADDR), hl
     ld (SCRIPT_BANK), a
-    or ROM48KBASIC
-    call SET_RAM_BANK
+    ; TXT chunks are always read from Dandanator slots in MLD targets.
+    ; CHUNK_ADDR (HL) is a 0x0000-based offset inside that slot.
+    call SET_DAN_BANK
     ret
 
 ;Input: B = type of element, C = index of element

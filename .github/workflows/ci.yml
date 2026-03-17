@@ -36,6 +36,7 @@ jobs:
         run: |
           python tests/run_tests.py test_zx7 --failfast
           python tests/run_tests.py test_mld_footer --failfast
+          python tests/run_tests.py test_mld_index_mapping --failfast
 
   build-target-smoke:
     name: Compile All Targets (Windows)
