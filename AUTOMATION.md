@@ -318,9 +318,13 @@ make_pdf.bat
 - `documentation/en/TUTORIAL_en.pdf`
 
 **Características:**
-- Márgenes de 1 pulgada
-- Tabla de contenidos automática
+- Estilo tipográfico mejorado (encabezados, listas y espaciado)
+- Márgenes optimizados para A4 (2.2 cm)
+- Tabla de contenidos automática numerada (profundidad 3)
+- Hipervínculos en color para navegación del PDF
+- Cabecera/pie de página con numeración
 - Motor LaTeX: Tectonic (Windows) o auto-detectado (Linux/macOS)
+- Cabecera común de estilo: `documentation/pdf/pandoc-header.tex`
 
 **Clonar repositorio wiki:**
 ```bash

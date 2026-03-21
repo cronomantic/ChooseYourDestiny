@@ -9,6 +9,12 @@ REM ============================================================================
 echo Generating PDF documentation...
 echo.
 
+set "PANDOC=%~dp0tools\pandoc\pandoc"
+set "TECTONIC=%~dp0tools\pandoc\tectonic"
+set "HEADER=%~dp0documentation\pdf\pandoc-header.tex"
+
+set "COMMON_ARGS=-f markdown-yaml_metadata_block --pdf-engine=""%TECTONIC%"" --include-in-header=""%HEADER%"" --number-sections --toc --toc-depth=3 --highlight-style=tango -V papersize:a4 -V geometry:margin=2.2cm -V fontsize=11pt -V linestretch=1.15 -V colorlinks=true -V linkcolor=CYDAccent -V urlcolor=CYDAccent -V toccolor=black -V monofont=""DejaVu Sans Mono"""
+
 REM Check if wiki directory exists
 if not exist "%~dp0..\ChooseYourDestiny.wiki" (
     echo Error: Wiki directory not found at ..\ChooseYourDestiny.wiki
@@ -26,17 +32,17 @@ if not exist "%~dp0documentation\en" mkdir "%~dp0documentation\en"
 
 REM Generate Spanish PDFs
 echo Generating MANUAL_es.pdf...
-"%~dp0tools\pandoc\pandoc" MANUAL_es.md -o "%~dp0documentation\es\MANUAL_es.pdf" -V geometry:margin=1in --pdf-engine="%~dp0tools\pandoc\tectonic" --toc
+"%PANDOC%" MANUAL_es.md -o "%~dp0documentation\es\MANUAL_es.pdf" %COMMON_ARGS%
 
 echo Generating TUTORIAL_es.pdf...
-"%~dp0tools\pandoc\pandoc" TUTORIAL_es.md -o "%~dp0documentation\es\TUTORIAL_es.pdf" -V geometry:margin=1in --pdf-engine="%~dp0tools\pandoc\tectonic" --toc
+"%PANDOC%" TUTORIAL_es.md -o "%~dp0documentation\es\TUTORIAL_es.pdf" %COMMON_ARGS%
 
 REM Generate English PDFs
 echo Generating MANUAL_en.pdf...
-"%~dp0tools\pandoc\pandoc" MANUAL_en.md -o "%~dp0documentation\en\MANUAL_en.pdf" -V geometry:margin=1in --pdf-engine="%~dp0tools\pandoc\tectonic" --toc
+"%PANDOC%" MANUAL_en.md -o "%~dp0documentation\en\MANUAL_en.pdf" %COMMON_ARGS%
 
 echo Generating TUTORIAL_en.pdf...
-"%~dp0tools\pandoc\pandoc" TUTORIAL_en.md -o "%~dp0documentation\en\TUTORIAL_en.pdf" -V geometry:margin=1in --pdf-engine="%~dp0tools\pandoc\tectonic" --toc
+"%PANDOC%" TUTORIAL_en.md -o "%~dp0documentation\en\TUTORIAL_en.pdf" %COMMON_ARGS%
 
 popd
 
