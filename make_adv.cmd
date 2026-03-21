@@ -3,8 +3,8 @@
 REM ===============================================================================
 REM  ChooseYourDestiny - Adventure Builder Script (Windows)
 REM ===============================================================================
-REM  This script compiles a .cyd adventure file into a TAP or DSK file
-REM  for the ZX Spectrum 48k, 128k, or +3.
+REM  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
+REM  for the ZX Spectrum 48k, 128k, +3, or Dandanator MLD target.
 REM
 REM  Usage: make_adv.cmd [options]
 REM  
@@ -19,9 +19,9 @@ REM Name of the game (without .cyd extension)
 SET GAME=test
 REM This name will be used for:
 REM   - The source file to compile: %GAME%.cyd
-REM   - The output TAP or DSK file: %GAME%.TAP or %GAME%.DSK
+REM   - The output file: %GAME%.TAP, %GAME%.DSK, or %GAME%.MLD
 
-REM Target platform: 48k, 128k (for TAP), or plus3 (for DSK)
+REM Target platform: 48k, 128k (for TAP), plus3 (for DSK), mld, or mld128 (for MLD)
 SET TARGET=128k
 
 REM Number of screen lines to use when compressing SCR files (default: 192)
@@ -140,6 +140,10 @@ IF "%RUN_EMULATOR%"=="default" (
     ECHO Launching with default program...
     IF "%TARGET%"=="plus3" (
         START "" "%GAME%.DSK"
+    ) ELSE IF "%TARGET%"=="mld" (
+        START "" "%GAME%.MLD"
+    ) ELSE IF "%TARGET%"=="mld128" (
+        START "" "%GAME%.MLD"
     ) ELSE (
         START "" "%GAME%.TAP"
     )
@@ -162,6 +166,12 @@ IF "%RUN_EMULATOR%"=="internal" (
     
     IF "%TARGET%"=="plus3" (
         START "ZEsarUX - %GAME%" zesarux.exe !ZESARUX_PARAMS! --machine P3SP41 "..\..\%GAME%.DSK"
+    ) ELSE IF "%TARGET%"=="mld" (
+        ECHO Warning: internal emulator launch is not configured for MLD cartridges.
+        ECHO          Use RUN_EMULATOR=default or load "%GAME%.MLD" manually.
+    ) ELSE IF "%TARGET%"=="mld128" (
+        ECHO Warning: internal emulator launch is not configured for MLD cartridges.
+        ECHO          Use RUN_EMULATOR=default or load "%GAME%.MLD" manually.
     ) ELSE IF "%TARGET%"=="128k" (
         START "ZEsarUX - %GAME%" zesarux.exe !ZESARUX_PARAMS! --machine 128k "..\..\%GAME%.TAP"
     ) ELSE (

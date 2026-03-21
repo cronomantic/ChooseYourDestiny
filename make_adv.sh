@@ -3,8 +3,8 @@
 # ===============================================================================
 #  ChooseYourDestiny - Adventure Builder Script (Linux/macOS/BSD/Unix)
 # ===============================================================================
-#  This script compiles a .cyd adventure file into a TAP or DSK file
-#  for the ZX Spectrum 48k, 128k, or +3.
+#  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
+#  for the ZX Spectrum 48k, 128k, +3, or Dandanator MLD target.
 #
 #  Usage: ./make_adv.sh [options]
 #  
@@ -21,9 +21,9 @@ set -e  # Exit on error
 GAME="test"
 # This name will be used for:
 #   - The source file to compile: ${GAME}.cyd
-#   - The output TAP or DSK file: ${GAME}.TAP or ${GAME}.DSK
+#   - The output file: ${GAME}.TAP, ${GAME}.DSK, or ${GAME}.MLD
 
-# Target platform: 48k, 128k (for TAP), or plus3 (for DSK)
+# Target platform: 48k, 128k (for TAP), plus3 (for DSK), mld, or mld128 (for MLD)
 TARGET="128k"
 
 # Number of screen lines to use when compressing SCR files (default: 192)
@@ -140,6 +140,8 @@ echo "==========================================================================
 # Determine output file
 if [ "${TARGET}" == "plus3" ]; then
     OUTPUT_FILE="${GAME}.DSK"
+elif [ "${TARGET}" == "mld" ] || [ "${TARGET}" == "mld128" ]; then
+    OUTPUT_FILE="${GAME}.MLD"
 else
     OUTPUT_FILE="${GAME}.TAP"
 fi
@@ -192,6 +194,9 @@ if [ "${RUN_EMULATOR}" == "internal" ]; then
         
         if [ "${TARGET}" == "plus3" ]; then
             "${SCRIPT_DIR}/${ZESARUX_PATH}" ${ZESARUX_PARAMS} --machine P3SP41 "${SCRIPT_DIR}/${OUTPUT_FILE}" &
+        elif [ "${TARGET}" == "mld" ] || [ "${TARGET}" == "mld128" ]; then
+            echo "Warning: internal emulator launch is not configured for MLD cartridges."
+            echo "         Use RUN_EMULATOR=custom or load ${OUTPUT_FILE} manually."
         elif [ "${TARGET}" == "128k" ]; then
             "${SCRIPT_DIR}/${ZESARUX_PATH}" ${ZESARUX_PARAMS} --machine 128k "${SCRIPT_DIR}/${OUTPUT_FILE}" &
         else

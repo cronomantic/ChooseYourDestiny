@@ -921,6 +921,8 @@ class MakeAdventureGUI:
             ("48k", "48K (TAP)"),
             ("128k", "128K (TAP)"),
             ("plus3", "+3 (DSK)"),
+            ("mld", "Dandanator (MLD)"),
+            ("mld128", "Dandanator 128K (MLD)"),
         ]:
             ttk.Radiobutton(
                 target_frame, text=label, variable=self.var_target, value=val
@@ -1226,7 +1228,12 @@ class MakeAdventureGUI:
         if run_mode == "none":
             return
 
-        ext = ".DSK" if model == "plus3" else ".TAP"
+        if model == "plus3":
+            ext = ".DSK"
+        elif model == "mld" or model == "mld128":
+            ext = ".MLD"
+        else:
+            ext = ".TAP"
         compiled_file = os.path.join(output_path, f"{game_name}{ext}")
 
         if not os.path.isfile(compiled_file):
@@ -1253,6 +1260,12 @@ class MakeAdventureGUI:
                 zesarux = os.path.join(zesarux_dir, "zesarux")
             if not os.path.isfile(zesarux):
                 self._log(_("Zesarux not found at {}").format(zesarux))
+                return
+
+            if model == "mld" or model == "mld128":
+                self._log(
+                    _("Internal ZEsarUX launch is not configured for MLD cartridges. Use the default application or load the MLD manually.")
+                )
                 return
 
             machine_map = {"plus3": "P341", "128k": "128k", "48k": "48k"}

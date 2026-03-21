@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  smoke-tests:
+    name: Smoke Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip ply
+
+      - name: Run smoke tests
+        run: python tests/run_tests.py -k smoke --failfast
+
+      - name: Run ZX7 and MLD footer regressions
+        run: |
+          python tests/run_tests.py test_zx7 --failfast
+          python tests/run_tests.py test_mld_footer --failfast
+          python tests/run_tests.py test_mld_index_mapping --failfast
+
+  build-target-smoke:
+    name: Compile All Targets (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip ply
+
+      - name: Compile test.cyd for all targets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force output/ci | Out-Null
+          $models = @("48k", "128k", "plus3", "mld", "mld128")
+          foreach ($m in $models) {
+            python src/cydc/cydc/cydc.py $m test.cyd tools/sjasmplus.exe output/ci
+          }
+
+      - name: Verify expected artifacts exist
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "output/ci/test.tap")) { throw "Missing TAP output" }
+          if (-not (Test-Path "output/ci/test.dsk")) { throw "Missing DSK output" }
+          if (-not (Test-Path "output/ci/test.MLD")) { throw "Missing MLD output" }
