@@ -9,9 +9,14 @@
 
 set -e  # Exit on error
 
-# Ensure UTF-8 encoding (important for WSL)
-export LANG=es_ES.UTF-8
-export LC_ALL=es_ES.UTF-8
+# Ensure UTF-8 encoding (important for WSL). Fallback if es_ES is unavailable.
+if locale -a 2>/dev/null | grep -qi '^es_ES\.utf8$'; then
+    export LANG=es_ES.UTF-8
+    export LC_ALL=es_ES.UTF-8
+elif locale -a 2>/dev/null | grep -qi '^C\.utf8$'; then
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -48,6 +53,25 @@ fi
 echo "Generating PDF documentation..."
 echo ""
 
+COMMON_PANDOC_ARGS=(
+    -f markdown-yaml_metadata_block
+    --pdf-engine="$PDF_ENGINE"
+    --include-in-header="$SCRIPT_DIR/documentation/pdf/pandoc-header.tex"
+    --number-sections
+    --toc
+    --toc-depth=3
+    --highlight-style=tango
+    -V papersize:a4
+    -V geometry:margin=2.2cm
+    -V fontsize=11pt
+    -V linestretch=1.15
+    -V colorlinks=true
+    -V linkcolor=CYDAccent
+    -V urlcolor=CYDAccent
+    -V toccolor=black
+    -V monofont="DejaVu Sans Mono"
+)
+
 # Change to wiki directory
 cd "$SCRIPT_DIR/../ChooseYourDestiny.wiki" || {
     echo "Error: Wiki directory not found at ../ChooseYourDestiny.wiki"
@@ -55,35 +79,22 @@ cd "$SCRIPT_DIR/../ChooseYourDestiny.wiki" || {
     exit 1
 }
 
+# Ensure output directories exist
+mkdir -p "$SCRIPT_DIR/documentation/es" "$SCRIPT_DIR/documentation/en"
+
 # Generate Spanish PDFs
 echo "Generating MANUAL_es.pdf..."
-pandoc -f markdown-yaml_metadata_block MANUAL_es.md -o "$SCRIPT_DIR/documentation/es/MANUAL_es.pdf" \
-    -V geometry:margin=1in \
-    -V monofont="DejaVu Sans Mono" \
-    --pdf-engine="$PDF_ENGINE" \
-    --toc
+pandoc MANUAL_es.md -o "$SCRIPT_DIR/documentation/es/MANUAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}"
 
 echo "Generating TUTORIAL_es.pdf..."
-pandoc -f markdown-yaml_metadata_block TUTORIAL_es.md -o "$SCRIPT_DIR/documentation/es/TUTORIAL_es.pdf" \
-    -V geometry:margin=1in \
-    -V monofont="DejaVu Sans Mono" \
-    --pdf-engine="$PDF_ENGINE" \
-    --toc
+pandoc TUTORIAL_es.md -o "$SCRIPT_DIR/documentation/es/TUTORIAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}"
 
 # Generate English PDFs
 echo "Generating MANUAL_en.pdf..."
-pandoc -f markdown-yaml_metadata_block MANUAL_en.md -o "$SCRIPT_DIR/documentation/en/MANUAL_en.pdf" \
-    -V geometry:margin=1in \
-    -V monofont="DejaVu Sans Mono" \
-    --pdf-engine="$PDF_ENGINE" \
-    --toc
+pandoc MANUAL_en.md -o "$SCRIPT_DIR/documentation/en/MANUAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}"
 
 echo "Generating TUTORIAL_en.pdf..."
-pandoc -f markdown-yaml_metadata_block TUTORIAL_en.md -o "$SCRIPT_DIR/documentation/en/TUTORIAL_en.pdf" \
-    -V geometry:margin=1in \
-    -V monofont="DejaVu Sans Mono" \
-    --pdf-engine="$PDF_ENGINE" \
-    --toc
+pandoc TUTORIAL_en.md -o "$SCRIPT_DIR/documentation/en/TUTORIAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}"
 
 echo ""
 echo "✓ PDF documentation generated successfully!"
