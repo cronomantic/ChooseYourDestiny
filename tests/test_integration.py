@@ -8,6 +8,7 @@ This module tests:
 - Feature combinations
 """
 
+import re
 import unittest
 import sys
 import tempfile
@@ -362,7 +363,15 @@ class TestIntegrationRegressionPrevention(unittest.TestCase):
 
 
 class TestExamplesRegression(unittest.TestCase):
-    """Test all example programs to prevent regressions."""
+    """Test all example programs to prevent regressions.
+
+    Entry-point CYD files are auto-discovered: for each example folder the
+    file(s) that are not INCLUDE'd by any other CYD file in the same folder
+    are considered entry points and are tested.  This means new examples are
+    picked up automatically without editing this file.
+    """
+
+    _INCLUDE_RE = re.compile(r'INCLUDE\s+["\']([^"\']+)["\']', re.IGNORECASE)
 
     def setUp(self):
         """Initialize preprocessor and parser for each test."""
@@ -370,116 +379,77 @@ class TestExamplesRegression(unittest.TestCase):
         self.preprocessor = CydcPreprocessor()
         self.parser = CydcParser(strict_colon_mode=True)  # Use default strict mode
         self.parser.build()
-        
+
         # Get the examples directory path
         self.examples_dir = Path(__file__).parent.parent / "examples"
-    
-    def _test_example_file(self, file_path: Path):
-        """Helper method to test a single example file."""
-        try:
-            # Preprocess the file (handles INCLUDE directives)
-            preprocessed_text, line_map = self.preprocessor.preprocess(str(file_path))
-            
-            # Set line map for error reporting
-            self.parser.set_line_map(line_map)
-            
-            # Parse the preprocessed text
-            self.parser.errors = []
-            result = self.parser.parse(input=preprocessed_text)
-            
-            # Check for errors
-            if self.parser.errors:
-                error_msg = f"Errors in {file_path.name}:\n" + "\n".join(self.parser.errors)
-                self.fail(error_msg)
-            
-            self.assertIsNotNone(result, f"Parser returned None for {file_path.name}")
-            
-        except Exception as e:
-            self.fail(f"Failed to compile {file_path.name}: {e}")
-    
-    def test_include_demo(self):
-        """Test include_demo example (demonstrates INCLUDE directive)."""
-        main_file = self.examples_dir / "include_demo" / "main.cyd"
-        self.assertTrue(main_file.exists(), f"include_demo/main.cyd not found")
-        self._test_example_file(main_file)
-    
-    def test_blit(self):
-        """Test blit example."""
-        test_file = self.examples_dir / "blit" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_blit_island(self):
-        """Test blit_island example."""
-        test_file = self.examples_dir / "blit_island" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_cyd_presents(self):
-        """Test CYD_presents example."""
-        test_file = self.examples_dir / "CYD_presents" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_delerict(self):
-        """Test Delerict example."""
-        test_file = self.examples_dir / "Delerict" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_etpa_ejemplo(self):
-        """Test ETPA_ejemplo example."""
-        test_file = self.examples_dir / "ETPA_ejemplo" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_golden_axe_select_character(self):
-        """Test Golden_Axe_select_character example."""
-        test_file = self.examples_dir / "Golden_Axe_select_character" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_guess_the_number(self):
-        """Test guess_the_number example."""
-        test_file = self.examples_dir / "guess_the_number" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_input_test(self):
-        """Test input_test example."""
-        test_file = self.examples_dir / "input_test" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_multicolumn_menu(self):
-        """Test multicolumn_menu example."""
-        test_file = self.examples_dir / "multicolumn_menu" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_rocky_horror_show(self):
-        """Test Rocky_Horror_Show example."""
-        test_file = self.examples_dir / "Rocky_Horror_Show" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_scumm_16(self):
-        """Test SCUMM_16 example."""
-        test_file = self.examples_dir / "SCUMM_16" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_test_folder(self):
-        """Test test folder example."""
-        test_file = self.examples_dir / "test" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
-    
-    def test_windows(self):
-        """Test windows example."""
-        test_file = self.examples_dir / "windows" / "test.cyd"
-        if test_file.exists():
-            self._test_example_file(test_file)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _included_filenames(folder: Path) -> set:
+        """Return the set of filenames that are INCLUDE'd by any CYD file in *folder*."""
+        included = set()
+        for cyd_file in folder.glob("*.cyd"):
+            try:
+                text = cyd_file.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            for match in TestExamplesRegression._INCLUDE_RE.finditer(text):
+                # Only track the bare filename, not a sub-directory path
+                included.add(Path(match.group(1)).name)
+        return included
+
+    @staticmethod
+    def _entry_points(folder: Path) -> list:
+        """Return the CYD files in *folder* that are not included by another CYD file."""
+        all_cyd = sorted(folder.glob("*.cyd"))
+        if not all_cyd:
+            return []
+        included = TestExamplesRegression._included_filenames(folder)
+        roots = [f for f in all_cyd if f.name not in included]
+        # Fall back to all files if every file is included by another (shouldn't happen)
+        return roots if roots else all_cyd
+
+    def _compile_example(self, file_path: Path):
+        """Preprocess and parse *file_path*, failing the test on any error."""
+        preprocessed_text, line_map = self.preprocessor.preprocess(str(file_path))
+        self.parser.set_line_map(line_map)
+        self.parser.errors = []
+        result = self.parser.parse(input=preprocessed_text)
+        if self.parser.errors:
+            self.fail(
+                f"Parse errors in {file_path.relative_to(self.examples_dir)}:\n"
+                + "\n".join(self.parser.errors)
+            )
+        self.assertIsNotNone(
+            result,
+            f"Parser returned None for {file_path.relative_to(self.examples_dir)}",
+        )
+
+    # ------------------------------------------------------------------
+    # Tests
+    # ------------------------------------------------------------------
+
+    def test_all_examples(self):
+        """Parse every entry-point CYD file found under examples/."""
+        example_folders = sorted(
+            d for d in self.examples_dir.iterdir() if d.is_dir()
+        )
+        self.assertTrue(
+            len(example_folders) > 0,
+            "No example folders found — check the examples/ directory",
+        )
+        for folder in example_folders:
+            entry_points = self._entry_points(folder)
+            self.assertTrue(
+                len(entry_points) > 0,
+                f"No CYD entry-point found in {folder.name}",
+            )
+            for file_path in entry_points:
+                with self.subTest(example=f"{folder.name}/{file_path.name}"):
+                    self._compile_example(file_path)
 
 
 if __name__ == "__main__":
