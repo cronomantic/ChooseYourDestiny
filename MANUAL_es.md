@@ -259,8 +259,8 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 ni WyzTracker y se carga todo de una vez. Depende del tamaño de la memoria disponible.
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
-  -- **mld**: Esta versión genera un fichero MLD estricto de 48K para Dandanator (runtime sin bancos) y utiliza el sistema de guardado del cartucho.
-  -- **mld128**: Esta versión genera un fichero MLD para Dandanator usando bancos RAM de Spectrum 128K para el runtime y la música.
+  -- **mld**: Esta versión genera un fichero MLD estricto de 48K para Dandanator (runtime sin bancos) y utiliza el sistema de guardado del cartucho (Experimental, no usable por el momento).
+  -- **mld128**: Esta versión genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se reservan para la reproducción musical, mientras que los datos de la aventura no se distribuyen entre bancos RAM (Experimental, no usable por el momento).
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
@@ -1406,7 +1406,7 @@ REM --------------------------------------
   -- 128k: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
   -- mld: Genera un fichero MLD estricto de 48K (sin bancos) para Dandanator.
-  -- mld128: Genera un fichero MLD bancado para Dandanator usando bancos RAM de Spectrum 128K.
+  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se usan para música; los datos de la aventura no se reparten entre bancos RAM.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 - La variable `CYDC_EXTRA_PARAMS` se usa para añadir parámetros extra en la llamada al compilador [cydc](#cydc-compilador).
@@ -1523,7 +1523,7 @@ BACKUP_MAX_FILES=0
   -- 128k: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
   -- mld: Genera un fichero MLD estricto de 48K (sin bancos) para Dandanator.
-  -- mld128: Genera un fichero MLD bancado para Dandanator usando bancos RAM de Spectrum 128K.
+  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se usan para música; los datos de la aventura no se reparten entre bancos RAM.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 - `RUN_EMULATOR` admite `none`, `internal` (ZEsarUX) o `custom`.
@@ -1640,7 +1640,7 @@ Ejemplo más sofisticado del uso de `BLIT`:
 #### `examples\Rocky_Horror_Show` - Animación de personajes
 **Nivel:** Avanzado
 
-Implementa una pantalla de selección de personajes tipo arcade:
+Implementa una pantalla de presentación animada:
 - **Animación frame-by-frame:** Usa `BLIT` para crear animaciones cambiando los fotogramas.
 - **Timing preciso:** Combina `WAIT` con `BLIT` para controlar la velocidad de animación.
 - **Sprites grandes:** Manejo de personajes de mayor tamaño en pantalla.
@@ -1648,7 +1648,7 @@ Implementa una pantalla de selección de personajes tipo arcade:
 #### `examples\CYD_presents` - Efectos visuales complejos
 **Nivel:** Avanzado
 
-Ejemplo técnicamente impresionante con efectos visuales:
+Ejemplo de cómo hacer efectos visuales:
 - **Efectos de presentación:** Implementa animaciones tipo "demo scene" del Spectrum.
 - **Sincronización:** Coordina múltiples elementos visuales con música.
 - **Técnicas avanzadas:** Combina `BLIT`, `WAIT`, `PICTURE` y efectos de color.
@@ -1729,8 +1729,8 @@ Se recomienda estudiar los ejemplos en este orden para una curva de aprendizaje 
 7. `include_demo` → Organización de código
 8. `blit` → `blit_island` → `Rocky_Horror_Show` → `CYD_presents` → Gráficos progresivamente más complejos
 9. `Golden_Axe_select_character` → Efectos visuales dinámicos
-10. `SCUMM_16` → Interfaz completa tipo LucasArts
-11. `Delerict` → Motor de aventura completo
+10. `SCUMM_16` → Interfaz tipo LucasArts
+11. `Delerict` → Plantilla para un motor de aventuras
 
 ---
 
@@ -1839,7 +1839,7 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 ## Referencias y agradecimientos
 
 - David Beazley por [PLY](https://github.com/dabeaz/ply)
-- Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0).
+- Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0) y ZX7.
 - Mokona por su versión del [compresor ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0.git).
 - Sylvain Glaize por la versión del descompresor [ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0).
 - DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
@@ -1848,7 +1848,7 @@ La aparición de estos errores ocurre cuando se accede al disco, al buscar más 
 - [Sergey.V.Bulba](http://bulba.untergrund.net) por el reproductor de Vortex Tracker.
 - Augusto Ruiz por el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer).
 - Al equipo responsable del ensamblador [sjasmplus](https://github.com/z00m128/sjasmplus).
-- [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo.
+- [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo y su apoyo.
 - XimoKom, Javier Fopiani y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
 - Sergio ThePoPe por meterme el gusanillo del Plus3.
