@@ -228,7 +228,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
               [-wyz] [-il NUM_IMAGE_LINES] [-720]
-              {48k,128k,plus3} input.cyd SJASMPLUS_PATH OUTPUT_PATH
+              {48k,128k,plus3,mld,mld128} input.cyd SJASMPLUS_PATH OUTPUT_PATH
 ```
 
 - **\-h**: Shows the help
@@ -256,10 +256,12 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-il NUM_IMAGE_LINES**: Number of lines to use in image files (default 192).
 - **\-720**: If using the Plus3 format, a 720 KB disk image will be used instead of the standard 180 KB size.
 
--**{48k,128k,plus3}**: Spectrum model to be used:
+-**{48k,128k,plus3,mld,mld128}**: Spectrum model to be used:
   -- **48k**: Version for tape in TAP format, does not include the PT3 player and everything is loaded at once. It depends on the size of the available memory.
   -- **128k**: Version for tape in TAP format, everything is loaded at once in the memory banks and depends on the size of the available memory.
   -- **plus3**: This version will generate a DSK file to run on Spectrum+3. Resources are loaded dynamically as needed and depends on the size on disk.
+  -- **mld**: This version generates a strict 48K MLD file for Dandanator (non-banked runtime) and uses the cartridge save system.
+  -- **mld128**: This version generates an MLD file for Dandanator using Spectrum 128K RAM banks for runtime and music data.
 
 - **input.txt**: Input file with the adventure script.
 - **SJASMPLUS_PATH**: Path to the SjASMPlus executable.
@@ -1331,7 +1333,7 @@ This program needs the `dist` and `tools` directories with their contents to per
 `make_adventure.py` is a helper wrapper around `cydc_cli.py` that standardizes project paths and automates token handling.
 
 ```batch
-make_adventure.py [options] {48k,128k,plus3} [SJASMPLUS_PATH]
+make_adventure.py [options] {48k,128k,plus3,mld,mld128} [SJASMPLUS_PATH]
 ```
 
 Main options:
@@ -1360,7 +1362,7 @@ REM This name will be used as:
 REM   - The file to compile will be test.cyd with this example
 REM   - The name of the TAP file or +3 disk image
 
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
+REM Target for the compiler (48k, 128k for TAP, plus3 for DSK, mld or mld128 for MLD)
 SET TARGET=48k
 
 REM Number of lines used on SCR files at compressing
@@ -1391,6 +1393,8 @@ REM --------------------------------------
 -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
+-- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
+-- mld128: Generates a banked MLD file for Dandanator using Spectrum 128K RAM banks.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
@@ -1450,7 +1454,7 @@ export CYD_LANG=es
 
 | Category | Options |
 |----------|---------|
-| **Project** | Game name, Target (48k/128k/plus3) |
+| **Project** | Game name, Target (48k/128k/plus3/mld/mld128) |
 | **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set, SjASMPlus executable |
 | **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Strict colon compatibility, Pause-after-load, WyzTracker support, 720KB disk |
 | **Post-Build** | Run emulator after compilation, Backup CYD file |
@@ -1472,7 +1476,7 @@ GAME="test"
 #   - The file to compile will be test.cyd with this example
 #   - The name of the TAP file or +3 disk image
 #
-# Target for the compiler (48k, 128k for TAP, plus3 for DSK)
+# Target for the compiler (48k, 128k for TAP, plus3 for DSK, mld or mld128 for MLD)
 TARGET="48k"
 #
 # Number of lines used on SCR files at compressing
@@ -1505,6 +1509,8 @@ BACKUP_MAX_FILES=0
 -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
+-- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
+-- mld128: Generates a banked MLD file for Dandanator using Spectrum 128K RAM banks.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.
