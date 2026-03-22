@@ -60,7 +60,8 @@ class TestMldFooter(unittest.TestCase):
         return captured["loader_asm"]
 
     def test_footer_contains_type_and_preview_when_scr_is_present(self):
-        asm = self._build_with_fake_assembler(loading_scr=bytes([0] * 6912), mld_type="$83")
+        with patch("cyd.zx7_compress_data", return_value=bytes([0xAB, 0xCD, 0xEF])):
+            asm = self._build_with_fake_assembler(loading_scr=bytes([0] * 6912), mld_type="$83")
         self.assertIn("DEFB $83", asm)
         self.assertIn("DEFW PREVIEW_SCREEN", asm)
         self.assertIn("DEFW PREVIEW_SCREEN_END-PREVIEW_SCREEN", asm)

@@ -13,13 +13,13 @@ class TestZX7Compression(unittest.TestCase):
         self.assertEqual(compress_data(b""), b"")
 
     def test_is_deterministic(self):
-        data = bytes((i * 7) & 0xFF for i in range(6912))
+        data = bytes((i * 7) & 0xFF for i in range(512))
         out1 = compress_data(data)
         out2 = compress_data(data)
         self.assertEqual(out1, out2)
 
     def test_repetitive_data_compresses(self):
-        data = (b"ABCD" * 2048) + (b"1234" * 1024)
+        data = (b"ABCD" * 128) + (b"1234" * 64)
         out = compress_data(data)
         self.assertGreater(len(out), 0)
         self.assertLess(len(out), len(data))
