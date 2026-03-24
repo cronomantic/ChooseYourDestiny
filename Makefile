@@ -4,7 +4,10 @@ CYD_FILENAME:=$(NAME).cyd
 #TAP_TARGET:=128k
 TAP_TARGET:=48k
 
-.PHONY: clean clean_all disk test_disk tape test_tape all
+# Base ROM template for Dandanator (required for the 'rom' target)
+BASE_ROM := ./external/dandanator-mini.rom"
+
+.PHONY: clean clean_all disk test_disk tape test_tape all mld mld_music rom
 
 BEEPFX_ASM_FILENAME = SFX.asm
 
@@ -39,6 +42,45 @@ endif
 disk: $(NAME).DSK
 
 tape: $(NAME).TAP
+
+mld: $(FILELIST)
+ifeq (,$(wildcard ./tokens.json))
+# Token file does not exist, create a new one
+ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) mld $(CYD_FILENAME) $(ASM) .
+else
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS mld $(CYD_FILENAME) $(ASM) .
+endif
+else
+# Token file exists, use it...
+ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) mld $(CYD_FILENAME) $(ASM) .
+else
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS mld $(CYD_FILENAME) $(ASM) .
+endif
+endif
+
+mld_music: $(FILELIST)
+ifeq (,$(wildcard ./tokens.json))
+# Token file does not exist, create a new one
+ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) mld128 $(CYD_FILENAME) $(ASM) .
+else
+	python $(CYDC_PATH)/cydc.py -T tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS mld128 $(CYD_FILENAME) $(ASM) .
+endif
+else
+# Token file exists, use it...
+ifneq (,$(wildcard ./$(BEEPFX_ASM_FILENAME)))
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS -sfx $(BEEPFX_ASM_FILENAME) mld128 $(CYD_FILENAME) $(ASM) .
+else
+	python $(CYDC_PATH)/cydc.py -t tokens.json $(EXTRA_PARAM) -img ./IMAGES -trk ./TRACKS mld128 $(CYD_FILENAME) $(ASM) .
+endif
+endif
+
+$(NAME).ROM: $(NAME).MLD
+	python ./mld2rom.py -b $(BASE_ROM) -o $@ $<
+
+rom: $(NAME).ROM
 
 all: tape disk
 
@@ -91,5 +133,7 @@ clean_all: clean
 clean:
 	rm -f $(NAME).DSK
 	rm -f $(NAME).TAP
+	rm -f $(NAME).MLD
+	rm -f $(NAME).ROM
 	rm -f $(CSC_LIST)
 	rm -f DISK SCRIPT.DAT CYD.BIN cyd.lst
