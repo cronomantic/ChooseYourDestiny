@@ -5,7 +5,7 @@ CYD_FILENAME:=$(NAME).cyd
 TAP_TARGET:=48k
 
 # Base ROM template for Dandanator (required for the 'rom' target)
-BASE_ROM := dandanator.rom
+BASE_ROM := ./external/dandanator-mini.rom"
 
 .PHONY: clean clean_all disk test_disk tape test_tape all mld mld_music rom
 
