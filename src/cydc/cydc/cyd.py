@@ -231,6 +231,7 @@ def get_asm_mld(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    loading_scr=None,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -239,6 +240,10 @@ def get_asm_mld(
     else:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
+
+    intro_scr_bytes = ""
+    if loading_scr is not None:
+        intro_scr_bytes = bytes2str(zx7_compress_data(loading_scr), "")
 
     d = dict(
         INIT_ADDR="$8000",
@@ -250,6 +255,7 @@ def get_asm_mld(
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
         GAMEID=get_game_id(name),
+        MLD_INTRO_SCR_BYTES=intro_scr_bytes,
     )
 
     t = get_asm_template("inkey")
@@ -273,6 +279,9 @@ def get_asm_mld(
     asm = "    DEVICE ZXSPECTRUM48\n\n"
     # IS_MLD_DAN enables pure-Dandanator slot switching in LOAD_CHUNK and IMG_LOAD.
     asm += "    DEFINE IS_MLD_DAN\n\n"
+
+    if loading_scr is not None:
+        asm += "    DEFINE MLD_HAS_INTRO_SCR\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -303,6 +312,7 @@ def get_asm_mld128(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    loading_scr=None,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -311,6 +321,10 @@ def get_asm_mld128(
     else:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
         sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
+
+    intro_scr_bytes = ""
+    if loading_scr is not None:
+        intro_scr_bytes = bytes2str(zx7_compress_data(loading_scr), "")
 
     d = dict(
         INIT_ADDR="$8000",
@@ -322,6 +336,7 @@ def get_asm_mld128(
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
         GAMEID=get_game_id(name),
+        MLD_INTRO_SCR_BYTES=intro_scr_bytes,
     )
 
     t = get_asm_template("inkey")
@@ -355,6 +370,9 @@ def get_asm_mld128(
     # TXT/SCR data is read from Dandanator slots in both mld and mld128.
     # Music can still use RAM banks in mld128 through TYPE_TRK/TYPE_WYZ index entries.
     asm += "    DEFINE IS_MLD_DAN\n\n"
+
+    if loading_scr is not None:
+        asm += "    DEFINE MLD_HAS_INTRO_SCR\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -1005,6 +1023,7 @@ def do_asm_mld(
         pause_start_value=pause_start_value,
         use_wyz_tracker=use_wyz_tracker,
         name=name,
+        loading_scr=loading_scr,
     )
 
     int_bin_path = os.path.join(output_path, "__INTERP.BIN").replace(os.sep, "/")
