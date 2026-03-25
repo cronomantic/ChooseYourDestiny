@@ -101,6 +101,16 @@ INT_STACK_ADDR EQU $8000
     call CLS_BUFFER
     call SET_RND_SEED
 
+    IFDEF MLD_HAS_INTRO_SCR
+    ; Decompress the intro/loading screen directly to ZX Spectrum screen RAM
+    ; ($4000-$5AFF: 6144 bytes pixels + 768 bytes attributes).
+    ; The ISR only overwrites $4000 when UPDATE_SCR_FLAG is non-zero, so the
+    ; screen will remain visible until the first game draw operation.
+    ld hl, MLD_INTRO_SCR_DATA
+    ld de, SCR_PXL
+    call dzx0_turbo
+    ENDIF
+
     jp START_LOADING
 
 RND_SEED:
@@ -541,6 +551,10 @@ SIZE_INTERPRETER = $ - START_INTERPRETER
     ENDIF
 
     IFNDEF SHOW_SIZE_INTERPRETER
+    IFDEF MLD_HAS_INTRO_SCR
+MLD_INTRO_SCR_DATA:
+@{MLD_INTRO_SCR_BYTES}
+    ENDIF
 INDEX:
 @{INDEX}
 
