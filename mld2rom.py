@@ -40,12 +40,18 @@
 #   the updated game metadata to slot 0 of the output ROM.
 #
 # BASE ROM
-#   A clean 512 KB " template" Dandanator ROM is required.  Obtain it by:
-#     • Extracting dandanator-mini.rom from the dandanator-mini JAR:
-#         jar xf dandanator-mini-<version>.jar dandanator-mini/dandanator-mini.rom
-#     • Running the dandanator-mini Java GUI once with zero games and exporting
-#       the ROM (this gives a fully-initialised slot 0 with menu graphics, etc.).
-#     • Downloading an official release from https://github.com/cronomantic/dandanator-mini
+#   A Dandanator ROM template is required.  Two formats are accepted:
+#
+#   • Full 512 KB ROM (524 288 bytes) — already fully initialised:
+#       - Export from the dandanator-mini Java GUI with zero games loaded.
+#       - Extract from the distributed JAR:
+#           jar xf dandanator-mini-<version>.jar dandanator-mini/dandanator-mini.rom
+#       - Download a release ROM from https://github.com/cronomantic/dandanator-mini
+#
+#   • Raw firmware file (3 584 bytes) — automatically zero-padded to 512 KB:
+#       - Download dandanator-mini.rom directly from the GitHub source tree:
+#           https://github.com/cronomantic/dandanator-mini/blob/master/src/main/resources/dandanator-mini/dandanator-mini.rom
+#       This produces a valid empty-template ROM (0 games, empty slots).
 #
 # USAGE
 #   mld2rom.py [-h] -b BASE_ROM [-o OUTPUT] [-a] [-v] game.mld [game2.mld ...]
@@ -562,10 +568,24 @@ def mld2rom(
         sys.exit(f"ERROR: Base ROM not found: {base_rom_path}")
 
     rom_data = bytearray(base_path.read_bytes())
-    if len(rom_data) != ROM_SIZE:
+    if len(rom_data) == BASEROM_SIZE:
+        # The raw dandanator-mini.rom resource file (as shipped in the JAR and
+        # on GitHub) is only the firmware code (3 584 bytes).  Pad it to the
+        # full 512 KB with zeros to produce a valid empty-template ROM.
+        if verbose:
+            print(
+                f"Note: Base ROM is {BASEROM_SIZE} bytes (firmware only); "
+                f"padding to {ROM_SIZE} bytes ({ROM_SIZE // 1024} KB) "
+                f"with zeros to create an empty template."
+            )
+        rom_data = rom_data + bytearray(ROM_SIZE - BASEROM_SIZE)
+    elif len(rom_data) != ROM_SIZE:
         sys.exit(
             f"ERROR: Base ROM must be exactly {ROM_SIZE} bytes "
-            f"({ROM_SIZE // 1024} KB); got {len(rom_data)} bytes."
+            f"({ROM_SIZE // 1024} KB); got {len(rom_data)} bytes.\n"
+            f"Tip: The raw dandanator-mini.rom from the JAR/GitHub is only "
+            f"{BASEROM_SIZE} bytes and is also accepted (it will be "
+            f"zero-padded to {ROM_SIZE // 1024} KB automatically)."
         )
 
     if verbose:
