@@ -449,7 +449,7 @@ Examples:
     parser.add_argument(
         "--do-doc-sync",
         action="store_true",
-        help="Skip syncing MANUAL_en.md/MANUAL_es.md from sibling wiki repository",
+        help="Syncs MANUAL_en.md/MANUAL_es.md from sibling wiki repository",
     )
     
     args = parser.parse_args()
@@ -475,7 +475,7 @@ Examples:
         sync_wiki_manuals(current_path)
         print()
     else:
-        print("Skipping manual sync (--do-doc-sync)")
+        print("Skipping manual sync")
         print()
     
     # Prepare source files and translations (once for all platforms)
