@@ -33,6 +33,13 @@
 INKEY:
     exx
 
+    IFDEF IS_MLD_DAN
+    ; The Dandanator may have a data slot mapped at $0000-$3FFF.
+    ; ROM routines (KEY_SCAN, K_TEST, K_DECODE) live at fixed ROM addresses,
+    ; so the Spectrum ROM must be visible there while they execute.
+    call RESTORE_DAN_ROM
+    ENDIF
+
     call KEY_SCAN
     jp nz, .empty_inkey
 
@@ -45,9 +52,21 @@ INKEY:
     ; C is MODE 0 'KLC' from above still.
     call K_DECODE ; routine K-DECODE
     ;Keycode on A
+    IFDEF IS_MLD_DAN
+    ; Re-map the current script's Dandanator slot so the interpreter
+    ; can continue reading script data from $0000-$3FFF.
+    push af
+    ld a, (SCRIPT_BANK)
+    call SET_DAN_BANK
+    pop af
+    ENDIF
     exx
     ret
 .empty_inkey:
+    IFDEF IS_MLD_DAN
+    ld a, (SCRIPT_BANK)
+    call SET_DAN_BANK
+    ENDIF
     xor a
     exx
     ret
