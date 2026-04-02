@@ -46,6 +46,12 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [LET \[varID\] = varexpression](#let-varid--varexpression-1)
     - [LET varID = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2)
     - [LET \[varID\] = {varexpression1, varexpression2,...}](#let-varid--varexpression1-varexpression2-1)
+    - [LET varID += varexpression](#let-varid--varexpression-2)
+    - [LET \[varID\] += varexpression](#let-varid--varexpression-3)
+    - [LET arrayID(varexpression) += varexpression](#let-arrayidvarexpression--varexpression)
+    - [LET varID -= varexpression](#let-varid---varexpression)
+    - [LET \[varID\] -= varexpression](#let-varid---varexpression-1)
+    - [LET arrayID(varexpression) -= varexpression](#let-arrayidvarexpression---varexpression)
     - [END](#end)
     - [CLEAR](#clear)
     - [CENTER](#center)
@@ -478,6 +484,13 @@ The available operands are:
 - Bit shift left: `SET variable TO @variable << 2`
 - Bit shift right: `SET variable TO @variable >> 2`
 
+Additionally, `LET` supports shorthand operators to modify a variable in place:
+
+- Increment: `LET variable += 2` (equivalent to `LET variable = @variable + 2`)
+- Decrement: `LET variable -= 2` (equivalent to `LET variable = @variable - 2`)
+
+These also work with indirection and arrays: `LET [variable] += 1` and `LET myArray(0) += 1`.
+
 The result of a numeric expression cannot be greater than 255 (1 byte) or less than zero (negative numbers are not supported). If both limits are exceeded when performing the operations, the result will be adjusted to the corresponding limit, that is, if an addition exceeds 255, it will be adjusted to 255 and a subtraction that gives a result less than zero will be set to zero.
 
 One thing to note is that binary operators are not the same as the logical operators of conditional expressions described below. An **&** is not the same as an **AND**. Binary operators perform the corresponding operations on the bits of the variable.
@@ -815,6 +828,30 @@ Assigns the value of _varexpression1_ to the variable _varID_, _varexpression2_ 
 ### LET [varID] = {varexpression1, varexpression2,...}
 
 Assigns the value of _varexpression1_ to the variable whose index corresponds to the contents of _varID_, _varexpression2_ to the variable whose index corresponds to the contents of _varID_+1, and so on.
+
+### LET varID += varexpression
+
+Increments the variable _varID_ by the value of _varexpression_. Equivalent to `LET varID = @varID + varexpression`.
+
+### LET [varID] += varexpression
+
+Increments the variable whose index corresponds to the contents of _varID_ by the value of _varexpression_.
+
+### LET arrayID(varexpression) += varexpression
+
+Increments the element at position _varexpression_ of the array _arrayID_ by the value of the second _varexpression_.
+
+### LET varID -= varexpression
+
+Decrements the variable _varID_ by the value of _varexpression_. Equivalent to `LET varID = @varID - varexpression`.
+
+### LET [varID] -= varexpression
+
+Decrements the variable whose index corresponds to the contents of _varID_ by the value of _varexpression_.
+
+### LET arrayID(varexpression) -= varexpression
+
+Decrements the element at position _varexpression_ of the array _arrayID_ by the value of the second _varexpression_.
 
 ### END
 
