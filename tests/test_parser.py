@@ -381,12 +381,108 @@ Choice 2
         result = self.parser_lenient.parse(input=code)
         self.assertIsNotNone(result)
 
+    def test_let_with_calculation(self):
+        """Test LET statement with calculation."""
+        code = "[[LET 0 = @0 + 1]]"
+        self.parser_lenient.errors = []
+        result = self.parser_lenient.parse(input=code)
+        self.assertIsNotNone(result)
+
     def test_track_and_display_commands(self):
         """Test TRACK and DISPLAY commands."""
         code = "[[TRACK 0 : DISPLAY 1]]"
         self.parser_strict.errors = []
         result = self.parser_strict.parse(input=code)
         self.assertIsNotNone(result)
+
+
+class TestParserVariableIncrDecr(unittest.TestCase):
+    """Test parsing of variable increment and decrement operations (+=, -=)."""
+
+    def setUp(self):
+        """Initialize parser for each test."""
+        self.parser = CydcParser()
+        self.parser.build()
+
+    def test_direct_increment_by_name(self):
+        """Test LET varID += varexpression (direct increment with declared name)."""
+        code = "[[DECLARE 0 AS counter : LET counter += 1]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_direct_decrement_by_name(self):
+        """Test LET varID -= varexpression (direct decrement with declared name)."""
+        code = "[[DECLARE 0 AS counter : LET counter -= 1]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_direct_increment_by_numeric_index(self):
+        """Test LET numeric_index += varexpression."""
+        code = "[[LET 0 += 5]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_direct_decrement_by_numeric_index(self):
+        """Test LET numeric_index -= varexpression."""
+        code = "[[LET 0 -= 3]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_indirect_increment(self):
+        """Test LET [varID] += varexpression (indirect increment)."""
+        code = "[[DECLARE 1 AS ptr : LET [ptr] += 1]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_indirect_decrement(self):
+        """Test LET [varID] -= varexpression (indirect decrement)."""
+        code = "[[DECLARE 1 AS ptr : LET [ptr] -= 2]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_array_element_increment(self):
+        """Test LET arrayID(varexpression) += varexpression (array element increment)."""
+        code = "[[DIM myArray(5) : LET myArray(0) += 1]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_array_element_decrement(self):
+        """Test LET arrayID(varexpression) -= varexpression (array element decrement)."""
+        code = "[[DIM myArray(5) : LET myArray(2) -= 3]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_increment_with_variable_expression(self):
+        """Test incrementing by a variable expression."""
+        code = "[[DECLARE 0 AS x : DECLARE 1 AS y : LET x += @y + 2]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
+
+    def test_decrement_with_variable_expression(self):
+        """Test decrementing by a variable expression."""
+        code = "[[DECLARE 0 AS x : DECLARE 1 AS y : LET x -= @y]]"
+        self.parser.errors = []
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(self.parser.errors), 0)
 
 
 if __name__ == "__main__":
