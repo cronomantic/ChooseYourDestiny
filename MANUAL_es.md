@@ -35,7 +35,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [RETURN](#return)
     - [IF condexpression THEN ... ENDIF](#if-condexpression-then--endif)
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
-    - [IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elif-condexpression2-then--else--endif)
+    - [IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elseif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
     - [REPEAT ... UNTIL (condexpression)](#repeat--until-condexpression)
     - [SET varID TO varexpression](#set-varid-to-varexpression)
@@ -560,7 +560,7 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 - **IF condexpression THEN ... ELSEIF condexpression THEN [... ELSEIF condexpression THEN] ... ELSE ... ENDIF**
 
 Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
-verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 - **WHILE (condexpression) ... WEND**
 
@@ -787,10 +787,10 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 
 Si la expresión condicional _condexpression_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se imprime el texto y se ejecutan los comandos que haya desde `ELSE` hasta `ENDIF`
 
-### IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF
+### IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF
 
 Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
-verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 ### WHILE (condexpression) ... WEND
 
