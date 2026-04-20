@@ -35,7 +35,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [RETURN](#return)
     - [IF condexpression THEN ... ENDIF](#if-condexpression-then--endif)
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
-    - [IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elif-condexpression2-then--else--endif)
+    - [IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elseif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
     - [REPEAT ... UNTIL (condexpression)](#repeat--until-condexpression)
     - [SET varID TO varexpression](#set-varid-to-varexpression)
@@ -558,7 +558,7 @@ If the conditional expression _condexpression_ is true, the text is printed and 
 
 - **IF condexpression THEN ... ELSEIF condexpression THEN [... ELSEIF condexpression THEN] ... ELSE ... ENDIF**
 
-If the conditional expression _condexpression1_ evaluates to true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELIF` to the `ELSE` or another `ELSEIF` are executed. Multiple `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
+If the conditional expression _condexpression1_ evaluates to true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Multiple `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
 
 - **WHILE (condexpression) ... WEND**
 
@@ -785,9 +785,9 @@ If the conditional expression _condexpression_ is true, the text is printed and 
 
 If the conditional expression _condexpression_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the text is printed and the commands from `ELSE` to `ENDIF` are executed.
 
-### IF condexpression1 THEN ... ELIF condexpression2 THEN ... ELSE ... ENDIF
+### IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF
 
-If the conditional expression _condexpression1_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELIF` to the `ELSE` or another `ELSEIF` are executed. Several `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
+If the conditional expression _condexpression1_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Several `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
 
 ### WHILE (condexpression) ... WEND
 
