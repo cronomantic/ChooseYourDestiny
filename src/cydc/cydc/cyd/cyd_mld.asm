@@ -30,7 +30,7 @@
 ; ==============================================================================
 
 
-    DEFINE RELEASE "1.0"
+    DEFINE RELEASE "1.3"
 
     DEFINE IS_MLD 1
 
@@ -478,10 +478,10 @@ FIND_IN_INDEX:
 
 SET_RND_SEED:
     ld hl,(FRAMES) ;get data from frames
-    jr RANDOM_2
+    jr SET_RND_SEED2
 RANDOM:
     ld hl,(RND_SEED)
-RANDOM_2:
+SET_RND_SEED2:
     ld a, r
     and %11
     inc a

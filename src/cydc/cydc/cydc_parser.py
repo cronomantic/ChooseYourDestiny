@@ -498,10 +498,6 @@ class CydcParser(object):
         "statement : CLEAROPTIONS"
         p[0] = ("CLEAR_OPTIONS",)
 
-    def p_statement_randomize(self, p):
-        "statement : RANDOMIZE"
-        p[0] = ("RANDOMIZE",)
-
     def p_statement_goto(self, p):
         "statement : GOTO ID"
         if self._symbol_usage(p[2], SymbolType.LABEL, p.lineno(2)):
@@ -568,6 +564,29 @@ class CydcParser(object):
             self.errors.append(self._(
                 f"Syntax error on LABEL at {loc}, invalid identifier."
             ))
+
+    def p_statement_randomize(self, p):
+        """
+        statement : RANDOMIZE constexpression
+                  | RANDOMIZE
+        """
+        if len(p) == 3 and self._is_valid_constexpression(p[2]):
+            if isinstance(p[2], list):
+                p[0] = ("RANDOMIZE", ("CONSTANT_L", p[2]), ("CONSTANT_H", p[2]))
+            else:
+                p[0] = ("RANDOMIZE", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
+        elif len(p) == 2:
+            p[0] = ("RANDOMIZE", ("CONSTANT_L", 0), ("CONSTANT_H", 0))
+        else:
+            p[0] = None
+
+    def p_statement_randomize_error(self, p):
+        "statement : RANDOMIZE error"
+        self.errors.append(
+            self._(
+                f"Syntax error on RANDOMIZE command at line {p.lineno(1)}, invalid expression."
+            )
+        )
 
     def p_statement_backspace(self, p):
         """

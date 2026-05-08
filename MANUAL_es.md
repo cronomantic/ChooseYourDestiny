@@ -112,6 +112,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [XPOS()](#xpos)
     - [WINDOW expression](#window-expression)
     - [CHARSET expression](#charset-expression)
+    - [RANDOMIZE expression](#randomize-expression)
     - [RANDOMIZE](#randomize)
     - [TRACK varexpression](#track-varexpression)
     - [PLAY varexpression](#play-varexpression)
@@ -1185,9 +1186,13 @@ Las "ventanas" de CYD son un área de pantalla definida por su posición de orig
 
 Cambia el juego de carácteres empleado al imprimir textos. Con el parámetro a cero, se usa el juego inferior (caracteres del 0 al 127), y con un valor distinto de cero, se usa el juego superior (caracteres del 128 al 255). Recuerda que los caracteres del 0 al 32 y del 127 al 143 no son imprimibles. Esta instrucción no afecta a REPCHAR y CHAR.
 
+### RANDOMIZE expression
+
+Inicializa el generador de números aleatorios con el valor del parámetro como semilla. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Si usamos este comando con el valor cero como parámetro, se inicializa el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad. Si usamos un valor distinto de cero, **RANDOM()** siempre dará la misma secuencia de resultados, pero puede servir como generador procedural.
+
 ### RANDOMIZE
 
-Inicializa el generador de números aleatorios. La generación de números aleatorios no es realmente "aleatoria" y esto puede ocasionar que el generador devuelva siempre los mismos resultados si se usa en un emulador, por lo que se necesita alguna fuente de aleatoriedad o entropía. Lo que hace este comando es inicializar el generador usando el número de "frames" o "fotogramas" transcurridos, con lo que si se ejecuta en respuesta a algún evento arbitrario, como la pulsación de una tecla, garantizamos la aleatoriedad.
+Esto es equivalente a hacer `RANDOMIZE 0`, con lo que el generador de números aleatorios se cargará con el número de frames o fotogramas transcurridos.
 
 ### TRACK varexpression
 
