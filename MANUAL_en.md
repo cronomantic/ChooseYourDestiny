@@ -112,6 +112,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [XPOS()](#xpos)
     - [WINDOW expression](#window-expression)
     - [CHARSET expression](#charset-expression)
+    - [RANDOMIZE expression](#randomize-expression)
     - [RANDOMIZE](#randomize)
     - [TRACK varexpression](#track-varexpression)
     - [PLAY varexpression](#play-varexpression)
@@ -1177,9 +1178,13 @@ CYD "windows" are a screen area defined by their original position, width, heigh
 
 Switches the character set used when printing text. With the parameter set to zero, the lower set (characters 0 through 127) is used, and with a non-zero value, the upper set (characters 128 through 255) is used. Remember that characters 0 through 32 and 127 through 143 are non-printable. This instruction does not affect REPCHAR and CHAR.
 
+### RANDOMIZE expression
+
+Initializes the random number generator with the parameter value as the seed. Random number generation is not truly "random," and this can cause the generator to always return the same results if used in an emulator. Therefore, some source of randomness or entropy is needed. If we use this command with a value of zero as the parameter, the generator is initialized using the elapsed number of frames. This ensures randomness if it is executed in response to an arbitrary event, such as a key press. If we use a non-zero value, **RANDOM()** will always produce the same sequence of results, but it can be used as a procedural generator.
+
 ### RANDOMIZE
 
-Initializes the random number generator. Random number generation is not really "random" and this can cause the generator to always return the same results if used in an emulator, so some source of randomness or entropy is needed. What this command does is initialize the generator using the number of "frames" that have elapsed, so if it is executed in response to some arbitrary event, such as a key press, we guarantee randomness.
+This is equivalent to `RANDOMIZE 0`, which loads the random number generator with the elapsed number of frames.
 
 ### TRACK varexpression
 

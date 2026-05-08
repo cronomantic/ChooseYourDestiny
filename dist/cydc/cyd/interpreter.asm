@@ -471,10 +471,20 @@ DIV_DE:
 
     IFNDEF UNUSED_OP_RANDOMIZE
 OP_RANDOMIZE:
+    ld e, (hl) 
+    inc hl
+    ld d, (hl)
+    inc hl
     push hl
+    ex de, hl
+    ld a, h
+    or l
+    jr nz, 1f
     call SET_RND_SEED
-    pop hl
-    jp EXEC_LOOP
+    jr 2f
+1:  call SET_RND_SEED2
+2:  pop hl
+    jp EXEC_LOOP 
     ENDIF
 
     IFNDEF UNUSED_OP_AT
