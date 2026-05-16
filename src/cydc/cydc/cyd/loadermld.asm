@@ -41,45 +41,60 @@ RAM_ROUTINE:
     ld ($5C00), a           ; DAN_MLD_OFFSET – must match bank_dan.asm
     ld hl, BLOCK_TABLE
 .next_block:
-    ld a, (hl)
+    ; Read the entire entry FROM SLOT 0 first (it is still mapped here).
+    ; Do not switch the Dandanator slot until every field has been latched,
+    ; otherwise subsequent reads through HL come from the data slot instead
+    ; of the loader slot.
+    ld a, (hl)              ; relative slot id
     cp $FF
     jr z, .run_game
-
-    ; Relative slot -> absolute Dandanator slot command (1..32)
-    ld d, a
-    ld a, ($5C00)           ; use cached value; Dandanator may be on a data slot now
-    add a, d
-    inc a
-    call DAN_SET_SLOT_A
+    ld ($5C03), a           ; stash slot id for later
 
     inc hl
     ld e, (hl)
     inc hl
     ld d, (hl)
     inc hl
-    push de            ; source offset inside slot
+    push de                 ; source offset inside the data slot
 
     ld e, (hl)
     inc hl
     ld d, (hl)
     inc hl
-    push de            ; destination address in RAM
+    push de                 ; destination address in RAM
 
     ld c, (hl)
     inc hl
     ld b, (hl)
     inc hl
-    push bc            ; block size
+    push bc                 ; block size
 
-    ld c, (hl)
-    inc hl
-    call SETRAM_C      ; map destination RAM bank at C000 if needed
+    ld c, (hl)              ; RAM bank for destination
+    inc hl                  ; HL now points to next entry's slot byte (in slot 0)
+    ld ($5C02), hl          ; save BLOCK_TABLE pointer for next iteration
 
-    pop bc             ; size
-    pop de             ; destination
-    pop hl             ; source
+    call SETRAM_C           ; map destination RAM bank at C000 if needed
+
+    ; Now safe to switch the Dandanator to the data slot.
+    ld a, ($5C03)           ; relative slot id
+    ld d, a
+    ld a, ($5C00)           ; cached MLDoffset
+    add a, d
+    inc a
+    call DAN_SET_SLOT_A
+
+    pop bc                  ; size
+    pop de                  ; destination
+    pop hl                  ; source offset = address in the now-mapped data slot
     ldir
 
+    ; Switch back to the loader's slot (slot 0 of the MLD) so the next read of
+    ; BLOCK_TABLE comes from the correct slot.
+    ld a, ($5C00)           ; cached MLDoffset
+    inc a                   ; absolute slot = MLDoffset + 0 + 1 (loader slot)
+    call DAN_SET_SLOT_A
+
+    ld hl, ($5C02)          ; restore BLOCK_TABLE pointer
     jr .next_block
 
 .run_game:
@@ -107,6 +122,7 @@ DAN_SET_SLOT_A:
     jp DAN_CMD_B
 
 DAN_CMD_B:
+    xor a              ; write value 0 (matches OutRun and bank_dan.asm protocol)
 .slot_loop:
     nop
     nop
