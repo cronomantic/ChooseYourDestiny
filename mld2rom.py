@@ -269,7 +269,7 @@ def validate_mld_file(data: bytes, path: str) -> list[tuple[str, str]]:
         )
     else:
         type_name = KNOWN_MLD_TYPES[mld_type]
-        issue(SEV_INFO, f"Type byte 0x{mld_type:02X} → {type_name}.")
+        issue(SEV_INFO, f"Type byte 0x{mld_type:02X} -> {type_name}.")
 
     # ── 5. MLDoffset (baseSlot) should be 0 in a freshly-generated file ──────
     if footer["base_slot"] != 0:
@@ -286,7 +286,7 @@ def validate_mld_file(data: bytes, path: str) -> list[tuple[str, str]]:
     if any(b != 0 for b in footer["sector_ids"]):
         issue(
             SEV_WARNING,
-            f"Sector-ID bytes (footer offsets {_FO_SECTOR_IDS}–{_FO_SECTOR_IDS + 3}) "
+            f"Sector-ID bytes (footer offsets {_FO_SECTOR_IDS}-{_FO_SECTOR_IDS + 3}) "
             f"are not all zero: {footer['sector_ids']}. "
             f"dandanator-mini.MLDGame.allocateSaveSpace() will overwrite them at ROM "
             f"build time, but CYD (loadermld.asm) should emit four 0x00 bytes here.",
@@ -608,17 +608,17 @@ def mld2rom(
                 print(f"\n[VALIDATE] {mld_path}")
                 for sev, msg in issues:
                     prefix = {
-                        SEV_CRITICAL: "  ✗ CRITICAL",
-                        SEV_ERROR:    "  ✗ ERROR   ",
+                        SEV_CRITICAL: "  x CRITICAL",
+                        SEV_ERROR:    "  x ERROR   ",
                         SEV_WARNING:  "  ! WARNING ",
-                        SEV_INFO:     "  · INFO    ",
+                        SEV_INFO:     "  . INFO    ",
                     }.get(sev, f"  ? {sev:8}")
                     print(f"{prefix}: {msg}")
                 critical = [i for i in issues if i[0] == SEV_CRITICAL]
                 errors   = [i for i in issues if i[0] == SEV_ERROR]
                 warnings = [i for i in issues if i[0] == SEV_WARNING]
                 print(
-                    f"  → {len(critical)} critical, {len(errors)} error(s), "
+                    f"  -> {len(critical)} critical, {len(errors)} error(s), "
                     f"{len(warnings)} warning(s)."
                 )
                 if critical or errors:
@@ -705,7 +705,7 @@ def mld2rom(
         if verbose:
             print(
                 f"  Adding {mld['display_name']!r} at ROM slots "
-                f"{start_slot}–{start_slot + num_slots - 1} "
+                f"{start_slot}-{start_slot + num_slots - 1} "
                 f"(MLDoffset={start_slot:#04x}, {num_slots} slot(s))"
             )
 
@@ -823,20 +823,20 @@ def main() -> None:
             issues = validate_mld_file(raw, mld_path)
             print(f"\n[VALIDATE] {mld_path}")
             if not issues:
-                print("  OK – no issues found.")
+                print("  OK - no issues found.")
             else:
                 for sev, msg in issues:
                     prefix = {
-                        SEV_CRITICAL: "  ✗ CRITICAL",
-                        SEV_ERROR:    "  ✗ ERROR   ",
+                        SEV_CRITICAL: "  x CRITICAL",
+                        SEV_ERROR:    "  x ERROR   ",
                         SEV_WARNING:  "  ! WARNING ",
-                        SEV_INFO:     "  · INFO    ",
+                        SEV_INFO:     "  . INFO    ",
                     }.get(sev, f"  ? {sev:8}")
                     print(f"{prefix}: {msg}")
                 n_crit = sum(1 for s, _ in issues if s == SEV_CRITICAL)
                 n_err  = sum(1 for s, _ in issues if s == SEV_ERROR)
                 n_warn = sum(1 for s, _ in issues if s == SEV_WARNING)
-                print(f"  → {n_crit} critical, {n_err} error(s), {n_warn} warning(s).")
+                print(f"  -> {n_crit} critical, {n_err} error(s), {n_warn} warning(s).")
                 if n_crit or n_err:
                     any_issues = True
         sys.exit(1 if any_issues else 0)

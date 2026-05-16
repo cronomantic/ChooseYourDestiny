@@ -994,14 +994,26 @@ def do_asm_mld(
             slot_by_ram_bank[bank] = current_slot
             current_slot += 1
 
-    # For MLD targets, TXT/SCR chunks must use Dandanator slot IDs in index.
-    # For mld128, music entries (TRK/WYZ) keep RAM-bank IDs.
+    # For MLD targets, TXT/SCR chunks must use Dandanator slot IDs in the index
+    # and the offset must be slot-relative (0..0x3FFF), not the TAP-layout RAM
+    # address that the compiler emits. Original offsets are:
+    #   bank 0 chunks: position_in_bank + bank0_offset (start of bank 0 data)
+    #   other banks:   position_in_bank + 0xC000 (paged window in 128K)
+    # The Dandanator loader maps the slot at 0x0000-0x3FFF, so the in-slot
+    # offset is just position_in_bank.
+    # For mld128, music entries (TRK/WYZ) keep RAM-bank IDs and TAP offsets.
+    first_bank = banks[0] if banks else 0
     remapped_index = []
     for entry_type, entry_idx, entry_bank, entry_offset in index:
         mapped_bank = entry_bank
+        mapped_offset = entry_offset
         if entry_type in (0, 1):  # TYPE_TXT, TYPE_SCR
             mapped_bank = slot_by_ram_bank.get(entry_bank, entry_bank)
-        remapped_index.append((entry_type, entry_idx, mapped_bank, entry_offset))
+            if entry_bank == first_bank:
+                mapped_offset = (entry_offset - bank0_offset) & 0xFFFF
+            else:
+                mapped_offset = (entry_offset - 0xC000) & 0xFFFF
+        remapped_index.append((entry_type, entry_idx, mapped_bank, mapped_offset))
 
     asm_ind = ""
     for _, v in enumerate(remapped_index):
