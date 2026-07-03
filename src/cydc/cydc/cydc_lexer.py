@@ -190,6 +190,9 @@ class CydcLexer(object):
         "CHARSET": "CHARSET",
         "LASTPOS": "LASTPOS",
         "KEMPSTON": "KEMPSTON",
+        "IMPORT": "IMPORT",
+        "FROM": "FROM",
+        "CALL": "CALL",
     }
 
     # token_list
@@ -216,6 +219,7 @@ class CydcLexer(object):
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
+    tokens += ["STRING"]
     tokens += list(reserved.values())
 
     @property
@@ -316,6 +320,11 @@ class CydcLexer(object):
     def t_INITIAL_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
+        return t
+
+    def t_STRING(self, t):
+        r'"[^"\n]*"'
+        t.value = t.value[1:-1]  # strip the surrounding quotes
         return t
 
     def t_SHORT_LABEL(self, t):

@@ -152,6 +152,7 @@ class CydcCodegen(object):
         "PUSH_LEN_ARRAY": 0x7C,
         "SET_KEMPSTON": 0x7D,
         "PUSH_KEMPSTON": 0x7E,
+        "EXTERN": 0x7F,
     }
 
     def __init__(self, gettext):
@@ -159,6 +160,7 @@ class CydcCodegen(object):
         self.symbols = {}
         self.variables = {}
         self.constants = {}
+        self.externs = {}  # name -> assembler file for IMPORTed native routines
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
@@ -372,10 +374,18 @@ class CydcCodegen(object):
         constants = {}
         arrays = {}
         labels = {}
+        externs = {}
         code_tmp = []
         for t in code:
             opcode = t[0]  # get opcode type
-            if opcode == "CONST":
+            if opcode == "IMPORT":
+                q = t[1]  # routine name
+                p = t[2]  # assembler file path
+                if externs.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Native routine {q} imported two times!"))
+                else:
+                    externs[q] = p  # Add to the imported-routines table (no bytecode)
+            elif opcode == "CONST":
                 p = t[2]  # get value
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
@@ -557,6 +567,7 @@ class CydcCodegen(object):
                             c = (c >> 8) & 0xFF
                     tup += (c,)
             code.append(tup)
+        self.externs = externs
         return (code, variables, constants)
 
     def code_simple_optimize(self, code):

@@ -66,7 +66,9 @@ class TestParserBasicStatements(unittest.TestCase):
 
     def test_parse_print_statement(self):
         """Test parsing PRINT statement."""
-        code = '[[PRINT "text"]]'
+        # PRINT takes a numeric expression; a string literal is a syntax error
+        # (string tokens now exist for IMPORT ... FROM "file.asm").
+        code = "[[PRINT 42]]"
         result = self.parser.parse(input=code)
         self.assertIsNotNone(result)
 
@@ -75,6 +77,18 @@ class TestParserBasicStatements(unittest.TestCase):
         code = "[[PRINT 1 : PRINT 2 : PRINT 3]]"
         result = self.parser.parse(input=code)
         self.assertIsNotNone(result)
+
+    def test_parse_import_and_call(self):
+        """IMPORT declares a native routine and CALL invokes it (no errors)."""
+        code = '[[IMPORT beeper FROM "rutinas/beeper.asm" : CALL beeper]]'
+        result = self.parser.parse(input=code)
+        self.assertIsNotNone(result)
+        self.assertEqual(self.parser.errors, [])
+
+    def test_parse_call_without_import_errors(self):
+        """CALL to a routine that was never IMPORTed is flagged as an error."""
+        self.parser.parse(input="[[CALL missing]]")
+        self.assertTrue(len(self.parser.errors) > 0)
 
 
 class TestParserControlFlow(unittest.TestCase):
