@@ -2755,39 +2755,34 @@ OP_PUSH_LEN_ARRAY:
     ENDM
 */
 
-/*
     IFNDEF UNUSED_OP_EXTERN
+; OP_EXTERN: invoke a native routine registered with IMPORT / called with CALL.
+; Operand layout: [bank, addr_lo, addr_hi]. On entry HL points at the operand.
+; ABI: the routine is entered with DE=FLAGS (base of the 256-byte variable
+; array) and must end with RET. It may freely use AF/BC/DE/HL/IX/IY (the handler
+; saves IX/IY, which the interpreter itself relies on). On 48k the routine is
+; resident, so we call it directly and ignore the bank byte. (Banked targets
+; will page in the bank before the call: TODO in phase 3.)
 OP_EXTERN:
-    ld b, (hl)
+    inc hl              ; skip bank byte (48k: resident, no paging)
+    ld e, (hl)
     inc hl
-    ld a, (hl)
-    inc hl
-    ld (.jump_addr+0), a
-    ld a, (hl)
-    inc hl
-    ld (.jump_addr+1), a
-    push hl
-    ld a, (CHUNK)
-    push af
-    cp b       ; If the CHUNK is the same...
-    jr z, 1f
-    ld a, b
-    push hl
-    call LOAD_CHUNK
-    pop hl
-1:  ld de, FLAGS
-.jump_addr+1:
-    call 0-0
-    pop bc
-    ld a, (CHUNK)
-    cp b       ; If the CHUNK is the same...
-    jr z, 2f
-    ld a, b
-    call LOAD_CHUNK
-2:  pop hl
+    ld d, (hl)
+    inc hl              ; DE = routine address, HL = next bytecode PC
+    push hl             ; save interpreter PC
+    push ix             ; save VM data-stack pointer
+    push iy             ; save ROM sysvars pointer
+    ld hl, .cont
+    push hl             ; return address for the routine's RET
+    push de             ; routine address (target of the RET below)
+    ld de, FLAGS
+    ret                 ; jump into the routine with DE=FLAGS
+.cont:
+    pop iy
+    pop ix
+    pop hl              ; restore interpreter PC
     jp EXEC_LOOP
     ENDIF
-*/
 ;------------------------
 ERROR_NOP:
     ld a, 6
@@ -3521,6 +3516,12 @@ OPCODES:
     DW OP_PUSH_KEMPSTON
     ENDIF
     IFDEF UNUSED_OP_PUSH_KEMPSTON
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_EXTERN
+    DW OP_EXTERN
+    ENDIF
+    IFDEF UNUSED_OP_EXTERN
     DW ERROR_NOP
     ENDIF
 
