@@ -9,12 +9,13 @@
 > sobre el código actual llevan `fichero:línea` verificados salvo que se indique
 > "(a verificar)". Asume [ARCHITECTURE.md](ARCHITECTURE.md).
 >
-> **Estado: 48k END-TO-END FUNCIONANDO y verificado en emulador.** Fases 1
-> (front-end), 2 (build/allocator, camino 48k) y 3 (runtime asm, handler + jump
-> table) implementadas y verificadas: `IMPORT`+`CALL` de una rutina nativa que
-> escribe en `FLAGS` corre en ZEsarUX (test `tests/test_extern.py`). **Pendiente:**
-> el camino **banked (128k/plus3/mld)** — hoy da error limpio si se usa `IMPORT`
-> fuera de 48k — y la fase 4 (ejemplo + sección de manual). Detalle en §8.1–§8.3.
+> **Estado: 48k, 128k y +3 END-TO-END FUNCIONANDO y verificados en emulador.** Fases
+> 1 (front-end), 2 (build/allocator, caminos 48k residente y 128k/+3 banked) y 3
+> (runtime asm, handler resident + banked `$7FFD` + jump table) implementadas y
+> verificadas: `IMPORT`+`CALL` de una rutina nativa que escribe en `FLAGS` corre en
+> ZEsarUX en 48k, 128k y +3 (test `tests/test_extern.py`, los tres modelos; +3 desde
+> DSK con máquina `P341`). **Pendiente:** el target **mld (Dandanator, `SET_DAN_BANK`)**
+> — hoy da error limpio — y la fase 4 (ejemplo + sección de manual). Detalle §8.1–§8.3.
 
 ---
 
@@ -344,17 +345,51 @@ tamaño`, `SAVEBIN`), ensambla con `run_assembler(asm=..., filename=...)`
   Entrada en la jump table `OPCODES` en posición **0x7F** con guarda
   `IFNDEF UNUSED_OP_EXTERN` / `DW ERROR_NOP` (antes del `REPT` de relleno).
 
-**Verificación empírica** (`tests/test_extern.py`, emulador real): una rutina que
-escribe 42 en `FLAGS+0` y 99 en `FLAGS+1` y **revienta IX/IY** a propósito; el guion
-hace `CALL` y luego `SET 2 TO 123`. Resultado leído por ZRCP: `FLAGS=[42,99,123]` →
-la rutina corrió con `DE=FLAGS` y el intérprete **resumió intacto** tras el `CALL`.
+**Camino 128k (banked)** — HECHO y verificado en emulador:
 
-**Pendiente (banked 128k/plus3/mld):** meter la rutina en `blocks` como recurso no
-troceable (nuevo `btype`), que el best-fit le dé banco+offset, añadir entrada de
-índice y tipo de recurso para `LOAD_CHUNK`/`FIND_IN_INDEX`, parchear
-`[banco, $C000+offset]`, y bifurcar el handler (`LOAD_CHUNK` del banco + `call
-$C000+offset` + restaurar `CHUNK`) con los DEFINEs de target. Verificar en emulador
-128k. + Fase 4 (ejemplo + manual).
+- **Build 128k** (`cydc.py`, mismo bloque que 48k, rama `model == "128k"`): cada
+  rutina se coloca en un **banco PAGINADO** (índice `j >= 1` de `available_banks`,
+  nunca el 0 residente), por best-fit entre los bancos ya usados; si ninguno tiene
+  hueco, se añade uno nuevo de `spectrum_banks` (error si no quedan). ORG final =
+  `$C000 + len(available_banks[j])`; el operando de `CALL` se parchea con
+  `[banco_físico = spectrum_banks[j], $C000+offset]`. La rutina **no** entra en el
+  índice de recursos: se alcanza sólo por el operando `[banco, addr]` del `CALL`
+  (queda como bytes muertos tras el chunk/recurso de ese banco, nunca ejecutada por
+  el bytecode). Sin `LOAD_CHUNK`/`FIND_IN_INDEX` ni `TYPE_COD` — más simple que lo
+  esbozado en §6.
+- **Runtime banked** (`interpreter.asm`, `IFDEF OP_EXTERN_BANKED` dentro de
+  `OP_EXTERN`): lee `[banco, addr]`, `push hl/ix/iy`, `or ROM48KBASIC` +
+  `call SET_RAM_BANK` (pagina el banco de la rutina en `$C000`; devuelve el valor
+  previo del puerto), `push af` para guardarlo, invoca la rutina
+  (`push .cont/push de/ld de,FLAGS/ret`), y a la vuelta `pop af` + `call SET_RAM_BANK`
+  **restaura el banco del script**. Como el motor (handler + `FLAGS`) es **residente
+  en `$8000-$BFFF`**, sigue ejecutándose mientras `$C000` apunta a la rutina.
+  Restaurar el valor real del puerto (no `SCRIPT_BANK`) hace el retorno robusto sea
+  cual sea el banco desde el que se hizo el `CALL`. La rama `ELSE` (48k y demás)
+  mantiene el `call` directo.
+- **El gate es `OP_EXTERN_BANKED`, no `IS_128_TAPE`.** Se define en `get_asm_128` y
+  `get_asm_plus3` (ambos incluyen `bank_zx128.asm` → `SET_RAM_BANK`/`ROM48KBASIC`
+  por `$7FFD`). NO se define en `get_asm_48` (residente) ni en mld (que paginan por
+  Dandanator con `SET_DAN_BANK`), evitando que un build mld referencie `SET_RAM_BANK`
+  aunque defina `IS_128_TAPE`.
+
+- **+3 (`plus3`)**: **soportado, mismo camino que 128k.** El +3 banca bytecode en RAM
+  por `$7FFD` igual que el 128k (los *recursos* SCR/TRK van a disco, pero los chunks
+  y las rutinas nativas van a bancos). El allocator ya excluye el **banco 7** en +3
+  (`spectrum_banks = [0,1,3,4]`, o `[0,3,4,6]` con WYZ); como la colocación usa
+  `spectrum_banks[j]` y `len(spectrum_banks)` como tope, respeta ese límite sin
+  código especial. `do_asm_plus3` emite cada banco con `PAGE {bank}` + `ORG $C000`.
+
+**Verificación empírica** (`tests/test_extern.py`, emulador real, **48k, 128k y +3**):
+una rutina que escribe 42 en `FLAGS+0` y 99 en `FLAGS+1` y **revienta IX/IY** a
+propósito; el guion hace `CALL` y luego `SET 2 TO 123`. Resultado por ZRCP en los tres
+modelos (+3 desde DSK, máquina `P341`): `FLAGS=[42,99,123]` → la rutina corrió con
+`DE=FLAGS` y el intérprete **resumió intacto** tras el `CALL`.
+
+**Pendiente (mld):** mld/mld128 paginan por **slots Dandanator** (`SET_DAN_BANK`,
+`IS_MLD_DAN`), no por `$7FFD`; requieren su propia integración de colocación y su rama
+en el handler. Hoy `IMPORT` fuera de 48k/128k/+3 da **error limpio** en `cydc.py`.
+Además, fase 4 (ejemplo + manual).
 
 ---
 

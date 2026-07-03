@@ -2761,23 +2761,41 @@ OP_PUSH_LEN_ARRAY:
 ; ABI: the routine is entered with DE=FLAGS (base of the 256-byte variable
 ; array) and must end with RET. It may freely use AF/BC/DE/HL/IX/IY (the handler
 ; saves IX/IY, which the interpreter itself relies on). On 48k the routine is
-; resident, so we call it directly and ignore the bank byte. (Banked targets
-; will page in the bank before the call: TODO in phase 3.)
+; resident and the bank byte is ignored (direct call). On banked targets the
+; bank byte is the physical RAM bank holding the routine at $C000+offset: the
+; handler pages it in, calls it, and restores the script bank on return. The
+; engine (including this handler and FLAGS) is resident at $8000-$BFFF, so it
+; keeps running while $C000 is paged to the routine.
 OP_EXTERN:
-    inc hl              ; skip bank byte (48k: resident, no paging)
+    ld a, (hl)          ; bank byte
+    inc hl
     ld e, (hl)
     inc hl
     ld d, (hl)
-    inc hl              ; DE = routine address, HL = next bytecode PC
+    inc hl              ; A = bank, DE = routine address, HL = next bytecode PC
     push hl             ; save interpreter PC
     push ix             ; save VM data-stack pointer
     push iy             ; save ROM sysvars pointer
+    IFDEF OP_EXTERN_BANKED
+    or ROM48KBASIC
+    call SET_RAM_BANK   ; page the routine's bank at $C000; A = previous port
+    push af             ; save previous $7FFD value to restore the script bank
     ld hl, .cont
     push hl             ; return address for the routine's RET
     push de             ; routine address (target of the RET below)
     ld de, FLAGS
     ret                 ; jump into the routine with DE=FLAGS
 .cont:
+    pop af              ; previous port value (the script's bank)
+    call SET_RAM_BANK   ; page the script bank back at $C000
+    ELSE
+    ld hl, .cont        ; 48k: routine is resident, call it directly
+    push hl             ; return address for the routine's RET
+    push de             ; routine address
+    ld de, FLAGS
+    ret                 ; jump into the routine with DE=FLAGS
+.cont:
+    ENDIF
     pop iy
     pop ix
     pop hl              ; restore interpreter PC
