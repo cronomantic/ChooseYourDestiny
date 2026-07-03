@@ -1,0 +1,125 @@
+[[
+/* ==========================================================================
+   strings.cyd  -  Libreria de cadenas de texto para CYD
+   --------------------------------------------------------------------------
+   Entrada/salida y manejo de cadenas guardadas como arrays de caracteres en
+   las variables (idiom de indireccion), sin tocar la maquina virtual.
+   Generaliza el ejemplo examples/input_test para trabajar sobre un buffer
+   elegido por el autor. Verificada en emulador (incl. entrada de teclado
+   inyectada por el harness; ver doc/dev/EMULATOR_TESTING.md).
+
+   USO: incluye este fichero al PRINCIPIO de tu programa con la directiva de
+   inclusion del preprocesador (ver el manual, seccion INCLUDE). Se auto-salta
+   las rutinas (GOTO interno); solo se ejecutan cuando las llamas con GOSUB.
+
+   Una cadena es un rango de variables consecutivas con codigos de caracter,
+   terminada en 0 (o hasta llenar su capacidad). Antes de llamar, fija:
+     stBase = indice de la 1a variable del buffer
+     stLen  = capacidad del buffer en caracteres
+   Para strCopy/strCmp, el 2o buffer va en stB2 (misma capacidad stLen).
+
+   REGISTROS reservados: variables 216..223
+     stBase 216   stLen 217   stPtr 218   stEnd 219
+     stChr  220   stI   221   stB2  222   stRes 223
+   (No colisiona con la libreria math16_32, que reserva 224..254.)
+
+   API:
+     strClear : pone a 0 el buffer (stBase, stLen)
+     strLen   : cuenta caracteres hasta el 0 o el final  ->  stRes
+     strPrint : imprime el buffer (CHAR) hasta el 0 o el final
+     strInput : lee una cadena del teclado al buffer (cursor, ENTER, DELETE)
+     strCopy  : copia el buffer stBase -> stB2 (stLen bytes)
+     strCmp   : compara stBase con stB2  ->  stRes = 0/1/2 (menor/igual/mayor)
+   ========================================================================== */
+
+DECLARE 216 AS stBase : DECLARE 217 AS stLen : DECLARE 218 AS stPtr
+DECLARE 219 AS stEnd  : DECLARE 220 AS stChr : DECLARE 221 AS stI
+DECLARE 222 AS stB2   : DECLARE 223 AS stRes
+
+GOTO stSkip
+
+LABEL strClear
+SET stPtr TO @stBase
+LET stEnd = @stBase + @stLen
+WHILE (@stPtr < @stEnd)
+ SET [stPtr] TO 0
+ LET stPtr += 1
+WEND
+RETURN
+
+LABEL strLen
+SET stPtr TO @stBase
+LET stEnd = @stBase + @stLen
+SET stRes TO 0
+WHILE (@stPtr < @stEnd)
+ IF [@stPtr] = 0 THEN RETURN ENDIF
+ LET stRes += 1
+ LET stPtr += 1
+WEND
+RETURN
+
+LABEL strPrint
+SET stPtr TO @stBase
+LET stEnd = @stBase + @stLen
+WHILE (@stPtr < @stEnd)
+ IF [@stPtr] = 0 THEN RETURN ENDIF
+ CHAR [@stPtr]
+ LET stPtr += 1
+WEND
+RETURN
+
+LABEL strInput
+GOSUB strClear
+SET stPtr TO @stBase
+LET stEnd = @stBase + @stLen
+WHILE ()
+ CHAR 95
+ SET stChr TO INKEY()
+ BACKSPACE
+ IF @stChr = 13 THEN RETURN ENDIF
+ IF @stChr = 12 THEN
+  IF @stPtr < @stEnd THEN SET [stPtr] TO 0 ENDIF
+  IF @stPtr > @stBase THEN
+   BACKSPACE
+   LET stPtr -= 1
+   SET [stPtr] TO 0
+  ENDIF
+ ELSE
+  IF @stChr >= 32 AND @stChr < 128 AND @stPtr < @stEnd THEN
+   CHAR @stChr
+   SET [stPtr] TO @stChr
+   LET stPtr += 1
+  ENDIF
+ ENDIF
+WEND
+RETURN
+
+LABEL strCopy
+SET stPtr TO @stBase
+SET stI TO @stB2
+LET stEnd = @stBase + @stLen
+WHILE (@stPtr < @stEnd)
+ SET stChr TO [@stPtr]
+ SET [stI] TO @stChr
+ LET stPtr += 1
+ LET stI += 1
+WEND
+RETURN
+
+LABEL strCmp
+SET stPtr TO @stBase
+SET stI TO @stB2
+LET stEnd = @stBase + @stLen
+SET stRes TO 1
+WHILE (@stPtr < @stEnd)
+ SET stChr TO [@stPtr]
+ IF @stChr > [@stI] THEN SET stRes TO 2 : RETURN ENDIF
+ IF @stChr < [@stI] THEN SET stRes TO 0 : RETURN ENDIF
+ IF @stChr = 0 THEN RETURN ENDIF
+ LET stPtr += 1
+ LET stI += 1
+WEND
+RETURN
+
+LABEL stSkip
+]]

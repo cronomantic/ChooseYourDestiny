@@ -1,0 +1,21 @@
+[[
+    /* Demo de la libreria de cadenas (strings.cyd): pide un nombre por teclado,
+       lo imprime y muestra su longitud. La libreria se incluye al principio y
+       se auto-salta sus rutinas. El buffer son las variables 0..15 (16 chars). */
+    INCLUDE "../../lib/strings.cyd"
+
+    PAPER 0 : INK 7 : BORDER 0 : BRIGHT 1 : FLASH 0
+    PAGEPAUSE 1 : CLEAR
+]]Como te llamas?
+[[
+    SET stBase TO 0 : SET stLen TO 16
+    GOSUB strInput
+]]
+Hola, [[ GOSUB strPrint ]]!
+[[
+    GOSUB strLen
+]]Tu nombre tiene [[ PRINT @stRes ]] letras.
+[[
+    NEWLINE
+    WAITKEY : END
+]]

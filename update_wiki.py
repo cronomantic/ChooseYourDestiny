@@ -43,43 +43,43 @@ def check_git_status(wiki_path):
 def main():
     """Main entry point."""
     base_path = Path(__file__).parent
-    wiki_path = base_path.parent / "ChooseYourDestiny.wiki"
-    
+    wiki_path = base_path / "external" / "ChooseYourDestiny.wiki"
+
     print("=" * 60)
     print("ChooseYourDestiny Wiki Updater")
     print("=" * 60)
-    
-    # Check if wiki repository exists
+
+    # Check if wiki submodule exists
     if not wiki_path.exists():
-        print(f"\n✗ Error: Wiki repository not found at {wiki_path}")
-        print("\nTo clone the wiki:")
-        print("  cd ..")
-        print("  git clone https://github.com/cronomantic/ChooseYourDestiny.wiki.git")
+        print(f"\n✗ Error: Wiki submodule not found at {wiki_path}")
+        print("\nTo initialize the wiki submodule:")
+        print("  git submodule update --init external/ChooseYourDestiny.wiki")
         return 1
-    
-    print(f"\nWiki repository: {wiki_path}")
-    
-    # Files to sync
+
+    print(f"\nWiki submodule: {wiki_path}")
+
+    # Only the MANUAL is canonical in this repo and replicated to the wiki.
+    # The TUTORIAL lives ONLY in the wiki (it is edited directly in the submodule),
+    # so it is not copied here; git add -A below will still commit its changes.
     files_to_sync = [
         "MANUAL_es.md",
         "MANUAL_en.md",
-        "TUTORIAL_es.md",
-        "TUTORIAL_en.md",
     ]
     
-    print(f"\nSyncing documentation files to wiki...")
-    
+    print(f"\nReplicating documentation files to wiki (repo -> wiki)...")
+
+    # The repository is the single source of truth; the wiki is a mirror.
     copied_files = []
     for filename in files_to_sync:
-        src = wiki_path / filename
+        src = base_path / filename
         dst = wiki_path / filename
-        
+
         if src.exists():
-            # File is already in wiki, no need to copy
-            print(f"  ✓ {filename} (already in wiki)")
+            shutil.copy2(src, dst)
+            print(f"  ✓ {filename} (copied from repo)")
             copied_files.append(filename)
         else:
-            print(f"  ✗ {filename} not found in wiki")
+            print(f"  ✗ {filename} not found in repo: {src}")
     
     if not copied_files:
         print("\n✗ No files to sync")

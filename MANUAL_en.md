@@ -424,6 +424,106 @@ The compiler supports splitting large adventures into multiple source files usin
 
 ---
 
+## Bundled libraries
+
+The `lib/` directory ships a set of **libraries written in the CYD language
+itself** (they do not modify the virtual machine nor add dependencies). They are
+collections of subroutines that you add to your program with `INCLUDE` and call
+with `GOSUB`. Each library **skips over itself** (an internal `GOTO` at the top),
+so you can include it at the start of your script without execution falling into
+the subroutines: they only run when you call them with `GOSUB`.
+
+```cyd
+[[
+    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE "../../lib/strings.cyd"
+    ... your program ...
+]]
+```
+
+Each library reserves a block of variables as its workspace. The blocks **do not
+overlap**, so you can use several at once:
+
+| Library | Reserved variables |
+|---------|--------------------|
+| `math16_32.cyd` | 224..254 |
+| `strings.cyd`   | 216..223 |
+
+### `math16_32.cyd` — 16- and 32-bit arithmetic
+
+Provides wide **unsigned** integers (16-bit: 0..65,535; 32-bit:
+0..4,294,967,295) with multiplication and division, which CYD's 8-bit variables
+could not do without overflowing. Operands are loaded into "registers" (groups of
+2 or 4 consecutive variables, low byte first): `A` = `mlA0..mlA3`,
+`B` = `mlB0..mlB3`, `C` = `mlC0..mlC3`. The 16-bit operations use the low 2 bytes
+of each.
+
+Since CYD literals are 8-bit, wide values are loaded byte by byte with the
+multiple assignment: `SET mlA0 TO {226, 4}` loads 1250 (= 0x04E2, low byte
+first).
+
+| Routine | Effect |
+|---------|--------|
+| `add16` / `add32` | `A = A + B` (wraps on overflow) |
+| `sub16` / `sub32` | `A = A - B` (wraps; use `cmp` to check first) |
+| `cmp16` / `cmp32` | `mlCmp = 0/1/2` → `A<B` / `A=B` / `A>B` |
+| `shl16` / `shl32` | `A = A << 1` |
+| `shr16` / `shr32` | `A = A >> 1` |
+| `mul32` | `C = A * B` (truncated to 32 bits) |
+| `mul1632` | `C(32) = A(16) * B(16)` — **never overflows** (recommended for scores) |
+| `div32` | `A = A / B` (quotient), `C = A mod B` (remainder) |
+| `print16` / `print32` | prints `A` in decimal (destroys `A`) |
+
+To divide by a 16-bit value, load it into `B` with `mlB2 = mlB3 = 0` and use
+`div32` (the quotient may be 32-bit). The 16-bit tier is ~2–4× faster; avoid
+`mul`/`div` inside very tight loops. There is a full example in
+`examples/math_library`.
+
+**Example:** score = enemies × points + bonus = 1250 × 800 + 234567.
+
+```cyd
+[[
+    INCLUDE "../../lib/math16_32.cyd"
+    SET mlA0 TO {226, 4}       /* A = 1250 */
+    SET mlB0 TO {32, 3}        /* B = 800  */
+    GOSUB mul1632              /* C = 1000000 (no overflow) */
+    SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* A = C */
+    SET mlB0 TO {71, 148, 3, 0}   /* B = 234567 */
+    GOSUB add32                /* A = 1234567 */
+]]Score: [[ GOSUB print32 ]]
+```
+
+### `strings.cyd` — text strings
+
+Keyboard input, printing and handling of character strings stored in consecutive
+variables (using `[@ptr]` indirection), terminated by `0`. Before calling, set
+the registers: `stBase` (index of the first variable of the buffer), `stLen`
+(capacity in characters) and, for copy or compare, `stB2` (index of the second
+buffer).
+
+| Routine | Effect |
+|---------|--------|
+| `strClear` | zero-fills the buffer |
+| `strLen`   | counts characters up to the 0 or the end → `stRes` |
+| `strPrint` | prints the buffer (`CHAR`) up to the 0 or the end |
+| `strInput` | reads a string from the keyboard (cursor, `ENTER` ends, `DELETE` erases) |
+| `strCopy`  | copies the `stBase` buffer → `stB2` (`stLen` bytes) |
+| `strCmp`   | compares `stBase` with `stB2` → `stRes = 0/1/2` (less/equal/greater) |
+
+**Example:** ask for a name and greet.
+
+```cyd
+[[
+    INCLUDE "../../lib/strings.cyd"
+    SET stBase TO 0 : SET stLen TO 16
+    GOSUB strInput
+]]Hello, [[ GOSUB strPrint ]]!
+```
+
+There is a full example in `examples/strings_library`.
+
+---
+
 ## Variables and Numeric Expressions
 
 Numeric constant values ​​can be expressed in base 10 by default, in hexadecimal with the prefix `0x`, or in binary with the prefix `0b`. For example, `240` would be decimal, `0xF0` in hexadecimal, and `0b11110000` in binary.
@@ -1608,6 +1708,24 @@ Technical example showcasing advanced data handling features:
 - **Interactive editing:** Allows character deletion with DELETE and displays a blinking cursor.
 
 This example is fundamental for understanding how to work with complex data and create custom input interfaces.
+
+#### `examples\math_library` - 16/32-bit arithmetic
+**Level:** Intermediate
+
+Shows how to use the `lib/math16_32.cyd` library to work with numbers that exceed
+8 (and 16) bits:
+- **Including libraries:** Adds the library with `INCLUDE` at the start of the program.
+- **Overflow-free multiplication:** Uses `mul1632` (`C(32) = A(16) * B(16)`) to compute a score.
+- **32-bit addition and printing:** Combines `add32` and `print32` to show the result in decimal.
+- **Loading wide literals:** Uses the multiple assignment `SET reg TO {b0, b1, ...}`.
+
+#### `examples\strings_library` - Text strings
+**Level:** Intermediate
+
+Shows how to use the `lib/strings.cyd` library for string input and handling:
+- **Keyboard input:** Reads a name with `strInput` (cursor, ENTER, DELETE).
+- **Printing and length:** Shows the string with `strPrint` and its length with `strLen`.
+- **Configurable buffer:** The author chooses where and how large the string is (`stBase`, `stLen`).
 
 #### `examples\windows` - Multiple Windows
 **Level:** Beginner-Intermediate

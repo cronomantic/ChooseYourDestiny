@@ -19,6 +19,8 @@ elif locale -a 2>/dev/null | grep -qi '^C\.utf8$'; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The repository is the canonical source for the documentation (the wiki is a
+# mirror), so the PDFs are generated from the repo's own Markdown.
 cd "$SCRIPT_DIR"
 
 # Check if pandoc is installed
@@ -72,29 +74,32 @@ COMMON_PANDOC_ARGS=(
     -V monofont="DejaVu Sans Mono"
 )
 
-# Change to wiki directory
-cd "$SCRIPT_DIR/../ChooseYourDestiny.wiki" || {
-    echo "Error: Wiki directory not found at ../ChooseYourDestiny.wiki"
-    echo "Make sure the wiki repository is cloned as a sibling directory"
-    exit 1
-}
-
 # Ensure output directories exist
 mkdir -p "$SCRIPT_DIR/documentation/es" "$SCRIPT_DIR/documentation/en"
 
-# Generate Spanish PDFs
+# The MANUAL is canonical in this repo; the TUTORIAL lives in the wiki submodule.
+# Each is built from its own directory so that its relative image paths (assets/)
+# resolve correctly.
+WIKI_DIR="$SCRIPT_DIR/external/ChooseYourDestiny.wiki"
+if [ ! -d "$WIKI_DIR" ]; then
+    echo "Error: wiki submodule not found at $WIKI_DIR"
+    echo "Initialize it with: git submodule update --init external/ChooseYourDestiny.wiki"
+    exit 1
+fi
+
+# Generate the MANUALs (from the repo root)
 echo "Generating MANUAL_es.pdf..."
-pandoc MANUAL_es.md -o "$SCRIPT_DIR/documentation/es/MANUAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}"
+( cd "$SCRIPT_DIR" && pandoc MANUAL_es.md -o "$SCRIPT_DIR/documentation/es/MANUAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}" )
 
-echo "Generating TUTORIAL_es.pdf..."
-pandoc TUTORIAL_es.md -o "$SCRIPT_DIR/documentation/es/TUTORIAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}"
-
-# Generate English PDFs
 echo "Generating MANUAL_en.pdf..."
-pandoc MANUAL_en.md -o "$SCRIPT_DIR/documentation/en/MANUAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}"
+( cd "$SCRIPT_DIR" && pandoc MANUAL_en.md -o "$SCRIPT_DIR/documentation/en/MANUAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}" )
+
+# Generate the TUTORIALs (from the wiki submodule, where their images live)
+echo "Generating TUTORIAL_es.pdf..."
+( cd "$WIKI_DIR" && pandoc TUTORIAL_es.md -o "$SCRIPT_DIR/documentation/es/TUTORIAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}" )
 
 echo "Generating TUTORIAL_en.pdf..."
-pandoc TUTORIAL_en.md -o "$SCRIPT_DIR/documentation/en/TUTORIAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}"
+( cd "$WIKI_DIR" && pandoc TUTORIAL_en.md -o "$SCRIPT_DIR/documentation/en/TUTORIAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}" )
 
 echo ""
 echo "✓ PDF documentation generated successfully!"
