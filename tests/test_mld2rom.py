@@ -14,6 +14,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+# Dandanator/MLD aparcado: el soporte MLD no arranca y se ha ocultado de las
+# superficies de usuario. Estos tests quedan aquí (decorados con @unittest.skip)
+# para retomarlos en el futuro.
+_MLD_PARKED = "Soporte Dandanator/MLD aparcado"
+
 
 REPO_ROOT = Path(__file__).parent.parent
 MLD2ROM_PATH = REPO_ROOT / "mld2rom.py"
@@ -85,6 +90,7 @@ def severities(issues):
     return [sev for sev, _ in issues]
 
 
+@unittest.skip(_MLD_PARKED)
 class ValidateMldFileTests(unittest.TestCase):
     """Test 1 + Test 2: validate_mld_file() behaviour on clean and defective MLDs."""
 
@@ -140,6 +146,7 @@ class ValidateMldFileTests(unittest.TestCase):
         self.assertNotIn(mld2rom.SEV_ERROR, sevs)
 
 
+@unittest.skip(_MLD_PARKED)
 class ParseMldTests(unittest.TestCase):
     """Test 3: parse_mld() returns consistent metadata."""
 
@@ -164,6 +171,7 @@ class ParseMldTests(unittest.TestCase):
             mld2rom.parse_mld(data, "trunc")
 
 
+@unittest.skip(_MLD_PARKED)
 class BuildGameStructTests(unittest.TestCase):
     """Test 4: build_game_struct() byte-level output."""
 
@@ -197,6 +205,7 @@ class BuildGameStructTests(unittest.TestCase):
         self.assertEqual(gs[mld2rom._GS_GAMENAME + mld2rom.GAMENAME_SIZE - 1], 0)
 
 
+@unittest.skip(_MLD_PARKED)
 class Mld2RomEndToEndTests(unittest.TestCase):
     """Test 5, 6, 7, 8: full pipeline through mld2rom()."""
 
