@@ -90,6 +90,7 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
     if listing:
         command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
     command_line += [filename]
+    success = False
     try:
         stdout = None
         # stdout = subprocess.DEVNULL
@@ -103,13 +104,20 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
             stderr=subprocess.PIPE if capture_output else stderr,
             universal_newlines=capture_output,
         )
+        success = result.returncode == 0
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
     finally:
-        if os.path.isfile(filename):
+        # Keep the generated .asm when assembly failed so it can be inspected;
+        # only remove it on success.
+        if success and os.path.isfile(filename):
             os.remove(filename)
     if result.returncode != 0:
-        raise OSError(result.stderr)
+        details = (result.stderr or "").strip()
+        msg = f"sjasmplus failed (exit code {result.returncode}). Generated source kept at: {filename}"
+        if details:
+            msg += f"\n{details}"
+        raise OSError(msg)
     return result
     # try:
     #    with open(filename + ".zx0", "rb") as f:
@@ -202,6 +210,11 @@ def compress_screen_file(fpath, num_lines=192, force_mirror=False, verbose=False
     if os.path.isfile(fpath):
         with open(fpath, "rb") as f:
             b = list(f.read())
+            if len(b) < ScreenCompress.MAX_SIZE:
+                sys.exit(
+                    f"ERROR: Invalid SCR file '{fpath}': expected at least "
+                    f"{ScreenCompress.MAX_SIZE} bytes, got {len(b)}."
+                )
             if verbose:
                 print(f"Compressing file {fpath}...")
             csc = ScreenCompress(b)
