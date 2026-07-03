@@ -331,7 +331,7 @@ class CydcLexer(object):
         try:
             t.value = int(t.value, 0)
         except ValueError:
-            print("Integer value too large %d", t.value)
+            print(f"Integer value too large: {t.value}")
             t.value = 0
         return t
 
@@ -340,7 +340,7 @@ class CydcLexer(object):
         try:
             t.value = int(t.value, 0)
         except ValueError:
-            print("Integer value too large %d", t.value)
+            print(f"Integer value too large: {t.value}")
             t.value = 0
         return t
 
@@ -349,7 +349,7 @@ class CydcLexer(object):
         try:
             t.value = int(t.value)
         except ValueError:
-            print("Integer value too large %d", t.value)
+            print(f"Integer value too large: {t.value}")
             t.value = 0
         return t
 
