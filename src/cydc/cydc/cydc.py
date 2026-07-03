@@ -852,6 +852,14 @@ def main():
             spectrum_banks = [0, 3, 4, 6]
         else:
             spectrum_banks = [0, 1, 3, 4]
+    elif model == "mld":
+        # Strict MLD (48K) reads data from Dandanator slots via SET_DAN_BANK (no
+        # RAM banking, works in 48K mode), so it can span several slots — unlike a
+        # real 48K machine it is not capped at one bank. The numbers are just
+        # distinct slot indices; do_asm_mld maps them to slots 2..N and unused ones
+        # are trimmed. 16 data slots (~256 KB) leaves room in the 32-bank
+        # Dandanator Mini for the loader/interpreter and other games.
+        spectrum_banks = list(range(0, 16))
     else:
         spectrum_banks = [0]
 
