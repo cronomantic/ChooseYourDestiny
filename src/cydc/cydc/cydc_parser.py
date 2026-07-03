@@ -452,7 +452,6 @@ class CydcParser(object):
             t = p[1]
             if isinstance(t[1], list):
                 for err in t[1]:
-                    print(err)
                     loc = self._format_error_location(err[0])
                     self.errors.append(self._(
                         f"Invalid character '{err[2]}' (\\u{ord(err[2]):04x}) in {loc} and position {err[1]}"
