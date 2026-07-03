@@ -175,6 +175,7 @@ class CydcCodegen(object):
     def constant_calculation(self, constants, is_word=False):
         f_constants = {}
         while len(constants) > 0:
+            count_before = len(constants)
             tmp_const = constants.copy()
             # Get flattened constants (without reference to other constants)
             for k in constants.keys():
@@ -189,6 +190,17 @@ class CydcCodegen(object):
                     c = tmp_const.pop(k)
                     f_constants[k] = c
             constants = tmp_const
+            # If no constant could be flattened this round, the remaining ones
+            # reference each other (or themselves) and can never resolve; without
+            # this guard the while-loop would spin forever.
+            if len(constants) == count_before:
+                names = ", ".join(sorted(constants.keys()))
+                sys.exit(
+                    self._(
+                        f"ERROR: Circular or self-referential constant definition "
+                        f"involving: {names}"
+                    )
+                )
             # Replace references on non flattened constants
             for k in constants.keys():
                 l = []

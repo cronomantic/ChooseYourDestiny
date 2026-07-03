@@ -146,5 +146,36 @@ class TestOpcodeContract(CodegenTestBase):
             )
 
 
+class TestConstantFolding(CodegenTestBase):
+    """Constant resolution, including the cycle guard.
+
+    Circular/self-referential constants used to make the folding loop spin
+    forever; codegen must now abort cleanly instead of hanging.
+    """
+
+    def test_self_referential_constant_errors_cleanly(self):
+        code = self.parser.parse(input="[[CONST A = A]]")
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        self.assertIn("Circular", str(cm.exception.code))
+
+    def test_circular_constants_error_cleanly(self):
+        code = self.parser.parse(input="[[CONST A = B : CONST B = A]]")
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        self.assertIn("Circular", str(cm.exception.code))
+
+    def test_valid_constant_chain_resolves(self):
+        # C=2 -> B=C -> A=B, then SET var#0 = A  =>  SET_D 0, 2, END
+        self.assertEqual(
+            self._bytecode("[[CONST C = 2 : CONST B = C : CONST A = B : SET 0 TO A]]"),
+            [0x08, 0x00, 0x02, 0x00],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
