@@ -914,6 +914,87 @@ def main():
         for (b, bidx, bank, offset) in index
     ]
 
+    ######################################################################
+    # Native routines (IMPORT / CALL -> OP_EXTERN).
+    #
+    # A routine's final address depends on the memory layout, which is only
+    # known here (the allocator runs after generate_code). So we assemble each
+    # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
+    # addr_hi] operand of every CALL that references it.
+    if len(codegen.externs) > 0:
+        if model != "48k":
+            sys.exit(
+                _(
+                    "ERROR: IMPORT/CALL native routines are only supported on the "
+                    "48k target for now."
+                )
+            )
+        # Deterministic placement order.
+        routine_names = sorted(codegen.externs.keys())
+        # Pass 1: measure each routine at a provisional ORG.
+        try:
+            sizes = {
+                r: len(
+                    assemble_extern_routine(
+                        args.sjasmplus_path,
+                        args.output_path,
+                        r,
+                        codegen.externs[r],
+                        0x8000,
+                        verbose=(verbose >= 1),
+                    )
+                )
+                for r in routine_names
+            }
+        except OSError as e:
+            sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")
+
+        total = sum(sizes.values())
+        if total > available_bank_size[0]:
+            sys.exit(
+                _("ERROR: Not enough memory for native routines.")
+                + f" ({total} > {available_bank_size[0]} bytes)"
+            )
+
+        # Pass 2: place each routine resident, at the end of bank 0, and
+        # re-assemble it at its final ORG (verifying its size is stable).
+        extern_addr = {}
+        cursor = bank0_offset + len(available_banks[0])
+        try:
+            for r in routine_names:
+                data = assemble_extern_routine(
+                    args.sjasmplus_path,
+                    args.output_path,
+                    r,
+                    codegen.externs[r],
+                    cursor,
+                    verbose=(verbose >= 1),
+                )
+                if len(data) != sizes[r]:
+                    sys.exit(
+                        _(
+                            f"ERROR: Native routine {r} changed size between "
+                            f"passes ({sizes[r]} -> {len(data)}); its size must "
+                            f"not depend on its load address."
+                        )
+                    )
+                extern_addr[r] = cursor
+                available_banks[0] += data
+                available_bank_size[0] -= len(data)
+                cursor += len(data)
+        except OSError as e:
+            sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")
+
+        # Late-patch every CALL operand with the resolved routine address
+        # (bank byte is ignored on 48k, where the routine is resident).
+        for (rname, chunk_idx, pos) in codegen.extern_calls:
+            addr = extern_addr[rname]
+            available_banks[chunk_idx][pos] = 0
+            available_banks[chunk_idx][pos + 1] = addr & 0xFF
+            available_banks[chunk_idx][pos + 2] = (addr >> 8) & 0xFF
+
+    ######################################################################
+
     print("\nRAM usage:\n-----------------")
     total_bytes = 0
     bars_data = []

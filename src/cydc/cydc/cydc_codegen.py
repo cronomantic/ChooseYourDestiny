@@ -161,6 +161,11 @@ class CydcCodegen(object):
         self.variables = {}
         self.constants = {}
         self.externs = {}  # name -> assembler file for IMPORTed native routines
+        # Positions of every emitted OP_EXTERN operand, filled during
+        # symbol_replacement: list of (name, chunk_index, byte_offset). The
+        # address of a native routine is only known after memory allocation
+        # (it runs after generate_code), so these are patched late by the build.
+        self.extern_calls = []
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
@@ -1072,7 +1077,7 @@ class CydcCodegen(object):
             code_banks.append(code_tmp)
         return (code_banks, labels | arrays)
 
-    def symbol_replacement(self, code, symbols):
+    def symbol_replacement(self, code, symbols, chunk_index=0):
         code_tmp = []
         queue = []
         for c in code:
@@ -1080,14 +1085,21 @@ class CydcCodegen(object):
                 c = queue.pop()
             elif isinstance(c, str):  # Merged labels & arrays
                 t = symbols.get(c)
-                if t is None:
-                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
-                else:  # label found
+                if t is not None:  # label/array found
                     c = t[0]  # Extract bank
                     queue = self._convert_address(
                         t[1], c
                     )  # Convert offset to bank address
                     queue.reverse()
+                elif c in self.externs:
+                    # IMPORTed native routine: its (bank, address) is not known
+                    # until after memory allocation, so emit a [bank, lo, hi]
+                    # placeholder now and record its position for late patching.
+                    self.extern_calls.append((c, chunk_index, len(code_tmp)))
+                    c = 0  # placeholder bank byte
+                    queue = [0, 0]  # placeholder address bytes (lo, hi)
+                else:
+                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
             code_tmp.append(c)
         return code_tmp
 
@@ -1169,7 +1181,10 @@ class CydcCodegen(object):
         self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
 
-        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
+        self.extern_calls = []
+        self.code = [
+            self.symbol_replacement(c, self.symbols, i) for i, c in enumerate(code)
+        ]
         return self.code
 
     def get_unused_opcodes(self, code):

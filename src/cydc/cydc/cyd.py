@@ -646,6 +646,51 @@ def get_asm_mld_size(
     return size
 
 
+def assemble_extern_routine(
+    sjasmplus_path, output_path, name, asm_file, org, verbose=False
+):
+    """Assemble an IMPORTed native routine in isolation at a given ORG.
+
+    Frames the author's file (they write only the routine body) with an ORG,
+    a size measurement and a SAVEBIN, exactly like the WYZ player bank. Returns
+    the routine's raw bytes. Raises OSError with a clean, attributable message
+    if the author's file is missing or fails to assemble, without disturbing
+    the engine build.
+    """
+    asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+    if not os.path.isfile(asm_file_abs):
+        raise OSError(f"IMPORT '{name}': assembler file not found: {asm_file}")
+    bin_path = os.path.join(output_path, f"__extern_{name}.bin").replace(os.sep, "/")
+    src_path = os.path.join(output_path, f"__extern_{name}.asm").replace(os.sep, "/")
+
+    asm = "    DEVICE ZXSPECTRUM48\n"
+    asm += f"    ORG ${org:04X}\n"
+    asm += "__EXTERN_START:\n"
+    asm += f'    INCLUDE "{asm_file_abs}"\n'
+    asm += "__EXTERN_END:\n"
+    asm += "__EXTERN_LEN = __EXTERN_END - __EXTERN_START\n"
+    asm += f'    SAVEBIN "{bin_path}", __EXTERN_START, __EXTERN_LEN\n'
+    asm += "    END\n"
+
+    try:
+        run_assembler(
+            asm_path=sjasmplus_path,
+            asm=asm,
+            filename=src_path,
+            listing=verbose,
+            capture_output=True,
+        )
+    except OSError as e:
+        raise OSError(f"IMPORT '{name}': failed to assemble {asm_file}\n{e}")
+
+    data = []
+    if os.path.exists(bin_path):
+        with open(bin_path, "rb") as f:
+            data = list(f.read())
+        os.remove(bin_path)
+    return data
+
+
 def do_asm_48(
     sjasmplus_path,
     output_path,

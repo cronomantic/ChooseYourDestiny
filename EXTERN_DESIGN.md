@@ -9,9 +9,12 @@
 > sobre el código actual llevan `fichero:línea` verificados salvo que se indique
 > "(a verificar)". Asume [ARCHITECTURE.md](ARCHITECTURE.md).
 >
-> **Estado: FASE 1 (front-end) IMPLEMENTADA y verificada** (suite completa en verde,
-> +2 tests de IMPORT/CALL). Fases 2 (build/allocator), 3 (runtime asm) y 4
-> (ejemplo+docs) pendientes. Detalle de lo hecho al final del §8.
+> **Estado: 48k END-TO-END FUNCIONANDO y verificado en emulador.** Fases 1
+> (front-end), 2 (build/allocator, camino 48k) y 3 (runtime asm, handler + jump
+> table) implementadas y verificadas: `IMPORT`+`CALL` de una rutina nativa que
+> escribe en `FLAGS` corre en ZEsarUX (test `tests/test_extern.py`). **Pendiente:**
+> el camino **banked (128k/plus3/mld)** — hoy da error limpio si se usa `IMPORT`
+> fuera de 48k — y la fase 4 (ejemplo + sección de manual). Detalle en §8.1–§8.3.
 
 ---
 
@@ -304,6 +307,54 @@ tamaño`, `SAVEBIN`), ensambla con `run_assembler(asm=..., filename=...)`
    vs banked (`LOAD_CHUNK` + `call $C000+offset` + restaurar banco) con los DEFINEs de
    target. `DE=FLAGS` antes del `call`. **Verificar en emulador 48k + 128k** con
    [reference-emulator-harness] (una rutina que escriba un valor conocido en FLAGS+n).
+
+### 8.3 Estado de implementación (fases 2 y 3, camino 48k) — HECHO y verificado
+
+**Camino 48k completo y verificado en emulador** (ZEsarUX, `tests/test_extern.py`):
+
+- **Codegen** (`cydc_codegen.py`): `symbol_replacement` ahora distingue labels de
+  externs. Cuando el placeholder string es un nombre de `self.externs` (no un
+  label), emite `[0,0,0]` y **registra** `(nombre, chunk_idx, byte_pos)` en
+  `self.extern_calls` para el parcheo tardío (en vez de abortar con "Label does not
+  exists"). `generate_code` resetea `self.extern_calls` y pasa el índice de chunk a
+  `symbol_replacement`.
+- **Build 48k** (`cydc.py`, tras el remapeo del `index`): si hay `codegen.externs`
+  y el target no es 48k → **error limpio** (banked aún no soportado). Para 48k:
+  (1) mide cada rutina con `assemble_extern_routine` a un ORG provisional;
+  (2) comprueba que caben en `available_bank_size[0]`; (3) las coloca **residentes
+  al final del bank 0**, re-ensamblando cada una a su ORG final =
+  `bank0_offset + len(available_banks[0])` acumulado y **verificando que el tamaño
+  no cambió entre pasadas** (aborta si difiere); (4) **parcheo tardío**: rellena
+  `[bank=0, addr_lo, addr_hi]` en cada `CALL` de `codegen.extern_calls`. Los bytes
+  de la rutina se emiten como parte del bloque 0 en `do_asm_48` (`ORG bank0_offset`),
+  así que `dirección_rutina = bank0_offset + offset_en_bloque0`. Sin entrada de
+  índice (residente, `call` directo).
+- **Ensamblado aislado** (`cyd.py: assemble_extern_routine`): enmarca el `.asm` del
+  autor con `DEVICE ZXSPECTRUM48` + `ORG` + `INCLUDE "<fichero>"` + medición +
+  `SAVEBIN`, ensambla con `run_assembler(capture_output=True)` y lee el `.bin`.
+  Errores → `OSError` con mensaje atribuible `IMPORT '<nombre>': failed to assemble
+  <fichero>`. **La ruta del `.asm` se resuelve relativa al CWD** (`os.path.abspath`);
+  mejora pendiente: resolverla relativa al fichero fuente `.cyd` como hace `INCLUDE`.
+- **Runtime** (`interpreter.asm`): handler `OP_EXTERN` reescrito limpio (se eliminó
+  el scaffold con el `call` automodificado malformado). 48k: `inc hl` (salta el byte
+  de banco), carga `DE`=dirección, `push hl/ix/iy`, y llama a la rutina vía
+  `push .cont / push de / ld de,FLAGS / ret` (idioma call-indirecto que deja
+  `DE=FLAGS` al entrar); a la vuelta `pop iy/ix/hl` y `jp EXEC_LOOP`. **Preserva
+  IX (pila de datos de la VM) e IY (sysvars ROM)** aunque la rutina los reviente.
+  Entrada en la jump table `OPCODES` en posición **0x7F** con guarda
+  `IFNDEF UNUSED_OP_EXTERN` / `DW ERROR_NOP` (antes del `REPT` de relleno).
+
+**Verificación empírica** (`tests/test_extern.py`, emulador real): una rutina que
+escribe 42 en `FLAGS+0` y 99 en `FLAGS+1` y **revienta IX/IY** a propósito; el guion
+hace `CALL` y luego `SET 2 TO 123`. Resultado leído por ZRCP: `FLAGS=[42,99,123]` →
+la rutina corrió con `DE=FLAGS` y el intérprete **resumió intacto** tras el `CALL`.
+
+**Pendiente (banked 128k/plus3/mld):** meter la rutina en `blocks` como recurso no
+troceable (nuevo `btype`), que el best-fit le dé banco+offset, añadir entrada de
+índice y tipo de recurso para `LOAD_CHUNK`/`FIND_IN_INDEX`, parchear
+`[banco, $C000+offset]`, y bifurcar el handler (`LOAD_CHUNK` del banco + `call
+$C000+offset` + restaurar `CHUNK`) con los DEFINEs de target. Verificar en emulador
+128k. + Fase 4 (ejemplo + manual).
 
 ---
 
