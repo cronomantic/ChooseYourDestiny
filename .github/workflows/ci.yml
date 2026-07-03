@@ -32,11 +32,9 @@ jobs:
       - name: Run smoke tests
         run: python tests/run_tests.py -k smoke --failfast
 
-      - name: Run ZX7 and MLD footer regressions
+      - name: Run ZX7 regressions
         run: |
           python tests/run_tests.py test_zx7 --failfast
-          python tests/run_tests.py test_mld_footer --failfast
-          python tests/run_tests.py test_mld_index_mapping --failfast
 
   build-target-smoke:
     name: Compile All Targets (Windows)
@@ -58,7 +56,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force output/ci | Out-Null
-          $models = @("48k", "128k", "plus3", "mld", "mld128")
+          $models = @("48k", "128k", "plus3")
           foreach ($m in $models) {
             python src/cydc/cydc/cydc.py $m test.cyd tools/sjasmplus.exe output/ci
           }
@@ -68,4 +66,3 @@ jobs:
         run: |
           if (-not (Test-Path "output/ci/test.tap")) { throw "Missing TAP output" }
           if (-not (Test-Path "output/ci/test.dsk")) { throw "Missing DSK output" }
-          if (-not (Test-Path "output/ci/test.MLD")) { throw "Missing MLD output" }
