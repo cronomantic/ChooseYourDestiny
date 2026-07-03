@@ -48,7 +48,8 @@ RAM_ROUTINE:
     ld a, (hl)              ; relative slot id
     cp $FF
     jr z, .run_game
-    ld ($5C03), a           ; stash slot id for later
+    ld ($5C04), a           ; stash slot id for later ($5C04: must not overlap the
+                            ; $5C02/$5C03 BLOCK_TABLE pointer word saved below)
 
     inc hl
     ld e, (hl)
@@ -76,7 +77,7 @@ RAM_ROUTINE:
     call SETRAM_C           ; map destination RAM bank at C000 if needed
 
     ; Now safe to switch the Dandanator to the data slot.
-    ld a, ($5C03)           ; relative slot id
+    ld a, ($5C04)           ; relative slot id
     ld d, a
     ld a, ($5C00)           ; cached MLDoffset
     add a, d
@@ -122,11 +123,15 @@ DAN_SET_SLOT_A:
     jp DAN_CMD_B
 
 DAN_CMD_B:
-    xor a              ; write value 0 (matches OutRun and bank_dan.asm protocol)
+    ; Dual protocol (matches the Dandanator menu's SENDNRCMD): write the command
+    ; number itself (B) as the VALUE to DDNTRADDRCMD ($0001), repeated B times.
+    ; Real hardware counts the B writes as command pulses (value ignored);
+    ; ZEsarUX reads the written VALUE at $0001 as the command number.
+    ld a, b            ; A = command number = value written to $0001
 .slot_loop:
     nop
     nop
-    ld (0), a
+    ld (1), a          ; DDNTRADDRCMD = $0001
     djnz .slot_loop
     ld b, 64
 .wait_loop:
