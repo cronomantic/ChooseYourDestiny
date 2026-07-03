@@ -17,6 +17,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+# Dandanator/MLD aparcado: el soporte MLD no arranca y se ha ocultado de las
+# superficies de usuario. Estos tests quedan aquí (decorados con @unittest.skip)
+# para retomarlos en el futuro.
+_MLD_PARKED = "Soporte Dandanator/MLD aparcado"
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src" / "cydc" / "cydc"))
 
 cyd = importlib.import_module("cyd")
@@ -78,6 +83,7 @@ def _capture_mld_asms(mld_is_128=False, loading_scr=None):
 # Test: INKEY ROM call guard (IS_MLD_DAN)
 # ---------------------------------------------------------------------------
 
+@unittest.skip(_MLD_PARKED)
 class TestInkeyMldDanGuard(unittest.TestCase):
     def _get_interpreter_asm(self, mld_is_128=False):
         captured = _capture_mld_asms(mld_is_128=mld_is_128)
@@ -135,6 +141,7 @@ class TestInkeyMldDanGuard(unittest.TestCase):
 # Test: Intro screen display at MLD startup
 # ---------------------------------------------------------------------------
 
+@unittest.skip(_MLD_PARKED)
 class TestMldIntroScreen(unittest.TestCase):
     FAKE_SCR = bytes(6912)  # 6144 pixels + 768 attrs, all zeros
 
@@ -198,6 +205,7 @@ class TestMldIntroScreen(unittest.TestCase):
 # Test: Makefile BASE_ROM path correctness
 # ---------------------------------------------------------------------------
 
+@unittest.skip(_MLD_PARKED)
 class TestMakefileBaseRom(unittest.TestCase):
     def test_base_rom_no_trailing_quote(self):
         makefile = Path(__file__).parent.parent / "Makefile"

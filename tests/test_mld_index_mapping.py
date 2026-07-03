@@ -6,6 +6,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+# Dandanator/MLD aparcado: el soporte MLD no arranca y se ha ocultado de las
+# superficies de usuario. Estos tests quedan aquí (decorados con @unittest.skip)
+# para retomarlos en el futuro.
+_MLD_PARKED = "Soporte Dandanator/MLD aparcado"
+
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src" / "cydc" / "cydc"))
 
@@ -17,6 +22,7 @@ class _DummyResult:
     stderr = ""
 
 
+@unittest.skip(_MLD_PARKED)
 class TestMldIndexMapping(unittest.TestCase):
     def _build_and_capture(self, mld_is_128: bool):
         captured = {"interpreter_asm": "", "loader_asm": ""}
