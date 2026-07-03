@@ -1,1 +1,34 @@
 __pycache__/
+
+# --- Artefactos generados por PLY ---
+parser.out
+parsetab.py
+
+# --- Salida de compilación / temporales ---
+/output/
+/tmp_validation/
+/log.txt
+/code.txt
+/setup_output.txt
+
+# --- Distribución / paquetes (se publican como Release assets) ---
+/ChooseYourDestiny_*_x64_*.zip
+/python-*-embed-*.zip
+
+# --- Emulador local ---
+/EsPectrum.exe
+/Espectrum.ini
+/Es.pectrum_*.zip
+/tools/ZEsarUX*/
+
+# --- Ficheros de prueba locales (raíz) ---
+/test.tap
+/test.eep
+/test.rom
+/test_classic.rom
+/test_noautoboot.rom
+/test_dandanator/
+/test - copia.cyd
+/*.DSK
+/*.dsk
+*.rom
