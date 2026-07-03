@@ -56,7 +56,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force output/ci | Out-Null
-          $models = @("48k", "128k", "plus3")
+          $models = @("48k", "128k", "plus3", "mld", "mld128")
           foreach ($m in $models) {
             python src/cydc/cydc/cydc.py $m test.cyd tools/sjasmplus.exe output/ci
           }
@@ -66,3 +66,4 @@ jobs:
         run: |
           if (-not (Test-Path "output/ci/test.tap")) { throw "Missing TAP output" }
           if (-not (Test-Path "output/ci/test.dsk")) { throw "Missing DSK output" }
+          if (-not (Test-Path "output/ci/test.MLD")) { throw "Missing MLD output" }

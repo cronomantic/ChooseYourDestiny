@@ -289,7 +289,7 @@ def main():
     arg_parser.add_argument(
         "model",
         default="plus3",
-        choices=["48k", "128k", "plus3"],
+        choices=["48k", "128k", "plus3", "mld", "mld128"],
         help=_("Model of spectrum to target"),
         type=str.lower,
     )
@@ -818,7 +818,19 @@ def main():
     bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
     # generate block again
-    if model == "plus3" and use_wyz_tracker:
+    if model == "mld" or model == "mld128":
+        # MLD (both strict mld and mld128): TXT/SCR/bytecode chunks are read from
+        # Dandanator slots (IS_MLD_DAN); LOAD_CHUNK maps the chunk's slot at
+        # $0000-$3FFF and HL is a 0-based offset inside it. So the jump addresses
+        # embedded in the bytecode must be SLOT-RELATIVE (0-based), not resident,
+        # and every slot is a full 16 KB (no resident $8000 sharing like the tape
+        # 128k target). mld128 differs from strict mld only in having several
+        # slots (spectrum_banks) and RAM-banked music, not in how bytecode is
+        # addressed. (The RAM preload done by do_asm_mld for mld128 serves the
+        # music managers, per cyd.py get_asm_mld128.)
+        codegen.set_bank_offset_list([0, 0])
+        codegen.set_bank_size_list([16 * 1024, 16 * 1024])
+    elif model == "plus3" and use_wyz_tracker:
         codegen.set_bank_offset_list([bank0_offset, 0xC000])
         codegen.set_bank_size_list(
             [bank0_size_available, 16 * 1024, 16 * 1024, 8 * 1024]
@@ -851,7 +863,13 @@ def main():
         # tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))
         if i == 0:
             offset = bank0_offset
-            size = bank0_size_available
+            # MLD chunk 0 lives in its own full 16 KB slot (mapped at $0000-$3FFF),
+            # not sharing the resident $8000 window, so it must be capped at 16 KB.
+            # (offset stays bank0_offset: do_asm_mld remaps the index by
+            # subtracting it, yielding the slot-relative 0.)
+            size = (
+                16 * 1024 if model in ("mld", "mld128") else bank0_size_available
+            )
         elif i == 3 and model == "plus3" and use_wyz_tracker:
             offset = 0xC000
             size = 8 * 1024
