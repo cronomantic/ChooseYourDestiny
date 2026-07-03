@@ -20,7 +20,7 @@
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys, os, argparse, json, re, copy, math, gettext
+import sys, os, argparse, json, re, copy, math, gettext, traceback
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -1155,5 +1155,25 @@ def main():
     sys.exit(0)
 
 
+def cli():
+    """Top-level entry point: turn any unexpected exception into a clean
+    message instead of dumping a Python traceback on the author.
+
+    Intentional ``sys.exit(...)`` calls raise ``SystemExit`` (a ``BaseException``),
+    so they pass through untouched; only genuine bugs are caught here.
+    """
+    try:
+        main()
+    except Exception as e:
+        sys.stderr.write(f"\nERROR [INTERNAL]: {type(e).__name__}: {e}\n")
+        sys.stderr.write(
+            "Unexpected compiler error. Re-run with -v for the full traceback "
+            "and please report it together with your .cyd source.\n"
+        )
+        if "-v" in sys.argv:
+            traceback.print_exc()
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main()
+    cli()
