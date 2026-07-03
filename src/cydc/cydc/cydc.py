@@ -771,9 +771,9 @@ def main():
             )
 
     except ValueError as e1:
-        sys.exit(_("ERROR: Error assembling interpreter."), e1)
+        sys.exit(f"{_('ERROR: Error assembling interpreter.')}\n{e1}")
     except OSError as e2:
-        sys.exit(_("ERROR: Error assembling interpreter."), e2)
+        sys.exit(f"{_('ERROR: Error assembling interpreter.')}\n{e2}")
 
     if verbose:
         print(f"Interpreter size: {asm_size}")
@@ -1094,9 +1094,9 @@ def main():
                 name=output_name,
             )
     except ValueError as e1:
-        sys.exit(_("ERROR: Error assembling source."), e1)
+        sys.exit(f"{_('ERROR: Error assembling source.')}\n{e1}")
     except OSError as e2:
-        sys.exit(_("ERROR: Error assembling source."), e2)
+        sys.exit(f"{_('ERROR: Error assembling source.')}\n{e2}")
 
     ######################################################################
     if model == "plus3":
@@ -1119,7 +1119,7 @@ def main():
         res = True
         try:
             for t in track_list:
-                tb, _ = os.path.splitext(t)
+                tb, _ext = os.path.splitext(t)
                 tb += ".BIN"
                 add_size_header(t, tb)
                 track_list_aux.append(tb)
@@ -1139,7 +1139,7 @@ def main():
         try:
             for t in track_list_aux:
                 if os.path.exists(t):
-                    os.remove(tb)
+                    os.remove(t)
         except OSError:
             sys.exit("ERROR: could not create DSK file")
         finally:
