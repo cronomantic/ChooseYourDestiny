@@ -2755,39 +2755,52 @@ OP_PUSH_LEN_ARRAY:
     ENDM
 */
 
-/*
     IFNDEF UNUSED_OP_EXTERN
+; OP_EXTERN: invoke a native routine registered with IMPORT / called with CALL.
+; Operand layout: [bank, addr_lo, addr_hi]. On entry HL points at the operand.
+; ABI: the routine is entered with DE=FLAGS (base of the 256-byte variable
+; array) and must end with RET. It may freely use AF/BC/DE/HL/IX/IY (the handler
+; saves IX/IY, which the interpreter itself relies on). On 48k the routine is
+; resident and the bank byte is ignored (direct call). On banked targets the
+; bank byte is the physical RAM bank holding the routine at $C000+offset: the
+; handler pages it in, calls it, and restores the script bank on return. The
+; engine (including this handler and FLAGS) is resident at $8000-$BFFF, so it
+; keeps running while $C000 is paged to the routine.
 OP_EXTERN:
-    ld b, (hl)
+    ld a, (hl)          ; bank byte
     inc hl
-    ld a, (hl)
+    ld e, (hl)
     inc hl
-    ld (.jump_addr+0), a
-    ld a, (hl)
-    inc hl
-    ld (.jump_addr+1), a
-    push hl
-    ld a, (CHUNK)
-    push af
-    cp b       ; If the CHUNK is the same...
-    jr z, 1f
-    ld a, b
-    push hl
-    call LOAD_CHUNK
-    pop hl
-1:  ld de, FLAGS
-.jump_addr+1:
-    call 0-0
-    pop bc
-    ld a, (CHUNK)
-    cp b       ; If the CHUNK is the same...
-    jr z, 2f
-    ld a, b
-    call LOAD_CHUNK
-2:  pop hl
+    ld d, (hl)
+    inc hl              ; A = bank, DE = routine address, HL = next bytecode PC
+    push hl             ; save interpreter PC
+    push ix             ; save VM data-stack pointer
+    push iy             ; save ROM sysvars pointer
+    IFDEF OP_EXTERN_BANKED
+    or ROM48KBASIC
+    call SET_RAM_BANK   ; page the routine's bank at $C000; A = previous port
+    push af             ; save previous $7FFD value to restore the script bank
+    ld hl, .cont
+    push hl             ; return address for the routine's RET
+    push de             ; routine address (target of the RET below)
+    ld de, FLAGS
+    ret                 ; jump into the routine with DE=FLAGS
+.cont:
+    pop af              ; previous port value (the script's bank)
+    call SET_RAM_BANK   ; page the script bank back at $C000
+    ELSE
+    ld hl, .cont        ; 48k: routine is resident, call it directly
+    push hl             ; return address for the routine's RET
+    push de             ; routine address
+    ld de, FLAGS
+    ret                 ; jump into the routine with DE=FLAGS
+.cont:
+    ENDIF
+    pop iy
+    pop ix
+    pop hl              ; restore interpreter PC
     jp EXEC_LOOP
     ENDIF
-*/
 ;------------------------
 ERROR_NOP:
     ld a, 6
@@ -3521,6 +3534,12 @@ OPCODES:
     DW OP_PUSH_KEMPSTON
     ENDIF
     IFDEF UNUSED_OP_PUSH_KEMPSTON
+    DW ERROR_NOP
+    ENDIF
+    IFNDEF UNUSED_OP_EXTERN
+    DW OP_EXTERN
+    ENDIF
+    IFDEF UNUSED_OP_EXTERN
     DW ERROR_NOP
     ENDIF
 

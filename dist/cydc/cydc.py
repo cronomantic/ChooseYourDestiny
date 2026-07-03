@@ -20,7 +20,7 @@
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys, os, argparse, json, re, copy, math, gettext
+import sys, os, argparse, json, re, copy, math, gettext, traceback
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -241,6 +241,15 @@ def main():
         "--trim-interpreter",
         action="store_true",
         help=_("exclude code of unused commands"),
+    )
+    arg_parser.add_argument(
+        "-dce",
+        "--dead-code-elimination",
+        action="store_true",
+        help=_(
+            "remove bytecode that can never be reached (e.g. unused library "
+            "routines), following jumps and sequential fall-through"
+        ),
     )
     arg_parser.add_argument(
         "-code",
@@ -686,6 +695,7 @@ def main():
     ######################################################################
 
     codegen = CydcCodegen(gettext)
+    codegen.eliminate_dead_code = args.dead_code_elimination
     chunks = []
     l_tokens = []
     l_chars = []
@@ -771,9 +781,9 @@ def main():
             )
 
     except ValueError as e1:
-        sys.exit(_("ERROR: Error assembling interpreter."), e1)
+        sys.exit(f"{_('ERROR: Error assembling interpreter.')}\n{e1}")
     except OSError as e2:
-        sys.exit(_("ERROR: Error assembling interpreter."), e2)
+        sys.exit(f"{_('ERROR: Error assembling interpreter.')}\n{e2}")
 
     if verbose:
         print(f"Interpreter size: {asm_size}")
@@ -808,7 +818,19 @@ def main():
     bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
     # generate block again
-    if model == "plus3" and use_wyz_tracker:
+    if model == "mld" or model == "mld128":
+        # MLD (both strict mld and mld128): TXT/SCR/bytecode chunks are read from
+        # Dandanator slots (IS_MLD_DAN); LOAD_CHUNK maps the chunk's slot at
+        # $0000-$3FFF and HL is a 0-based offset inside it. So the jump addresses
+        # embedded in the bytecode must be SLOT-RELATIVE (0-based), not resident,
+        # and every slot is a full 16 KB (no resident $8000 sharing like the tape
+        # 128k target). mld128 differs from strict mld only in having several
+        # slots (spectrum_banks) and RAM-banked music, not in how bytecode is
+        # addressed. (The RAM preload done by do_asm_mld for mld128 serves the
+        # music managers, per cyd.py get_asm_mld128.)
+        codegen.set_bank_offset_list([0, 0])
+        codegen.set_bank_size_list([16 * 1024, 16 * 1024])
+    elif model == "plus3" and use_wyz_tracker:
         codegen.set_bank_offset_list([bank0_offset, 0xC000])
         codegen.set_bank_size_list(
             [bank0_size_available, 16 * 1024, 16 * 1024, 8 * 1024]
@@ -820,7 +842,22 @@ def main():
         code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
     )
 
-    if model == "128k" or model == "mld128":
+    if model == "mld128":
+        # mld128 reads TXT/SCR/bytecode from Dandanator slots (IS_MLD_DAN), so
+        # those chunks need only a slot, not a scarce 128K RAM bank. Only music
+        # (TRK/WYZ) is preloaded to a RAM bank (played from $C000 by the ISR).
+        # So keep the real RAM banks for music and append extra "slot-only" banks
+        # (ids >= 8: not valid $7FFD banks, never preloaded) for everything else,
+        # lifting the old ~96 KB / 6-bank cap up towards the 32-slot Dandanator.
+        if use_wyz_tracker:
+            ram_banks = [0, 3, 4, 6, 7]
+        else:
+            ram_banks = [0, 1, 3, 4, 6, 7]
+        # loader (slot 0) + interpreter (slot 1) take two of the 32 Dandanator
+        # banks; leave the rest as data slots.
+        slot_only = list(range(8, 8 + (30 - len(ram_banks))))
+        spectrum_banks = ram_banks + slot_only
+    elif model == "128k":
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 6, 7]
         else:
@@ -830,6 +867,14 @@ def main():
             spectrum_banks = [0, 3, 4, 6]
         else:
             spectrum_banks = [0, 1, 3, 4]
+    elif model == "mld":
+        # Strict MLD (48K) reads data from Dandanator slots via SET_DAN_BANK (no
+        # RAM banking, works in 48K mode), so it can span several slots — unlike a
+        # real 48K machine it is not capped at one bank. The numbers are just
+        # distinct slot indices; do_asm_mld maps them to slots 2..N and unused ones
+        # are trimmed. 16 data slots (~256 KB) leaves room in the 32-bank
+        # Dandanator Mini for the loader/interpreter and other games.
+        spectrum_banks = list(range(0, 16))
     else:
         spectrum_banks = [0]
 
@@ -841,7 +886,13 @@ def main():
         # tmp_blocks.insert(i, ("TXT", i, len(chunk), chunk, ""))
         if i == 0:
             offset = bank0_offset
-            size = bank0_size_available
+            # MLD chunk 0 lives in its own full 16 KB slot (mapped at $0000-$3FFF),
+            # not sharing the resident $8000 window, so it must be capped at 16 KB.
+            # (offset stays bank0_offset: do_asm_mld remaps the index by
+            # subtracting it, yielding the slot-relative 0.)
+            size = (
+                16 * 1024 if model in ("mld", "mld128") else bank0_size_available
+            )
         elif i == 3 and model == "plus3" and use_wyz_tracker:
             offset = 0xC000
             size = 8 * 1024
@@ -873,9 +924,15 @@ def main():
         if model != "plus3":
             for i, block in enumerate(blocks):
                 btype, bidx, bsize, bdata, bpath = block
+                # Music (TRK/WYZ) is played from a RAM bank at $C000, so on mld128
+                # it can only live in a real 128K RAM bank (id < 8), never in a
+                # slot-only Dandanator bank (id >= 8).
+                music_ram_only = model == "mld128" and btype in ("TRK", "WYZ")
                 best_fit_index = -1
                 min_leftover = sys.maxsize
                 for j, b in enumerate(available_banks):
+                    if music_ram_only and spectrum_banks[j] >= 8:
+                        continue
                     available = available_bank_size[j]
                     if available >= bsize:
                         leftover = available - bsize
@@ -913,6 +970,115 @@ def main():
         (b, bidx, spectrum_banks[bank], (offset & 0xFFFF))
         for (b, bidx, bank, offset) in index
     ]
+
+    ######################################################################
+    # Native routines (IMPORT / CALL -> OP_EXTERN).
+    #
+    # A routine's final address depends on the memory layout, which is only
+    # known here (the allocator runs after generate_code). So we assemble each
+    # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
+    # addr_hi] operand of every CALL that references it.
+    if len(codegen.externs) > 0:
+        # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
+        # mld (single Dandanator-slot bank) is not supported yet.
+        if model not in ("48k", "128k", "plus3", "mld128"):
+            sys.exit(
+                _(
+                    "ERROR: IMPORT/CALL native routines are only supported on the "
+                    "48k, 128k, +3 and mld128 targets for now."
+                )
+            )
+        # Deterministic placement order.
+        routine_names = sorted(codegen.externs.keys())
+
+        def _measure_routine(r, org):
+            try:
+                return assemble_extern_routine(
+                    args.sjasmplus_path,
+                    args.output_path,
+                    r,
+                    codegen.externs[r],
+                    org,
+                    verbose=(verbose >= 1),
+                )
+            except OSError as e:
+                sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")
+
+        def _place_routine(r, org, bank_idx):
+            """Re-assemble routine r at its final ORG and append it to bank_idx,
+            checking the size did not change vs. the measurement pass."""
+            data = _measure_routine(r, org)
+            if len(data) != sizes[r]:
+                sys.exit(
+                    _(
+                        f"ERROR: Native routine {r} changed size between passes "
+                        f"({sizes[r]} -> {len(data)}); its size must not depend "
+                        f"on its load address."
+                    )
+                )
+            available_banks[bank_idx] += data
+            available_bank_size[bank_idx] -= len(data)
+
+        # Pass 1: measure every routine at a provisional ORG.
+        sizes = {r: len(_measure_routine(r, 0xC000)) for r in routine_names}
+        for r in routine_names:
+            if sizes[r] > 16 * 1024:
+                sys.exit(
+                    _(f"ERROR: Native routine {r} is too big for a bank.")
+                    + f" ({sizes[r]} bytes)"
+                )
+
+        # extern_addr[name] = (bank_byte, address). On 48k the routine is
+        # resident and the bank byte is ignored; on 128k it carries the physical
+        # RAM bank the OP_EXTERN handler must page in before calling $C000+offset.
+        extern_addr = {}
+
+        if model == "48k":
+            total = sum(sizes.values())
+            if total > available_bank_size[0]:
+                sys.exit(
+                    _("ERROR: Not enough memory for native routines.")
+                    + f" ({total} > {available_bank_size[0]} bytes)"
+                )
+            # Place resident, at the end of bank 0.
+            cursor = bank0_offset + len(available_banks[0])
+            for r in routine_names:
+                extern_addr[r] = (0, cursor)
+                _place_routine(r, cursor, 0)
+                cursor += sizes[r]
+        else:  # 128k / +3 / mld128: place each routine in a paged bank (>= 1).
+            for r in routine_names:
+                # Best-fit among the already-used paged banks; add a new bank
+                # from spectrum_banks if none has room.
+                best_j = -1
+                min_leftover = sys.maxsize
+                for j in range(1, len(available_banks)):
+                    leftover = available_bank_size[j] - sizes[r]
+                    if leftover >= 0 and leftover < min_leftover:
+                        min_leftover = leftover
+                        best_j = j
+                if best_j == -1:
+                    if len(available_banks) < len(spectrum_banks):
+                        available_banks.append([])
+                        available_bank_size.append(16 * 1024)
+                        best_j = len(available_banks) - 1
+                    else:
+                        sys.exit(
+                            _("ERROR: Not enough memory for native routines.")
+                            + f" ({r})"
+                        )
+                addr = 0xC000 + len(available_banks[best_j])
+                extern_addr[r] = (spectrum_banks[best_j], addr)
+                _place_routine(r, addr, best_j)
+
+        # Late-patch every CALL operand with the resolved [bank, addr_lo, addr_hi].
+        for (rname, chunk_idx, pos) in codegen.extern_calls:
+            bank_byte, addr = extern_addr[rname]
+            available_banks[chunk_idx][pos] = bank_byte
+            available_banks[chunk_idx][pos + 1] = addr & 0xFF
+            available_banks[chunk_idx][pos + 2] = (addr >> 8) & 0xFF
+
+    ######################################################################
 
     print("\nRAM usage:\n-----------------")
     total_bytes = 0
@@ -1094,9 +1260,9 @@ def main():
                 name=output_name,
             )
     except ValueError as e1:
-        sys.exit(_("ERROR: Error assembling source."), e1)
+        sys.exit(f"{_('ERROR: Error assembling source.')}\n{e1}")
     except OSError as e2:
-        sys.exit(_("ERROR: Error assembling source."), e2)
+        sys.exit(f"{_('ERROR: Error assembling source.')}\n{e2}")
 
     ######################################################################
     if model == "plus3":
@@ -1119,7 +1285,7 @@ def main():
         res = True
         try:
             for t in track_list:
-                tb, _ = os.path.splitext(t)
+                tb, _ext = os.path.splitext(t)
                 tb += ".BIN"
                 add_size_header(t, tb)
                 track_list_aux.append(tb)
@@ -1139,7 +1305,7 @@ def main():
         try:
             for t in track_list_aux:
                 if os.path.exists(t):
-                    os.remove(tb)
+                    os.remove(t)
         except OSError:
             sys.exit("ERROR: could not create DSK file")
         finally:
@@ -1155,5 +1321,25 @@ def main():
     sys.exit(0)
 
 
+def cli():
+    """Top-level entry point: turn any unexpected exception into a clean
+    message instead of dumping a Python traceback on the author.
+
+    Intentional ``sys.exit(...)`` calls raise ``SystemExit`` (a ``BaseException``),
+    so they pass through untouched; only genuine bugs are caught here.
+    """
+    try:
+        main()
+    except Exception as e:
+        sys.stderr.write(f"\nERROR [INTERNAL]: {type(e).__name__}: {e}\n")
+        sys.stderr.write(
+            "Unexpected compiler error. Re-run with -v for the full traceback "
+            "and please report it together with your .cyd source.\n"
+        )
+        if "-v" in sys.argv:
+            traceback.print_exc()
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

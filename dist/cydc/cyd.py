@@ -110,6 +110,9 @@ def get_asm_plus3(
     asm += "    SLOT 3\n"
     asm += "    PAGE 0\n"
     asm += "\n"
+    # +3 pages RAM banks at $C000 via $7FFD just like the 128k, so it uses the
+    # same banked OP_EXTERN handler (routine paged in before the call).
+    asm += "    DEFINE OP_EXTERN_BANKED\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -211,6 +214,8 @@ def get_asm_128(
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     asm = "    DEFINE IS_128_TAPE\n" + asm
+    # $7FFD-banked OP_EXTERN handler (routine paged in at $C000 before the call).
+    asm = "    DEFINE OP_EXTERN_BANKED\n" + asm
 
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)
@@ -391,6 +396,11 @@ def get_asm_mld128(
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     asm = "    DEFINE IS_128_TAPE\n" + asm
+    # mld128 preloads code/data blocks to RAM banks at $C000 (see do_asm_mld's
+    # mld_is_128 preload) and is a 128k machine, so native routines are reached
+    # with the same $7FFD-banked OP_EXTERN handler as the 128k. (Bytecode itself
+    # lives in Dandanator slots at $0000-$3FFF, independent of $C000.)
+    asm = "    DEFINE OP_EXTERN_BANKED\n" + asm
 
     t = get_asm_template("cyd_mld")
     asm += t.substitute(d)
@@ -644,6 +654,51 @@ def get_asm_mld_size(
         raise ValueError("Size pattern not found")
     size = int(size[m.start() : m.end()])
     return size
+
+
+def assemble_extern_routine(
+    sjasmplus_path, output_path, name, asm_file, org, verbose=False
+):
+    """Assemble an IMPORTed native routine in isolation at a given ORG.
+
+    Frames the author's file (they write only the routine body) with an ORG,
+    a size measurement and a SAVEBIN, exactly like the WYZ player bank. Returns
+    the routine's raw bytes. Raises OSError with a clean, attributable message
+    if the author's file is missing or fails to assemble, without disturbing
+    the engine build.
+    """
+    asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+    if not os.path.isfile(asm_file_abs):
+        raise OSError(f"IMPORT '{name}': assembler file not found: {asm_file}")
+    bin_path = os.path.join(output_path, f"__extern_{name}.bin").replace(os.sep, "/")
+    src_path = os.path.join(output_path, f"__extern_{name}.asm").replace(os.sep, "/")
+
+    asm = "    DEVICE ZXSPECTRUM48\n"
+    asm += f"    ORG ${org:04X}\n"
+    asm += "__EXTERN_START:\n"
+    asm += f'    INCLUDE "{asm_file_abs}"\n'
+    asm += "__EXTERN_END:\n"
+    asm += "__EXTERN_LEN = __EXTERN_END - __EXTERN_START\n"
+    asm += f'    SAVEBIN "{bin_path}", __EXTERN_START, __EXTERN_LEN\n'
+    asm += "    END\n"
+
+    try:
+        run_assembler(
+            asm_path=sjasmplus_path,
+            asm=asm,
+            filename=src_path,
+            listing=verbose,
+            capture_output=True,
+        )
+    except OSError as e:
+        raise OSError(f"IMPORT '{name}': failed to assemble {asm_file}\n{e}")
+
+    data = []
+    if os.path.exists(bin_path):
+        with open(bin_path, "rb") as f:
+            data = list(f.read())
+        os.remove(bin_path)
+    return data
 
 
 def do_asm_48(
@@ -994,9 +1049,9 @@ def do_asm_mld(
             slot_by_ram_bank[bank] = current_slot
             current_slot += 1
 
-    # For MLD targets, TXT/SCR chunks must use Dandanator slot IDs in index
+    # For MLD targets, TXT/SCR chunks must use Dandanator slot IDs in the index
     # and the offset must be slot-relative (0..0x3FFF), not the TAP-layout RAM
-    # address that the compiler emits. Original offsets are
+    # address that the compiler emits. Original offsets are:
     #   bank 0 chunks: position_in_bank + bank0_offset (start of bank 0 data)
     #   other banks:   position_in_bank + 0xC000 (paged window in 128K)
     # The Dandanator loader maps the slot at 0x0000-0x3FFF, so the in-slot
@@ -1067,10 +1122,15 @@ def do_asm_mld(
     # Always copy interpreter to 0x8000 from slot 1.
     table_entries = [(1, 0, 0x8000, len(int_bytes), 0)]
 
-    # For mld128 keep RAM-bank preload entries (needed by music managers).
-    # For strict mld do not preload block data: TXT/SCR stays in Dandanator slots.
+    # For mld128 keep RAM-bank preload entries (needed by the music managers, which
+    # play from a RAM bank at $C000). TXT/SCR/bytecode are read from Dandanator
+    # slots (IS_MLD_DAN), so blocks placed in "slot-only" banks (ids >= 8, not
+    # valid 128K RAM banks) are NOT preloaded — that lets mld128 use far more slots
+    # than the 6 available RAM banks. For strict mld nothing is preloaded.
     if mld_is_128:
         for i, block in enumerate(blocks):
+            if banks[i] >= 8:  # slot-only bank: read from its Dandanator slot
+                continue
             if i == 0:
                 dst_addr = bank0_offset
             else:

@@ -152,6 +152,7 @@ class CydcCodegen(object):
         "PUSH_LEN_ARRAY": 0x7C,
         "SET_KEMPSTON": 0x7D,
         "PUSH_KEMPSTON": 0x7E,
+        "EXTERN": 0x7F,
     }
 
     def __init__(self, gettext):
@@ -159,10 +160,17 @@ class CydcCodegen(object):
         self.symbols = {}
         self.variables = {}
         self.constants = {}
+        self.externs = {}  # name -> assembler file for IMPORTed native routines
+        # Positions of every emitted OP_EXTERN operand, filled during
+        # symbol_replacement: list of (name, chunk_index, byte_offset). The
+        # address of a native routine is only known after memory allocation
+        # (it runs after generate_code), so these are patched late by the build.
+        self.extern_calls = []
         self.code = []
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
         self.optimize = True
+        self.eliminate_dead_code = False
 
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
@@ -175,6 +183,7 @@ class CydcCodegen(object):
     def constant_calculation(self, constants, is_word=False):
         f_constants = {}
         while len(constants) > 0:
+            count_before = len(constants)
             tmp_const = constants.copy()
             # Get flattened constants (without reference to other constants)
             for k in constants.keys():
@@ -189,6 +198,17 @@ class CydcCodegen(object):
                     c = tmp_const.pop(k)
                     f_constants[k] = c
             constants = tmp_const
+            # If no constant could be flattened this round, the remaining ones
+            # reference each other (or themselves) and can never resolve; without
+            # this guard the while-loop would spin forever.
+            if len(constants) == count_before:
+                names = ", ".join(sorted(constants.keys()))
+                sys.exit(
+                    self._(
+                        f"ERROR: Circular or self-referential constant definition "
+                        f"involving: {names}"
+                    )
+                )
             # Replace references on non flattened constants
             for k in constants.keys():
                 l = []
@@ -360,10 +380,18 @@ class CydcCodegen(object):
         constants = {}
         arrays = {}
         labels = {}
+        externs = {}
         code_tmp = []
         for t in code:
             opcode = t[0]  # get opcode type
-            if opcode == "CONST":
+            if opcode == "IMPORT":
+                q = t[1]  # routine name
+                p = t[2]  # assembler file path
+                if externs.get(q) is not None:
+                    sys.exit(self._(f"ERROR: Native routine {q} imported two times!"))
+                else:
+                    externs[q] = p  # Add to the imported-routines table (no bytecode)
+            elif opcode == "CONST":
                 p = t[2]  # get value
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
@@ -545,6 +573,7 @@ class CydcCodegen(object):
                             c = (c >> 8) & 0xFF
                     tup += (c,)
             code.append(tup)
+        self.externs = externs
         return (code, variables, constants)
 
     def code_simple_optimize(self, code):
@@ -898,6 +927,68 @@ class CydcCodegen(object):
         #     print(c)
         return code_tmp
 
+    def dead_code_elimination(self, code):
+        """Remove instructions that can never be reached.
+
+        Reachability is traced from the entry point (index 0). An instruction is
+        *executed* when control flow reaches it, via:
+          * a label jump — any operand naming a LABEL (covers GOTO/GOSUB/IF_GOTO/
+            IF_N_GOTO/OPTION/CHOOSE, whatever position the name sits at);
+          * sequential fall-through to the next instruction, for every opcode
+            that is NOT an unconditional terminator (GOTO / RETURN / END).
+
+        Arrays are different: an operand naming an ARRAY is a reference to inline
+        *data* by address. Such an array is kept, but control flow does NOT flow
+        through it just because it is referenced (execution reaches the array
+        only if it also falls/jumps into its SKIP_ARRAY, in which case it is
+        executed normally and its fall-through is traced).
+
+        This is a deliberately safe over-approximation: the only opcodes that do
+        not fall through are GOTO/RETURN/END (certain), so live code is never
+        dropped; at worst some dead code survives. A label reached only by
+        falling into it (no GOTO to it) is kept via the fall-through edge.
+        Library routines guarded by a `GOTO skip` at the top are reachable only
+        through GOSUB, so the unused ones become unreachable and are removed.
+        Runs on the optimized opcode stream, before code_translate, so all
+        addresses are recomputed from the surviving instructions.
+        """
+        if not code:
+            return code
+        label_index = {}
+        array_index = {}
+        for i, t in enumerate(code):
+            if not t:
+                continue
+            if t[0] == "LABEL":
+                label_index[t[1]] = i
+            elif t[0] == "ARRAY":
+                array_index[t[1]] = i
+        terminators = ("GOTO", "RETURN", "END")
+        executed = set()      # reached by control flow (trace fall-through)
+        kept_data = set()     # arrays referenced by address (keep, do not trace)
+        stack = [0]
+        n = len(code)
+        while stack:
+            i = stack.pop()
+            if i < 0 or i >= n or i in executed:
+                continue
+            executed.add(i)
+            t = code[i]
+            for operand in t[1:]:
+                if isinstance(operand, str):
+                    if operand in label_index:      # jump target -> executed
+                        stack.append(label_index[operand])
+                    elif operand in array_index:    # data reference -> keep only
+                        kept_data.add(array_index[operand])
+            if t[0] not in terminators:             # sequential fall-through
+                stack.append(i + 1)
+        keep = executed | kept_data
+        result = [t for i, t in enumerate(code) if i in keep]
+        # Keep a terminating END if the last surviving instruction is not one.
+        if not result or result[-1][0] != "END":
+            result.append(("END",))
+        return result
+
     def check_code_paramenters(self, code):
         code_tmp = []
         for t in code:
@@ -1049,7 +1140,7 @@ class CydcCodegen(object):
             code_banks.append(code_tmp)
         return (code_banks, labels | arrays)
 
-    def symbol_replacement(self, code, symbols):
+    def symbol_replacement(self, code, symbols, chunk_index=0):
         code_tmp = []
         queue = []
         for c in code:
@@ -1057,14 +1148,21 @@ class CydcCodegen(object):
                 c = queue.pop()
             elif isinstance(c, str):  # Merged labels & arrays
                 t = symbols.get(c)
-                if t is None:
-                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
-                else:  # label found
+                if t is not None:  # label/array found
                     c = t[0]  # Extract bank
                     queue = self._convert_address(
                         t[1], c
                     )  # Convert offset to bank address
                     queue.reverse()
+                elif c in self.externs:
+                    # IMPORTed native routine: its (bank, address) is not known
+                    # until after memory allocation, so emit a [bank, lo, hi]
+                    # placeholder now and record its position for late patching.
+                    self.extern_calls.append((c, chunk_index, len(code_tmp)))
+                    c = 0  # placeholder bank byte
+                    queue = [0, 0]  # placeholder address bytes (lo, hi)
+                else:
+                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
             code_tmp.append(c)
         return code_tmp
 
@@ -1138,6 +1236,9 @@ class CydcCodegen(object):
         if self.optimize:
             code = self.code_simple_optimize(code)
 
+        if self.eliminate_dead_code:
+            code = self.dead_code_elimination(code)
+
         if show_debug:
             print("\nVirtual machine opcode:\n-------------------")
             for c in code:
@@ -1146,7 +1247,10 @@ class CydcCodegen(object):
         self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
 
-        self.code = [self.symbol_replacement(c, self.symbols) for c in code]
+        self.extern_calls = []
+        self.code = [
+            self.symbol_replacement(c, self.symbols, i) for i, c in enumerate(code)
+        ]
         return self.code
 
     def get_unused_opcodes(self, code):
