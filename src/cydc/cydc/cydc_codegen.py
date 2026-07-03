@@ -170,6 +170,7 @@ class CydcCodegen(object):
         self.bank_offset_list = [0xC000]
         self.bank_size_list = [16 * 1024]
         self.optimize = True
+        self.eliminate_dead_code = False
 
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
@@ -926,6 +927,68 @@ class CydcCodegen(object):
         #     print(c)
         return code_tmp
 
+    def dead_code_elimination(self, code):
+        """Remove instructions that can never be reached.
+
+        Reachability is traced from the entry point (index 0). An instruction is
+        *executed* when control flow reaches it, via:
+          * a label jump — any operand naming a LABEL (covers GOTO/GOSUB/IF_GOTO/
+            IF_N_GOTO/OPTION/CHOOSE, whatever position the name sits at);
+          * sequential fall-through to the next instruction, for every opcode
+            that is NOT an unconditional terminator (GOTO / RETURN / END).
+
+        Arrays are different: an operand naming an ARRAY is a reference to inline
+        *data* by address. Such an array is kept, but control flow does NOT flow
+        through it just because it is referenced (execution reaches the array
+        only if it also falls/jumps into its SKIP_ARRAY, in which case it is
+        executed normally and its fall-through is traced).
+
+        This is a deliberately safe over-approximation: the only opcodes that do
+        not fall through are GOTO/RETURN/END (certain), so live code is never
+        dropped; at worst some dead code survives. A label reached only by
+        falling into it (no GOTO to it) is kept via the fall-through edge.
+        Library routines guarded by a `GOTO skip` at the top are reachable only
+        through GOSUB, so the unused ones become unreachable and are removed.
+        Runs on the optimized opcode stream, before code_translate, so all
+        addresses are recomputed from the surviving instructions.
+        """
+        if not code:
+            return code
+        label_index = {}
+        array_index = {}
+        for i, t in enumerate(code):
+            if not t:
+                continue
+            if t[0] == "LABEL":
+                label_index[t[1]] = i
+            elif t[0] == "ARRAY":
+                array_index[t[1]] = i
+        terminators = ("GOTO", "RETURN", "END")
+        executed = set()      # reached by control flow (trace fall-through)
+        kept_data = set()     # arrays referenced by address (keep, do not trace)
+        stack = [0]
+        n = len(code)
+        while stack:
+            i = stack.pop()
+            if i < 0 or i >= n or i in executed:
+                continue
+            executed.add(i)
+            t = code[i]
+            for operand in t[1:]:
+                if isinstance(operand, str):
+                    if operand in label_index:      # jump target -> executed
+                        stack.append(label_index[operand])
+                    elif operand in array_index:    # data reference -> keep only
+                        kept_data.add(array_index[operand])
+            if t[0] not in terminators:             # sequential fall-through
+                stack.append(i + 1)
+        keep = executed | kept_data
+        result = [t for i, t in enumerate(code) if i in keep]
+        # Keep a terminating END if the last surviving instruction is not one.
+        if not result or result[-1][0] != "END":
+            result.append(("END",))
+        return result
+
     def check_code_paramenters(self, code):
         code_tmp = []
         for t in code:
@@ -1172,6 +1235,9 @@ class CydcCodegen(object):
 
         if self.optimize:
             code = self.code_simple_optimize(code)
+
+        if self.eliminate_dead_code:
+            code = self.dead_code_elimination(code)
 
         if show_debug:
             print("\nVirtual machine opcode:\n-------------------")
