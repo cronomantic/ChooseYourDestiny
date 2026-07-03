@@ -243,6 +243,15 @@ def main():
         help=_("exclude code of unused commands"),
     )
     arg_parser.add_argument(
+        "-dce",
+        "--dead-code-elimination",
+        action="store_true",
+        help=_(
+            "remove bytecode that can never be reached (e.g. unused library "
+            "routines), following jumps and sequential fall-through"
+        ),
+    )
+    arg_parser.add_argument(
         "-code",
         "--show-bytecode",
         action="store_true",
@@ -686,6 +695,7 @@ def main():
     ######################################################################
 
     codegen = CydcCodegen(gettext)
+    codegen.eliminate_dead_code = args.dead_code_elimination
     chunks = []
     l_tokens = []
     l_chars = []

@@ -231,7 +231,7 @@ Este programa es el compilador que traduce el texto de la aventura a un fichero 
 cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
-              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-code]
+              [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
               [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128} input.cyd SJASMPLUS_PATH OUTPUT_PATH
@@ -254,6 +254,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
+- **\-dce**: Elimina el bytecode que nunca puede alcanzarse (por ejemplo, rutinas de una librería que incluyes pero no llamas). La alcanzabilidad sigue tanto los saltos como la ejecución secuencial (fall-through), así que no se quita nada que pudiera ejecutarse. Especialmente útil con las librerías incluidas.
 - **\-code**: Muestra el bytecode generado.
 - **\-\-no-strict-colons**: Permite sintaxis antigua sin separadores `:` entre sentencias en una misma línea.
 - **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
