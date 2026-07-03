@@ -34,6 +34,12 @@
 ; Both loadermld.asm (loader) and this module (runtime) must agree on $5C00.
 DAN_MLD_OFFSET EQU $5C00
 
+; Address where a Dandanator command byte is written. On real hardware any
+; address inside the mapped slot ($0000-$3FFF) works (it just counts write
+; pulses); ZEsarUX emulates the command interface at $0001 (DDNTRADDRCMD) and
+; reads the written value as the command number, so both agree on $0001.
+DAN_CMD_ADDR EQU $0001
+
 ;====================================================
 ; SET_DAN_BANK
 ;   Switch the Dandanator to a given MLD-relative slot.
@@ -55,12 +61,15 @@ SET_DAN_BANK:
     ld a, (DAN_MLD_OFFSET)
     add a, b
     inc a
-    ld b, a             ; B = number of write-pulses needed
-    xor a               ; value written to 0x0000 is irrelevant; count is what matters
+    ld b, a             ; B = command number (absolute slot) = pulse count
+    ; Dual protocol (see the Dandanator menu's SENDNRCMD): write the command
+    ; number itself (A) as the VALUE to DDNTRADDRCMD ($0001), repeated B times.
+    ; Real hardware counts the writes as pulses (value ignored); ZEsarUX reads
+    ; the written VALUE at $0001 as the command number.
 .loop:
     nop
     nop
-    ld (0), a           ; each write increments the Dandanator bank counter
+    ld (DAN_CMD_ADDR), a ; A holds the absolute slot number
     djnz .loop
     ld b, 64            ; settling delay
 .wait:
@@ -80,12 +89,12 @@ RESTORE_DAN_ROM:
     push af
     push bc
     di
-    ld b, 33
-    xor a
+    ld a, 33            ; command 33 = switch to internal ROM
+    ld b, a             ; B = pulse count = 33
 .loop:
     nop
     nop
-    ld (0), a
+    ld (DAN_CMD_ADDR), a
     djnz .loop
     ld b, 64
 .wait:
