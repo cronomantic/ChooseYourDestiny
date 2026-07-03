@@ -396,6 +396,11 @@ def get_asm_mld128(
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     asm = "    DEFINE IS_128_TAPE\n" + asm
+    # mld128 preloads code/data blocks to RAM banks at $C000 (see do_asm_mld's
+    # mld_is_128 preload) and is a 128k machine, so native routines are reached
+    # with the same $7FFD-banked OP_EXTERN handler as the 128k. (Bytecode itself
+    # lives in Dandanator slots at $0000-$3FFF, independent of $C000.)
+    asm = "    DEFINE OP_EXTERN_BANKED\n" + asm
 
     t = get_asm_template("cyd_mld")
     asm += t.substitute(d)

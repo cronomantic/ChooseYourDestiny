@@ -14,8 +14,10 @@
 > (runtime asm, handler resident + banked `$7FFD` + jump table) implementadas y
 > verificadas: `IMPORT`+`CALL` de una rutina nativa que escribe en `FLAGS` corre en
 > ZEsarUX en 48k, 128k y +3 (test `tests/test_extern.py`, los tres modelos; +3 desde
-> DSK con máquina `P341`). **Pendiente:** el target **mld (Dandanator, `SET_DAN_BANK`)**
-> — hoy da error limpio — y la fase 4 (ejemplo + sección de manual). Detalle §8.1–§8.3.
+> DSK con máquina `P341`). **mld128** soportado a nivel de build (ensambla y genera el
+> `.MLD`) pero **runtime sin verificar** (el target MLD no arranca, bug abierto).
+> **mld estricto** no soportado (allocator de 1 banco). **Pendiente:** verificar mld128
+> cuando arranque MLD, y la fase 4 (ejemplo + sección de manual). Detalle §8.1–§8.3.
 
 ---
 
@@ -386,10 +388,26 @@ propósito; el guion hace `CALL` y luego `SET 2 TO 123`. Resultado por ZRCP en l
 modelos (+3 desde DSK, máquina `P341`): `FLAGS=[42,99,123]` → la rutina corrió con
 `DE=FLAGS` y el intérprete **resumió intacto** tras el `CALL`.
 
-**Pendiente (mld):** mld/mld128 paginan por **slots Dandanator** (`SET_DAN_BANK`,
-`IS_MLD_DAN`), no por `$7FFD`; requieren su propia integración de colocación y su rama
-en el handler. Hoy `IMPORT` fuera de 48k/128k/+3 da **error limpio** en `cydc.py`.
-Además, fase 4 (ejemplo + manual).
+- **mld128**: **soportado a nivel de build (ensambla y genera el `.MLD`), runtime SIN
+  verificar** porque el target MLD **no arranca** (bug de Dandanator abierto; ver
+  memoria `project-dandanator-pending`). Reutiliza el mismo camino `$7FFD` que 128k:
+  mld128 **precarga** los bloques a bancos RAM en `$C000` (`do_asm_mld`, rama
+  `mld_is_128`) y es una máquina 128k, así que la rutina, colocada en un banco
+  paginado, queda en `$C000` y se alcanza con `SET_RAM_BANK`. El bytecode vive en
+  slots Dandanator (`$0000-$3FFF`), **independiente de `$C000`**, así que paginar
+  `$C000` para la rutina no lo perturba. Se define `OP_EXTERN_BANKED` también en
+  `get_asm_mld128`. Nota: el target mld **no está expuesto en el CLI** de `cydc.py`
+  (choices = 48k/128k/plus3) mientras el arranque siga bloqueado; el código queda
+  listo para cuando se reactive. Verificado que **ensambla** habilitando `mld128` en
+  el CLI temporalmente.
+- **mld estricto (`mld`)**: **no soportado.** El allocator le da **un solo banco**
+  (`spectrum_banks = [0]`, programas de un único chunk) y los chunks se leen de slots
+  Dandanator en `$0000` sin precarga a RAM, así que no hay banco paginado donde alojar
+  una rutina; requeriría reingeniería del allocator + un handler de slot `$0000`
+  (`SET_DAN_BANK`, restaurar vía `SCRIPT_BANK`). Da **error limpio** en `cydc.py`.
+
+**Pendiente:** verificar mld128 en runtime cuando se resuelva el arranque de
+Dandanator; soporte de mld estricto (si se decide). Además, fase 4 (ejemplo + manual).
 
 ---
 

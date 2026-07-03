@@ -922,11 +922,13 @@ def main():
     # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
     # addr_hi] operand of every CALL that references it.
     if len(codegen.externs) > 0:
-        if model not in ("48k", "128k", "plus3"):
+        # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
+        # mld (single Dandanator-slot bank) is not supported yet.
+        if model not in ("48k", "128k", "plus3", "mld128"):
             sys.exit(
                 _(
                     "ERROR: IMPORT/CALL native routines are only supported on the "
-                    "48k, 128k and +3 targets for now."
+                    "48k, 128k, +3 and mld128 targets for now."
                 )
             )
         # Deterministic placement order.
@@ -987,7 +989,7 @@ def main():
                 extern_addr[r] = (0, cursor)
                 _place_routine(r, cursor, 0)
                 cursor += sizes[r]
-        else:  # 128k / +3: place each routine in a paged bank (index >= 1).
+        else:  # 128k / +3 / mld128: place each routine in a paged bank (>= 1).
             for r in routine_names:
                 # Best-fit among the already-used paged banks; add a new bank
                 # from spectrum_banks if none has room.
