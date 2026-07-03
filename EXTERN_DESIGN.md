@@ -250,6 +250,61 @@ importada en `self.symbols` con su `(bank, offset)` tras la asignación, para qu
 `symbol_replacement` resuelva el placeholder (hoy daría "Label X does not exists").
 El opcode `0x7F` aún no tiene handler ni entrada en la jump table (fase 3).
 
+### 8.2 Mapa de implementación de la fase 2 (build) — verificado en el código
+
+Flujo de build en `cydc.py` (función `main`), anclas verificadas:
+- **Medir intérprete** (`cydc.py:707-784`): `get_asm_48_size`/`get_asm_128_size`/
+  `get_asm_plus3_size`/`get_asm_mld_size` → `asm_size`. Patrón two-pass ya existente.
+- **`generate_code`** (`cydc.py:798-800` aprox. + `819-821` real): produce `chunks`
+  (bancos de bytecode) y resuelve labels vía `code_translate`+`symbol_replacement`.
+  `bank0_offset = 5*num_blocks + asm_size + 0x8000` (`cydc.py:807`); bank 0 empieza
+  ahí (48k/residente), los demás en `$C000`.
+- **Allocator best-fit** (`cydc.py:836-915`): coloca `blocks` (recursos) en bancos.
+  - `spectrum_banks` por target (`823-834`): 48k = `[0]`; 128k = `[0,1,3,4,6,7]`
+    (o sin banco 1 si WYZ); etc.
+  - `blocks` = lista de `(btype, bidx, bsize, bdata, bpath)` con `btype` en
+    `TXT/SCR/TRK/WYZ`. Los `chunks` (bytecode) van primero como tipo 0 (`840-855`).
+  - Best-fit: para cada block, banco con menor sobrante ≥ `bsize`; append `bdata`,
+    `index.append((tipo_num, bidx, banco, offset))` donde `offset = pos_en_banco +
+    (bank0_offset si banco 0 else 0xC000)`. **tipo_num: TRK=2, SCR=1, WYZ=3, TXT/bytecode=0**
+    (`891-899`). Un recurso **no se trocea** (a diferencia del texto).
+  - `index` final remapea banco→`spectrum_banks[banco]` y enmascara offset (`912-915`).
+- **Salida** (`cydc.py:995-1080`): `do_asm_48/do_asm_128/do_asm_plus3/do_asm_mld`
+  reciben `index` + `blocks=available_banks` (chunks+datos por banco) + `banks` y
+  emiten el TAP/DSK con el índice de recursos que usa `LOAD_CHUNK`/`FIND_IN_INDEX`.
+
+**Insight crítico (decidido):** la rutina EXTERN se coloca en el allocator, que corre
+**después** de `generate_code`. Por eso los operandos de `CALL` (`[banco, addr_lo,
+addr_hi]`) NO se pueden resolver en `symbol_replacement` como los labels → hay que
+**parchearlos tarde**, tras la asignación. Implica que el codegen **registre las
+posiciones** (chunk, offset de byte) de cada `OP_EXTERN` emitido, para parchearlas
+una vez conocido `(banco, dirección)` de la rutina.
+
+**Ensamblado aislado (patrón WYZ)** en `cydc_music.py:46-94` (`create_wyz_player_bank`):
+monta un string ASM (template con `ORG`, contenido, `WYZ_LEN=($-$C000)`, `ASSERT
+tamaño`, `SAVEBIN`), ensambla con `run_assembler(asm=..., filename=...)`
+(`cydc_utils.py:76`), lee el `.bin`. Para IMPORT: enmarcar el `.asm` del autor con
+`ORG @ADDR` + `INCLUDE fichero` (o volcado directo) + `ASSERT` + `SAVEBIN`.
+
+**Pasos de la fase 2** (empezar por 48k, que es el requisito y no usa banking/índice/
+`LOAD_CHUNK`):
+1. Ensamblar cada rutina de `codegen.externs` con `ORG` provisional → tamaño;
+   verificar estabilidad de tamaño re-ensamblando al ORG final (abortar si difiere).
+2. 48k: colocar la rutina **residente** (bytes al final del bank 0 / mapa 48k),
+   dirección = `bank0_offset + pos` (o tras los recursos); banked: entra en `blocks`
+   como tipo `COD` no troceable y el best-fit le da banco+offset.
+3. Parcheo tardío: rellenar los operandos de cada `CALL` con `[banco, addr_lo,
+   addr_hi]` (48k: banco ignorado, `call` directo). Añadir la rutina al `index` si
+   banked (para `LOAD_CHUNK`).
+4. `do_asm_48` (y luego `do_asm_128`/etc.): emitir los bytes de la rutina en su banco.
+5. **Fase 3**: handler `OP_EXTERN` (scaffold `interpreter.asm:2758-2790`, `call`
+   automodificado con label malformado — rehacer limpio) + entrada jump table en
+   posición **0x7F** de `OPCODES` (`interpreter.asm:2798+`, tras `PUSH_KEMPSTON`=0x7E)
+   con guarda `IFNDEF UNUSED_OP_EXTERN`/`DW ERROR_NOP`. Bifurcar 48k (`call` directo)
+   vs banked (`LOAD_CHUNK` + `call $C000+offset` + restaurar banco) con los DEFINEs de
+   target. `DE=FLAGS` antes del `call`. **Verificar en emulador 48k + 128k** con
+   [reference-emulator-harness] (una rutina que escriba un valor conocido en FLAGS+n).
+
 ---
 
 ## 9. Resumen de decisiones cerradas
