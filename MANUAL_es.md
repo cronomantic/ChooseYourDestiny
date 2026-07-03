@@ -526,6 +526,94 @@ Hay un ejemplo completo en `examples/strings_library`.
 
 ---
 
+## Rutinas nativas (IMPORT / CALL)
+
+Para tareas que la máquina virtual no puede hacer —leer o escribir un puerto
+hardware, tocar una dirección de memoria arbitraria, o un cálculo que necesita ir
+rápido— puedes escribir una pequeña rutina en **ensamblador Z80** y llamarla desde
+tu guion.
+
+> ⚠️ **Avanzado, bajo tu propia responsabilidad.** Esto ejecuta código nativo tuyo
+> sin ninguna red de seguridad: un fallo en la rutina puede colgar o bloquear la
+> máquina, igual que el código de BeepFX o WyzTracker en el que ya confías. Si no
+> te manejas con ensamblador Z80, no necesitas esta función.
+
+Intervienen dos palabras clave:
+
+```cyd
+[[
+    IMPORT beeper FROM "rutinas/beeper.asm"   ; declara (en compilación)
+    ...
+    CALL beeper                               ; la ejecuta (en tiempo de ejecución)
+]]
+```
+
+- **`IMPORT nombre FROM "fichero.asm"`** registra una rutina nativa bajo `nombre`.
+  Es una declaración de compilación (como `DECLARE` o `CONST`, **no** como
+  `INCLUDE`, que incluye fuente CYD). La ruta se resuelve respecto a donde ejecutas
+  el compilador.
+- **`CALL nombre`** ejecuta la rutina. Piénsalo como el equivalente nativo de
+  `GOSUB`: `GOSUB etiqueta` llama a una subrutina escrita en CYD, `CALL nombre`
+  llama a una escrita en Z80.
+
+### Cómo escribir la rutina
+
+Escribes **solo el cuerpo** de la rutina — sin `ORG`, sin directivas, sin
+`SAVEBIN`. El compilador la enmarca, la ensambla **de forma aislada** (así un error
+en tu fichero da un fallo limpio y atribuible a *tu* fichero, sin romper la
+compilación del motor) y la coloca en memoria por ti, re-ensamblándola en su
+dirección final para que las direcciones absolutas funcionen sin más.
+
+El contrato (ABI) es deliberadamente pequeño:
+
+- La rutina entra con **`DE = FLAGS`**, la dirección base del array de 256
+  variables. Cada variable CYD `n` es el byte en `FLAGS + n`.
+- **Las entradas y salidas viajan por variables.** El guion pone los argumentos en
+  variables con `SET`, llama a la rutina y lee los resultados con `@var`. La rutina
+  los lee y escribe en `FLAGS + n`. No hay otra convención de llamada que recordar.
+- Es una **rutina hoja**: debe terminar con **`RET`** y no debe llamar de vuelta al
+  motor. Puede usar libremente `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (el motor guarda y
+  restaura `IX`/`IY`, que usa internamente).
+- **Debe caber en un banco de 16 KB** y no debe dejar el hardware en un estado que
+  rompa el motor al volver (si cambia la paginación por `$7FFD`, debe restaurarla).
+
+### Ejemplo
+
+```cyd
+[[
+    IMPORT peek FROM "peek.asm"
+    DECLARE 0 as addr_lo
+    DECLARE 1 as addr_hi
+    DECLARE 2 as result
+    SET addr_lo TO 0 : SET addr_hi TO 0   ; dirección 0000h
+    CALL peek                             ; result <- byte en esa dirección
+]]
+```
+
+con `peek.asm` (escribes solo esto):
+
+```asm
+    ld a, (de)          ; DE = FLAGS -> A = FLAGS+0 = byte bajo de la dirección
+    ld l, a
+    inc de
+    ld a, (de)          ; A = FLAGS+1 = byte alto de la dirección
+    ld h, a             ; HL = la dirección a leer
+    inc de              ; DE -> FLAGS+2
+    ld a, (hl)          ; A = el byte en esa dirección
+    ld (de), a          ; FLAGS+2 = result
+    ret
+```
+
+Hay un ejemplo completo y ejecutable en `examples/import_demo`.
+
+### Targets soportados
+
+Las rutinas nativas funcionan en **48K, 128K y +3**. En 128K y +3 la rutina se
+coloca en un banco de RAM paginado y el motor lo pagina automáticamente alrededor
+del `CALL`. (Los targets MLD aún no están cubiertos.)
+
+---
+
 ## Variables y expresiones numéricas
 
 Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
@@ -1779,6 +1867,16 @@ Demuestra el uso del sistema `INCLUDE` para organizar proyectos grandes:
 - **Reutilización:** Las subrutinas comunes pueden compartirse entre múltiples capítulos.
 
 Consulta el archivo `examples\include_demo\README.md` para más detalles.
+
+#### `examples\import_demo` - Rutinas nativas (IMPORT / CALL)
+**Nivel:** Avanzado
+
+Muestra cómo llamar a una rutina Z80 desde un guion con `IMPORT` / `CALL`:
+- **Código nativo:** un pequeño `peek.asm` lee un byte de una dirección de memoria arbitraria, algo que la máquina virtual no puede hacer por sí sola.
+- **ABI:** la rutina entra con `DE = FLAGS` e intercambia datos a través de variables.
+- **Avanzado, bajo tu responsabilidad:** consulta la sección "Rutinas nativas (IMPORT / CALL)".
+
+Consulta el archivo `examples\import_demo\README.md` para más detalles.
 
 ### Ejemplos Avanzados de Gráficos
 
