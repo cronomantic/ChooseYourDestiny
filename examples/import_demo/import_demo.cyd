@@ -1,0 +1,36 @@
+[[
+    BORDER 0 : PAPER 0 : INK 7 : BRIGHT 1 : FLASH 0 : CLEAR
+
+    /* Register the native routine. The path is relative to where you run the
+       compiler. IMPORT is a compile-time declaration, like DECLARE or CONST. */
+    IMPORT peek FROM "peek.asm"
+
+    DECLARE 0 as addr_lo
+    DECLARE 1 as addr_hi
+    DECLARE 2 as result
+
+    /* Ask the native routine for the byte at address 0000h (the first ROM
+       byte). Arguments and the result travel through the variable array. */
+    SET addr_lo TO 0
+    SET addr_hi TO 0
+    CALL peek
+]]Native IMPORT / CALL demo (48K)
+===============================
+
+A native Z80 routine just read the byte stored at address 0000h and left it
+in a CYD variable - something the virtual machine cannot do on its own.
+
+[[
+    IF @result = 243 THEN
+        ]]Its value is 243 (0F3h), which is "DI", the first instruction of the
+48K ROM. The native routine worked.[[
+    ELSE
+        ]]Its value is not 243. That is expected if you are not running this on
+a plain 48K model.[[
+    ENDIF
+    NEWLINE : NEWLINE
+    ]]Press any key to finish.[[
+    WAITKEY
+    CLEAR
+    END
+]]

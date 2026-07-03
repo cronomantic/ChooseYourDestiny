@@ -524,6 +524,96 @@ There is a full example in `examples/strings_library`.
 
 ---
 
+## Native routines (IMPORT / CALL)
+
+For jobs the virtual machine cannot do — reading or writing a hardware port,
+touching an arbitrary memory address, or a tight piece of number-crunching that
+needs to be fast — you can write a small routine in **Z80 assembly** and call it
+from your script.
+
+> ⚠️ **Advanced, use at your own risk.** This runs your own native code with no
+> sandbox: a bug in the routine can hang or crash the machine, exactly like the
+> BeepFX or WyzTracker code you already trust. If you are not comfortable with
+> Z80 assembly, you do not need this feature.
+
+Two keywords are involved:
+
+```cyd
+[[
+    IMPORT beeper FROM "routines/beeper.asm"   ; declare (compile-time)
+    ...
+    CALL beeper                                ; run it (at runtime)
+]]
+```
+
+- **`IMPORT name FROM "file.asm"`** registers a native routine under `name`. It is
+  a compile-time declaration (like `DECLARE` or `CONST`, **not** like `INCLUDE`,
+  which includes CYD source). The path is resolved relative to where you run the
+  compiler.
+- **`CALL name`** runs the routine. Think of it as the native counterpart of
+  `GOSUB`: `GOSUB label` calls a subroutine written in CYD, `CALL name` calls one
+  written in Z80.
+
+### Writing the routine
+
+You write **only the body** of the routine — no `ORG`, no directives, no
+`SAVEBIN`. The compiler frames it, assembles it **in isolation** (so a mistake in
+your file produces a clean error attributable to *your* file, without breaking the
+engine build) and places it in memory for you, re-assembling it at its final
+address so absolute addresses just work.
+
+The contract (ABI) is deliberately small:
+
+- The routine is entered with **`DE = FLAGS`**, the base address of the 256-byte
+  variable array. Every CYD variable `n` is the byte at `FLAGS + n`.
+- **Inputs and outputs travel through variables.** The script puts arguments in
+  variables with `SET`, calls the routine, and reads results back with `@var`. The
+  routine reads and writes them at `FLAGS + n`. There is no other calling
+  convention to remember.
+- It is a **leaf routine**: it must end with **`RET`** and must not call back into
+  the engine. It may freely use `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (the engine saves and
+  restores `IX`/`IY`, which it relies on internally).
+- It **must fit in one 16 KB bank** and must not leave the hardware in a state that
+  breaks the engine on return (if it changes paging via `$7FFD`, it must restore
+  it).
+
+### Example
+
+```cyd
+[[
+    IMPORT peek FROM "peek.asm"
+    DECLARE 0 as addr_lo
+    DECLARE 1 as addr_hi
+    DECLARE 2 as result
+    SET addr_lo TO 0 : SET addr_hi TO 0   ; address 0000h
+    CALL peek                             ; result <- byte at that address
+]]
+```
+
+with `peek.asm` (you write just this):
+
+```asm
+    ld a, (de)          ; DE = FLAGS -> A = FLAGS+0 = address low byte
+    ld l, a
+    inc de
+    ld a, (de)          ; A = FLAGS+1 = address high byte
+    ld h, a             ; HL = the address to read
+    inc de              ; DE -> FLAGS+2
+    ld a, (hl)          ; A = the byte at that address
+    ld (de), a          ; FLAGS+2 = result
+    ret
+```
+
+There is a full, runnable example in `examples/import_demo`.
+
+### Supported targets
+
+Native routines work on **48K, 128K and +3**. On the 128K and +3 the routine is
+placed in a paged RAM bank and the engine pages it in around the `CALL`
+automatically. (MLD targets are not covered yet.)
+
+---
+
 ## Variables and Numeric Expressions
 
 Numeric constant values ​​can be expressed in base 10 by default, in hexadecimal with the prefix `0x`, or in binary with the prefix `0b`. For example, `240` would be decimal, `0xF0` in hexadecimal, and `0b11110000` in binary.
@@ -1765,6 +1855,16 @@ Demonstrates the use of the `INCLUDE` system to organize large projects:
 - **Reusability:** Common subroutines can be shared between multiple chapters.
 
 See the `examples\include_demo\README.md` file for more details.
+
+#### `examples\import_demo` - Native routines (IMPORT / CALL)
+**Level:** Advanced
+
+Shows how to call a Z80 routine from a script with `IMPORT` / `CALL`:
+- **Native code:** a tiny `peek.asm` reads a byte from an arbitrary memory address, something the virtual machine cannot do on its own.
+- **ABI:** the routine is entered with `DE = FLAGS` and exchanges data through variables.
+- **Advanced, at your own risk:** see the "Native routines (IMPORT / CALL)" section above.
+
+See the `examples\import_demo\README.md` file for more details.
 
 ### Advanced Graphics Examples
 
