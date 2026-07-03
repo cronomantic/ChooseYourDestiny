@@ -49,6 +49,11 @@ def run_exec(exec_path, parameter_list=[], capture_output=False):
     """
     exec_path = os.path.abspath(exec_path)  # Get the absolute path of the executable
     command_line = [exec_path] + parameter_list
+    # Force UTF-8 encoding to avoid UnicodeEncodeError on Windows (the compiler
+    # prints RAM-usage bars and accented messages that a cp1252 console cannot
+    # encode). The GUI wrapper does the same.
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     try:
         stdout = None
         # stdout = subprocess.DEVNULL
@@ -63,6 +68,7 @@ def run_exec(exec_path, parameter_list=[], capture_output=False):
             text=capture_output,
             capture_output=capture_output,
             universal_newlines=capture_output,
+            env=env,
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
@@ -306,6 +312,12 @@ def main():
         help=_("exclude code of unused commands"),
     )
     arg_parser.add_argument(
+        "-dce",
+        "--dead-code-elimination",
+        action="store_true",
+        help=_("remove code that can never be reached"),
+    )
+    arg_parser.add_argument(
         "-code",
         "--show-bytecode",
         action="store_true",
@@ -315,6 +327,12 @@ def main():
         "--no-strict-colons",
         action="store_true",
         help=_("allow statements without colon separator (backwards compatibility mode)"),
+    )
+    arg_parser.add_argument(
+        "--max-errors",
+        type=int,
+        default=20,
+        help=_("maximum number of parser errors to report before stopping"),
     )
     arg_parser.add_argument(
         "-pause",
@@ -334,7 +352,7 @@ def main():
     ##
     arg_parser.add_argument(
         "model",
-        choices=["48k", "128k", "plus3"],
+        choices=["48k", "128k", "plus3", "mld", "mld128"],
         help=_("Model of spectrum to target"),
         type=str.lower,
         default="plus3",
@@ -395,11 +413,17 @@ def main():
     if args.trim_interpreter:
         cydc_params = ["-trim"] + cydc_params
 
+    if args.dead_code_elimination:
+        cydc_params = ["-dce"] + cydc_params
+
     if args.show_bytecode:
         cydc_params = ["-code"] + cydc_params
 
     if args.no_strict_colons:
         cydc_params = ["--no-strict-colons"] + cydc_params
+
+    if args.max_errors:
+        cydc_params = ["--max-errors", f"{args.max_errors}"] + cydc_params
 
     if args.pause_after_load:
         cydc_params = ["-pause", f"{args.pause_after_load}"] + cydc_params
