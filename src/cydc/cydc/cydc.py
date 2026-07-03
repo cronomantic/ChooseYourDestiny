@@ -842,7 +842,22 @@ def main():
         code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
     )
 
-    if model == "128k" or model == "mld128":
+    if model == "mld128":
+        # mld128 reads TXT/SCR/bytecode from Dandanator slots (IS_MLD_DAN), so
+        # those chunks need only a slot, not a scarce 128K RAM bank. Only music
+        # (TRK/WYZ) is preloaded to a RAM bank (played from $C000 by the ISR).
+        # So keep the real RAM banks for music and append extra "slot-only" banks
+        # (ids >= 8: not valid $7FFD banks, never preloaded) for everything else,
+        # lifting the old ~96 KB / 6-bank cap up towards the 32-slot Dandanator.
+        if use_wyz_tracker:
+            ram_banks = [0, 3, 4, 6, 7]
+        else:
+            ram_banks = [0, 1, 3, 4, 6, 7]
+        # loader (slot 0) + interpreter (slot 1) take two of the 32 Dandanator
+        # banks; leave the rest as data slots.
+        slot_only = list(range(8, 8 + (30 - len(ram_banks))))
+        spectrum_banks = ram_banks + slot_only
+    elif model == "128k":
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 6, 7]
         else:
@@ -909,9 +924,15 @@ def main():
         if model != "plus3":
             for i, block in enumerate(blocks):
                 btype, bidx, bsize, bdata, bpath = block
+                # Music (TRK/WYZ) is played from a RAM bank at $C000, so on mld128
+                # it can only live in a real 128K RAM bank (id < 8), never in a
+                # slot-only Dandanator bank (id >= 8).
+                music_ram_only = model == "mld128" and btype in ("TRK", "WYZ")
                 best_fit_index = -1
                 min_leftover = sys.maxsize
                 for j, b in enumerate(available_banks):
+                    if music_ram_only and spectrum_banks[j] >= 8:
+                        continue
                     available = available_bank_size[j]
                     if available >= bsize:
                         leftover = available - bsize

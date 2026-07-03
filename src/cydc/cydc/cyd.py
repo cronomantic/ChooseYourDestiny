@@ -1122,10 +1122,15 @@ def do_asm_mld(
     # Always copy interpreter to 0x8000 from slot 1.
     table_entries = [(1, 0, 0x8000, len(int_bytes), 0)]
 
-    # For mld128 keep RAM-bank preload entries (needed by music managers).
-    # For strict mld do not preload block data: TXT/SCR stays in Dandanator slots.
+    # For mld128 keep RAM-bank preload entries (needed by the music managers, which
+    # play from a RAM bank at $C000). TXT/SCR/bytecode are read from Dandanator
+    # slots (IS_MLD_DAN), so blocks placed in "slot-only" banks (ids >= 8, not
+    # valid 128K RAM banks) are NOT preloaded — that lets mld128 use far more slots
+    # than the 6 available RAM banks. For strict mld nothing is preloaded.
     if mld_is_128:
         for i, block in enumerate(blocks):
+            if banks[i] >= 8:  # slot-only bank: read from its Dandanator slot
+                continue
             if i == 0:
                 dst_addr = bank0_offset
             else:
