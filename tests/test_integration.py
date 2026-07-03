@@ -189,8 +189,7 @@ class TestIntegrationComplexScenarios(unittest.TestCase):
             result = self.parser.parse(input=code)
             self.assertIsNotNone(result)
         except Exception as e:
-            # These commands might not all be recognized, but shouldn't crash
-            self.assertTrue(True)
+            self.fail(f"parsing these commands should not raise: {e}")
 
 
 class TestIntegrationModeConsistency(unittest.TestCase):
@@ -249,8 +248,8 @@ class TestIntegrationEdgeCases(unittest.TestCase):
         try:
             result = self.parser.parse(input=long_print)
             self.assertIsNotNone(result)
-        except Exception:
-            pass  # May fail due to complexity, but shouldn't crash
+        except Exception as e:
+            self.fail(f"a very long line should not make the parser raise: {e}")
 
     def test_deeply_nested_if(self):
         """Test deeply nested IF statements."""
@@ -263,10 +262,9 @@ class TestIntegrationEdgeCases(unittest.TestCase):
         self.parser.errors = []
         try:
             result = self.parser.parse(input=nested_if)
-            # May fail due to depth, but shouldn't crash
             self.assertIsNotNone(result)
-        except Exception:
-            pass
+        except Exception as e:
+            self.fail(f"deeply nested IFs should not make the parser raise: {e}")
 
     def test_mixed_text_and_code_intensive(self):
         """Test intensive mixing of text and code."""
@@ -289,8 +287,7 @@ class TestIntegrationEdgeCases(unittest.TestCase):
             result = self.parser.parse(input=code)
             self.assertIsNotNone(result)
         except Exception as e:
-            # May fail due to encoding, but shouldn't crash
-            self.assertTrue(True)
+            self.fail(f"unicode text content should not make the parser raise: {e}")
 
 
 class TestIntegrationRegressionPrevention(unittest.TestCase):
