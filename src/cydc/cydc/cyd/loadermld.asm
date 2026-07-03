@@ -23,7 +23,7 @@ START_LOADER:
     ; Copy RAM routine that performs slot mapping and block loads.
     ld hl, RAM_ROUTINE_ROM
     ld de, RAM_ROUTINE_ADDR
-    ld bc, RAM_ROUTINE_END - RAM_ROUTINE_ROM
+    ld bc, RAM_ROUTINE_END - RAM_ROUTINE
     ldir
 
     jp RAM_ROUTINE_ADDR
