@@ -314,3 +314,57 @@ Sabiendo lo anterior, incorporar CPC se reparte así:
   entrelazado, screen/compositor, color (Gate Array/paleta), loader (.dsk AMSDOS /
   .cdt), teclado (firmware), AY (vía PPI 8255), IRQ 50 Hz. Diseño en
   MULTITARGET_DESIGN §5-§7.
+
+---
+
+## 10. Targets Dandanator/MLD (`mld` / `mld128`)
+
+Estado (3 jul 2026): **funcionando y verificados en emulador** (ZEsarUX headless
+con `--enable-dandanator`). Un cartucho Dandanator Mini son 32 bancos de 16 KB
+mapeables en `$0000-$3FFF`. Layout MLD: slot 0 = loader (`loadermld.asm`), slot 1 =
+intérprete (copiado a `$8000` al arrancar), slots 2..N = datos.
+
+- **Direccionamiento slot-relativo (clave).** El intérprete MLD (define `IS_MLD_DAN`)
+  lee TXT/SCR/bytecode desde el slot Dandanator mapeado en `$0000`: `LOAD_CHUNK`
+  hace `SET_DAN_BANK(slot)` y `HL` es un offset **0-based dentro del slot**. Por eso
+  las direcciones de salto del bytecode se emiten slot-relativas:
+  `cydc.py` fija `codegen.set_bank_offset_list([0, 0])` para `model in (mld, mld128)`
+  (vs `[bank0_offset, 0xC000]` residente de cinta), y `bank_size_list=[16K,16K]`
+  (cada chunk en su slot de 16 KB). `bank_dan.asm SET_DAN_BANK` escribe el nº de
+  comando en `$0001` (protocolo dual: vale para HW real por conteo de pulsos y para
+  ZEsarUX por valor).
+- **Diferencia `mld` vs `mld128`.** Es solo `spectrum_banks` y la música, NO el
+  direccionamiento: `mld` (48K, `$83`) usa varios slots vía conmutación Dandanator
+  (sin banking `$7FFD`), hasta 16 slots (~256 KB). `mld128` (128K, `$88`) además
+  precarga la **música** a bancos RAM (el ISa del player lee de `$C000`); como el
+  resto se lee de slots, desacopla slots (muchos, ids ≥ 8 "slot-only", sin precarga)
+  de bancos RAM (≤6, solo música) → hasta ~480 KB. Limitación conocida: música +
+  >96 KB de contenido no cabe (la música obliga a los 6 bancos RAM) → error limpio.
+- **Runtime NO verificable en HW físico desde aquí** (no hay Dandanator); ZEsarUX es
+  la vía autoritativa, salvo el *timing de pulsos* del PIC que no emula.
+
+---
+
+## 11. Cómo se construye la distribución (`dist/`) — IMPORTANTE
+
+**`src/cydc/*` son los fuentes; `dist/*` es la COPIA que se distribuye y la que
+ejecutan las herramientas de autor.** El build lo hace
+[make_dist.py](make_dist.py): `copy_source_files()` copia la lista `get_source_files()`
+(~57 ficheros: `cydc/*.py`, `cydc/cyd/*.asm`, `ply`, `pyZX0/7`…) de `src/cydc/` a
+`dist/`, compila `.po`→`.mo`, y zipea por plataforma (`--skip-compile` salta la copia).
+
+- **Las herramientas usan `dist/`, no `src/`.** `make_adventure.py` y
+  `make_adventure_gui.py` ejecutan `dist/python/python.exe` (Python embebido) +
+  `dist/cydc_cli.py`, que hace `sys.path.append('.../dist/cydc')` y
+  `from cydc import main` → importa **`dist/cydc/`**.
+- ⚠️ **El redirect a `src/` está MUERTO (a propósito, no tocar — solo saberlo).**
+  Hay un `dist/python/Lib/sitecustomize.py` (generado por `setup_embedded_python.py`)
+  que inserta `src/cydc` en `sys.path`, pero (1) apunta un nivel de más
+  (los módulos están en `src/cydc/cydc/`) y (2) **nunca se ejecuta**: el `._pth` del
+  Python embebido tiene `import site` comentado (`site` deshabilitado). Ambos son
+  artefactos untracked.
+- **CONSECUENCIA OPERATIVA: cualquier cambio en `src/cydc/` NO llega a las
+  herramientas ni a la distribución hasta rehacer `dist/`** (ejecutar `make_dist.py`
+  o su paso de copia). Es fácil olvidarlo y probar con un `dist/` stale. El
+  `PYTHONIOENCODING=utf-8` que fijan ambas herramientas en el subproceso del
+  compilador es obligatorio en Windows (consola cp1252 vs barras Unicode de uso de RAM).
