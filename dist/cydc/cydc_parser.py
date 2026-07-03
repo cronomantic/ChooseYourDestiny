@@ -28,6 +28,7 @@ class SymbolType(Enum):
     VARIABLE = 2
     CONSTANT = 3
     ARRAY = 4
+    EXTERN = 5
 
 
 class MaxErrorsReached(Exception):
@@ -452,7 +453,6 @@ class CydcParser(object):
             t = p[1]
             if isinstance(t[1], list):
                 for err in t[1]:
-                    print(err)
                     loc = self._format_error_location(err[0])
                     self.errors.append(self._(
                         f"Invalid character '{err[2]}' (\\u{ord(err[2]):04x}) in {loc} and position {err[1]}"
@@ -1471,6 +1471,24 @@ class CydcParser(object):
                 p[0] = ("DECLARE", p[2], p[4])
             else:
                 p[0] = None
+        else:
+            p[0] = None
+
+    def p_statement_import(self, p):
+        "statement : IMPORT ID FROM STRING"
+        # Declares a native Z80 routine: name -> assembler file. Resolved at build
+        # time (assembled and placed in memory); no runtime bytecode is emitted here.
+        if self._declare_symbol(p[2], SymbolType.EXTERN, p.lineno(2)):
+            p[0] = ("IMPORT", p[2], p[4])
+        else:
+            p[0] = None
+
+    def p_statement_call(self, p):
+        "statement : CALL ID"
+        # Invokes an imported native routine. Emits OP_EXTERN with a placeholder
+        # (name) that the build patches to (bank, address) after memory layout.
+        if self._symbol_usage(p[2], SymbolType.EXTERN, p.lineno(2)):
+            p[0] = ("EXTERN", p[2], 0, 0)
         else:
             p[0] = None
 

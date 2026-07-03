@@ -1,0 +1,166 @@
+; ==============================================================================
+; Choose Your Destiny - MLD loader (slot 0)
+; ==============================================================================
+
+    DEVICE ZXSPECTRUM128
+
+    ORG 0
+
+START_LOADER:
+    di
+
+    ; Ensure 48K ROM + RAM 0 visible before bulk copies.
+    ld a, $04
+    ld bc, $1FFD
+    out (c), a
+
+    ld a, $10
+    ld bc, $7FFD
+    out (c), a
+
+    ld sp, $5FFF
+
+    ; Copy RAM routine that performs slot mapping and block loads.
+    ld hl, RAM_ROUTINE_ROM
+    ld de, RAM_ROUTINE_ADDR
+    ld bc, RAM_ROUTINE_END - RAM_ROUTINE
+    ldir
+
+    jp RAM_ROUTINE_ADDR
+
+RAM_ROUTINE_ADDR EQU $5F00
+
+RAM_ROUTINE_ROM:
+    DISP RAM_ROUTINE_ADDR
+RAM_ROUTINE:
+    ; Cache MLDoffset at DAN_MLD_OFFSET ($5C00) while slot 0 is still mapped here.
+    ; This fixes a multi-block bug (later loop iterations map data slots, so reading
+    ; (MLDoffset) would pick up garbage from the data slot instead of the loader slot).
+    ; The saved value is also read by bank_dan.asm SET_DAN_BANK at game runtime.
+    ld a, (MLDoffset)
+    ld ($5C00), a           ; DAN_MLD_OFFSET – must match bank_dan.asm
+    ld hl, BLOCK_TABLE
+.next_block:
+    ; Read the entire entry FROM SLOT 0 first (it is still mapped here).
+    ; Do not switch the Dandanator slot until every field has been latched,
+    ; otherwise subsequent reads through HL come from the data slot instead
+    ; of the loader slot.
+    ld a, (hl)              ; relative slot id
+    cp $FF
+    jr z, .run_game
+    ld ($5C04), a           ; stash slot id for later ($5C04: must not overlap the
+                            ; $5C02/$5C03 BLOCK_TABLE pointer word saved below)
+
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push de                 ; source offset inside the data slot
+
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    inc hl
+    push de                 ; destination address in RAM
+
+    ld c, (hl)
+    inc hl
+    ld b, (hl)
+    inc hl
+    push bc                 ; block size
+
+    ld c, (hl)              ; RAM bank for destination
+    inc hl                  ; HL now points to next entry's slot byte (in slot 0)
+    ld ($5C02), hl          ; save BLOCK_TABLE pointer for next iteration
+
+    call SETRAM_C           ; map destination RAM bank at C000 if needed
+
+    ; Now safe to switch the Dandanator to the data slot.
+    ld a, ($5C04)           ; relative slot id
+    ld d, a
+    ld a, ($5C00)           ; cached MLDoffset
+    add a, d
+    inc a
+    call DAN_SET_SLOT_A
+
+    pop bc                  ; size
+    pop de                  ; destination
+    pop hl                  ; source offset = address in the now-mapped data slot
+    ldir
+
+    ; Switch back to the loader's slot (slot 0 of the MLD) so the next read of
+    ; BLOCK_TABLE comes from the correct slot.
+    ld a, ($5C00)           ; cached MLDoffset
+    inc a                   ; absolute slot = MLDoffset + 0 + 1 (loader slot)
+    call DAN_SET_SLOT_A
+
+    ld hl, ($5C02)          ; restore BLOCK_TABLE pointer
+    jr .next_block
+
+.run_game:
+    call DAN_RESTORE_ROM
+    ld c, 0
+    call SETRAM_C
+    jp $8000
+
+; C = RAM bank [0..7]
+SETRAM_C:
+    ld a, (23388)
+    and %11111000
+    or c
+    ld bc, $7FFD
+    out (c), a
+    ld (23388), a
+    ret
+
+DAN_RESTORE_ROM:
+    ld b, 33
+    jp DAN_CMD_B
+
+DAN_SET_SLOT_A:
+    ld b, a
+    jp DAN_CMD_B
+
+DAN_CMD_B:
+    ; Dual protocol (matches the Dandanator menu's SENDNRCMD): write the command
+    ; number itself (B) as the VALUE to DDNTRADDRCMD ($0001), repeated B times.
+    ; Real hardware counts the B writes as command pulses (value ignored);
+    ; ZEsarUX reads the written VALUE at $0001 as the command number.
+    ld a, b            ; A = command number = value written to $0001
+.slot_loop:
+    nop
+    nop
+    ld (1), a          ; DDNTRADDRCMD = $0001
+    djnz .slot_loop
+    ld b, 64
+.wait_loop:
+    djnz .wait_loop
+    ret
+
+RAM_ROUTINE_END:
+    ENT
+
+BLOCK_TABLE:
+@{BLOCK_TABLE}
+
+PREVIEW_SCREEN:
+@{PREVIEW_SCR_DATA}
+PREVIEW_SCREEN_END:
+
+    ; Footer required by Dandanator MLD parser.
+    DEFS 16362-$, $FF
+MLDoffset:
+    DEFB 0
+    DEFB @{MLD_TYPE}      ; MLD type: $83=48K, $88=128K, $C8=+2A
+    DEFB 4                ; nsectors (fixed snapshot mode)
+    DEFB 0, 0, 0, 0       ; sector IDs (rom generator may rewrite)
+    DEFW 0                ; Data table address (unused)
+    DEFW 0                ; Data row size (unused)
+    DEFW 0                ; Number of rows (unused)
+    DEFB 0                ; Slot byte offset in row (unused)
+    DEFW @{PREVIEW_SCR_ADDR} ; Preview screen addr
+    DEFW @{PREVIEW_SCR_SIZE} ; Preview screen size
+    DEFB "MLD", 0
+
+    SAVEBIN "@SLOT0_BIN", 0, $4000
