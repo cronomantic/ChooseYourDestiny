@@ -110,6 +110,9 @@ def get_asm_plus3(
     asm += "    SLOT 3\n"
     asm += "    PAGE 0\n"
     asm += "\n"
+    # +3 pages RAM banks at $C000 via $7FFD just like the 128k, so it uses the
+    # same banked OP_EXTERN handler (routine paged in before the call).
+    asm += "    DEFINE OP_EXTERN_BANKED\n\n"
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
@@ -211,6 +214,8 @@ def get_asm_128(
     asm += get_unused_opcodes_defines(unused_opcodes)
 
     asm = "    DEFINE IS_128_TAPE\n" + asm
+    # $7FFD-banked OP_EXTERN handler (routine paged in at $C000 before the call).
+    asm = "    DEFINE OP_EXTERN_BANKED\n" + asm
 
     t = get_asm_template("cyd_tape")
     asm += t.substitute(d)

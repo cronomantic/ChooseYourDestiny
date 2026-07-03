@@ -70,7 +70,11 @@ def _parse_flags_addr(lst_path):
 
 
 def compile_cyd(source, model, workdir):
-    """Compile ``source`` to a TAP under ``workdir``; return (tap_path, flags_addr)."""
+    """Compile ``source`` under ``workdir``; return (image_path, flags_addr).
+
+    The image is a TAP for tape targets and a DSK for the +3 (disk) target;
+    ZEsarUX ``smartload`` loads either.
+    """
     sj = find_sjasmplus()
     if not sj:
         raise RuntimeError("sjasmplus not found under tools/")
@@ -85,14 +89,19 @@ def compile_cyd(source, model, workdir):
         raise RuntimeError(
             f"compilation failed:\n{proc.stdout[-1500:]}\n{proc.stderr[-1500:]}"
         )
-    tap = Path(workdir) / "test.tap"
-    if not tap.is_file():
-        raise RuntimeError("no TAP produced")
+    if model == "plus3":
+        image = next(iter(Path(workdir).glob("*.DSK")), None)
+        if image is None:
+            raise RuntimeError("no DSK produced")
+    else:
+        image = Path(workdir) / "test.tap"
+        if not image.is_file():
+            raise RuntimeError("no TAP produced")
     lst = Path(workdir) / "cyd.lst"
     flags_addr = _parse_flags_addr(lst) if lst.is_file() else None
     if flags_addr is None:
         raise RuntimeError("could not determine FLAGS address from listing")
-    return str(tap), flags_addr
+    return str(image), flags_addr
 
 
 def _recv_until_prompt(s, timeout):
@@ -135,13 +144,18 @@ def _pc(s):
         return None
 
 
-def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0):
-    """Load+run the TAP headless, return FLAGS[0:n_bytes] once the run is stable."""
+def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
+                   machine="48k"):
+    """Load+run the TAP headless, return FLAGS[0:n_bytes] once the run is stable.
+
+    ``machine`` picks the ZEsarUX model ("48k", "128k", ...); use it to exercise
+    the banked runtime paths.
+    """
     zes = find_zesarux()
     if not zes:
         raise RuntimeError("ZEsarUX not found under tools/")
     proc = subprocess.Popen(
-        [zes, "--noconfigfile", "--machine", "48k", "--vo", "null", "--ao", "null",
+        [zes, "--noconfigfile", "--machine", machine, "--vo", "null", "--ao", "null",
          "--enable-remoteprotocol", "--remoteprotocol-port", str(port)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
