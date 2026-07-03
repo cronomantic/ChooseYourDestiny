@@ -1,0 +1,9 @@
+[[
+    INCLUDE "../../lib/strings.cyd"
+    PAPER 0 : INK 7 : BORDER 0 : CLEAR
+    SET stBase TO 100 : SET stLen TO 8
+    GOSUB strInput
+    SET 0 TO {@100,@101,@102,@103,@104,@105,@106,@107}
+    LABEL spin
+    GOTO spin
+]]

@@ -222,7 +222,7 @@ def get_common_files():
 
 def get_common_dirs():
     """Return list of directories common to all platforms."""
-    return ["assets", "examples", "dist/cydc", "locale", "dist/locale"]
+    return ["assets", "examples", "lib", "dist/cydc", "locale", "dist/locale"]
 
 
 def get_platform_specific_files(target_platform):
@@ -279,26 +279,30 @@ def compile_translations(current_path, src_path):
             compile_locale_dir(locale_dir)
 
 
-def sync_wiki_manuals(current_path):
-    """Sync MANUAL_en.md and MANUAL_es.md from sibling wiki repository if available."""
-    wiki_path = os.path.join(os.path.dirname(current_path), "ChooseYourDestiny.wiki")
-    manual_map = {
-        os.path.join(wiki_path, "MANUAL_en.md"): os.path.join(current_path, "MANUAL_en.md"),
-        os.path.join(wiki_path, "MANUAL_es.md"): os.path.join(current_path, "MANUAL_es.md"),
-    }
+def sync_docs_to_wiki(current_path):
+    """Replicate the canonical MANUAL to the wiki submodule (external/ChooseYourDestiny.wiki).
+
+    The MANUAL is canonical in this repo and is replicated to the wiki. The
+    TUTORIAL, by contrast, lives ONLY in the wiki (edit it in the submodule), so it
+    is not overwritten here. See also update_wiki.py, which additionally commits
+    and pushes the wiki submodule."""
+    wiki_path = os.path.join(current_path, "external", "ChooseYourDestiny.wiki")
+    manual_files = ["MANUAL_es.md", "MANUAL_en.md"]
 
     if not os.path.exists(wiki_path):
-        print(f"Wiki repository not found, skipping manual sync: {wiki_path}")
+        print(f"Wiki submodule not found, skipping doc sync: {wiki_path}")
+        print("  (run: git submodule update --init external/ChooseYourDestiny.wiki)")
         return
 
-    print("Syncing manuals from wiki...")
-    for src_file, dst_file in manual_map.items():
+    print("Replicating MANUAL to wiki submodule (repo -> wiki)...")
+    for name in manual_files:
+        src_file = os.path.join(current_path, name)
+        dst_file = os.path.join(wiki_path, name)
         if not os.path.exists(src_file):
-            print(f"  Warning: Wiki manual not found: {src_file}")
+            print(f"  Warning: repo doc not found: {src_file}")
             continue
-        os.makedirs(os.path.dirname(dst_file), exist_ok=True)
         shutil.copy2(src_file, dst_file)
-        print(f"  Synced {os.path.basename(src_file)}")
+        print(f"  Synced {name}")
 
 
 def copy_translations(current_path, src_path, dst_path):
@@ -452,7 +456,7 @@ Examples:
     parser.add_argument(
         "--do-doc-sync",
         action="store_true",
-        help="Syncs MANUAL_en.md/MANUAL_es.md from sibling wiki repository",
+        help="Replicates the canonical docs (manuals and tutorials) from this repo to the sibling wiki",
     )
     
     args = parser.parse_args()
@@ -475,10 +479,10 @@ Examples:
     print()
 
     if args.do_doc_sync:
-        sync_wiki_manuals(current_path)
+        sync_docs_to_wiki(current_path)
         print()
     else:
-        print("Skipping manual sync")
+        print("Skipping doc sync")
         print()
     
     # Prepare source files and translations (once for all platforms)

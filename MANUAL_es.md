@@ -425,6 +425,107 @@ El compilador permite dividir aventuras grandes en varios archivos fuente usando
 
 ---
 
+## Librerías incluidas
+
+El proyecto trae en el directorio `lib/` un conjunto de **librerías escritas en el
+propio lenguaje CYD** (no modifican la máquina virtual ni añaden dependencias).
+Son colecciones de subrutinas que se incorporan a tu programa con `INCLUDE` y se
+invocan con `GOSUB`. Cada librería se **auto-salta** sus rutinas (un `GOTO`
+interno al principio), así que puedes incluirla al comienzo de tu guion sin que el
+flujo de ejecución caiga dentro de las subrutinas: solo se ejecutan cuando las
+llamas con `GOSUB`.
+
+```cyd
+[[
+    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE "../../lib/strings.cyd"
+    ... tu programa ...
+]]
+```
+
+Cada librería reserva un bloque de variables como espacio de trabajo. Los bloques
+**no se solapan**, de modo que puedes usar varias a la vez:
+
+| Librería | Variables reservadas |
+|----------|----------------------|
+| `math16_32.cyd` | 224..254 |
+| `strings.cyd`   | 216..223 |
+
+### `math16_32.cyd` — aritmética de 16 y 32 bits
+
+Da enteros anchos **sin signo** (16 bits: 0..65.535; 32 bits: 0..4.294.967.295)
+con multiplicación y división, que con las variables de 8 bits de CYD no eran
+viables por desbordar. Los operandos se cargan en unos «registros» (grupos de 2 ó
+4 variables consecutivas, byte bajo primero): `A` = `mlA0..mlA3`,
+`B` = `mlB0..mlB3`, `C` = `mlC0..mlC3`. Las operaciones de 16 bits usan los 2
+bytes bajos de cada uno.
+
+Como los literales de CYD son de 8 bits, los valores anchos se cargan byte a byte
+con la asignación múltiple: `SET mlA0 TO {226, 4}` carga 1250 (= 0x04E2, byte bajo
+primero).
+
+| Rutina | Efecto |
+|--------|--------|
+| `add16` / `add32` | `A = A + B` (envuelve al desbordar) |
+| `sub16` / `sub32` | `A = A - B` (envuelve; usa `cmp` para comprobar antes) |
+| `cmp16` / `cmp32` | `mlCmp = 0/1/2` → `A<B` / `A=B` / `A>B` |
+| `shl16` / `shl32` | `A = A << 1` |
+| `shr16` / `shr32` | `A = A >> 1` |
+| `mul32` | `C = A * B` (trunca a 32 bits) |
+| `mul1632` | `C(32) = A(16) * B(16)` — **nunca desborda** (recomendada para puntuaciones) |
+| `div32` | `A = A / B` (cociente), `C = A mod B` (resto) |
+| `print16` / `print32` | imprime `A` en decimal (destruye `A`) |
+
+Para dividir entre un valor de 16 bits, cárgalo en `B` con `mlB2 = mlB3 = 0` y usa
+`div32` (el cociente puede ser de 32 bits). El tier de 16 bits es ~2–4× más
+rápido; evita `mul`/`div` dentro de bucles muy apretados. Hay un ejemplo completo
+en `examples/math_library`.
+
+**Ejemplo:** puntuación = enemigos × puntos + bonus = 1250 × 800 + 234567.
+
+```cyd
+[[
+    INCLUDE "../../lib/math16_32.cyd"
+    SET mlA0 TO {226, 4}       /* A = 1250 */
+    SET mlB0 TO {32, 3}        /* B = 800  */
+    GOSUB mul1632              /* C = 1000000 (sin desbordar) */
+    SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* A = C */
+    SET mlB0 TO {71, 148, 3, 0}   /* B = 234567 */
+    GOSUB add32                /* A = 1234567 */
+]]Puntuacion: [[ GOSUB print32 ]]
+```
+
+### `strings.cyd` — cadenas de texto
+
+Entrada por teclado, impresión y manejo de cadenas de caracteres guardadas en
+variables consecutivas (usando la indirección `[@ptr]`), terminadas en `0`. Antes
+de llamar, fija los registros: `stBase` (índice de la primera variable del
+buffer), `stLen` (capacidad en caracteres) y, para copiar o comparar, `stB2`
+(índice del segundo buffer).
+
+| Rutina | Efecto |
+|--------|--------|
+| `strClear` | pone a 0 el buffer |
+| `strLen`   | cuenta caracteres hasta el 0 o el final → `stRes` |
+| `strPrint` | imprime el buffer (`CHAR`) hasta el 0 o el final |
+| `strInput` | lee una cadena del teclado (cursor, `ENTER` termina, `DELETE` borra) |
+| `strCopy`  | copia el buffer `stBase` → `stB2` (`stLen` bytes) |
+| `strCmp`   | compara `stBase` con `stB2` → `stRes = 0/1/2` (menor/igual/mayor) |
+
+**Ejemplo:** pedir un nombre y saludar.
+
+```cyd
+[[
+    INCLUDE "../../lib/strings.cyd"
+    SET stBase TO 0 : SET stLen TO 16
+    GOSUB strInput
+]]Hola, [[ GOSUB strPrint ]]!
+```
+
+Hay un ejemplo completo en `examples/strings_library`.
+
+---
+
 ## Variables y expresiones numéricas
 
 Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
@@ -1621,6 +1722,24 @@ Ejemplo técnico que muestra características avanzadas de manejo de datos:
 - **Edición interactiva:** Permite borrar caracteres con DELETE y muestra un cursor parpadeante.
 
 Este ejemplo es fundamental para entender cómo trabajar con datos más complejos y crear interfaces de entrada personalizadas.
+
+#### `examples\math_library` - Aritmética de 16/32 bits
+**Nivel:** Intermedio
+
+Muestra el uso de la librería `lib/math16_32.cyd` para trabajar con números que se
+salen de 8 (y de 16) bits:
+- **Inclusión de librerías:** Incorpora la librería con `INCLUDE` al principio del programa.
+- **Multiplicación sin desbordar:** Usa `mul1632` (`C(32) = A(16) * B(16)`) para calcular una puntuación.
+- **Suma de 32 bits e impresión:** Combina `add32` y `print32` para mostrar el resultado en decimal.
+- **Carga de literales anchos:** Emplea la asignación múltiple `SET reg TO {b0, b1, ...}`.
+
+#### `examples\strings_library` - Cadenas de texto
+**Nivel:** Intermedio
+
+Muestra el uso de la librería `lib/strings.cyd` para entrada y manejo de cadenas:
+- **Entrada por teclado:** Lee un nombre con `strInput` (cursor, ENTER, DELETE).
+- **Impresión y longitud:** Muestra la cadena con `strPrint` y su longitud con `strLen`.
+- **Buffer configurable:** El autor elige dónde y de qué tamaño es la cadena (`stBase`, `stLen`).
 
 #### `examples\windows` - Ventanas múltiples
 **Nivel:** Principiante-Intermedio

@@ -1,0 +1,58 @@
+% Shared LaTeX header for Pandoc-generated documentation PDFs
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\definecolor{CYDAccent}{HTML}{0B5D8A}
+\definecolor{CYDText}{HTML}{1A1A1A}
+\definecolor{CYDMuted}{HTML}{5A6772}
+
+\AtBeginDocument{%
+  \color{CYDText}
+}
+
+% Improve heading hierarchy readability
+\titleformat{\section}
+  {\Large\bfseries\color{CYDAccent}}
+  {\thesection}
+  {0.6em}
+  {}
+
+\titleformat{\subsection}
+  {\large\bfseries\color{CYDAccent}}
+  {\thesubsection}
+  {0.6em}
+  {}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{CYDText}}
+  {\thesubsubsection}
+  {0.6em}
+  {}
+
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titlespacing*{\subsection}{0pt}{1em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{0.8em}{0.3em}
+
+% Keep list spacing compact and consistent
+\setlist{itemsep=0.25em, topsep=0.45em, parsep=0pt, partopsep=0pt}
+
+% Improve caption spacing
+\captionsetup{font=small, labelfont=bf, skip=8pt}
+
+% Tidy up table of contents spacing
+\setlength{\cftbeforesecskip}{0.15em}
+\setlength{\cftbeforesubsecskip}{0.05em}
+
+% Simple running header/footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[L]{\textcolor{CYDMuted}{Choose Your Destiny}}
+\fancyhead[R]{\textcolor{CYDMuted}{\nouppercase{\leftmark}}}
+\fancyfoot[C]{\textcolor{CYDMuted}{\thepage}}

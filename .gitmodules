@@ -4,3 +4,6 @@
 [submodule "external/sjasmplus"]
 	path = external/sjasmplus
 	url = https://github.com/z00m128/sjasmplus
+[submodule "external/ChooseYourDestiny.wiki"]
+	path = external/ChooseYourDestiny.wiki
+	url = https://github.com/cronomantic/ChooseYourDestiny.wiki.git
