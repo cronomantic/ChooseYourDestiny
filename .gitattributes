@@ -1,0 +1,7 @@
+# Shell scripts must always use LF line endings, even on Windows checkouts, so
+# they run correctly under WSL/bash (e.g. make_pdf.sh, make_adv.sh).
+*.sh text eol=lf
+
+# Windows batch scripts use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
