@@ -9,7 +9,9 @@
 > sobre el código actual llevan `fichero:línea` verificados salvo que se indique
 > "(a verificar)". Asume [ARCHITECTURE.md](ARCHITECTURE.md).
 >
-> **Estado: DISEÑO. Sin implementación empezada.**
+> **Estado: FASE 1 (front-end) IMPLEMENTADA y verificada** (suite completa en verde,
+> +2 tests de IMPORT/CALL). Fases 2 (build/allocator), 3 (runtime asm) y 4
+> (ejemplo+docs) pendientes. Detalle de lo hecho al final del §8.
 
 ---
 
@@ -226,6 +228,27 @@ implementación):
 
 Verificación empírica obligatoria antes de dar nada por hecho (emulador real, no
 solo lectura): reproducir un `CALL` funcionando en 48k y 128k.
+
+### 8.1 Estado de implementación (fase 1 hecha)
+
+**Fase 1 (front-end) COMPLETA y verificada** (suite en verde, 279 tests):
+- `cydc_lexer.py`: token `STRING` (`t_STRING`, regex `"[^"\n]*"`, sólo estado
+  INITIAL; `rawtext` es exclusivo → no afecta al texto mostrado) + reserved words
+  `IMPORT`/`FROM`/`CALL`.
+- `cydc_parser.py`: `SymbolType.EXTERN`; `p_statement_import`
+  (`IMPORT ID FROM STRING` → `("IMPORT", nombre, fichero)`, `_declare_symbol`);
+  `p_statement_call` (`CALL ID` → `("EXTERN", nombre, 0, 0)`, `_symbol_usage`).
+- `cydc_codegen.py`: opcode `"EXTERN": 0x7F`; `self.externs = {}` poblado en
+  `code_extract_declarations` (rama `IMPORT`, no emite bytecode). `CALL` fluye por
+  `code_translate`/`symbol_replacement` como los labels (placeholder `[0x7F, nombre, 0, 0]`).
+- Tests nuevos en `tests/test_parser.py` (`test_parse_import_and_call`,
+  `test_parse_call_without_import_errors`). `test_parse_print_statement` cambió de
+  `PRINT "text"` (ahora error de sintaxis, correcto) a `PRINT 42`.
+
+**Falta para que `CALL` compile end-to-end:** la fase 2 debe inyectar cada rutina
+importada en `self.symbols` con su `(bank, offset)` tras la asignación, para que
+`symbol_replacement` resuelva el placeholder (hoy daría "Label X does not exists").
+El opcode `0x7F` aún no tiene handler ni entrada en la jump table (fase 3).
 
 ---
 
