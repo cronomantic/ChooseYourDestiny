@@ -706,6 +706,34 @@ def main():
     else:
         unused_opcodes = set()
 
+    # Strip resident native-call machinery that no routine references, so a
+    # program doesn't pay its cost: the array broker (CYD_PEEK/POKE/ARR_MAP/
+    # ARR_FLUSH -> UNUSED_ARR_BROKER) and the cross-block call trampoline +
+    # dispatch table (CYD_CALL -> UNUSED_CYD_CALL). Detection is an undefined-
+    # symbol probe (assemble each block against a service-less ABI); it must be
+    # decided before the size pass so the interpreter is measured at its stripped
+    # size and the dispatch table is reserved only when used. Populate
+    # codegen.externs first (generate_code re-does this harmlessly later).
+    codegen.code_extract_declarations(code)
+    unused_opcodes = set(unused_opcodes)
+    used_services = extern_probe_used(
+        codegen,
+        code,
+        args.sjasmplus_path,
+        args.output_path,
+        os.path.dirname(os.path.abspath(args.input)),
+    )
+    if len(codegen.externs) > 0 and not (used_services & set(BROKER_SERVICES)):
+        unused_opcodes |= {"UNUSED_ARR_BROKER"}
+    cyd_call_used = CYD_CALL_SERVICE in used_services
+    if not cyd_call_used:
+        unused_opcodes |= {"UNUSED_CYD_CALL"}
+    if CYD_SYSCALL_SERVICE not in used_services:
+        unused_opcodes |= {"UNUSED_SYSCALL"}
+    # route_names / route_index / dispatch_size are computed after the first
+    # generate_code below, once native-block DCE has settled which blocks (and
+    # therefore which callables) survive (they get a dispatch slot each).
+
     if font is None:
         font = CydcFont()
     l_chars = font.font_chars
@@ -809,12 +837,21 @@ def main():
         code=code, slice_text=force_slice_texts, show_debug=False
     )
 
+    # Native-block DCE: now that codegen.extern_calls lists the reachable CALLs,
+    # drop IMPORT/ASM blocks that nothing calls (see extern_live_blocks). Only the
+    # surviving callables get a dispatch-table slot / RT_ index.
+    kept_blocks, route_names = extern_live_blocks(codegen)
+    route_index = {n: i for i, n in enumerate(route_names)}
+    dispatch_size = 3 * len(route_names) if cyd_call_used else 0
+
     # To calculate the offset
     if model == "plus3":
         num_blocks = len(chunks)
     else:
         num_blocks = len(blocks) + len(chunks)
-    bank0_offset = (5 * num_blocks) + asm_size + 0x8000
+    # The resident image also carries the CYD_CALL dispatch table (dispatch_size
+    # bytes) right after the block index, so reserve room for it too.
+    bank0_offset = (5 * num_blocks) + dispatch_size + asm_size + 0x8000
     bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
     # generate block again
@@ -978,7 +1015,8 @@ def main():
     # known here (the allocator runs after generate_code). So we assemble each
     # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
     # addr_hi] operand of every CALL that references it.
-    if len(codegen.externs) > 0:
+    extern_dispatch_asm = ""  # CYD_CALL dispatch table (filled after placement)
+    if kept_blocks:
         # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
         # mld (single Dandanator-slot bank) is not supported yet.
         if model not in ("48k", "128k", "plus3", "mld128"):
@@ -988,30 +1026,62 @@ def main():
                     "48k, 128k, +3 and mld128 targets for now."
                 )
             )
-        # Deterministic placement order.
-        routine_names = sorted(codegen.externs.keys())
+        # USES declares the cross-block callees a routine reaches via CYD_CALL:
+        # each name must be a known callable (an IMPORT/ASM export). The compiler
+        # injects an RT_<name> index per USES entry (build_uses_inc).
+        for n, d in codegen.externs.items():
+            for u in d["uses"]:
+                if u not in codegen.extern_exports:
+                    sys.exit(
+                        _(f"ERROR: Block {n} USES unknown native routine: {u}")
+                    )
+
+        # Deterministic placement order over the blocks that survived DCE.
+        routine_names = sorted(kept_blocks)
 
         # IMPORT "file.asm" paths are relative to the .cyd script's directory.
         extern_base_dir = os.path.dirname(os.path.abspath(args.input))
 
-        def _measure_routine(r, org):
+        # Resident ABI symbols (FLAGS, image buffer, video) a native routine may
+        # reference by name, from the engine's --sym dump written by the size pass.
+        extern_abi_inc = build_abi_inc(os.path.join(args.output_path, "cyd.sym"))
+        # Plus the author's CYD arrays, reachable by name through the broker.
+        extern_abi_inc += build_arrays_inc(codegen, spectrum_banks)
+
+        def _assemble_block(r, org, with_syms):
+            """Assemble block r at ORG; return (data, {export: addr}). Symbols are
+            only resolved (via --sym) for EXPORTS blocks on the placement pass."""
+            d = codegen.externs[r]
+            exports = d["exports"] if (with_syms and d["explicit"]) else None
+            # Shared ABI plus this block's RT_<name> indices (its USES callees).
+            block_abi = extern_abi_inc + build_uses_inc(d["uses"], route_index)
             try:
                 return assemble_extern_routine(
                     args.sjasmplus_path,
                     args.output_path,
                     r,
-                    codegen.externs[r],
+                    d["source"],
                     org,
-                    verbose=(verbose >= 1),
+                    exports=exports,
                     base_dir=extern_base_dir,
+                    cyd_line=d.get("line"),
+                    abi_inc=block_abi,
+                    verbose=(verbose >= 1),
                 )
             except OSError as e:
                 sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")
 
-        def _place_routine(r, org, bank_idx):
-            """Re-assemble routine r at its final ORG and append it to bank_idx,
-            checking the size did not change vs. the measurement pass."""
-            data = _measure_routine(r, org)
+        # extern_addr[callable] = (bank_byte, address). A block may expose several
+        # callables (EXPORTS); a plain block/IMPORT exposes one, at its start. On
+        # 48k the routine is resident and the bank byte is ignored; on 128k it is
+        # the RAM bank the OP_EXTERN handler pages in before calling $C000+offset.
+        extern_addr = {}
+
+        def _place_block(r, org, bank_idx, bank_byte):
+            """Re-assemble block r at its final ORG, append it to bank_idx (checking
+            its size is stable vs. the measurement pass), and register the resolved
+            address of every callable it exposes."""
+            data, addrs = _assemble_block(r, org, True)
             if len(data) != sizes[r]:
                 sys.exit(
                     _(
@@ -1022,20 +1092,20 @@ def main():
                 )
             available_banks[bank_idx] += data
             available_bank_size[bank_idx] -= len(data)
+            d = codegen.externs[r]
+            for callable_name in d["exports"]:
+                # EXPORTS -> the label's own address; plain block -> the start.
+                addr = addrs[callable_name] if d["explicit"] else org
+                extern_addr[callable_name] = (bank_byte, addr)
 
-        # Pass 1: measure every routine at a provisional ORG.
-        sizes = {r: len(_measure_routine(r, 0xC000)) for r in routine_names}
+        # Pass 1: measure every block at a provisional ORG (no symbols needed).
+        sizes = {r: len(_assemble_block(r, 0xC000, False)[0]) for r in routine_names}
         for r in routine_names:
             if sizes[r] > 16 * 1024:
                 sys.exit(
                     _(f"ERROR: Native routine {r} is too big for a bank.")
                     + f" ({sizes[r]} bytes)"
                 )
-
-        # extern_addr[name] = (bank_byte, address). On 48k the routine is
-        # resident and the bank byte is ignored; on 128k it carries the physical
-        # RAM bank the OP_EXTERN handler must page in before calling $C000+offset.
-        extern_addr = {}
 
         if model == "48k":
             total = sum(sizes.values())
@@ -1047,10 +1117,9 @@ def main():
             # Place resident, at the end of bank 0.
             cursor = bank0_offset + len(available_banks[0])
             for r in routine_names:
-                extern_addr[r] = (0, cursor)
-                _place_routine(r, cursor, 0)
+                _place_block(r, cursor, 0, 0)
                 cursor += sizes[r]
-        else:  # 128k / +3 / mld128: place each routine in a paged bank (>= 1).
+        else:  # 128k / +3 / mld128: place each block in a paged bank (>= 1).
             for r in routine_names:
                 # Best-fit among the already-used paged banks; add a new bank
                 # from spectrum_banks if none has room.
@@ -1072,8 +1141,7 @@ def main():
                             + f" ({r})"
                         )
                 addr = 0xC000 + len(available_banks[best_j])
-                extern_addr[r] = (spectrum_banks[best_j], addr)
-                _place_routine(r, addr, best_j)
+                _place_block(r, addr, best_j, spectrum_banks[best_j])
 
         # Late-patch every CALL operand with the resolved [bank, addr_lo, addr_hi].
         for (rname, chunk_idx, pos) in codegen.extern_calls:
@@ -1081,6 +1149,12 @@ def main():
             available_banks[chunk_idx][pos] = bank_byte
             available_banks[chunk_idx][pos + 1] = addr & 0xFF
             available_banks[chunk_idx][pos + 2] = (addr >> 8) & 0xFF
+
+        # Build the resident CYD_CALL dispatch table now that every callable's
+        # (bank, address) is known. Emitted into the engine (see EXTERN_DISPATCH);
+        # its size was reserved in bank0_offset. Only when CYD_CALL is used.
+        if cyd_call_used:
+            extern_dispatch_asm = build_dispatch_table(route_names, extern_addr)
 
     ######################################################################
 
@@ -1187,6 +1261,7 @@ def main():
                 pause_start_value=args.pause_after_load,
                 use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
+                extern_dispatch=extern_dispatch_asm,
             )
         elif model == "plus3":
             if verbose > 0:
@@ -1212,6 +1287,7 @@ def main():
                 pause_start_value=args.pause_after_load,
                 use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
+                extern_dispatch=extern_dispatch_asm,
             )
         elif model == "mld" or model == "mld128":
             if verbose > 0:
@@ -1239,6 +1315,7 @@ def main():
                 mld_type="$88" if model == "mld128" else "$83",
                 mld_is_128=(model == "mld128"),
                 name=output_name,
+                extern_dispatch=extern_dispatch_asm,
             )
         else:
             if verbose > 0:
@@ -1262,6 +1339,7 @@ def main():
                 unused_opcodes=unused_opcodes,
                 pause_start_value=args.pause_after_load,
                 name=output_name,
+                extern_dispatch=extern_dispatch_asm,
             )
     except ValueError as e1:
         sys.exit(f"{_('ERROR: Error assembling source.')}\n{e1}")
