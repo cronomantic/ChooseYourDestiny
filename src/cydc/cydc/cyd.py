@@ -121,6 +121,38 @@ def extern_probe_used(codegen, code, sjasmplus_path, output_path, base_dir):
     return used
 
 
+def extern_live_blocks(codegen):
+    """Native-block dead-code elimination.
+
+    Returns ``(kept_block_names, sorted_kept_callables)``. A native block
+    (IMPORT/ASM) is kept if any of its exported callables is referenced by a
+    reachable ``CALL`` (``codegen.extern_calls`` is filled after the bytecode DCE,
+    so it already lists only reachable calls) or, transitively, is a ``USES``
+    callee of a kept block (a kept routine may ``CYD_CALL`` it). Blocks with no
+    live export are not assembled/placed and get no dispatch-table slot.
+
+    Exports cannot be pruned individually: a block is one indivisible assembly
+    unit (its exports may share private helpers), so it is kept or dropped whole.
+    Works with and without ``-dce``: ``extern_calls`` already reflects the chosen
+    reachability, and an IMPORT/ASM that is never called is dropped either way."""
+    externs = codegen.externs
+    used = {name for (name, _chunk, _pos) in codegen.extern_calls}
+    changed = True
+    while changed:
+        changed = False
+        for d in externs.values():
+            if any(c in used for c in d["exports"]):      # block is kept
+                for callee in d["uses"]:                   # its CYD_CALL callees
+                    if callee not in used:
+                        used.add(callee)
+                        changed = True
+    kept = {
+        name for name, d in externs.items() if any(c in used for c in d["exports"])
+    }
+    kept_callables = sorted(c for name in kept for c in externs[name]["exports"])
+    return kept, kept_callables
+
+
 def build_uses_inc(uses, route_index):
     """Inject ``RT_<name> EQU <index>`` for each routine the block declares in
     USES, so it can reach them with ``ld a, RT_<name> : call CYD_CALL``."""
