@@ -1,9 +1,37 @@
 [[
-    INCLUDE "../../lib/strings.cyd"
-    PAPER 0 : INK 7 : BORDER 0 : CLEAR
-    SET stBase TO 100 : SET stLen TO 8
-    GOSUB strInput
-    SET 0 TO {@100,@101,@102,@103,@104,@105,@106,@107}
-    LABEL spin
-    GOTO spin
+    /* Libreria de aritmetica de 16/32 bits (lib/math16_32.cyd). El nucleo es
+       ensamblador Z80 nativo, pero se usa igual: carga los registros y GOSUB.
+       Nota: print destruye A, B y C, asi que imprime al final de cada calculo. */
+    INCLUDE "../../lib/math16_32.cyd"
+
+    PAPER 0 : INK 7 : BORDER 0 : BRIGHT 1 : CLEAR
+
+    /* 50000 * 50000 = 2 500 000 000: imposible con variables de 8 bits.
+       mul1632 multiplica dos valores de 16 bits en un resultado de 32 (C) que
+       NUNCA desborda. */
+    SET mlA0 TO {80, 195}      /* 50000 = 0xC350, byte bajo primero */
+    SET mlB0 TO {80, 195}      /* 50000 */
+    GOSUB mul1632
+    SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* producto -> A para imprimir */
+]]50000 x 50000 = [[
+    GOSUB print32
+    NEWLINE
+
+    /* Suma de 32 bits: 1e9 + 1e9 = 2 000 000 000. */
+    SET mlA0 TO {0, 202, 154, 59}    /* 1 000 000 000 */
+    SET mlB0 TO {0, 202, 154, 59}
+    GOSUB add32
+]]1e9 + 1e9 = [[
+    GOSUB print32
+    NEWLINE
+
+    /* Division de 32 bits: 1000 / 7 = 142, resto 6 (leido de C). */
+    SET mlA0 TO {232, 3, 0, 0}       /* 1000 */
+    SET mlB0 TO {7, 0, 0, 0}
+    GOSUB div32
+]]1000 / 7 = [[
+    GOSUB print32
+    NEWLINE : NEWLINE
+    ]]Pulsa una tecla.[[
+    WAITKEY : CLEAR : END
 ]]

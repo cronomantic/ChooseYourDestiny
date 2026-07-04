@@ -20,7 +20,7 @@ se solapan**, así que puedes usar ambas a la vez:
 
 | Librería | Variables reservadas |
 |----------|----------------------|
-| `math16_32.cyd` | 224..254 |
+| `math16_32.cyd` | 224..247 y 253 |
 | `strings.cyd`   | 216..223 |
 
 Todas las rutinas están verificadas automáticamente en el emulador (ZEsarUX vía
@@ -32,7 +32,10 @@ el harness, ver [doc/dev/EMULATOR_TESTING.md](../doc/dev/EMULATOR_TESTING.md)).
 
 Enteros anchos **sin signo** (16 bits: 0..65.535; 32 bits: 0..4.294.967.295) con
 multiplicación y división, que en las variables de 8 bits de CYD no eran viables
-por desbordar. Detalle de diseño e implementación en
+por desbordar. El núcleo está escrito en **ensamblador Z80 nativo** (un bloque
+`ASM`, ver la sección "Rutinas nativas" del manual), mucho más rápido que la
+versión pura-CYD; la interfaz `GOSUB` no cambia. `print` usa el servicio
+`SVC_PRINT_CHAR` (`CYD_SYSCALL`). Detalle de diseño en
 [doc/dev/MATH_LIBRARY.md](../doc/dev/MATH_LIBRARY.md).
 
 **Registros** (little-endian, byte bajo primero):
@@ -53,8 +56,8 @@ los 2 bytes bajos de A/B/C. Carga literales anchos con asignación múltiple:
 | `print16` / `print32` | imprime `A` en decimal (destruye `A`) |
 
 Para dividir entre un valor de 16 bits, ponlo en `B` con `B2=B3=0` y usa `div32`
-(el cociente puede ser de 32 bits). El tier de 16 bits es ~2–4× más rápido; evita
-`mul`/`div` en bucles muy apretados.
+(el cociente puede ser de 32 bits). El tier de 16 bits sigue siendo algo más
+rápido que el de 32 (menos bytes por operación).
 
 Ejemplo completo: [examples/math_library/](../examples/math_library/).
 
