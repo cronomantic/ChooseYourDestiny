@@ -1,6 +1,6 @@
 # Choose Your Destiny Manual
 
-![logo](assets/cyddeluxe_small.png)
+![logo](assets/cydlogo_2_small.png)
 
 The program is a compiler and interpreter to run "Choose Your Own Adventure" type stories or choice-based adventures and game books, for the Spectrum 48, 128, +2 and +3.
 

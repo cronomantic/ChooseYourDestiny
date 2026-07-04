@@ -97,13 +97,13 @@ VERSION = "1.0.0"
 PROGRAM_TITLE = f"Choose Your Destiny GUI {VERSION}"
 
 # Logo file to use in the header (relative to the project root).
-# Primary: cyddeluxe_small.png (39 KB, ideal size for GUI)
-# Fallbacks in case the primary is missing.
+# Primary: cydlogo_2_small.png (183×156, sized so the GUI shows it crisp with no
+# runtime subsampling). Fallbacks in case the primary is missing.
 LOGO_CANDIDATES = [
-    os.path.join("assets", "cyddeluxe_small.png"),   # 39 KB – preferred
-    os.path.join("assets", "logo_cyd_2small.png"),    # 11 KB – fallback
-    os.path.join("assets", "logo_cyd_small.png"),     # 42 KB – fallback
-    os.path.join("assets", "logo_cyd.png"),            # 162 KB – last resort
+    os.path.join("assets", "cydlogo_2_small.png"),   # 156 px tall – preferred
+    os.path.join("assets", "cydlogo_2.png"),          # 240×205 master – fallback
+    os.path.join("assets", "cyddeluxe_small.png"),    # previous logo – fallback
+    os.path.join("assets", "logo_cyd.png"),           # 162 KB – last resort
 ]
 
 # Maximum logo height in pixels for the header
