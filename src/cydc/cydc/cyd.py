@@ -666,8 +666,20 @@ def build_abi_inc(sym_path):
     Exposes to native routines, by name, the resident data structures they may
     touch: the FLAGS variable array, the engine's image buffer, and the hardware
     screen. Addresses come from the engine build (fixed by vars.asm); the screen
-    base is a Spectrum hardware constant (target-dependent by design)."""
-    wanted = ("FLAGS", "SCREEN_BUFFER_PXL", "SCREEN_BUFFER_ATT")
+    base is a Spectrum hardware constant (target-dependent by design).
+
+    The resident memory-broker services (CYD_PEEK / CYD_POKE / CYD_ARR_MAP /
+    CYD_ARR_FLUSH) are engine labels too, so they ride the same ``--sym`` dump
+    and become callable by name."""
+    wanted = (
+        "FLAGS",
+        "SCREEN_BUFFER_PXL",
+        "SCREEN_BUFFER_ATT",
+        "CYD_PEEK",
+        "CYD_POKE",
+        "CYD_ARR_MAP",
+        "CYD_ARR_FLUSH",
+    )
     found = {}
     if sym_path and os.path.exists(sym_path):
         with open(sym_path, "r", encoding="utf-8") as f:
@@ -686,6 +698,44 @@ def build_abi_inc(sym_path):
     lines.append("VIDEO_PXL EQU $4000")   # Spectrum screen bitmap (hardware)
     lines.append("VIDEO_ATT EQU $5800")   # Spectrum screen attributes (hardware)
     return "\n".join(lines) + "\n"
+
+
+def build_arrays_inc(codegen, spectrum_banks):
+    """Build the injected ``ARR_*`` constants that let a native routine reach the
+    author's CYD arrays through the memory broker.
+
+    For each array the compiler emits three EQUs:
+      ``ARR_<name>``       address of element 0 (in the $C000 window on banked
+                           targets; a resident low-RAM/``$8000``-window address
+                           when the array lives in chunk 0),
+      ``ARR_<name>_LEN``   element count,
+      ``ARR_<name>_BANK``  the physical RAM bank holding it, or ``$FF`` when the
+                           array is resident (always mapped, no paging needed).
+
+    The address and bank are derived from ``codegen.symbols`` (filled by
+    ``generate_code``): ``symbols[name] = (chunk, offset+1)`` points at the array
+    header's length byte, so the data starts at ``offset+2``. ``_convert_address``
+    turns the (chunk, offset) pair into the final load address exactly as the
+    bytecode uses it. Chunk 0 is resident; every other chunk is a paged bank whose
+    physical id is ``spectrum_banks[chunk]``."""
+    lines = []
+    for name in sorted(codegen.array_lengths):
+        length = codegen.array_lengths[name]
+        chunk, off1 = codegen.symbols[name]
+        lo, hi = codegen._convert_address(off1 + 1, chunk)  # data addr (skip len byte)
+        addr = lo | (hi << 8)
+        if chunk == 0:
+            bank_byte = 0xFF  # resident: always mapped, no paging
+        elif chunk < len(spectrum_banks):
+            bank_byte = spectrum_banks[chunk]
+        else:
+            bank_byte = spectrum_banks[-1]
+        lines.append(f"ARR_{name} EQU ${addr:04X}")
+        lines.append(f"ARR_{name}_LEN EQU {length}")
+        lines.append(f"ARR_{name}_BANK EQU ${bank_byte:02X}")
+    if not lines:
+        return ""
+    return "; --- CYD arrays (injected by the compiler) ---\n" + "\n".join(lines) + "\n"
 
 
 def _parse_sym_addresses(sym_path, exports, name):

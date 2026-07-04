@@ -158,6 +158,7 @@ class CydcCodegen(object):
     def __init__(self, gettext):
         self._ = gettext.gettext
         self.symbols = {}
+        self.array_lengths = {}
         self.variables = {}
         self.constants = {}
         # Native routine table. block_name -> {"source": ("file", path) |
@@ -1088,6 +1089,7 @@ class CydcCodegen(object):
         code_tmp = []
         labels = {}
         arrays = {}
+        self.array_lengths = {}  # array name -> element count (for the injected ABI)
         offset = 0
         bank = 0
         for t in code:
@@ -1121,6 +1123,7 @@ class CydcCodegen(object):
                         bank,
                         offset + 1,
                     )  # Add to symbol table (skipping the SKIP_ARRAY opcode)
+                    self.array_lengths[q] = len(p)  # element count for the ABI
                     c = [self.opcodes.get("SKIP_ARRAY"), len(p) - 1] + p
                     code_tmp += c
                     offset += len(c)

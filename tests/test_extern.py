@@ -143,6 +143,107 @@ INLINE_ABI = (
 )
 
 
+# Array broker (CYD_PEEK / CYD_POKE): a native routine reaches a CYD array by
+# name through the injected ARR_<name> / _LEN / _BANK constants. The routine
+# reads inv[2] (=33), overwrites inv[3] with 200 and reads it back, and reports
+# the array's element count and physical bank. On banked targets the array may
+# live in a paged RAM bank, so the broker pages it in at $C000, touches one byte,
+# and pages the routine's own bank back -- all from resident code.
+ARR_ROUTINE = (
+    "ASM arrio\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv + 2\n"
+    "    call CYD_PEEK        ; A = inv[2]\n"
+    "    ld (FLAGS), a        ; FLAGS+0 = inv[2] = 33\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv + 3\n"
+    "    ld e, 200\n"
+    "    call CYD_POKE        ; inv[3] = 200\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv + 3\n"
+    "    call CYD_PEEK        ; read it back\n"
+    "    ld (FLAGS+1), a      ; FLAGS+1 = 200\n"
+    "    ld a, ARR_inv_LEN\n"
+    "    ld (FLAGS+2), a      ; FLAGS+2 = element count = 4\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld (FLAGS+3), a      ; FLAGS+3 = physical bank ($FF if resident)\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL arrio\n"
+    "SET 4 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+)
+
+# Resident array: declared alone, it lives in the always-mapped chunk 0, so the
+# broker sees ARR_inv_BANK = $FF and reads/writes it directly (no paging).
+ARR_RESIDENT = "[[\nDIM inv(4) = {11, 22, 33, 44}\n" + ARR_ROUTINE + "]]\n"
+
+
+# Block access (CYD_ARR_MAP / CYD_ARR_FLUSH): map the whole array to a directly
+# addressable working copy, bump every element by 1, flush it back, then read two
+# elements back with CYD_PEEK to prove the changes persisted. On banked targets
+# MAP copies the array to the resident SAVE_FLAGS scratch and FLUSH copies it
+# back; on a resident array both are no-ops (the routine works in place).
+ARR_MAP_ROUTINE = (
+    "ASM arrmap\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv\n"
+    "    ld bc, ARR_inv_LEN\n"
+    "    call CYD_ARR_MAP     ; HL -> working copy\n"
+    "    ld b, ARR_inv_LEN\n"
+    ".loop:\n"
+    "    ld a, (hl)\n"
+    "    inc a\n"
+    "    ld (hl), a\n"
+    "    inc hl\n"
+    "    djnz .loop\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv\n"
+    "    ld bc, ARR_inv_LEN\n"
+    "    call CYD_ARR_FLUSH   ; write the working copy back\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv\n"
+    "    call CYD_PEEK\n"
+    "    ld (FLAGS), a        ; inv[0]: 11 -> 12\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv + 3\n"
+    "    call CYD_PEEK\n"
+    "    ld (FLAGS+1), a      ; inv[3]: 44 -> 45\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld (FLAGS+3), a      ; FLAGS+3 = physical bank ($FF if resident)\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL arrmap\n"
+    "SET 4 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+)
+
+ARR_MAP_RESIDENT = "[[\nDIM inv(4) = {11, 22, 33, 44}\n" + ARR_MAP_ROUTINE + "]]\n"
+
+
+def _bank0_filler():
+    """~90 incompressible filler arrays (array data is stored raw, unlike text,
+    which the compiler would shrink) to fill chunk 0 so a following array spills
+    into a paged RAM bank and exercises the banked broker path."""
+    s = ""
+    for i in range(90):
+        vals = ", ".join(str((i * 7 + j) & 255) for j in range(256))
+        s += f"DIM fill{i}(256) = {{{vals}}}\n"
+    return s
+
+
+def _arr_banked_src():
+    """`inv` forced into a paged RAM bank (banked CYD_PEEK/CYD_POKE path)."""
+    return "[[\n" + _bank0_filler() + "DIM inv(4) = {11, 22, 33, 44}\n" + ARR_ROUTINE + "]]\n"
+
+
+def _arr_map_banked_src():
+    """`inv` forced into a paged RAM bank (banked CYD_ARR_MAP/CYD_ARR_FLUSH path)."""
+    return "[[\n" + _bank0_filler() + "DIM inv(4) = {11, 22, 33, 44}\n" + ARR_MAP_ROUTINE + "]]\n"
+
+
 @unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not found under tools/")
 class TestInlineAsm(unittest.TestCase):
     def _roundtrip(self, src, model, machine):
@@ -183,6 +284,51 @@ class TestInlineAsm(unittest.TestCase):
     def test_inline_multiexport_128k(self):
         """128k: multi-export block in a paged bank; both entries + helper reachable."""
         self._roundtrip(INLINE_MULTI, "128k", "128k")
+
+    def _array_roundtrip(self, src, model, machine, resident):
+        with tempfile.TemporaryDirectory(prefix="cyd_arr_") as wd:
+            tap, flags = compile_cyd(src, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=6, machine=machine, max_wait=45.0)
+        self.assertEqual(f[0], 33, "CYD_PEEK did not read inv[2] through ARR_inv")
+        self.assertEqual(f[1], 200, "CYD_POKE/CYD_PEEK round-trip on inv[3] failed")
+        self.assertEqual(f[2], 4, "ARR_inv_LEN (element count) is wrong")
+        self.assertEqual(f[4], 123, "interpreter did not resume after CALL")
+        if resident:
+            self.assertEqual(f[3], 0xFF, "resident array should report bank $FF")
+        else:
+            self.assertNotEqual(
+                f[3], 0xFF, "array was expected in a paged bank, not resident"
+            )
+
+    def test_inline_array_resident_48k(self):
+        """48k: a resident array reached by name via CYD_PEEK/CYD_POKE (bank $FF)."""
+        self._array_roundtrip(ARR_RESIDENT, "48k", "48k", resident=True)
+
+    def test_inline_array_banked_128k(self):
+        """128k: array forced into a paged bank; the broker pages it in/out."""
+        self._array_roundtrip(_arr_banked_src(), "128k", "128k", resident=False)
+
+    def _map_roundtrip(self, src, model, machine, resident):
+        with tempfile.TemporaryDirectory(prefix="cyd_map_") as wd:
+            tap, flags = compile_cyd(src, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=6, machine=machine, max_wait=45.0)
+        self.assertEqual(f[0], 12, "CYD_ARR_MAP/FLUSH did not persist inv[0] (11->12)")
+        self.assertEqual(f[1], 45, "CYD_ARR_MAP/FLUSH did not persist inv[3] (44->45)")
+        self.assertEqual(f[4], 123, "interpreter did not resume after CALL")
+        if resident:
+            self.assertEqual(f[3], 0xFF, "resident array should report bank $FF")
+        else:
+            self.assertNotEqual(
+                f[3], 0xFF, "array was expected in a paged bank, not resident"
+            )
+
+    def test_inline_array_map_resident_48k(self):
+        """48k: CYD_ARR_MAP returns the array in place; FLUSH is a no-op."""
+        self._map_roundtrip(ARR_MAP_RESIDENT, "48k", "48k", resident=True)
+
+    def test_inline_array_map_banked_128k(self):
+        """128k: CYD_ARR_MAP copies a paged array to the scratch; FLUSH writes back."""
+        self._map_roundtrip(_arr_map_banked_src(), "128k", "128k", resident=False)
 
 
 if __name__ == "__main__":

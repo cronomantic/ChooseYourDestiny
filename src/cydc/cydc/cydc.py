@@ -1006,6 +1006,8 @@ def main():
         # Resident ABI symbols (FLAGS, image buffer, video) a native routine may
         # reference by name, from the engine's --sym dump written by the size pass.
         extern_abi_inc = build_abi_inc(os.path.join(args.output_path, "cyd.sym"))
+        # Plus the author's CYD arrays, reachable by name through the broker.
+        extern_abi_inc += build_arrays_inc(codegen, spectrum_banks)
 
         def _assemble_block(r, org, with_syms):
             """Assemble block r at ORG; return (data, {export: addr}). Symbols are

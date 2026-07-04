@@ -2800,6 +2800,139 @@ OP_EXTERN:
     pop ix
     pop hl              ; restore interpreter PC
     jp EXEC_LOOP
+
+; ------------------------------------------------------------------------------
+; Resident memory broker for native routines (inline ASM / IMPORT).
+;
+; A banked native routine runs at $C000 in its own RAM bank, so it cannot page
+; another bank in at $C000 without evicting itself. These resident services do
+; the paging on its behalf: page the target bank in, touch one byte, page the
+; caller's bank back, and return. They live in the always-mapped engine image,
+; so they keep running while $C000 is paged. On 48k everything is resident and
+; the bank byte is ignored (direct access).
+;
+; The compiler injects, per CYD array, the constants a routine uses to reach it:
+;   ARR_<name>       address of element 0 (in the paged window on banked targets)
+;   ARR_<name>_LEN   element count
+;   ARR_<name>_BANK  physical RAM bank ($FF = resident / low RAM, no paging)
+;
+; CYD_PEEK: read one byte from possibly-banked memory.
+;   In:  A  = physical RAM bank ($FF = resident, no paging)
+;        HL = address to read
+;   Out: A  = byte read
+;   Preserves BC/DE/HL/IX/IY.
+CYD_PEEK:
+    IFDEF OP_EXTERN_BANKED
+    cp $FF
+    jr z, .resident
+    push bc
+    push de
+    or ROM48KBASIC
+    call SET_RAM_BANK   ; page target bank at $C000; A = previous port value
+    ld e, a             ; save previous port (SET_RAM_BANK preserves DE)
+    ld a, (hl)
+    ld d, a             ; save the byte read
+    ld a, e
+    call SET_RAM_BANK   ; page the caller's bank back
+    ld a, d
+    pop de
+    pop bc
+    ret
+.resident:
+    ld a, (hl)
+    ret
+    ELSE
+    ld a, (hl)          ; 48k: everything resident, direct read
+    ret
+    ENDIF
+
+; CYD_POKE: write one byte to possibly-banked memory.
+;   In:  A  = physical RAM bank ($FF = resident, no paging)
+;        HL = address to write
+;        E  = byte to write
+;   Preserves BC/DE/HL/IX/IY.
+CYD_POKE:
+    IFDEF OP_EXTERN_BANKED
+    cp $FF
+    jr z, .resident
+    push bc
+    push de
+    or ROM48KBASIC
+    call SET_RAM_BANK   ; page target bank at $C000; A = previous port value
+    ld d, a             ; save previous port (E still holds the value byte)
+    ld a, e
+    ld (hl), a          ; write the value
+    ld a, d
+    call SET_RAM_BANK   ; page the caller's bank back
+    pop de
+    pop bc
+    ret
+.resident:
+    ld a, e
+    ld (hl), a
+    ret
+    ELSE
+    ld a, e             ; 48k: everything resident, direct write
+    ld (hl), a
+    ret
+    ENDIF
+
+; CYD_ARR_MAP: obtain a directly-addressable working copy of an array for fast,
+; banking-free access. On a banked target it copies the array from its paged
+; bank into the resident SAVE_FLAGS scratch (256 bytes, free outside SAVE/LOAD)
+; and returns a pointer to it; on a resident array (or 48k) it just returns the
+; array's own address, since it is already directly addressable. Work on the
+; returned pointer, then call CYD_ARR_FLUSH to write changes back.
+;   In:  A  = physical RAM bank ($FF = resident)
+;        HL = array address (element 0)
+;        BC = element count (1..256)
+;   Out: HL = pointer to the working copy (write through it directly)
+;   Only one array may be mapped at a time (the scratch is shared).
+CYD_ARR_MAP:
+    IFDEF OP_EXTERN_BANKED
+    cp $FF
+    jr z, .resident
+    push bc                 ; save count across the paging call
+    or ROM48KBASIC
+    call SET_RAM_BANK       ; page the array's bank in; A = previous port
+    pop bc                  ; BC = count again
+    push af                 ; save previous port
+    ld de, SAVE_FLAGS
+    ldir                    ; copy (HL, paged) -> (SAVE_FLAGS, resident)
+    pop af
+    call SET_RAM_BANK       ; page the caller's bank back
+    ld hl, SAVE_FLAGS       ; return the resident working copy
+    ret
+.resident:
+    ret                     ; HL already points at the live array
+    ELSE
+    ret                     ; 48k: HL already points at the live array
+    ENDIF
+
+; CYD_ARR_FLUSH: write a mapped array's working copy back to the array. On a
+; banked target it copies SAVE_FLAGS back into the array's paged bank; for a
+; resident array (or 48k) the routine wrote in place, so it is a no-op.
+;   In:  A  = physical RAM bank ($FF = resident)
+;        HL = array address (element 0)
+;        BC = element count (1..256)
+CYD_ARR_FLUSH:
+    IFDEF OP_EXTERN_BANKED
+    cp $FF
+    ret z                   ; resident: written in place, nothing to flush
+    push bc
+    or ROM48KBASIC
+    call SET_RAM_BANK       ; page the array's bank in; A = previous port
+    pop bc
+    push af
+    ex de, hl               ; DE = array address (destination)
+    ld hl, SAVE_FLAGS       ; HL = working copy (source)
+    ldir                    ; copy (SAVE_FLAGS) -> (array, paged)
+    pop af
+    call SET_RAM_BANK       ; page the caller's bank back
+    ret
+    ELSE
+    ret                     ; 48k: written in place, nothing to flush
+    ENDIF
     ENDIF
 ;------------------------
 ERROR_NOP:
