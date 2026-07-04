@@ -44,8 +44,19 @@ BROKER_SERVICES = ("CYD_PEEK", "CYD_POKE", "CYD_ARR_MAP", "CYD_ARR_FLUSH")
 # Cross-block native call trampoline. Stripped (UNUSED_CYD_CALL) when unused.
 CYD_CALL_SERVICE = "CYD_CALL"
 
+# Numbered engine-service gateway. Stripped (UNUSED_SYSCALL) when unused.
+CYD_SYSCALL_SERVICE = "CYD_SYSCALL"
+
+# Engine services reachable through CYD_SYSCALL: (name, id). The ids are a stable
+# contract and MUST match SVC_TABLE in interpreter.asm.
+SYSCALL_SERVICES = (
+    ("SVC_PRINT_CHAR", 0),
+    ("SVC_WAIT_KEY", 1),
+    ("SVC_INKEY", 2),
+)
+
 # Everything the unused-machinery probe looks for.
-PROBE_SERVICES = BROKER_SERVICES + (CYD_CALL_SERVICE,)
+PROBE_SERVICES = BROKER_SERVICES + (CYD_CALL_SERVICE, CYD_SYSCALL_SERVICE)
 
 
 def build_probe_abi(array_names):
@@ -833,6 +844,7 @@ def build_abi_inc(sym_path):
         "CYD_ARR_MAP",
         "CYD_ARR_FLUSH",
         "CYD_CALL",
+        "CYD_SYSCALL",
     )
     found = {}
     if sym_path and os.path.exists(sym_path):
@@ -851,6 +863,10 @@ def build_abi_inc(sym_path):
             lines.append(f"{name} EQU ${found[name]:04X}")
     lines.append("VIDEO_PXL EQU $4000")   # Spectrum screen bitmap (hardware)
     lines.append("VIDEO_ATT EQU $5800")   # Spectrum screen attributes (hardware)
+    # Engine-service ids for CYD_SYSCALL. A stable numeric contract (must match
+    # SVC_TABLE in interpreter.asm); injected as constants regardless of the build.
+    for name, sid in SYSCALL_SERVICES:
+        lines.append(f"{name} EQU {sid}")
     return "\n".join(lines) + "\n"
 
 
