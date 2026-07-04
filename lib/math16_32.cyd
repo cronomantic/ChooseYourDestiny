@@ -2,28 +2,31 @@
 /* ==========================================================================
    math16_32.cyd  -  Libreria de aritmetica de 16 y 32 bits para CYD
    --------------------------------------------------------------------------
-   Rutinas GOSUB-ables que dan enteros anchos (16 y 32 bits, SIN signo) sin
-   tocar la maquina virtual. Verificadas en emulador (ver doc/dev/MATH_LIBRARY.md).
+   Enteros anchos SIN signo (16 bits: 0..65535; 32 bits: 0..4294967295) con
+   multiplicacion y division. El nucleo esta escrito en ENSAMBLADOR Z80 nativo
+   (bloque ASM 'mathcore'), asi que es mucho mas rapido que la version pura-CYD;
+   las rutinas publicas siguen siendo GOSUB-ables (envoltorios que llaman al
+   bloque nativo). Verificado en emulador contra un oraculo (ver tests).
 
    USO: incluye este fichero al PRINCIPIO de tu programa con la directiva de
    inclusion del preprocesador (ver el manual, seccion INCLUDE). Se auto-salta
    las rutinas (GOTO interno), asi que el flujo continua con tu codigo; las
    rutinas solo se ejecutan cuando las llamas con GOSUB.
 
-   REGISTROS (little-endian, byte bajo primero). Reserva las variables 224..254:
-     A = mlA0..mlA3 (236..239)  operando A / resultado / dividendo->cociente / entrada de print
+   REGISTROS (little-endian, byte bajo primero). Reserva 236..247 y la 253:
+     A = mlA0..mlA3 (236..239)  operando A / resultado / dividendo->cociente
      B = mlB0..mlB3 (240..243)  operando B / divisor / multiplicador
      C = mlC0..mlC3 (244..247)  resultado: producto (mul) / resto (div)
-     scratch: mlCy mlTmp mlKar mlCnt mlNt mlCmp mlDec (248..254)
-     print:   mlNdig mlDptr (234..235) y buffer de digitos 224..233
-   Las operaciones de 16 bits usan los 2 bytes BAJOS de A/B/C.
+     mlCmp (253)                resultado de las comparaciones
+   Las operaciones de 16 bits usan los 2 bytes BAJOS de A/B/C. print destruye
+   B y C y usa un buffer temporal en 224..234.
 
    Carga de literales anchos (los literales CYD son de 8 bits) con asignacion
    multiple:  SET mlA0 TO {226, 4}    (= 1250 = 0x04E2, byte bajo primero)
 
    API (carga los registros, GOSUB, lee el resultado):
      add16 / add32 : A = A + B            (envuelve modulo 2^16 / 2^32)
-     sub16 / sub32 : A = A - B            (envuelve; usa cmp para comprobar antes)
+     sub16 / sub32 : A = A - B            (envuelve)
      cmp16 / cmp32 : mlCmp = 0/1/2  ->  A menor / igual / mayor que B
      shl16 / shl32 : A = A << 1
      shr16 / shr32 : A = A >> 1
@@ -31,795 +34,390 @@
      mul1632       : C(32) = A(16) * B(16)  <- NUNCA desborda; carga A0,A1 y B0,B1
      div32         : A = A / B (cociente),  C = A mod B (resto). mod32 = leer C.
                      (para dividir entre un valor de 16 bits, ponlo en B con B2=B3=0)
-     print16 / print32 : imprime A en decimal (destruye A; usa B y C)
-
-   Velocidad: mul/div son bucles interpretados (~16/32 iteraciones con sumas
-   multibyte). Bien para calculos ocasionales (una puntuacion); evitalos en
-   bucles muy apretados. El tier de 16 bits es ~2-4x mas rapido.
+     print16 / print32 : imprime A en decimal (destruye A, B y C)
    ========================================================================== */
 
 DECLARE 236 AS mlA0 : DECLARE 237 AS mlA1 : DECLARE 238 AS mlA2
 DECLARE 239 AS mlA3 : DECLARE 240 AS mlB0 : DECLARE 241 AS mlB1
 DECLARE 242 AS mlB2 : DECLARE 243 AS mlB3 : DECLARE 244 AS mlC0
 DECLARE 245 AS mlC1 : DECLARE 246 AS mlC2 : DECLARE 247 AS mlC3
-DECLARE 248 AS mlCy : DECLARE 249 AS mlTmp : DECLARE 250 AS mlKar
-DECLARE 251 AS mlCnt : DECLARE 252 AS mlNt : DECLARE 253 AS mlCmp
-DECLARE 254 AS mlDec : DECLARE 234 AS mlNdig : DECLARE 235 AS mlDptr
+DECLARE 253 AS mlCmp
 
 GOTO mlSkip
 
-LABEL add16
-SET mlCy TO 0
-LET mlTmp = 255
-LET mlTmp -= @mlB0
-IF @mlA0 > @mlTmp THEN
- LET mlA0 = @mlA0 - @mlTmp
- LET mlA0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA0 += @mlB0
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA0 = 255 THEN
-  SET mlA0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlB1
-IF @mlA1 > @mlTmp THEN
- LET mlA1 = @mlA1 - @mlTmp
- LET mlA1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA1 += @mlB1
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA1 = 255 THEN
-  SET mlA1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-RETURN
+LABEL add16   : CALL nat_add16   : RETURN
+LABEL sub16   : CALL nat_sub16   : RETURN
+LABEL cmp16   : CALL nat_cmp16   : RETURN
+LABEL shl16   : CALL nat_shl16   : RETURN
+LABEL shr16   : CALL nat_shr16   : RETURN
+LABEL add32   : CALL nat_add32   : RETURN
+LABEL sub32   : CALL nat_sub32   : RETURN
+LABEL cmp32   : CALL nat_cmp32   : RETURN
+LABEL shl32   : CALL nat_shl32   : RETURN
+LABEL shr32   : CALL nat_shr32   : RETURN
+LABEL mul32   : CALL nat_mul32   : RETURN
+LABEL mul1632 : CALL nat_mul1632 : RETURN
+LABEL div32   : CALL nat_div32   : RETURN
+LABEL print16 : CALL nat_print16 : RETURN
+LABEL print32 : CALL nat_print32 : RETURN
 
-LABEL sub16
-SET mlCy TO 1
-LET mlNt = 255
-LET mlNt -= @mlB0
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA0 > @mlTmp THEN
- LET mlA0 = @mlA0 - @mlTmp
- LET mlA0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA0 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA0 = 255 THEN
-  SET mlA0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB1
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA1 > @mlTmp THEN
- LET mlA1 = @mlA1 - @mlTmp
- LET mlA1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA1 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA1 = 255 THEN
-  SET mlA1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-RETURN
+/* --- Nucleo nativo (Z80). Entra con DE=FLAGS; opera sobre las variables por
+       su direccion absoluta (FLAGS+n). Verificado contra Python. --- */
+ASM mathcore EXPORTS nat_add16, nat_add32, nat_sub16, nat_sub32, nat_cmp16, nat_cmp32, nat_shl16, nat_shl32, nat_shr16, nat_shr32, nat_mul32, nat_mul1632, nat_div32, nat_print16, nat_print32
 
-LABEL cmp16
-SET mlCmp TO 1
-SET mlDec TO 0
-IF @mlDec = 0 THEN IF @mlA1 > @mlB1 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA1 < @mlB1 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA0 > @mlB0 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA0 < @mlB0 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-RETURN
+/* ---- 16-bit (bytes bajos) ---- */
+nat_add16:
+    ld hl, FLAGS+236
+    ld de, FLAGS+240
+    or a
+    ld b, 2
+.l:
+    ld a, (de)
+    adc a, (hl)
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    ret
+nat_sub16:
+    ld hl, FLAGS+236
+    ld de, FLAGS+240
+    or a
+    ld b, 2
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    sbc a, c
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    ret
+nat_cmp16:
+    ld hl, FLAGS+237
+    ld de, FLAGS+241
+    ld b, 2
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    cp c
+    jr c, .less
+    jr nz, .greater
+    dec hl
+    dec de
+    djnz .l
+    ld a, 1
+    jr .store
+.less:
+    xor a
+    jr .store
+.greater:
+    ld a, 2
+.store:
+    ld (FLAGS+253), a
+    ret
+nat_shl16:
+    ld hl, FLAGS+236
+    or a
+    ld b, 2
+.l:
+    rl (hl)
+    inc hl
+    djnz .l
+    ret
+nat_shr16:
+    ld hl, FLAGS+237
+    or a
+    ld b, 2
+.l:
+    rr (hl)
+    dec hl
+    djnz .l
+    ret
 
-LABEL shl16
-SET mlCy TO 0
-SET mlKar TO 0
-IF @mlA0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 << 1
-LET mlA0 = @mlA0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 << 1
-LET mlA1 = @mlA1 | @mlCy
-SET mlCy TO @mlKar
-RETURN
+/* ---- 32-bit ---- */
+nat_add32:
+    ld hl, FLAGS+236
+    ld de, FLAGS+240
+    or a
+    ld b, 4
+.l:
+    ld a, (de)
+    adc a, (hl)
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    ret
+nat_sub32:
+    ld hl, FLAGS+236
+    ld de, FLAGS+240
+    or a
+    ld b, 4
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    sbc a, c
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    ret
+nat_cmp32:
+    ld hl, FLAGS+239
+    ld de, FLAGS+243
+    ld b, 4
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    cp c
+    jr c, .less
+    jr nz, .greater
+    dec hl
+    dec de
+    djnz .l
+    ld a, 1
+    jr .store
+.less:
+    xor a
+    jr .store
+.greater:
+    ld a, 2
+.store:
+    ld (FLAGS+253), a
+    ret
+nat_shl32:
+    ld hl, FLAGS+236
+    or a
+    ld b, 4
+.l:
+    rl (hl)
+    inc hl
+    djnz .l
+    ret
+nat_shr32:
+    ld hl, FLAGS+239
+    or a
+    ld b, 4
+.l:
+    rr (hl)
+    dec hl
+    djnz .l
+    ret
+nat_mul32:
+    xor a
+    ld (FLAGS+244), a
+    ld (FLAGS+245), a
+    ld (FLAGS+246), a
+    ld (FLAGS+247), a
+    ld b, 32
+.l:
+    ld a, (FLAGS+240)
+    bit 0, a
+    jr z, .noadd
+    call _add_A_to_C
+.noadd:
+    call _shl_A32
+    call _shr_B32
+    djnz .l
+    ret
+nat_mul1632:
+    xor a
+    ld (FLAGS+238), a
+    ld (FLAGS+239), a
+    ld (FLAGS+244), a
+    ld (FLAGS+245), a
+    ld (FLAGS+246), a
+    ld (FLAGS+247), a
+    ld b, 16
+.l:
+    ld a, (FLAGS+240)
+    bit 0, a
+    jr z, .noadd
+    call _add_A_to_C
+.noadd:
+    call _shl_A32
+    call _shr_B16
+    djnz .l
+    ret
+nat_div32:
+    xor a
+    ld (FLAGS+244), a
+    ld (FLAGS+245), a
+    ld (FLAGS+246), a
+    ld (FLAGS+247), a
+    ld b, 32
+.l:
+    or a
+    ld hl, FLAGS+236
+    push bc
+    ld b, 4
+.sha:
+    rl (hl)
+    inc hl
+    djnz .sha
+    ld hl, FLAGS+244
+    ld b, 4
+.shc:
+    rl (hl)
+    inc hl
+    djnz .shc
+    pop bc
+    call _cmp_C_B
+    jr c, .skip
+    call _sub_B_from_C
+    ld hl, FLAGS+236
+    set 0, (hl)
+.skip:
+    djnz .l
+    ret
 
-LABEL shr16
-SET mlCy TO 0
-SET mlKar TO 0
-IF (@mlA1 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 >> 1
-IF @mlCy = 1 THEN LET mlA1 = @mlA1 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlA0 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 >> 1
-IF @mlCy = 1 THEN LET mlA0 = @mlA0 | 128 ENDIF
-SET mlCy TO @mlKar
-RETURN
+/* ---- print: rellena el buffer de digitos 224.. (byte bajo primero) y los
+        imprime en orden con SVC_PRINT_CHAR ---- */
+nat_print16:
+    xor a
+    ld (FLAGS+238), a
+    ld (FLAGS+239), a
+    jp nat_print32
+nat_print32:
+    call _digits            ; buffer 224.. (LS primero), numero de digitos en 234
+    ld a, (FLAGS+234)
+    ld c, a
+    ld hl, FLAGS+224
+    ld b, 0
+    ld e, a
+    dec e
+    ld d, 0
+    add hl, de              ; HL -> digito mas significativo
+.pl:
+    ld a, (hl)
+    add a, '0'
+    ld e, a
+    push bc
+    push hl
+    ld a, SVC_PRINT_CHAR
+    call CYD_SYSCALL
+    pop hl
+    pop bc
+    dec hl
+    dec c
+    jr nz, .pl
+    ret
 
-LABEL add32
-SET mlCy TO 0
-LET mlTmp = 255
-LET mlTmp -= @mlB0
-IF @mlA0 > @mlTmp THEN
- LET mlA0 = @mlA0 - @mlTmp
- LET mlA0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA0 += @mlB0
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA0 = 255 THEN
-  SET mlA0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlB1
-IF @mlA1 > @mlTmp THEN
- LET mlA1 = @mlA1 - @mlTmp
- LET mlA1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA1 += @mlB1
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA1 = 255 THEN
-  SET mlA1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlB2
-IF @mlA2 > @mlTmp THEN
- LET mlA2 = @mlA2 - @mlTmp
- LET mlA2 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA2 += @mlB2
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA2 = 255 THEN
-  SET mlA2 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA2 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlB3
-IF @mlA3 > @mlTmp THEN
- LET mlA3 = @mlA3 - @mlTmp
- LET mlA3 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA3 += @mlB3
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA3 = 255 THEN
-  SET mlA3 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA3 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-RETURN
-
-LABEL sub32
-SET mlCy TO 1
-LET mlNt = 255
-LET mlNt -= @mlB0
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA0 > @mlTmp THEN
- LET mlA0 = @mlA0 - @mlTmp
- LET mlA0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA0 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA0 = 255 THEN
-  SET mlA0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB1
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA1 > @mlTmp THEN
- LET mlA1 = @mlA1 - @mlTmp
- LET mlA1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA1 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA1 = 255 THEN
-  SET mlA1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB2
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA2 > @mlTmp THEN
- LET mlA2 = @mlA2 - @mlTmp
- LET mlA2 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA2 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA2 = 255 THEN
-  SET mlA2 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA2 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB3
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlA3 > @mlTmp THEN
- LET mlA3 = @mlA3 - @mlTmp
- LET mlA3 -= 1
- SET mlKar TO 1
-ELSE
- LET mlA3 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlA3 = 255 THEN
-  SET mlA3 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlA3 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-RETURN
-
-LABEL cmp32
-SET mlCmp TO 1
-SET mlDec TO 0
-IF @mlDec = 0 THEN IF @mlA3 > @mlB3 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA3 < @mlB3 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA2 > @mlB2 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA2 < @mlB2 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA1 > @mlB1 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA1 < @mlB1 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA0 > @mlB0 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlA0 < @mlB0 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-RETURN
-
-LABEL shl32
-SET mlCy TO 0
-SET mlKar TO 0
-IF @mlA0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 << 1
-LET mlA0 = @mlA0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 << 1
-LET mlA1 = @mlA1 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA2 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA2 = @mlA2 << 1
-LET mlA2 = @mlA2 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA3 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA3 = @mlA3 << 1
-LET mlA3 = @mlA3 | @mlCy
-SET mlCy TO @mlKar
-RETURN
-
-LABEL shr32
-SET mlCy TO 0
-SET mlKar TO 0
-IF (@mlA3 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA3 = @mlA3 >> 1
-IF @mlCy = 1 THEN LET mlA3 = @mlA3 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlA2 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA2 = @mlA2 >> 1
-IF @mlCy = 1 THEN LET mlA2 = @mlA2 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlA1 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 >> 1
-IF @mlCy = 1 THEN LET mlA1 = @mlA1 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlA0 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 >> 1
-IF @mlCy = 1 THEN LET mlA0 = @mlA0 | 128 ENDIF
-SET mlCy TO @mlKar
-RETURN
-
-LABEL mul32
-SET mlC0 TO 0 : SET mlC1 TO 0 : SET mlC2 TO 0 : SET mlC3 TO 0
-SET mlCnt TO 0
-WHILE (@mlCnt < 32)
- IF (@mlB0 & 1) = 1 THEN
-  SET mlCy TO 0
-LET mlTmp = 255
-LET mlTmp -= @mlA0
-IF @mlC0 > @mlTmp THEN
- LET mlC0 = @mlC0 - @mlTmp
- LET mlC0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC0 += @mlA0
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC0 = 255 THEN
-  SET mlC0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA1
-IF @mlC1 > @mlTmp THEN
- LET mlC1 = @mlC1 - @mlTmp
- LET mlC1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC1 += @mlA1
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC1 = 255 THEN
-  SET mlC1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA2
-IF @mlC2 > @mlTmp THEN
- LET mlC2 = @mlC2 - @mlTmp
- LET mlC2 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC2 += @mlA2
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC2 = 255 THEN
-  SET mlC2 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC2 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA3
-IF @mlC3 > @mlTmp THEN
- LET mlC3 = @mlC3 - @mlTmp
- LET mlC3 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC3 += @mlA3
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC3 = 255 THEN
-  SET mlC3 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC3 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
- ENDIF
- SET mlCy TO 0
-SET mlKar TO 0
-IF @mlA0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 << 1
-LET mlA0 = @mlA0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 << 1
-LET mlA1 = @mlA1 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA2 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA2 = @mlA2 << 1
-LET mlA2 = @mlA2 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA3 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA3 = @mlA3 << 1
-LET mlA3 = @mlA3 | @mlCy
-SET mlCy TO @mlKar
- SET mlCy TO 0
-SET mlKar TO 0
-IF (@mlB3 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB3 = @mlB3 >> 1
-IF @mlCy = 1 THEN LET mlB3 = @mlB3 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlB2 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB2 = @mlB2 >> 1
-IF @mlCy = 1 THEN LET mlB2 = @mlB2 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlB1 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB1 = @mlB1 >> 1
-IF @mlCy = 1 THEN LET mlB1 = @mlB1 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlB0 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB0 = @mlB0 >> 1
-IF @mlCy = 1 THEN LET mlB0 = @mlB0 | 128 ENDIF
-SET mlCy TO @mlKar
- LET mlCnt += 1
-WEND
-RETURN
-
-LABEL mul1632
-SET mlA2 TO 0
-SET mlA3 TO 0
-SET mlC0 TO 0 : SET mlC1 TO 0 : SET mlC2 TO 0 : SET mlC3 TO 0
-SET mlCnt TO 0
-WHILE (@mlCnt < 16)
- IF (@mlB0 & 1) = 1 THEN
-  SET mlCy TO 0
-LET mlTmp = 255
-LET mlTmp -= @mlA0
-IF @mlC0 > @mlTmp THEN
- LET mlC0 = @mlC0 - @mlTmp
- LET mlC0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC0 += @mlA0
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC0 = 255 THEN
-  SET mlC0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA1
-IF @mlC1 > @mlTmp THEN
- LET mlC1 = @mlC1 - @mlTmp
- LET mlC1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC1 += @mlA1
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC1 = 255 THEN
-  SET mlC1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA2
-IF @mlC2 > @mlTmp THEN
- LET mlC2 = @mlC2 - @mlTmp
- LET mlC2 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC2 += @mlA2
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC2 = 255 THEN
-  SET mlC2 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC2 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlTmp = 255
-LET mlTmp -= @mlA3
-IF @mlC3 > @mlTmp THEN
- LET mlC3 = @mlC3 - @mlTmp
- LET mlC3 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC3 += @mlA3
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC3 = 255 THEN
-  SET mlC3 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC3 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
- ENDIF
- SET mlCy TO 0
-SET mlKar TO 0
-IF @mlA0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 << 1
-LET mlA0 = @mlA0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 << 1
-LET mlA1 = @mlA1 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA2 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA2 = @mlA2 << 1
-LET mlA2 = @mlA2 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA3 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA3 = @mlA3 << 1
-LET mlA3 = @mlA3 | @mlCy
-SET mlCy TO @mlKar
- SET mlCy TO 0
-SET mlKar TO 0
-IF (@mlB1 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB1 = @mlB1 >> 1
-IF @mlCy = 1 THEN LET mlB1 = @mlB1 | 128 ENDIF
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF (@mlB0 & 1) = 1 THEN SET mlKar TO 1 ENDIF
-LET mlB0 = @mlB0 >> 1
-IF @mlCy = 1 THEN LET mlB0 = @mlB0 | 128 ENDIF
-SET mlCy TO @mlKar
- LET mlCnt += 1
-WEND
-RETURN
-
-LABEL div32
-SET mlC0 TO 0 : SET mlC1 TO 0 : SET mlC2 TO 0 : SET mlC3 TO 0
-SET mlCnt TO 0
-WHILE (@mlCnt < 32)
- SET mlCy TO 0
-SET mlKar TO 0
-IF @mlA0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA0 = @mlA0 << 1
-LET mlA0 = @mlA0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA1 = @mlA1 << 1
-LET mlA1 = @mlA1 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA2 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA2 = @mlA2 << 1
-LET mlA2 = @mlA2 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlA3 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlA3 = @mlA3 << 1
-LET mlA3 = @mlA3 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlC0 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlC0 = @mlC0 << 1
-LET mlC0 = @mlC0 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlC1 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlC1 = @mlC1 << 1
-LET mlC1 = @mlC1 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlC2 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlC2 = @mlC2 << 1
-LET mlC2 = @mlC2 | @mlCy
-SET mlCy TO @mlKar
-SET mlKar TO 0
-IF @mlC3 >= 128 THEN SET mlKar TO 1 ENDIF
-LET mlC3 = @mlC3 << 1
-LET mlC3 = @mlC3 | @mlCy
-SET mlCy TO @mlKar
-SET mlCmp TO 1
-SET mlDec TO 0
-IF @mlDec = 0 THEN IF @mlC3 > @mlB3 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC3 < @mlB3 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC2 > @mlB2 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC2 < @mlB2 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC1 > @mlB1 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC1 < @mlB1 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC0 > @mlB0 THEN SET mlCmp TO 2 : SET mlDec TO 1 ENDIF ENDIF
-IF @mlDec = 0 THEN IF @mlC0 < @mlB0 THEN SET mlCmp TO 0 : SET mlDec TO 1 ENDIF ENDIF
- IF @mlCmp >= 1 THEN
-SET mlCy TO 1
-LET mlNt = 255
-LET mlNt -= @mlB0
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlC0 > @mlTmp THEN
- LET mlC0 = @mlC0 - @mlTmp
- LET mlC0 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC0 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC0 = 255 THEN
-  SET mlC0 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC0 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB1
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlC1 > @mlTmp THEN
- LET mlC1 = @mlC1 - @mlTmp
- LET mlC1 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC1 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC1 = 255 THEN
-  SET mlC1 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC1 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB2
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlC2 > @mlTmp THEN
- LET mlC2 = @mlC2 - @mlTmp
- LET mlC2 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC2 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC2 = 255 THEN
-  SET mlC2 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC2 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
-LET mlNt = 255
-LET mlNt -= @mlB3
-LET mlTmp = 255
-LET mlTmp -= @mlNt
-IF @mlC3 > @mlTmp THEN
- LET mlC3 = @mlC3 - @mlTmp
- LET mlC3 -= 1
- SET mlKar TO 1
-ELSE
- LET mlC3 += @mlNt
- SET mlKar TO 0
-ENDIF
-IF @mlCy = 1 THEN
- IF @mlC3 = 255 THEN
-  SET mlC3 TO 0
-  SET mlKar TO 1
- ELSE
-  LET mlC3 += 1
- ENDIF
-ENDIF
-SET mlCy TO @mlKar
- LET mlA0 = @mlA0 | 1
- ENDIF
- LET mlCnt += 1
-WEND
-RETURN
-
-LABEL print32
-SET mlB0 TO 10 : SET mlB1 TO 0 : SET mlB2 TO 0 : SET mlB3 TO 0
-SET mlNdig TO 0
-SET mlDptr TO 224
-DO
- GOSUB div32
- SET [mlDptr] TO @mlC0
- LET mlDptr += 1
- LET mlNdig += 1
-UNTIL (@mlA0 = 0 AND @mlA1 = 0 AND @mlA2 = 0 AND @mlA3 = 0)
-WHILE (@mlNdig > 0)
- LET mlDptr -= 1
- LET mlNdig -= 1
- PRINT [@mlDptr]
-WEND
-RETURN
-
-LABEL print16
-SET mlA2 TO 0 : SET mlA3 TO 0
-GOSUB print32
-RETURN
+/* ---- helpers privados ---- */
+_digits:
+    ld a, 10
+    ld (FLAGS+240), a
+    xor a
+    ld (FLAGS+241), a
+    ld (FLAGS+242), a
+    ld (FLAGS+243), a
+    ld c, 0
+    ld ix, FLAGS+224
+.dl:
+    call nat_div32
+    ld a, (FLAGS+244)
+    ld (ix+0), a
+    inc ix
+    inc c
+    ld hl, FLAGS+236
+    ld a, (hl)
+    inc hl
+    or (hl)
+    inc hl
+    or (hl)
+    inc hl
+    or (hl)
+    jr nz, .dl
+    ld a, c
+    ld (FLAGS+234), a
+    ret
+_add_A_to_C:
+    ld hl, FLAGS+244
+    ld de, FLAGS+236
+    or a
+    push bc
+    ld b, 4
+.l:
+    ld a, (de)
+    adc a, (hl)
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    pop bc
+    ret
+_shl_A32:
+    ld hl, FLAGS+236
+    or a
+    push bc
+    ld b, 4
+.l:
+    rl (hl)
+    inc hl
+    djnz .l
+    pop bc
+    ret
+_shr_B32:
+    ld hl, FLAGS+243
+    or a
+    push bc
+    ld b, 4
+.l:
+    rr (hl)
+    dec hl
+    djnz .l
+    pop bc
+    ret
+_shr_B16:
+    ld hl, FLAGS+241
+    or a
+    rr (hl)
+    dec hl
+    rr (hl)
+    ret
+_cmp_C_B:
+    ld hl, FLAGS+247
+    ld de, FLAGS+243
+    push bc
+    ld b, 4
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    cp c
+    jr nz, .done
+    dec hl
+    dec de
+    djnz .l
+    pop bc
+    or a
+    ret
+.done:
+    pop bc
+    ret
+_sub_B_from_C:
+    ld hl, FLAGS+244
+    ld de, FLAGS+240
+    or a
+    push bc
+    ld b, 4
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    sbc a, c
+    ld (hl), a
+    inc hl
+    inc de
+    djnz .l
+    pop bc
+    ret
+ENDASM
 
 LABEL mlSkip
 ]]
