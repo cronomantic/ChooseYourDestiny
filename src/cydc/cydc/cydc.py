@@ -716,9 +716,6 @@ def main():
     # codegen.externs first (generate_code re-does this harmlessly later).
     codegen.code_extract_declarations(code)
     unused_opcodes = set(unused_opcodes)
-    # Stable RT_ index per callable (position in the dispatch table).
-    route_names = sorted(codegen.extern_exports.keys())
-    route_index = {n: i for i, n in enumerate(route_names)}
     used_services = extern_probe_used(
         codegen,
         code,
@@ -731,9 +728,9 @@ def main():
     cyd_call_used = CYD_CALL_SERVICE in used_services
     if not cyd_call_used:
         unused_opcodes |= {"UNUSED_CYD_CALL"}
-    # The dispatch table lives at the end of the resident image (like INDEX); its
-    # size (3 bytes per callable) is accounted for in bank0_offset below.
-    dispatch_size = 3 * len(route_names) if cyd_call_used else 0
+    # route_names / route_index / dispatch_size are computed after the first
+    # generate_code below, once native-block DCE has settled which blocks (and
+    # therefore which callables) survive (they get a dispatch slot each).
 
     if font is None:
         font = CydcFont()
@@ -837,6 +834,13 @@ def main():
     chunks = codegen.generate_code(
         code=code, slice_text=force_slice_texts, show_debug=False
     )
+
+    # Native-block DCE: now that codegen.extern_calls lists the reachable CALLs,
+    # drop IMPORT/ASM blocks that nothing calls (see extern_live_blocks). Only the
+    # surviving callables get a dispatch-table slot / RT_ index.
+    kept_blocks, route_names = extern_live_blocks(codegen)
+    route_index = {n: i for i, n in enumerate(route_names)}
+    dispatch_size = 3 * len(route_names) if cyd_call_used else 0
 
     # To calculate the offset
     if model == "plus3":
@@ -1010,7 +1014,7 @@ def main():
     # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
     # addr_hi] operand of every CALL that references it.
     extern_dispatch_asm = ""  # CYD_CALL dispatch table (filled after placement)
-    if len(codegen.externs) > 0:
+    if kept_blocks:
         # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
         # mld (single Dandanator-slot bank) is not supported yet.
         if model not in ("48k", "128k", "plus3", "mld128"):
@@ -1030,8 +1034,8 @@ def main():
                         _(f"ERROR: Block {n} USES unknown native routine: {u}")
                     )
 
-        # Deterministic placement order (one entry per ASM/IMPORT block).
-        routine_names = sorted(codegen.externs.keys())
+        # Deterministic placement order over the blocks that survived DCE.
+        routine_names = sorted(kept_blocks)
 
         # IMPORT "file.asm" paths are relative to the .cyd script's directory.
         extern_base_dir = os.path.dirname(os.path.abspath(args.input))

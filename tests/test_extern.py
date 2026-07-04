@@ -466,5 +466,54 @@ class TestBrokerExtirpation(unittest.TestCase):
         )
 
 
+# Native-block DCE: an IMPORT/ASM block that nothing calls is not assembled or
+# placed. The dead block here is far too big to fit in a bank, so the program
+# only compiles at all if DCE drops it; a CALL to it makes the build fail.
+DCE_DEAD_BLOCK = (
+    "[[\n"
+    "ASM used\n"
+    "    ld a, 42\n"
+    "    ld (de), a\n"
+    "    ret\n"
+    "ENDASM\n"
+    "ASM deadhuge\n"
+    "    ld a, 1\n"
+    "    ret\n"
+    "    DEFS 60000, 0\n"      # bigger than any bank: only OK if never placed
+    "ENDASM\n"
+    "CALL used\n"
+    "SET 1 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+
+@unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
+class TestNativeDCE(unittest.TestCase):
+    def _compiles(self, src, model="48k"):
+        with tempfile.TemporaryDirectory(prefix="cyd_dce_") as wd:
+            try:
+                compile_cyd(src, model, wd)
+                return True
+            except RuntimeError:
+                return False
+
+    def test_uncalled_block_is_dropped(self):
+        """A never-called native block (too big to place) is dropped, so it builds."""
+        self.assertTrue(
+            self._compiles(DCE_DEAD_BLOCK),
+            "an uncalled oversized native block should be DCE'd, not placed",
+        )
+
+    def test_called_oversized_block_fails(self):
+        """Calling that same oversized block keeps it -> the build must fail."""
+        called = DCE_DEAD_BLOCK.replace("CALL used\n", "CALL used\nCALL deadhuge\n")
+        self.assertFalse(
+            self._compiles(called),
+            "calling the oversized block should keep it and overflow the bank",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
