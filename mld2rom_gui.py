@@ -91,9 +91,17 @@ class RomBuilderApp:
         self.games: list[dict] = []
         self._building = False
 
-        # Option variables
-        self.var_charset = tk.StringVar()
-        self.var_background = tk.StringVar()
+        # Option variables. Font and background default to the vendored
+        # resources (the same bytes the CLI/dan_romgen use by default), shown so
+        # the user sees the defaults and can Browse to replace them. Clearing a
+        # field also means "vendored default" at build time.
+        _res = dan_romgen.RES_DIR
+        _def_charset = _res / "extcharset.bin"
+        _def_bg = _res / "menu.scr"
+        self.var_charset = tk.StringVar(
+            value=str(_def_charset) if _def_charset.is_file() else "")
+        self.var_background = tk.StringVar(
+            value=str(_def_bg) if _def_bg.is_file() else "")
         self.var_output = tk.StringVar()
         self.var_autoboot = tk.BooleanVar(value=False)
         self.var_disable_border = tk.BooleanVar(value=False)
