@@ -1,0 +1,71 @@
+name: Release packages
+
+# Build the redistributable packages (the make_dist.py output) on GitHub's
+# runners instead of building them locally and uploading by hand.
+#
+# - On a version tag (v*): build the Windows and Linux packages and publish
+#   them as assets of a GitHub Release for that tag.
+# - Manually (workflow_dispatch): build the same packages and expose them as
+#   downloadable artifacts, without creating a Release (handy for testing).
+#
+# The Windows package bundles the embedded Python that is committed under
+# dist/python (no download needed at build time).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Package (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build distribution package
+        run: python make_dist.py --platform ${{ matrix.platform }}
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.platform }}
+          path: ChooseYourDestiny_*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
