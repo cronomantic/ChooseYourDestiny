@@ -508,6 +508,7 @@ def get_asm_128_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -550,6 +551,7 @@ def get_asm_48_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -596,6 +598,7 @@ def get_asm_plus3_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -644,6 +647,7 @@ def get_asm_mld_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -656,10 +660,32 @@ def get_asm_mld_size(
     return size
 
 
-# Framing lines this module prepends before a routine body (DEVICE, ORG,
-# __EXTERN_START:). A sjasmplus line N in the generated temp file maps to inline
-# body line (N - _EXTERN_FRAMING_LINES).
-_EXTERN_FRAMING_LINES = 3
+def build_abi_inc(sym_path):
+    """Build the injected ``cyd_abi.inc`` text from the engine's ``--sym`` dump.
+
+    Exposes to native routines, by name, the resident data structures they may
+    touch: the FLAGS variable array, the engine's image buffer, and the hardware
+    screen. Addresses come from the engine build (fixed by vars.asm); the screen
+    base is a Spectrum hardware constant (target-dependent by design)."""
+    wanted = ("FLAGS", "SCREEN_BUFFER_PXL", "SCREEN_BUFFER_ATT")
+    found = {}
+    if sym_path and os.path.exists(sym_path):
+        with open(sym_path, "r", encoding="utf-8") as f:
+            for line in f:
+                m = re.match(
+                    r"\s*([A-Za-z_][\w.]*):?\s+EQU\s+"
+                    r"(0[xX][0-9A-Fa-f]+|\$[0-9A-Fa-f]+|\d+)",
+                    line,
+                )
+                if m and m.group(1) in wanted:
+                    found[m.group(1)] = int(m.group(2).replace("$", "0x"), 0)
+    lines = ["; --- CYD ABI (injected by the compiler) ---"]
+    for name in wanted:
+        if name in found:
+            lines.append(f"{name} EQU ${found[name]:04X}")
+    lines.append("VIDEO_PXL EQU $4000")   # Spectrum screen bitmap (hardware)
+    lines.append("VIDEO_ATT EQU $5800")   # Spectrum screen attributes (hardware)
+    return "\n".join(lines) + "\n"
 
 
 def _parse_sym_addresses(sym_path, exports, name):
@@ -684,9 +710,11 @@ def _parse_sym_addresses(sym_path, exports, name):
     return found
 
 
-def _attribute_extern_error(err, kind, name, src_path, cyd_line):
+def _attribute_extern_error(err, kind, name, src_path, cyd_line, framing_lines):
     """Attribute an assembly failure to the routine. For inline blocks, remap
-    sjasmplus ``<tempfile>(<line>): ...`` numbers to the .cyd body line."""
+    sjasmplus ``<tempfile>(<line>): ...`` numbers to the .cyd body line. The body
+    begins at temp-file line ``framing_lines + 1`` (framing depends on how many
+    header/ABI lines were injected)."""
     text = str(err)
     tag = "IMPORT" if kind == "file" else "ASM"
     if kind == "inline" and cyd_line is not None:
@@ -695,7 +723,7 @@ def _attribute_extern_error(err, kind, name, src_path, cyd_line):
         )
 
         def _remap(m):
-            body_line = int(m.group(1)) - _EXTERN_FRAMING_LINES
+            body_line = int(m.group(1)) - framing_lines
             return f"ASM '{name}' (.cyd line {cyd_line + max(body_line - 1, 0)}):"
 
         text = pat.sub(_remap, text)
@@ -711,6 +739,7 @@ def assemble_extern_routine(
     exports=None,
     base_dir=None,
     cyd_line=None,
+    abi_inc=None,
     verbose=False,
 ):
     """Assemble a native routine in isolation at ``org``; return (data, addrs).
@@ -745,10 +774,14 @@ def assemble_extern_routine(
     else:  # inline: embed the verbatim body (starts at _EXTERN_FRAMING_LINES + 1)
         body = payload if payload.endswith("\n") else payload + "\n"
 
-    asm = "    DEVICE ZXSPECTRUM48\n"
-    asm += f"    ORG ${org:04X}\n"
-    asm += "__EXTERN_START:\n"
-    asm += body
+    header = "    DEVICE ZXSPECTRUM48\n"
+    if abi_inc:
+        header += abi_inc  # injected cyd_abi.inc (FLAGS, buffers, video, ...)
+    header += f"    ORG ${org:04X}\n"
+    header += "__EXTERN_START:\n"
+    framing_lines = header.count("\n")  # inline body begins at framing_lines + 1
+
+    asm = header + body
     asm += "__EXTERN_END:\n"
     asm += "__EXTERN_LEN = __EXTERN_END - __EXTERN_START\n"
     asm += f'    SAVEBIN "{bin_path}", __EXTERN_START, __EXTERN_LEN\n'
@@ -764,7 +797,9 @@ def assemble_extern_routine(
             sym=(sym_path if exports else None),
         )
     except OSError as e:
-        raise OSError(_attribute_extern_error(e, kind, name, src_path, cyd_line))
+        raise OSError(
+            _attribute_extern_error(e, kind, name, src_path, cyd_line, framing_lines)
+        )
 
     data = []
     if os.path.exists(bin_path):
