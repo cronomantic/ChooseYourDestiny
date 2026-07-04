@@ -1492,6 +1492,54 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_asm(self, p):
+        "statement : ASM ID asm_exports asm_uses ASM_BODY"
+        # Declares an inline native routine: the Z80 body is written verbatim in
+        # the .cyd (captured as ASM_BODY by the lexer). Sugar over IMPORT (same
+        # OP_EXTERN / CALL); the body comes inline instead of from a file. Without
+        # EXPORTS the block name is the single callable; with EXPORTS each exported
+        # name is a callable entry point sharing the block's private helpers. USES
+        # declares other native routines this block calls via CYD_CALL (needed for
+        # address patching and dead-code elimination). Placement/assembly is done
+        # by the build (phase 2); here we only register the routine table.
+        name, exports, uses, body = p[2], p[3], p[4], p[5]
+        body_line = p.lineno(5)  # .cyd line of the body (for assembly error mapping)
+        ok = True
+        if not exports:
+            # No EXPORTS: the block name itself is the callable entry point.
+            if not self._declare_symbol(name, SymbolType.EXTERN, p.lineno(2)):
+                ok = False
+        else:
+            for e in exports:
+                if not self._declare_symbol(e, SymbolType.EXTERN, p.lineno(2)):
+                    ok = False
+        for u in uses:
+            self._symbol_usage(u, SymbolType.EXTERN, p.lineno(2))
+        # exports stays raw (empty if no EXPORTS clause) so codegen can tell an
+        # implicit single-entry block from explicit multi-entry ones.
+        p[0] = ("ASM", name, body, exports, uses, body_line) if ok else None
+
+    def p_asm_exports(self, p):
+        """
+        asm_exports : EXPORTS asm_id_list
+                    | empty
+        """
+        p[0] = p[2] if len(p) == 3 else []
+
+    def p_asm_uses(self, p):
+        """
+        asm_uses : USES asm_id_list
+                 | empty
+        """
+        p[0] = p[2] if len(p) == 3 else []
+
+    def p_asm_id_list(self, p):
+        """
+        asm_id_list : asm_id_list COMMA ID
+                    | ID
+        """
+        p[0] = [p[1]] if len(p) == 2 else p[1] + [p[3]]
+
     def p_constant_ID(self, p):
         """
         statement : CONST ID EQUALS constexpression

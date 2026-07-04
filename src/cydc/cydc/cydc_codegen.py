@@ -160,7 +160,13 @@ class CydcCodegen(object):
         self.symbols = {}
         self.variables = {}
         self.constants = {}
-        self.externs = {}  # name -> assembler file for IMPORTed native routines
+        # Native routine table. block_name -> {"source": ("file", path) |
+        # ("inline", body), "exports": [callable names], "uses": [names called via
+        # CYD_CALL]}. IMPORT and inline ASM blocks share this table.
+        self.externs = {}
+        # callable name -> block_name it resolves to (an IMPORT name, or one of a
+        # block's EXPORTS). This is what a CALL target is checked against.
+        self.extern_exports = {}
         # Positions of every emitted OP_EXTERN operand, filled during
         # symbol_replacement: list of (name, chunk_index, byte_offset). The
         # address of a native routine is only known after memory allocation
@@ -381,6 +387,15 @@ class CydcCodegen(object):
         arrays = {}
         labels = {}
         externs = {}
+        extern_exports = {}
+
+        def _register_export(callable_name, block_name):
+            if extern_exports.get(callable_name) is not None:
+                sys.exit(
+                    self._(f"ERROR: Native routine {callable_name} defined two times!")
+                )
+            extern_exports[callable_name] = block_name
+
         code_tmp = []
         for t in code:
             opcode = t[0]  # get opcode type
@@ -389,8 +404,34 @@ class CydcCodegen(object):
                 p = t[2]  # assembler file path
                 if externs.get(q) is not None:
                     sys.exit(self._(f"ERROR: Native routine {q} imported two times!"))
-                else:
-                    externs[q] = p  # Add to the imported-routines table (no bytecode)
+                # A file-backed block with a single callable = its own name; its
+                # entry is the block start (not a named label), so explicit=False.
+                externs[q] = {
+                    "source": ("file", p),
+                    "exports": [q],
+                    "explicit": False,
+                    "uses": [],
+                    "line": None,
+                }
+                _register_export(q, q)
+            elif opcode == "ASM":
+                # ("ASM", block, body, exports, uses, line) from the parser.
+                block, body, exports, uses, line = t[1], t[2], t[3], t[4], t[5]
+                if externs.get(block) is not None:
+                    sys.exit(self._(f"ERROR: Native routine {block} defined two times!"))
+                # explicit EXPORTS -> callables are labels in the body; otherwise
+                # the block name itself is the single callable (entry = start).
+                explicit = bool(exports)
+                callables = list(exports) if explicit else [block]
+                externs[block] = {
+                    "source": ("inline", body),
+                    "exports": callables,
+                    "explicit": explicit,
+                    "uses": list(uses),
+                    "line": line,
+                }
+                for e in callables:
+                    _register_export(e, block)
             elif opcode == "CONST":
                 p = t[2]  # get value
                 q = t[1]  # get symbol
@@ -574,6 +615,7 @@ class CydcCodegen(object):
                     tup += (c,)
             code.append(tup)
         self.externs = externs
+        self.extern_exports = extern_exports
         return (code, variables, constants)
 
     def code_simple_optimize(self, code):
@@ -1154,8 +1196,9 @@ class CydcCodegen(object):
                         t[1], c
                     )  # Convert offset to bank address
                     queue.reverse()
-                elif c in self.externs:
-                    # IMPORTed native routine: its (bank, address) is not known
+                elif c in self.extern_exports:
+                    # Native routine (IMPORT or inline ASM export): its (bank,
+                    # address) is not known
                     # until after memory allocation, so emit a [bank, lo, hi]
                     # placeholder now and record its position for late patching.
                     self.extern_calls.append((c, chunk_index, len(code_tmp)))

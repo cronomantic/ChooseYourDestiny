@@ -90,6 +90,60 @@ class TestParserBasicStatements(unittest.TestCase):
         self.parser.parse(input="[[CALL missing]]")
         self.assertTrue(len(self.parser.errors) > 0)
 
+    def test_parse_asm_block_single(self):
+        """An ASM ... ENDASM block declares a callable native routine."""
+        code = "[[ASM peek\n  ld a,(de)\n  ret\nENDASM\nCALL peek]]"
+        result = self.parser.parse(input=code)
+        self.assertEqual(self.parser.errors, [])
+        # ("ASM", name, body, exports(raw), uses, body_line) + the EXTERN usage.
+        # No EXPORTS clause -> raw exports is empty.
+        self.assertEqual(result[0][:5], ("ASM", "peek", "  ld a,(de)\n  ret\n", [], []))
+        self.assertIsInstance(result[0][5], int)  # body line number
+        self.assertIn(("EXTERN", "peek", 0, 0), result)
+
+    def test_parse_asm_body_is_verbatim(self):
+        """The block body is captured verbatim (comments, colons, quotes intact)."""
+        body = '  ld a, 65   ; the letter "A":\n  call 0x1234\n  ret\n'
+        code = "[[ASM t\n" + body + "ENDASM]]"
+        result = self.parser.parse(input=code)
+        self.assertEqual(self.parser.errors, [])
+        self.assertEqual(result[0][:5], ("ASM", "t", body, [], []))
+
+    def test_parse_asm_exports_and_uses(self):
+        """EXPORTS registers several entry points; USES references another routine."""
+        code = (
+            '[[IMPORT printdec FROM "pd.asm"\n'
+            "ASM mathcore EXPORTS add32, mul32 USES printdec\n"
+            "add32: ret\nmul32: ret\n_helper: ret\nENDASM\n"
+            "CALL add32 : CALL mul32]]"
+        )
+        result = self.parser.parse(input=code)
+        self.assertEqual(self.parser.errors, [])
+        block = next(t for t in result if t[0] == "ASM")
+        self.assertEqual(
+            block[:5],
+            ("ASM", "mathcore", "add32: ret\nmul32: ret\n_helper: ret\n",
+             ["add32", "mul32"], ["printdec"]),
+        )
+
+    def test_parse_asm_empty_body_ok(self):
+        """ENDASM immediately after the header yields an empty (but valid) body."""
+        result = self.parser.parse(input="[[ASM e\nENDASM\nCALL e]]")
+        self.assertEqual(self.parser.errors, [])
+        block = next(t for t in result if t[0] == "ASM")
+        self.assertEqual(block[:5], ("ASM", "e", "", [], []))
+
+    def test_parse_asm_duplicate_export_errors(self):
+        """The same callable name exported by two blocks is an error."""
+        code = "[[ASM b EXPORTS x\n ret\nENDASM\nASM c EXPORTS x\n ret\nENDASM]]"
+        self.parser.parse(input=code)
+        self.assertTrue(len(self.parser.errors) > 0)
+
+    def test_parse_asm_unterminated_errors(self):
+        """A block with no ENDASM is reported as an error."""
+        self.parser.parse(input="[[ASM u\n ld a,1\n ret]]")
+        self.assertTrue(len(self.parser.errors) > 0)
+
 
 class TestParserControlFlow(unittest.TestCase):
     """Test parsing of control flow statements."""

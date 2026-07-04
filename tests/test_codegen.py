@@ -177,5 +177,66 @@ class TestConstantFolding(CodegenTestBase):
         )
 
 
+class TestNativeRoutines(CodegenTestBase):
+    """The native-routine table (IMPORT + inline ASM) populated by codegen."""
+
+    def _codegen(self, src):
+        """Parse ``src`` and run codegen; return the CydcCodegen instance."""
+        code = self.parser.parse(input=src)
+        self.assertEqual(
+            self.parser.errors, [], f"unexpected parser errors: {self.parser.errors}"
+        )
+        g = CydcCodegen(gettext)
+        g.set_bank_offset_list([0xC000])
+        g.set_bank_size_list([16 * 1024])
+        g.generate_code(code=code)
+        return g
+
+    def test_import_is_file_backed(self):
+        g = self._codegen('[[IMPORT beeper FROM "b.asm" : CALL beeper]]')
+        self.assertEqual(
+            g.externs["beeper"],
+            {
+                "source": ("file", "b.asm"),
+                "exports": ["beeper"],
+                "explicit": False,
+                "uses": [],
+                "line": None,
+            },
+        )
+        self.assertEqual(g.extern_exports["beeper"], "beeper")
+
+    def test_asm_inline_is_body_backed(self):
+        g = self._codegen("[[ASM peek\n ld a,(de)\n ret\nENDASM\nCALL peek]]")
+        self.assertEqual(g.externs["peek"]["source"], ("inline", " ld a,(de)\n ret\n"))
+        self.assertEqual(g.externs["peek"]["exports"], ["peek"])
+        # No EXPORTS: single entry at the block start, not a named label.
+        self.assertFalse(g.externs["peek"]["explicit"])
+        self.assertEqual(g.extern_exports["peek"], "peek")
+
+    def test_asm_multiexport_maps_every_export_to_block(self):
+        g = self._codegen(
+            "[[ASM lib EXPORTS a, b\na: ret\nb: ret\nENDASM\nCALL a : CALL b]]"
+        )
+        self.assertEqual(g.externs["lib"]["exports"], ["a", "b"])
+        self.assertTrue(g.externs["lib"]["explicit"])
+        self.assertEqual(g.extern_exports["a"], "lib")
+        self.assertEqual(g.extern_exports["b"], "lib")
+
+    def test_call_to_export_is_recorded_for_late_patching(self):
+        # Every CALL to a native routine records (name, chunk, offset) so the
+        # build can patch the [bank, lo, hi] operand after memory layout.
+        g = self._codegen("[[ASM p\n ret\nENDASM\nCALL p]]")
+        self.assertEqual([name for (name, _c, _o) in g.extern_calls], ["p"])
+
+    def test_duplicate_routine_name_errors_cleanly(self):
+        code = self.parser.parse(
+            input="[[ASM x\n ret\nENDASM\nASM y EXPORTS x\n ret\nENDASM]]"
+        )
+        # The parser already flags the duplicate EXTERN symbol; even if it did
+        # not, codegen's extern table must not silently merge two routines.
+        self.assertTrue(len(self.parser.errors) > 0)
+
+
 if __name__ == "__main__":
     unittest.main()

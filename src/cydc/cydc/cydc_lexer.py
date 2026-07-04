@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
+
 from ply import lex as lex
 
 
@@ -25,6 +27,9 @@ class CydcLexer(object):
     def __init__(self):
         self.lexer = None
         self.txt_pos = 0
+        # True after an ASM keyword until the header-ending newline switches the
+        # lexer into verbatim body capture (see _capture_asm_body).
+        self.asm_pending = False
         self.errors = []
         self.special_chars = [
             c.decode("iso-8859-15")
@@ -193,6 +198,9 @@ class CydcLexer(object):
         "IMPORT": "IMPORT",
         "FROM": "FROM",
         "CALL": "CALL",
+        "ASM": "ASM",
+        "EXPORTS": "EXPORTS",
+        "USES": "USES",
     }
 
     # token_list
@@ -220,6 +228,8 @@ class CydcLexer(object):
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += ["STRING"]
+    # Verbatim body of an ASM ... ENDASM inline native-routine block.
+    tokens += ["ASM_BODY"]
     tokens += list(reserved.values())
 
     @property
@@ -320,6 +330,50 @@ class CydcLexer(object):
     def t_INITIAL_NEWLINE_CHAR(self, t):
         r"(\n|\r|\r\n)+"
         t.lexer.lineno += self._count_newlines(t.value.count("\r"), t.value.count("\n"))
+        if self.asm_pending:
+            # The newline that ends the `ASM name ...` header line: from here to
+            # `ENDASM` is the verbatim routine body, not CYD code.
+            self.asm_pending = False
+            return self._capture_asm_body(t)
+        return t
+
+    def _capture_asm_body(self, t):
+        """Capture the verbatim body of an ``ASM ... ENDASM`` inline block.
+
+        Called from the newline that ends the ASM header line. Scans lexdata from
+        the current position to a line whose only content is ``ENDASM`` (optionally
+        indented; anything after it on that line is ignored), emits an ``ASM_BODY``
+        token holding the raw body text, and advances the lexer past the ``ENDASM``
+        line. The body is NOT tokenised as CYD (it is Z80 assembler).
+        """
+        data = t.lexer.lexdata
+        start = t.lexer.lexpos  # first char of the body (a line start)
+        body_line = t.lexer.lineno  # .cyd line where the body begins
+        m = re.compile(r"(?m)^[ \t]*ENDASM\b[^\r\n]*").search(data, start)
+        if m is None:
+            self.errors.append(
+                {
+                    "line": t.lexer.lineno,
+                    "column": 0,
+                    "char": "",
+                    "message": "Unterminated ASM block (missing ENDASM)",
+                }
+            )
+            body = data[start:]
+            t.lexer.lineno += self._count_newlines(
+                body.count("\r"), body.count("\n")
+            )
+            t.lexer.lexpos = len(data)
+        else:
+            body = data[start : m.start()]
+            consumed = data[start : m.end()]
+            t.lexer.lineno += self._count_newlines(
+                consumed.count("\r"), consumed.count("\n")
+            )
+            t.lexer.lexpos = m.end()
+        t.type = "ASM_BODY"
+        t.value = body
+        t.lineno = body_line
         return t
 
     def t_STRING(self, t):
@@ -365,6 +419,9 @@ class CydcLexer(object):
     def t_ID(self, t):
         r"[a-zA-Z_][a-zA-Z0-9_]*"
         t.type = self.reserved.get(t.value.upper(), "ID")  # Check for reserved words
+        if t.type == "ASM":
+            # Arm verbatim body capture at the next newline (see _capture_asm_body).
+            self.asm_pending = True
         return t
 
     def t_INITIAL_error(self, t):
@@ -405,6 +462,7 @@ class CydcLexer(object):
 
     def input(self, data):
         self.txt_pos = 0
+        self.asm_pending = False
         self.texts = []
         self.errors = []
         self.lexer.input(data)

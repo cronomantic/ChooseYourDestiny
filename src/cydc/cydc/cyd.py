@@ -656,33 +656,99 @@ def get_asm_mld_size(
     return size
 
 
+# Framing lines this module prepends before a routine body (DEVICE, ORG,
+# __EXTERN_START:). A sjasmplus line N in the generated temp file maps to inline
+# body line (N - _EXTERN_FRAMING_LINES).
+_EXTERN_FRAMING_LINES = 3
+
+
+def _parse_sym_addresses(sym_path, exports, name):
+    """Parse sjasmplus ``--sym`` output (``label: EQU 0xADDR``) for ``exports``."""
+    wanted = set(exports)
+    found = {}
+    with open(sym_path, "r", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(
+                r"\s*([A-Za-z_][\w.]*):?\s+EQU\s+(0[xX][0-9A-Fa-f]+|\$[0-9A-Fa-f]+|\d+)",
+                line,
+            )
+            if m and m.group(1) in wanted:
+                val = m.group(2)
+                found[m.group(1)] = int(val.replace("$", "0x"), 0)
+    missing = [e for e in exports if e not in found]
+    if missing:
+        raise OSError(
+            f"ASM '{name}': exported label(s) not defined in the block: "
+            + ", ".join(missing)
+        )
+    return found
+
+
+def _attribute_extern_error(err, kind, name, src_path, cyd_line):
+    """Attribute an assembly failure to the routine. For inline blocks, remap
+    sjasmplus ``<tempfile>(<line>): ...`` numbers to the .cyd body line."""
+    text = str(err)
+    tag = "IMPORT" if kind == "file" else "ASM"
+    if kind == "inline" and cyd_line is not None:
+        pat = re.compile(
+            r"[^\s(]*" + re.escape(f"__extern_{name}.asm") + r"\((\d+)\):"
+        )
+
+        def _remap(m):
+            body_line = int(m.group(1)) - _EXTERN_FRAMING_LINES
+            return f"ASM '{name}' (.cyd line {cyd_line + max(body_line - 1, 0)}):"
+
+        text = pat.sub(_remap, text)
+    return f"{tag} '{name}': failed to assemble\n{text}"
+
+
 def assemble_extern_routine(
-    sjasmplus_path, output_path, name, asm_file, org, verbose=False, base_dir=None
+    sjasmplus_path,
+    output_path,
+    name,
+    source,
+    org,
+    exports=None,
+    base_dir=None,
+    cyd_line=None,
+    verbose=False,
 ):
-    """Assemble an IMPORTed native routine in isolation at a given ORG.
+    """Assemble a native routine in isolation at ``org``; return (data, addrs).
 
-    Frames the author's file (they write only the routine body) with an ORG,
-    a size measurement and a SAVEBIN, exactly like the WYZ player bank. Returns
-    the routine's raw bytes. Raises OSError with a clean, attributable message
-    if the author's file is missing or fails to assemble, without disturbing
-    the engine build.
+    ``source`` is ``("file", path)`` for an IMPORTed routine or ``("inline",
+    body)`` for an inline ``ASM ... ENDASM`` block. The author writes only the
+    routine body; this frames it with an ORG, a size measurement and a SAVEBIN,
+    exactly like the WYZ player bank.
 
-    A relative ``asm_file`` is resolved against ``base_dir`` (the directory of
-    the .cyd script) so that IMPORT paths are relative to the script, not to the
-    current working directory.
+    ``exports`` is the list of label names whose final addresses to resolve (via
+    sjasmplus ``--sym``); pass ``None``/empty for a single-entry block whose
+    entry is the block start. Returns ``(data_bytes, {label: address})``; for a
+    single-entry block the address dict is empty and the caller uses ``org``.
+
+    A relative file ``source`` is resolved against ``base_dir`` (the .cyd's
+    directory). Raises ``OSError`` attributed to the routine; for inline blocks
+    sjasmplus line numbers are remapped to the ``.cyd`` source line ``cyd_line``.
     """
-    if base_dir and not os.path.isabs(asm_file):
-        asm_file = os.path.join(base_dir, asm_file)
-    asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
-    if not os.path.isfile(asm_file_abs):
-        raise OSError(f"IMPORT '{name}': assembler file not found: {asm_file}")
+    kind, payload = source
     bin_path = os.path.join(output_path, f"__extern_{name}.bin").replace(os.sep, "/")
     src_path = os.path.join(output_path, f"__extern_{name}.asm").replace(os.sep, "/")
+    sym_path = os.path.join(output_path, f"__extern_{name}.sym").replace(os.sep, "/")
+
+    if kind == "file":
+        asm_file = payload
+        if base_dir and not os.path.isabs(asm_file):
+            asm_file = os.path.join(base_dir, asm_file)
+        asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+        if not os.path.isfile(asm_file_abs):
+            raise OSError(f"IMPORT '{name}': assembler file not found: {payload}")
+        body = f'    INCLUDE "{asm_file_abs}"\n'
+    else:  # inline: embed the verbatim body (starts at _EXTERN_FRAMING_LINES + 1)
+        body = payload if payload.endswith("\n") else payload + "\n"
 
     asm = "    DEVICE ZXSPECTRUM48\n"
     asm += f"    ORG ${org:04X}\n"
     asm += "__EXTERN_START:\n"
-    asm += f'    INCLUDE "{asm_file_abs}"\n'
+    asm += body
     asm += "__EXTERN_END:\n"
     asm += "__EXTERN_LEN = __EXTERN_END - __EXTERN_START\n"
     asm += f'    SAVEBIN "{bin_path}", __EXTERN_START, __EXTERN_LEN\n'
@@ -695,16 +761,24 @@ def assemble_extern_routine(
             filename=src_path,
             listing=verbose,
             capture_output=True,
+            sym=(sym_path if exports else None),
         )
     except OSError as e:
-        raise OSError(f"IMPORT '{name}': failed to assemble {asm_file}\n{e}")
+        raise OSError(_attribute_extern_error(e, kind, name, src_path, cyd_line))
 
     data = []
     if os.path.exists(bin_path):
         with open(bin_path, "rb") as f:
             data = list(f.read())
         os.remove(bin_path)
-    return data
+
+    addrs = {}
+    if exports:
+        if not os.path.exists(sym_path):
+            raise OSError(f"ASM '{name}': could not read symbol file for EXPORTS")
+        addrs = _parse_sym_addresses(sym_path, exports, name)
+        os.remove(sym_path)
+    return data, addrs
 
 
 def do_asm_48(

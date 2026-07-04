@@ -73,12 +73,13 @@ def get_asm_template(filename):
     return AsmTemplate(text)
 
 
-def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
+def run_assembler(asm_path, asm, filename, listing=True, capture_output=False, sym=None):
     """_summary_
 
     Args:
         zx0_path (_type_): _description_
         chunk (_type_): _description_
+        sym (_type_): optional path for sjasmplus ``--sym`` symbol export.
     """
     try:
         with open(filename, "w", encoding="utf-8") as f:
@@ -89,6 +90,8 @@ def run_assembler(asm_path, asm, filename, listing=True, capture_output=False):
     command_line = [asm_path, "--nologo", "-Wno-all"]
     if listing:
         command_line += ["--lst=" + (os.path.splitext(filename)[0] + ".lst")]
+    if sym:
+        command_line += ["--sym=" + sym]
     command_line += [filename]
     success = False
     try:
