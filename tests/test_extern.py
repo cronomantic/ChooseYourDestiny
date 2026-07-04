@@ -70,5 +70,83 @@ class TestExtern(unittest.TestCase):
         self._roundtrip("plus3", "P341")
 
 
+# Inline ASM blocks (ASM ... ENDASM): the body is written verbatim in the .cyd
+# (no external file), assembled in isolation and placed by the build exactly like
+# an IMPORTed routine. Same ABI (DE=FLAGS, RET), same OP_EXTERN handler.
+INLINE_SINGLE = (
+    "[[\n"
+    "ASM nativo\n"
+    "    ld ix, 0\n"
+    "    ld iy, 0\n"
+    "    push bc\n"
+    "    ld a, 42\n"
+    "    ld (de), a      ; FLAGS+0 = 42\n"
+    "    inc de\n"
+    "    ld a, 99\n"
+    "    ld (de), a      ; FLAGS+1 = 99\n"
+    "    pop bc\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL nativo\n"
+    "SET 2 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+# Multi-export block: wr42 and wr99 are separate CALL targets that share a
+# private helper (_store) via an intra-block CALL.
+INLINE_MULTI = (
+    "[[\n"
+    "ASM mathlib EXPORTS wr42, wr99\n"
+    "wr42:\n"
+    "    ld a, 42\n"
+    "    call _store     ; FLAGS+0 = 42\n"
+    "    ret\n"
+    "wr99:\n"
+    "    inc de\n"
+    "    ld a, 99\n"
+    "    call _store     ; FLAGS+1 = 99\n"
+    "    ret\n"
+    "_store:\n"
+    "    ld (de), a\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL wr42\n"
+    "CALL wr99\n"
+    "SET 2 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+
+@unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not found under tools/")
+class TestInlineAsm(unittest.TestCase):
+    def _roundtrip(self, src, model, machine):
+        with tempfile.TemporaryDirectory(prefix="cyd_inline_") as wd:
+            tap, flags = compile_cyd(src, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=4, machine=machine, max_wait=35.0)
+        self.assertEqual(f[0], 42, "inline routine did not write FLAGS+0 (DE=FLAGS)")
+        self.assertEqual(f[1], 99, "inline routine did not write FLAGS+1")
+        self.assertEqual(f[2], 123, "interpreter did not resume after CALL")
+
+    def test_inline_single_48k(self):
+        """48k: a verbatim inline block placed resident and called directly."""
+        self._roundtrip(INLINE_SINGLE, "48k", "48k")
+
+    def test_inline_single_128k(self):
+        """128k: inline block placed in a paged bank; handler pages it in."""
+        self._roundtrip(INLINE_SINGLE, "128k", "128k")
+
+    def test_inline_multiexport_48k(self):
+        """48k: two EXPORTS entry points sharing a private helper (intra-block call)."""
+        self._roundtrip(INLINE_MULTI, "48k", "48k")
+
+    def test_inline_multiexport_128k(self):
+        """128k: multi-export block in a paged bank; both entries + helper reachable."""
+        self._roundtrip(INLINE_MULTI, "128k", "128k")
+
+
 if __name__ == "__main__":
     unittest.main()

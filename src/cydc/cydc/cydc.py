@@ -988,30 +988,52 @@ def main():
                     "48k, 128k, +3 and mld128 targets for now."
                 )
             )
-        # Deterministic placement order.
+        # USES / CYD_CALL (a native routine calling another one across blocks) is
+        # a later phase (dispatch table + resident trampoline). Fail cleanly.
+        uses_blocks = sorted(n for n, d in codegen.externs.items() if d["uses"])
+        if uses_blocks:
+            sys.exit(
+                _("ERROR: USES / CYD_CALL is not supported yet: ")
+                + ", ".join(uses_blocks)
+            )
+
+        # Deterministic placement order (one entry per ASM/IMPORT block).
         routine_names = sorted(codegen.externs.keys())
 
         # IMPORT "file.asm" paths are relative to the .cyd script's directory.
         extern_base_dir = os.path.dirname(os.path.abspath(args.input))
 
-        def _measure_routine(r, org):
+        def _assemble_block(r, org, with_syms):
+            """Assemble block r at ORG; return (data, {export: addr}). Symbols are
+            only resolved (via --sym) for EXPORTS blocks on the placement pass."""
+            d = codegen.externs[r]
+            exports = d["exports"] if (with_syms and d["explicit"]) else None
             try:
                 return assemble_extern_routine(
                     args.sjasmplus_path,
                     args.output_path,
                     r,
-                    codegen.externs[r],
+                    d["source"],
                     org,
-                    verbose=(verbose >= 1),
+                    exports=exports,
                     base_dir=extern_base_dir,
+                    cyd_line=d.get("line"),
+                    verbose=(verbose >= 1),
                 )
             except OSError as e:
                 sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")
 
-        def _place_routine(r, org, bank_idx):
-            """Re-assemble routine r at its final ORG and append it to bank_idx,
-            checking the size did not change vs. the measurement pass."""
-            data = _measure_routine(r, org)
+        # extern_addr[callable] = (bank_byte, address). A block may expose several
+        # callables (EXPORTS); a plain block/IMPORT exposes one, at its start. On
+        # 48k the routine is resident and the bank byte is ignored; on 128k it is
+        # the RAM bank the OP_EXTERN handler pages in before calling $C000+offset.
+        extern_addr = {}
+
+        def _place_block(r, org, bank_idx, bank_byte):
+            """Re-assemble block r at its final ORG, append it to bank_idx (checking
+            its size is stable vs. the measurement pass), and register the resolved
+            address of every callable it exposes."""
+            data, addrs = _assemble_block(r, org, True)
             if len(data) != sizes[r]:
                 sys.exit(
                     _(
@@ -1022,20 +1044,20 @@ def main():
                 )
             available_banks[bank_idx] += data
             available_bank_size[bank_idx] -= len(data)
+            d = codegen.externs[r]
+            for callable_name in d["exports"]:
+                # EXPORTS -> the label's own address; plain block -> the start.
+                addr = addrs[callable_name] if d["explicit"] else org
+                extern_addr[callable_name] = (bank_byte, addr)
 
-        # Pass 1: measure every routine at a provisional ORG.
-        sizes = {r: len(_measure_routine(r, 0xC000)) for r in routine_names}
+        # Pass 1: measure every block at a provisional ORG (no symbols needed).
+        sizes = {r: len(_assemble_block(r, 0xC000, False)[0]) for r in routine_names}
         for r in routine_names:
             if sizes[r] > 16 * 1024:
                 sys.exit(
                     _(f"ERROR: Native routine {r} is too big for a bank.")
                     + f" ({sizes[r]} bytes)"
                 )
-
-        # extern_addr[name] = (bank_byte, address). On 48k the routine is
-        # resident and the bank byte is ignored; on 128k it carries the physical
-        # RAM bank the OP_EXTERN handler must page in before calling $C000+offset.
-        extern_addr = {}
 
         if model == "48k":
             total = sum(sizes.values())
@@ -1047,10 +1069,9 @@ def main():
             # Place resident, at the end of bank 0.
             cursor = bank0_offset + len(available_banks[0])
             for r in routine_names:
-                extern_addr[r] = (0, cursor)
-                _place_routine(r, cursor, 0)
+                _place_block(r, cursor, 0, 0)
                 cursor += sizes[r]
-        else:  # 128k / +3 / mld128: place each routine in a paged bank (>= 1).
+        else:  # 128k / +3 / mld128: place each block in a paged bank (>= 1).
             for r in routine_names:
                 # Best-fit among the already-used paged banks; add a new bank
                 # from spectrum_banks if none has room.
@@ -1072,8 +1093,7 @@ def main():
                             + f" ({r})"
                         )
                 addr = 0xC000 + len(available_banks[best_j])
-                extern_addr[r] = (spectrum_banks[best_j], addr)
-                _place_routine(r, addr, best_j)
+                _place_block(r, addr, best_j, spectrum_banks[best_j])
 
         # Late-patch every CALL operand with the resolved [bank, addr_lo, addr_hi].
         for (rname, chunk_idx, pos) in codegen.extern_calls:
