@@ -1,6 +1,6 @@
 # ChooseYourDestiny
 
-![logo](./assets/cyddeluxe_small.png)
+![logo](./assets/cydlogo_2_small.png)
 
 ---
 
