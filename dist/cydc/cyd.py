@@ -28,8 +28,162 @@ def get_unused_opcodes_defines(unused_opcodes=None):
     if unused_opcodes is None:
         return asm
     for c in unused_opcodes:
-        asm += f"    DEFINE UNUSED_OP_{c}\n"
+        # Entries that already name a full guard (e.g. "UNUSED_ARR_BROKER") are
+        # emitted verbatim; plain opcode names get the UNUSED_OP_ prefix.
+        if isinstance(c, str) and c.startswith("UNUSED_"):
+            asm += f"    DEFINE {c}\n"
+        else:
+            asm += f"    DEFINE UNUSED_OP_{c}\n"
     return asm
+
+
+# Resident memory-broker services (see interpreter.asm). If no native routine
+# references any of them the whole broker is stripped (UNUSED_ARR_BROKER).
+BROKER_SERVICES = ("CYD_PEEK", "CYD_POKE", "CYD_ARR_MAP", "CYD_ARR_FLUSH")
+
+# Cross-block native call trampoline. Stripped (UNUSED_CYD_CALL) when unused.
+CYD_CALL_SERVICE = "CYD_CALL"
+
+# Numbered engine-service gateway. Stripped (UNUSED_SYSCALL) when unused.
+CYD_SYSCALL_SERVICE = "CYD_SYSCALL"
+
+# Engine services reachable through CYD_SYSCALL: (name, id). The ids are a stable
+# contract and MUST match SVC_TABLE in interpreter.asm.
+SYSCALL_SERVICES = (
+    ("SVC_PRINT_CHAR", 0),
+    ("SVC_WAIT_KEY", 1),
+    ("SVC_INKEY", 2),
+)
+
+# Everything the unused-machinery probe looks for.
+PROBE_SERVICES = BROKER_SERVICES + (CYD_CALL_SERVICE, CYD_SYSCALL_SERVICE)
+
+
+def build_probe_abi(array_names):
+    """A service-less ``cyd_abi.inc`` for the unused-broker probe: every ABI
+    symbol a block may legitimately reference is defined as a dummy EXCEPT the
+    broker services, so a block that calls one leaves an undefined-symbol trace
+    ("Label not found: CYD_...") we can detect. Values are irrelevant (the probe
+    only assembles to see which broker labels stay unresolved)."""
+    lines = [
+        "FLAGS EQU 0",
+        "SCREEN_BUFFER_PXL EQU 0",
+        "SCREEN_BUFFER_ATT EQU 0",
+        "VIDEO_PXL EQU 0",
+        "VIDEO_ATT EQU 0",
+    ]
+    for n in array_names:
+        lines += [f"ARR_{n} EQU 0", f"ARR_{n}_LEN EQU 0", f"ARR_{n}_BANK EQU 0"]
+    return "\n".join(lines) + "\n"
+
+
+def probe_block_services(sjasmplus_path, output_path, name, source, base_dir, probe_abi):
+    """Assemble a native block against a service-less ABI and return the set of
+    broker services it references (via sjasmplus "Label not found" diagnostics).
+    Author errors surface as other undefined labels and are ignored here; the
+    real assembly pass reports them properly."""
+    kind, payload = source
+    src_path = os.path.join(output_path, f"__probe_{name}.asm").replace(os.sep, "/")
+    if kind == "file":
+        asm_file = payload
+        if base_dir and not os.path.isabs(asm_file):
+            asm_file = os.path.join(base_dir, asm_file)
+        asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+        if not os.path.isfile(asm_file_abs):
+            return set()  # missing file: the real pass will report it
+        body = f'    INCLUDE "{asm_file_abs}"\n'
+    else:
+        body = payload if payload.endswith("\n") else payload + "\n"
+    asm = "    DEVICE ZXSPECTRUM48\n" + probe_abi + "    ORG $C000\n" + body + "    END\n"
+    try:
+        run_assembler(
+            asm_path=sjasmplus_path,
+            asm=asm,
+            filename=src_path,
+            listing=False,
+            capture_output=True,
+        )
+        text = ""  # assembled clean: references no undefined service
+    except OSError as e:
+        text = str(e)
+    finally:
+        if os.path.isfile(src_path):
+            os.remove(src_path)
+    missing = set(re.findall(r"Label not found:\s*([A-Za-z_]\w*)", text))
+    return missing & set(PROBE_SERVICES)
+
+
+def extern_probe_used(codegen, code, sjasmplus_path, output_path, base_dir):
+    """Return the set of resident services (broker + CYD_CALL) that native
+    routines actually reference, via the undefined-symbol probe. Empty when there
+    are no externs (the whole machinery is already gone via UNUSED_OP_EXTERN).
+    Used to strip unreferenced machinery: UNUSED_ARR_BROKER, UNUSED_CYD_CALL."""
+    if len(codegen.externs) == 0:
+        return set()
+    array_names = [
+        t[1] for t in code if isinstance(t, tuple) and t and t[0] == "ARRAY"
+    ]
+    probe_abi = build_probe_abi(array_names)
+    used = set()
+    for name, d in codegen.externs.items():
+        used |= probe_block_services(
+            sjasmplus_path, output_path, name, d["source"], base_dir, probe_abi
+        )
+    return used
+
+
+def extern_live_blocks(codegen):
+    """Native-block dead-code elimination.
+
+    Returns ``(kept_block_names, sorted_kept_callables)``. A native block
+    (IMPORT/ASM) is kept if any of its exported callables is referenced by a
+    reachable ``CALL`` (``codegen.extern_calls`` is filled after the bytecode DCE,
+    so it already lists only reachable calls) or, transitively, is a ``USES``
+    callee of a kept block (a kept routine may ``CYD_CALL`` it). Blocks with no
+    live export are not assembled/placed and get no dispatch-table slot.
+
+    Exports cannot be pruned individually: a block is one indivisible assembly
+    unit (its exports may share private helpers), so it is kept or dropped whole.
+    Works with and without ``-dce``: ``extern_calls`` already reflects the chosen
+    reachability, and an IMPORT/ASM that is never called is dropped either way."""
+    externs = codegen.externs
+    used = {name for (name, _chunk, _pos) in codegen.extern_calls}
+    changed = True
+    while changed:
+        changed = False
+        for d in externs.values():
+            if any(c in used for c in d["exports"]):      # block is kept
+                for callee in d["uses"]:                   # its CYD_CALL callees
+                    if callee not in used:
+                        used.add(callee)
+                        changed = True
+    kept = {
+        name for name, d in externs.items() if any(c in used for c in d["exports"])
+    }
+    kept_callables = sorted(c for name in kept for c in externs[name]["exports"])
+    return kept, kept_callables
+
+
+def build_uses_inc(uses, route_index):
+    """Inject ``RT_<name> EQU <index>`` for each routine the block declares in
+    USES, so it can reach them with ``ld a, RT_<name> : call CYD_CALL``."""
+    lines = [f"RT_{n} EQU {route_index[n]}" for n in (uses or []) if n in route_index]
+    if not lines:
+        return ""
+    return "; --- CYD_CALL routine indices (from USES) ---\n" + "\n".join(lines) + "\n"
+
+
+def build_dispatch_table(route_names, extern_addr):
+    """The resident EXTERN_DISPATCH table: one ``[bank, addr_lo, addr_hi]`` row
+    per callable, in RT_ index order (its position in ``route_names``). Rows are
+    filled after placement; ``CYD_CALL`` indexes this table by RT_ index."""
+    rows = []
+    for name in route_names:
+        bank_byte, addr = extern_addr[name]
+        rows.append(
+            f"    DEFB ${bank_byte:02X}, ${addr & 0xFF:02X}, ${(addr >> 8) & 0xFF:02X}"
+        )
+    return "\n".join(rows) + "\n" if rows else ""
 
 
 def get_game_id(name=None):
@@ -59,6 +213,7 @@ def get_asm_plus3(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -73,6 +228,7 @@ def get_asm_plus3(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         DSK_PATH=dsk_path,
@@ -149,6 +305,7 @@ def get_asm_128(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -164,6 +321,7 @@ def get_asm_128(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -237,6 +395,7 @@ def get_asm_mld(
     use_wyz_tracker=False,
     name="",
     loading_scr=None,
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -256,6 +415,7 @@ def get_asm_mld(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -318,6 +478,7 @@ def get_asm_mld128(
     use_wyz_tracker=False,
     name="",
     loading_scr=None,
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -337,6 +498,7 @@ def get_asm_mld128(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -419,6 +581,7 @@ def get_asm_48(
     unused_opcodes=None,
     pause_start_value=None,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -434,6 +597,7 @@ def get_asm_48(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -508,6 +672,7 @@ def get_asm_128_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -550,6 +715,7 @@ def get_asm_48_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -596,6 +762,7 @@ def get_asm_plus3_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -644,6 +811,7 @@ def get_asm_mld_size(
         filename=os.path.join(output_path, "cyd.asm"),
         listing=verbose,
         capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
     )
     m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
     if m is None:
@@ -656,33 +824,212 @@ def get_asm_mld_size(
     return size
 
 
+def build_abi_inc(sym_path):
+    """Build the injected ``cyd_abi.inc`` text from the engine's ``--sym`` dump.
+
+    Exposes to native routines, by name, the resident data structures they may
+    touch: the FLAGS variable array, the engine's image buffer, and the hardware
+    screen. Addresses come from the engine build (fixed by vars.asm); the screen
+    base is a Spectrum hardware constant (target-dependent by design).
+
+    The resident memory-broker services (CYD_PEEK / CYD_POKE / CYD_ARR_MAP /
+    CYD_ARR_FLUSH) are engine labels too, so they ride the same ``--sym`` dump
+    and become callable by name."""
+    wanted = (
+        "FLAGS",
+        "SCREEN_BUFFER_PXL",
+        "SCREEN_BUFFER_ATT",
+        "CYD_PEEK",
+        "CYD_POKE",
+        "CYD_ARR_MAP",
+        "CYD_ARR_FLUSH",
+        "CYD_CALL",
+        "CYD_SYSCALL",
+    )
+    found = {}
+    if sym_path and os.path.exists(sym_path):
+        with open(sym_path, "r", encoding="utf-8") as f:
+            for line in f:
+                m = re.match(
+                    r"\s*([A-Za-z_][\w.]*):?\s+EQU\s+"
+                    r"(0[xX][0-9A-Fa-f]+|\$[0-9A-Fa-f]+|\d+)",
+                    line,
+                )
+                if m and m.group(1) in wanted:
+                    found[m.group(1)] = int(m.group(2).replace("$", "0x"), 0)
+    lines = ["; --- CYD ABI (injected by the compiler) ---"]
+    for name in wanted:
+        if name in found:
+            lines.append(f"{name} EQU ${found[name]:04X}")
+    lines.append("VIDEO_PXL EQU $4000")   # Spectrum screen bitmap (hardware)
+    lines.append("VIDEO_ATT EQU $5800")   # Spectrum screen attributes (hardware)
+    # Engine-service ids for CYD_SYSCALL. A stable numeric contract (must match
+    # SVC_TABLE in interpreter.asm); injected as constants regardless of the build.
+    for name, sid in SYSCALL_SERVICES:
+        lines.append(f"{name} EQU {sid}")
+    return "\n".join(lines) + "\n"
+
+
+def build_arrays_inc(codegen, spectrum_banks):
+    """Build the injected ``ARR_*`` constants that let a native routine reach the
+    author's CYD arrays through the memory broker.
+
+    For each array the compiler emits three EQUs:
+      ``ARR_<name>``       address of element 0 (in the $C000 window on banked
+                           targets; a resident low-RAM/``$8000``-window address
+                           when the array lives in chunk 0),
+      ``ARR_<name>_LEN``   element count,
+      ``ARR_<name>_BANK``  the physical RAM bank holding it, or ``$FF`` when the
+                           array is resident (always mapped, no paging needed).
+
+    The address and bank are derived from ``codegen.symbols`` (filled by
+    ``generate_code``): ``symbols[name] = (chunk, offset+1)`` points at the array
+    header's length byte, so the data starts at ``offset+2``. ``_convert_address``
+    turns the (chunk, offset) pair into the final load address exactly as the
+    bytecode uses it. Chunk 0 is resident; every other chunk is a paged bank whose
+    physical id is ``spectrum_banks[chunk]``."""
+    lines = []
+    for name in sorted(codegen.array_lengths):
+        length = codegen.array_lengths[name]
+        chunk, off1 = codegen.symbols[name]
+        lo, hi = codegen._convert_address(off1 + 1, chunk)  # data addr (skip len byte)
+        addr = lo | (hi << 8)
+        if chunk == 0:
+            bank_byte = 0xFF  # resident: always mapped, no paging
+        elif chunk < len(spectrum_banks):
+            bank_byte = spectrum_banks[chunk]
+        else:
+            bank_byte = spectrum_banks[-1]
+        lines.append(f"ARR_{name} EQU ${addr:04X}")
+        lines.append(f"ARR_{name}_LEN EQU {length}")
+        lines.append(f"ARR_{name}_BANK EQU ${bank_byte:02X}")
+    if not lines:
+        return ""
+    return "; --- CYD arrays (injected by the compiler) ---\n" + "\n".join(lines) + "\n"
+
+
+def _parse_sym_addresses(sym_path, exports, name):
+    """Parse sjasmplus ``--sym`` output (``label: EQU 0xADDR``) for ``exports``."""
+    wanted = set(exports)
+    found = {}
+    with open(sym_path, "r", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(
+                r"\s*([A-Za-z_][\w.]*):?\s+EQU\s+(0[xX][0-9A-Fa-f]+|\$[0-9A-Fa-f]+|\d+)",
+                line,
+            )
+            if m and m.group(1) in wanted:
+                val = m.group(2)
+                found[m.group(1)] = int(val.replace("$", "0x"), 0)
+    missing = [e for e in exports if e not in found]
+    if missing:
+        raise OSError(
+            f"ASM '{name}': exported label(s) not defined in the block: "
+            + ", ".join(missing)
+        )
+    return found
+
+
+def _attribute_extern_error(err, kind, name, src_path, cyd_line, framing_lines):
+    """Attribute an assembly failure to the routine. For inline blocks, remap
+    sjasmplus ``<tempfile>(<line>): ...`` numbers to the .cyd body line. The body
+    begins at temp-file line ``framing_lines + 1`` (framing depends on how many
+    header/ABI lines were injected)."""
+    text = str(err)
+    tag = "IMPORT" if kind == "file" else "ASM"
+    if kind == "inline" and cyd_line is not None:
+        pat = re.compile(
+            r"[^\s(]*" + re.escape(f"__extern_{name}.asm") + r"\((\d+)\):"
+        )
+
+        def _remap(m):
+            body_line = int(m.group(1)) - framing_lines
+            return f"ASM '{name}' (.cyd line {cyd_line + max(body_line - 1, 0)}):"
+
+        text = pat.sub(_remap, text)
+    return f"{tag} '{name}': failed to assemble\n{text}"
+
+
+# A line that DEFINES a symbol, which sjasmplus only recognises in column 0:
+# "label:", "label: instr", or "name EQU/=/DEFL value".
+_ASM_LABEL_RE = re.compile(
+    r"^[ \t]+[A-Za-z_.@][\w.@]*"          # leading indent + identifier
+    r"(:|[ \t]+(?:EQU|EQUAL|DEFL|=)\b)",  # then a colon, or an EQU-style keyword
+    re.IGNORECASE,
+)
+
+
+def _dedent_asm_labels(body):
+    """Move symbol-defining lines (labels / EQU) to column 0, leaving every other
+    line exactly as written.
+
+    sjasmplus reads the first token of a column-0 line as a label and the first
+    token of an indented line as an instruction, so labels MUST start in column 0
+    while instructions must stay indented. Authors, however, naturally indent the
+    whole ASM block to line up with the surrounding ``[[ ]]``. Rather than dedent
+    the block as a whole (which would also push instructions to column 0 and make
+    sjasmplus mistake them for labels), only the label lines are un-indented; the
+    line count is unchanged, so error remapping to the ``.cyd`` line stays exact."""
+    out = []
+    for line in body.splitlines(keepends=True):
+        out.append(line.lstrip(" \t") if _ASM_LABEL_RE.match(line) else line)
+    return "".join(out)
+
+
 def assemble_extern_routine(
-    sjasmplus_path, output_path, name, asm_file, org, verbose=False, base_dir=None
+    sjasmplus_path,
+    output_path,
+    name,
+    source,
+    org,
+    exports=None,
+    base_dir=None,
+    cyd_line=None,
+    abi_inc=None,
+    verbose=False,
 ):
-    """Assemble an IMPORTed native routine in isolation at a given ORG.
+    """Assemble a native routine in isolation at ``org``; return (data, addrs).
 
-    Frames the author's file (they write only the routine body) with an ORG,
-    a size measurement and a SAVEBIN, exactly like the WYZ player bank. Returns
-    the routine's raw bytes. Raises OSError with a clean, attributable message
-    if the author's file is missing or fails to assemble, without disturbing
-    the engine build.
+    ``source`` is ``("file", path)`` for an IMPORTed routine or ``("inline",
+    body)`` for an inline ``ASM ... ENDASM`` block. The author writes only the
+    routine body; this frames it with an ORG, a size measurement and a SAVEBIN,
+    exactly like the WYZ player bank.
 
-    A relative ``asm_file`` is resolved against ``base_dir`` (the directory of
-    the .cyd script) so that IMPORT paths are relative to the script, not to the
-    current working directory.
+    ``exports`` is the list of label names whose final addresses to resolve (via
+    sjasmplus ``--sym``); pass ``None``/empty for a single-entry block whose
+    entry is the block start. Returns ``(data_bytes, {label: address})``; for a
+    single-entry block the address dict is empty and the caller uses ``org``.
+
+    A relative file ``source`` is resolved against ``base_dir`` (the .cyd's
+    directory). Raises ``OSError`` attributed to the routine; for inline blocks
+    sjasmplus line numbers are remapped to the ``.cyd`` source line ``cyd_line``.
     """
-    if base_dir and not os.path.isabs(asm_file):
-        asm_file = os.path.join(base_dir, asm_file)
-    asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
-    if not os.path.isfile(asm_file_abs):
-        raise OSError(f"IMPORT '{name}': assembler file not found: {asm_file}")
+    kind, payload = source
     bin_path = os.path.join(output_path, f"__extern_{name}.bin").replace(os.sep, "/")
     src_path = os.path.join(output_path, f"__extern_{name}.asm").replace(os.sep, "/")
+    sym_path = os.path.join(output_path, f"__extern_{name}.sym").replace(os.sep, "/")
 
-    asm = "    DEVICE ZXSPECTRUM48\n"
-    asm += f"    ORG ${org:04X}\n"
-    asm += "__EXTERN_START:\n"
-    asm += f'    INCLUDE "{asm_file_abs}"\n'
+    if kind == "file":
+        asm_file = payload
+        if base_dir and not os.path.isabs(asm_file):
+            asm_file = os.path.join(base_dir, asm_file)
+        asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+        if not os.path.isfile(asm_file_abs):
+            raise OSError(f"IMPORT '{name}': assembler file not found: {payload}")
+        body = f'    INCLUDE "{asm_file_abs}"\n'
+    else:  # inline: embed the body (starts at framing_lines + 1)
+        body = _dedent_asm_labels(payload)
+        if not body.endswith("\n"):
+            body += "\n"
+
+    header = "    DEVICE ZXSPECTRUM48\n"
+    if abi_inc:
+        header += abi_inc  # injected cyd_abi.inc (FLAGS, buffers, video, ...)
+    header += f"    ORG ${org:04X}\n"
+    header += "__EXTERN_START:\n"
+    framing_lines = header.count("\n")  # inline body begins at framing_lines + 1
+
+    asm = header + body
     asm += "__EXTERN_END:\n"
     asm += "__EXTERN_LEN = __EXTERN_END - __EXTERN_START\n"
     asm += f'    SAVEBIN "{bin_path}", __EXTERN_START, __EXTERN_LEN\n'
@@ -695,16 +1042,26 @@ def assemble_extern_routine(
             filename=src_path,
             listing=verbose,
             capture_output=True,
+            sym=(sym_path if exports else None),
         )
     except OSError as e:
-        raise OSError(f"IMPORT '{name}': failed to assemble {asm_file}\n{e}")
+        raise OSError(
+            _attribute_extern_error(e, kind, name, src_path, cyd_line, framing_lines)
+        )
 
     data = []
     if os.path.exists(bin_path):
         with open(bin_path, "rb") as f:
             data = list(f.read())
         os.remove(bin_path)
-    return data
+
+    addrs = {}
+    if exports:
+        if not os.path.exists(sym_path):
+            raise OSError(f"ASM '{name}': could not read symbol file for EXPORTS")
+        addrs = _parse_sym_addresses(sym_path, exports, name)
+        os.remove(sym_path)
+    return data, addrs
 
 
 def do_asm_48(
@@ -725,6 +1082,7 @@ def do_asm_48(
     unused_opcodes=None,
     pause_start_value=None,
     name="",
+    extern_dispatch="",
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
@@ -744,14 +1102,19 @@ def do_asm_48(
         unused_opcodes=unused_opcodes,
         pause_start_value=pause_start_value,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     if loading_scr is not None:
         block_list += f"    DEFW LD_SCR_ADDR\n"
         block_list += f"    DEFW LD_SCR_SIZE\n"
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
         if i == 0:
@@ -824,6 +1187,7 @@ def do_asm_128(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
 
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -846,7 +1210,12 @@ def do_asm_128(
         pause_start_value=pause_start_value,
         use_wyz_tracker=use_wyz_tracker,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     if loading_scr is not None:
@@ -854,7 +1223,7 @@ def do_asm_128(
         block_list += f"    DEFW LD_SCR_SIZE\n"
         block_list += f"    DEFB $0\n"
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     block_list += f"    DEFB $0\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
@@ -929,6 +1298,7 @@ def do_asm_plus3(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
 
     dsk_path = os.path.join(output_path, dsk_name + ".BIN").replace(os.sep, "/")
@@ -965,11 +1335,16 @@ def do_asm_plus3(
         pause_start_value=pause_start_value,
         use_wyz_tracker=use_wyz_tracker,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     block_list += f"    DEFB $0\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
@@ -1045,6 +1420,7 @@ def do_asm_mld(
     mld_type="$83",
     mld_is_128=False,
     name="",
+    extern_dispatch="",
 ):
     # Each aggregated code/data block is placed in one dedicated Dandanator slot.
     # Slot layout: 0=loader/footer, 1=interpreter, 2..N=aggregated blocks.
@@ -1097,6 +1473,7 @@ def do_asm_mld(
         use_wyz_tracker=use_wyz_tracker,
         name=name,
         loading_scr=loading_scr,
+        extern_dispatch=extern_dispatch,
     )
 
     int_bin_path = os.path.join(output_path, "__INTERP.BIN").replace(os.sep, "/")
