@@ -121,6 +121,28 @@ INLINE_MULTI = (
 )
 
 
+# Injected ABI (cyd_abi.inc): the routine reaches the engine's resident image
+# buffer and the FLAGS array by name (SCREEN_BUFFER_PXL / FLAGS EQUs injected by
+# the compiler). Writing 170 into the buffer and reading it back proves the
+# injected addresses are correct and reachable (also from a paged bank on 128k,
+# since these live in the always-mapped low RAM).
+INLINE_ABI = (
+    "[[\n"
+    "ASM bufio\n"
+    "    ld hl, SCREEN_BUFFER_PXL   ; injected resident address\n"
+    "    ld (hl), 170               ; write into the image buffer\n"
+    "    ld a, (hl)                 ; read it back\n"
+    "    ld (FLAGS), a              ; injected FLAGS symbol -> FLAGS+0\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL bufio\n"
+    "SET 1 TO 200\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+
 @unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not found under tools/")
 class TestInlineAsm(unittest.TestCase):
     def _roundtrip(self, src, model, machine):
@@ -130,6 +152,21 @@ class TestInlineAsm(unittest.TestCase):
         self.assertEqual(f[0], 42, "inline routine did not write FLAGS+0 (DE=FLAGS)")
         self.assertEqual(f[1], 99, "inline routine did not write FLAGS+1")
         self.assertEqual(f[2], 123, "interpreter did not resume after CALL")
+
+    def _abi_roundtrip(self, model, machine):
+        with tempfile.TemporaryDirectory(prefix="cyd_abi_") as wd:
+            tap, flags = compile_cyd(INLINE_ABI, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=4, machine=machine, max_wait=35.0)
+        self.assertEqual(f[0], 170, "injected SCREEN_BUFFER_PXL/FLAGS not usable")
+        self.assertEqual(f[1], 200, "interpreter did not resume after CALL")
+
+    def test_inline_abi_symbols_48k(self):
+        """Injected cyd_abi.inc: image buffer + FLAGS reachable by name (48k)."""
+        self._abi_roundtrip("48k", "48k")
+
+    def test_inline_abi_symbols_128k(self):
+        """Injected ABI symbols reachable from a paged-bank routine (128k)."""
+        self._abi_roundtrip("128k", "128k")
 
     def test_inline_single_48k(self):
         """48k: a verbatim inline block placed resident and called directly."""

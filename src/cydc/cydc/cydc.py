@@ -1003,6 +1003,10 @@ def main():
         # IMPORT "file.asm" paths are relative to the .cyd script's directory.
         extern_base_dir = os.path.dirname(os.path.abspath(args.input))
 
+        # Resident ABI symbols (FLAGS, image buffer, video) a native routine may
+        # reference by name, from the engine's --sym dump written by the size pass.
+        extern_abi_inc = build_abi_inc(os.path.join(args.output_path, "cyd.sym"))
+
         def _assemble_block(r, org, with_syms):
             """Assemble block r at ORG; return (data, {export: addr}). Symbols are
             only resolved (via --sym) for EXPORTS blocks on the placement pass."""
@@ -1018,6 +1022,7 @@ def main():
                     exports=exports,
                     base_dir=extern_base_dir,
                     cyd_line=d.get("line"),
+                    abi_inc=extern_abi_inc,
                     verbose=(verbose >= 1),
                 )
             except OSError as e:
