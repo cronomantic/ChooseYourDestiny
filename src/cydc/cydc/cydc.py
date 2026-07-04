@@ -991,6 +991,9 @@ def main():
         # Deterministic placement order.
         routine_names = sorted(codegen.externs.keys())
 
+        # IMPORT "file.asm" paths are relative to the .cyd script's directory.
+        extern_base_dir = os.path.dirname(os.path.abspath(args.input))
+
         def _measure_routine(r, org):
             try:
                 return assemble_extern_routine(
@@ -1000,6 +1003,7 @@ def main():
                     codegen.externs[r],
                     org,
                     verbose=(verbose >= 1),
+                    base_dir=extern_base_dir,
                 )
             except OSError as e:
                 sys.exit(f"{_('ERROR: Error assembling native routine.')}\n{e}")

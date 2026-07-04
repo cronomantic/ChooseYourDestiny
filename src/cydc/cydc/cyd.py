@@ -657,7 +657,7 @@ def get_asm_mld_size(
 
 
 def assemble_extern_routine(
-    sjasmplus_path, output_path, name, asm_file, org, verbose=False
+    sjasmplus_path, output_path, name, asm_file, org, verbose=False, base_dir=None
 ):
     """Assemble an IMPORTed native routine in isolation at a given ORG.
 
@@ -666,7 +666,13 @@ def assemble_extern_routine(
     the routine's raw bytes. Raises OSError with a clean, attributable message
     if the author's file is missing or fails to assemble, without disturbing
     the engine build.
+
+    A relative ``asm_file`` is resolved against ``base_dir`` (the directory of
+    the .cyd script) so that IMPORT paths are relative to the script, not to the
+    current working directory.
     """
+    if base_dir and not os.path.isabs(asm_file):
+        asm_file = os.path.join(base_dir, asm_file)
     asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
     if not os.path.isfile(asm_file_abs):
         raise OSError(f"IMPORT '{name}': assembler file not found: {asm_file}")

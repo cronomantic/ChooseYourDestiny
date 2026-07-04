@@ -1,8 +1,9 @@
 [[
     BORDER 0 : PAPER 0 : INK 7 : BRIGHT 1 : FLASH 0 : CLEAR
 
-    /* Register the native routine. The path is relative to where you run the
-       compiler. IMPORT is a compile-time declaration, like DECLARE or CONST. */
+    /* Register the native routine. A relative path is resolved relative to
+       this .cyd file's folder. IMPORT is a compile-time declaration, like
+       DECLARE or CONST. */
     IMPORT peek FROM "peek.asm"
 
     DECLARE 0 as addr_lo
