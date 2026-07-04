@@ -489,6 +489,66 @@ DCE_DEAD_BLOCK = (
 )
 
 
+# Indentation handling: authors indent the whole ASM block to line up with the
+# surrounding [[ ]]. CYD moves label/EQU lines to column 0 (where sjasmplus needs
+# them) while leaving instructions indented, so natural and uniform indentation
+# both assemble.
+INDENT_NATURAL = (           # labels at the block's base column, instructions deeper
+    "[[\n"
+    "    ASM matriz EXPORTS pon_a, pon_b\n"
+    "    pon_a:\n"
+    "        ld a, 42\n"
+    "        jr guardar\n"
+    "    pon_b:\n"
+    "        inc de\n"
+    "        ld a, 99\n"
+    "    guardar:\n"
+    "        ld (de), a\n"
+    "        ret\n"
+    "    ENDASM\n"
+    "    CALL pon_a\n"
+    "    CALL pon_b\n"
+    "    SET 2 TO 123\n"
+    "    LABEL spin\n"
+    "    GOTO spin\n"
+    "]]\n"
+)
+
+INDENT_UNIFORM = (           # label and instructions at the SAME indentation
+    "[[\n"
+    "        ASM foo EXPORTS bar\n"
+    "        bar:\n"
+    "        ld a, 42\n"
+    "        ld (de), a\n"
+    "        ret\n"
+    "        ENDASM\n"
+    "        CALL bar\n"
+    "        SET 1 TO 123\n"
+    "        LABEL spin\n"
+    "        GOTO spin\n"
+    "]]\n"
+)
+
+
+@unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
+class TestInlineIndent(unittest.TestCase):
+    def _compiles(self, src, model="48k"):
+        with tempfile.TemporaryDirectory(prefix="cyd_ind_") as wd:
+            try:
+                compile_cyd(src, model, wd)
+                return True
+            except RuntimeError:
+                return False
+
+    def test_natural_indentation(self):
+        """Labels indented to the block's base column still assemble (moved to 0)."""
+        self.assertTrue(self._compiles(INDENT_NATURAL))
+
+    def test_uniform_indentation(self):
+        """A label at the same indent as the instructions still assembles."""
+        self.assertTrue(self._compiles(INDENT_UNIFORM))
+
+
 @unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
 class TestNativeDCE(unittest.TestCase):
     def _compiles(self, src, model="48k"):
