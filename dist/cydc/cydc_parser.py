@@ -2402,10 +2402,28 @@ class CydcParser(object):
         "empty :"
         pass
 
+    def _describe_token(self, p):
+        """Short, human-readable description of an offending token for syntax
+        errors, e.g. "'foo' (ID)" or "'PRINT'". Falls back gracefully when the
+        token has no usable value."""
+        ttype = getattr(p, "type", None)
+        if not ttype or ttype == "$end":
+            return self._("end of input")
+        value = getattr(p, "value", None)
+        text = "" if value is None else str(value)
+        text = text.replace("\r", "").replace("\n", "\\n").strip()
+        if not text:
+            return f"'{ttype}'"
+        if len(text) > 24:
+            text = text[:21] + "..."
+        return f"'{text}'" if text == ttype else f"'{text}' ({ttype})"
+
     def p_error(self, p):
         if isinstance(p, lex.LexToken) or isinstance(p, yacc.YaccSymbol):
             loc = self._format_error_location(p.lineno)
-            msg = self._("Syntax error at {}").format(loc)
+            msg = self._("Syntax error at {}: unexpected {}").format(
+                loc, self._describe_token(p)
+            )
         elif isinstance(p, yacc.YaccProduction):
             loc = self._format_error_location(p.lineno(0))
             msg = self._("Syntax error at {}").format(loc)
