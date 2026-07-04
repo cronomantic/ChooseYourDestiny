@@ -114,11 +114,46 @@ def _screen_third_section(full_scr: bytes) -> bytes:
     return bytes(scr)
 
 
-def build_dandanator_rom(games, names=None, autoboot=False):
+def _resolve_charset(charset) -> bytes:
+    """Return the 896-byte extended charset used by the menu.
+
+    ``charset`` may be:
+      * None  -> the vendored default (byte-identical to the reference tool),
+      * 768 bytes -> a standard ZX font; it replaces the visible glyphs and the
+        vendored menu symbols (codes >= 128, bytes 768..) are kept,
+      * 896 bytes -> a full extended charset, used verbatim.
+    """
+    default = _res("extcharset.bin")
+    if charset is None:
+        return default
+    charset = bytes(charset)
+    if len(charset) == len(default):
+        return charset
+    if len(charset) == 768:
+        return charset + default[768:]
+    raise ValueError(
+        f"charset must be 768 or {len(default)} bytes, got {len(charset)}")
+
+
+def build_dandanator_rom(games, names=None, autoboot=False,
+                         charset=None, background_scr=None,
+                         text_extrarom=None, text_togglepokes=None,
+                         text_launchgame=None, text_selectpokes=None,
+                         disable_border=False):
     """Build a full 512 KB Dandanator Mini ROM from a list of MLD games.
 
     Each game is a dict with keys: 'data' (raw .MLD bytes), 'num_slots',
     'mld_type', 'header_slot', and optionally 'display_name'.
+
+    Optional overrides (all default to the vendored resources, so that with no
+    override the output is byte-identical to the reference tool):
+      * charset          -- menu font (768 or 896 bytes; see _resolve_charset)
+      * background_scr   -- 6912-byte .scr used as the menu background
+      * text_*           -- the four menu strings (extra-ROM, toggle-pokes,
+                            launch-game, select-pokes)
+      * disable_border   -- disable the menu border effect
+      * autoboot         -- boot the first game without showing the menu
+
     Returns the 512 KB ROM as bytes.
     """
     names = names or []
@@ -130,11 +165,19 @@ def build_dandanator_rom(games, names=None, autoboot=False):
     if total_slots > GAME_SLOTS:
         raise ValueError(f"Games need {total_slots} slots; only {GAME_SLOTS} available.")
 
-    # ---- compressed slot-0 blocks (all config-default, game-independent) -----
-    b_screen = _zc(_screen_third_section(_res("menu.scr")))
+    # ---- resolve optional overrides (defaults = vendored, byte-identical) ----
+    ext_charset = _resolve_charset(charset)
+    bg_scr = _res("menu.scr") if background_scr is None else bytes(background_scr)
+    t_extrarom = _TEXT_EXTRAROM if text_extrarom is None else text_extrarom
+    t_toggle = _TEXT_TOGGLEPOKES if text_togglepokes is None else text_togglepokes
+    t_launch = _TEXT_LAUNCHGAME if text_launchgame is None else text_launchgame
+    t_select = _TEXT_SELECTPOKES if text_selectpokes is None else text_selectpokes
+
+    # ---- compressed slot-0 blocks (game-independent) ------------------------
+    b_screen = _zc(_screen_third_section(bg_scr))
     b_texts = _zc(
-        _ntstr(f"R. {_TEXT_EXTRAROM}") + _ntstr(f"P. {_TEXT_TOGGLEPOKES}")
-        + _ntstr(f"0. {_TEXT_LAUNCHGAME}") + _ntstr(_TEXT_SELECTPOKES)
+        _ntstr(f"R. {t_extrarom}") + _ntstr(f"P. {t_toggle}")
+        + _ntstr(f"0. {t_launch}") + _ntstr(t_select)
     )
     base_poke = POKE_TARGET_ADDRESS + MAX_GAMES * 3
     poke_data = bytearray()
@@ -144,7 +187,7 @@ def build_dandanator_rom(games, names=None, autoboot=False):
         poke_data += _w(base_poke)                       # base poke address (no pokes)
     poke_data += bytes((MAX_GAMES - len(games)) * 2)
     b_poke = _zc(bytes(poke_data))
-    b_charfw = _zc(_res("extcharset.bin") + b"DNTRMFW-Up" + _res("pic-fw.bin"))
+    b_charfw = _zc(ext_charset + b"DNTRMFW-Up" + _res("pic-fw.bin"))
     b_ee_scr = _zc(_res("eeprom-screen.scr"))
     b_ee_code = _zc(_res("eeprom-loader.bin"))
 
@@ -219,7 +262,7 @@ def build_dandanator_rom(games, names=None, autoboot=False):
     s0 += (_w(scr_o) + _w(len(b_screen)) + _w(txt_o) + _w(len(b_texts))
            + _w(pk_o) + _w(len(b_poke)) + _w(cf_o) + _w(len(b_charfw))
            + _w(ee_scr_loc) + _w(ee_code_loc))                  # CBlocks table @16360
-    s0 += bytes([0])                                            # border effect
+    s0 += bytes([1 if disable_border else 0])                  # border effect (1=disabled)
     s0 += bytes([1 if autoboot else 0])                        # autoboot
     s0 += bytes([0xFF])                                         # dansnap MLD type (none)
     s0 += bytes([2])                                            # pause mark (MLD)

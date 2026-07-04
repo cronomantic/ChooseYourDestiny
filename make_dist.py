@@ -219,6 +219,7 @@ def get_common_files():
         "documentation/es/TUTORIAL_es.pdf",
         "documentation/en/TUTORIAL_en.pdf",
         "make_adventure_gui.py",
+        "mld2rom_gui.py",
     ]
 
 
@@ -238,11 +239,13 @@ def get_platform_specific_files(target_platform):
             "dist/cyd_chr_conv.cmd",
             "dist/cydc.cmd",
             "make_adventure_gui.cmd",
+            "mld2rom_gui.cmd",
         ]
     elif target_platform in ["linux", "macos"]:
         return [
             "make_adv.sh",
             "make_adventure_gui.sh",
+            "mld2rom_gui.sh",
             "dist/csc",
         ]
     return []

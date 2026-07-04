@@ -72,9 +72,26 @@ Para regenerar los hashes o revalidar contra el oráculo: compilar un `.cyd` a
 sin JavaFX bundleado, añadir los módulos openjfx) y `cmp` contra la salida de
 `mld2rom.py`. (La jar es un oráculo temporal; no se distribuye.)
 
+## Utilidad standalone con GUI (`mld2rom_gui.py`)
+
+En vez de cablear el empaquetado en la GUI de compilación, la generación de ROM
+vive en una **utilidad independiente**: `mld2rom_gui.py` (tkinter, Python puro).
+Es un front-end sobre `dan_romgen`, al estilo de la herramienta oficial pero
+**solo para crear el fichero .rom/.bin** (sin puerto serie ni transferencia).
+Expone: lista de juegos MLD (añadir/quitar/reordenar) con nombre por juego,
+**fuente** (charset), **gráfico de menú** (fondo `.scr`), los **4 textos** de
+menú, **efecto de borde** y **autoboot**.
+
+Para soportarlo, `dan_romgen.build_dandanator_rom` acepta ahora *overrides
+opcionales* (`charset`, `background_scr`, `text_*`, `disable_border`, además de
+`autoboot`/`names`), **todos con default = los recursos vendorizados**: sin
+override la salida sigue siendo byte-idéntica (el test sha256 no cambia). La
+fuente admite 768 B (se conservan los símbolos del menú de la 896 vendorizada) o
+896 B completos. `mld2rom.py` sigue como CLI simple.
+
 ## Pendiente
 
-- Añadir el paso MLD→ROM a la GUI (`make_adventure_gui.py`) y a `make_adventure.py`.
-- Limpieza de `mld2rom.py`: código muerto (`find_start_slot`, `build_game_struct`,
-  constantes sin uso; `read_existing_uncompressed_slots` la usa un test).
-- `mld2rom.py`/`dan_romgen.py`/recursos ya añadidos a `make_dist.py` → rehacer `dist/`.
+- (hecho) Limpieza de `mld2rom.py`: quitado `find_start_slot`. `build_game_struct`
+  y `read_existing_uncompressed_slots` se mantienen: los usa `tests/test_mld2rom.py`.
+- Rehacer `dist/` con `make_dist.py` (mld2rom.py, dan_romgen.py, recursos,
+  `mld2rom_gui.py` y lanzadores ya añadidos).
