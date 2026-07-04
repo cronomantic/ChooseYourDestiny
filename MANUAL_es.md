@@ -594,9 +594,12 @@ El contrato (ABI) es deliberadamente pequeño:
 - **Las entradas y salidas viajan por variables.** El guion pone los argumentos en
   variables con `SET`, llama a la rutina y lee los resultados con `@var`. La rutina
   los lee y escribe en `FLAGS + n`. No hay otra convención de llamada que recordar.
-- Es una **rutina hoja**: debe terminar con **`RET`** y no debe llamar de vuelta al
+- Debe terminar con **`RET`** y no debe saltar por su cuenta a rutinas internas del
   motor. Puede usar libremente `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (el motor guarda y
-  restaura `IX`/`IY`, que usa internamente).
+  restaura `IX`/`IY`, que usa internamente). Para lo que sí necesitas —acceder a los
+  arrays entre bancos o llamar a otra rutina nativa— hay **servicios residentes**
+  documentados más abajo (`CYD_PEEK`/`CYD_POKE`, `CYD_ARR_MAP`/`CYD_ARR_FLUSH`,
+  `CYD_CALL`).
 - **Debe caber en un banco de 16 KB** y no debe dejar el hardware en un estado que
   rompa el motor al volver (si cambia la paginación por `$7FFD`, debe restaurarla).
 
@@ -628,6 +631,157 @@ con `peek.asm` (escribes solo esto):
 ```
 
 Hay un ejemplo completo y ejecutable en `examples/import_demo`.
+
+### Escribir la rutina en el propio guion (`ASM … ENDASM`)
+
+No siempre quieres un fichero aparte. Puedes escribir el cuerpo **directamente en
+el `.cyd`** entre `ASM nombre` y `ENDASM`, y llamarlo igual con `CALL`:
+
+```cyd
+[[
+    ASM poner42
+        ld a, 42
+        ld (de), a          ; DE = FLAGS -> FLAGS+0 = 42
+        ret
+    ENDASM
+    CALL poner42
+]]
+```
+
+- El cuerpo se escribe **tal cual** (verbatim): comentarios `;`, etiquetas, números
+  `0x…`… todo se pasa a sjasmplus sin que CYD lo interprete. Puedes **sangrar el
+  bloque** como quieras para alinearlo con el `[[ ]]`: CYD lleva las líneas de
+  etiqueta (y de `EQU`) a la columna 0 por ti; basta con que las instrucciones
+  queden más sangradas que las etiquetas.
+- Vale la **misma ABI** que con `IMPORT` (entra con `DE = FLAGS`, termina en `RET`)
+  y el mismo `CALL`. `ASM … ENDASM` no es más que un `IMPORT` con el cuerpo en
+  línea. Si sjasmplus da un error, CYD te lo remapea a la **línea de tu `.cyd`**.
+
+### Bloques con varias entradas (`EXPORTS`)
+
+Un bloque puede exponer **varias rutinas** que comparten ayudantes privados y se
+llaman entre sí con un `call` normal (están en el mismo banco). Se declaran con
+`EXPORTS`:
+
+```cyd
+[[
+    ASM matriz EXPORTS poner_a, poner_b
+    poner_a:
+        ld a, 42
+        jr guardar
+    poner_b:
+        inc de
+        ld a, 99
+    guardar:
+        ld (de), a          ; helper privado, compartido
+        ret
+    ENDASM
+    CALL poner_a            ; FLAGS+0 = 42
+    CALL poner_b            ; FLAGS+1 = 99
+]]
+```
+
+Cada nombre de `EXPORTS` es un destino de `CALL`. El bloque se ensambla y coloca
+como **una sola unidad** (la unidad natural de una "librería").
+
+### Acceder a los datos del motor
+
+Al ensamblar tu rutina, CYD le inyecta por nombre las direcciones de las
+estructuras residentes, para que no tengas que adivinarlas:
+
+| Símbolo | Qué es |
+|---|---|
+| `FLAGS` | base del array de 256 variables (lo mismo que `DE` a la entrada) |
+| `SCREEN_BUFFER_PXL` / `SCREEN_BUFFER_ATT` | buffer de imagen del motor (píxeles / atributos) |
+| `VIDEO_PXL` / `VIDEO_ATT` | pantalla física del Spectrum (`$4000` / `$5800`) |
+
+Por ejemplo, `ld hl, SCREEN_BUFFER_PXL` te da el buffer de imagen sin más.
+
+#### Arrays
+
+Los arrays de tu guion (`DIM`) también son accesibles. Por cada array `<nombre>`
+CYD inyecta:
+
+| Símbolo | Qué es |
+|---|---|
+| `ARR_<nombre>` | dirección del elemento 0 |
+| `ARR_<nombre>_LEN` | número de elementos |
+| `ARR_<nombre>_BANK` | banco físico donde vive, o `$FF` si es residente |
+
+En 128K/+3 un array puede vivir en un **banco paginado** que tu rutina no puede
+mapear sin auto-expulsarse. Por eso el acceso va por **servicios residentes** que
+hacen la paginación por ti (en 48K, o si el banco es `$FF`, son acceso directo). Todos
+preservan `BC`/`DE`/`HL`/`IX`/`IY` (salvo el resultado):
+
+- **`CYD_PEEK`** — lee un byte. Entra `A = banco`, `HL = dirección`; sale `A = byte`.
+- **`CYD_POKE`** — escribe un byte. Entra `A = banco`, `HL = dirección`, `E = byte`.
+- **`CYD_ARR_MAP`** — copia el array entero a un buffer residente y te devuelve un
+  puntero directo para trabajar sin paginar. Entra `A = banco`, `HL = ARR_<n>`,
+  `BC = ARR_<n>_LEN`; sale `HL = puntero de trabajo`.
+- **`CYD_ARR_FLUSH`** — vuelca ese buffer de vuelta al array. Mismos parámetros de
+  entrada. (Solo un array mapeado a la vez.)
+
+Ejemplo — incrementar el elemento 3 de `inv`:
+
+```cyd
+[[
+    DIM inv(4) = {10, 20, 30, 40}
+    ASM inc3
+        ld a, ARR_inv_BANK
+        ld hl, ARR_inv + 3
+        call CYD_PEEK       ; A = inv[3]
+        inc a
+        ld e, a
+        ld a, ARR_inv_BANK
+        ld hl, ARR_inv + 3
+        call CYD_POKE       ; inv[3] = inv[3] + 1
+        ret
+    ENDASM
+    CALL inc3
+]]
+```
+
+Si vas a tocar muchos elementos, `CYD_ARR_MAP` + `CYD_ARR_FLUSH` es más rápido:
+mapeas una vez, recorres el puntero a pelo, y vuelcas al final.
+
+### Llamar a otra rutina nativa (`USES` + `CYD_CALL`)
+
+Dos rutinas del **mismo bloque** (`EXPORTS`) se llaman con un `call` normal. Para
+llamar a una rutina de **otro bloque** (que en 128K/+3 puede estar en otro banco)
+usa el trampolín residente `CYD_CALL` y declara a quién llamas con `USES`:
+
+```cyd
+[[
+    ASM saludar EXPORTS saluda
+    saluda:
+        ld a, 55
+        ld (FLAGS+1), a
+        ret
+    ENDASM
+    ASM principal USES saluda
+        ld a, 11
+        ld (FLAGS), a
+        ld a, RT_saluda     ; índice inyectado por USES
+        call CYD_CALL       ; llama a 'saluda', esté en el banco que esté
+        ret
+    ENDASM
+    CALL principal          ; FLAGS = [11, 55]
+]]
+```
+
+- `USES a, b, …` declara los callees; por cada uno CYD inyecta un índice
+  `RT_<nombre>`.
+- `ld a, RT_<nombre> : call CYD_CALL` ejecuta ese callee. Entra con `DE = FLAGS`
+  (igual que un `CALL` del guion) y CYD hace la paginación por ti.
+
+### Rutinas no usadas
+
+Una rutina `IMPORT`/`ASM` que **nadie llama** no se ensambla ni ocupa memoria: CYD
+la descarta sola. Puedes tener así una "librería" de rutinas y pagar solo por las
+que uses de verdad. (Los servicios residentes de arriba también se eliminan del
+motor si ninguna rutina los usa.)
+
+Hay un ejemplo con `ASM`, `EXPORTS`, arrays y `CYD_CALL` en `examples/inline_asm`.
 
 ### Targets soportados
 
@@ -1900,6 +2054,20 @@ Muestra cómo llamar a una rutina Z80 desde un guion con `IMPORT` / `CALL`:
 - **Avanzado, bajo tu responsabilidad:** consulta la sección "Rutinas nativas (IMPORT / CALL)".
 
 Consulta el archivo `examples\import_demo\README.md` para más detalles.
+
+#### `examples\inline_asm` - Ensamblador inline (ASM / EXPORTS / USES / CYD_CALL)
+
+**Nivel:** Avanzado
+
+Escribe rutinas Z80 nativas **dentro del propio guion** con `ASM … ENDASM` y las
+combina en una pequeña "librería":
+
+- **`ASM` / `EXPORTS`:** un bloque con dos entradas que comparten código, sin fichero aparte.
+- **Broker de arrays:** las rutinas leen un array `DIM` del guion por nombre (`ARR_stats`) con `CYD_ARR_MAP`, funcionando también si el array está en un banco paginado.
+- **`USES` / `CYD_CALL`:** una rutina llama a otras de otro bloque (y otro banco) por el trampolín residente.
+- **Código muerto:** las rutinas que nadie alcanza se descartan solas.
+
+Consulta el archivo `examples\inline_asm\README.md` para más detalles.
 
 ### Ejemplos Avanzados de Gráficos
 

@@ -592,9 +592,12 @@ The contract (ABI) is deliberately small:
   variables with `SET`, calls the routine, and reads results back with `@var`. The
   routine reads and writes them at `FLAGS + n`. There is no other calling
   convention to remember.
-- It is a **leaf routine**: it must end with **`RET`** and must not call back into
-  the engine. It may freely use `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (the engine saves and
-  restores `IX`/`IY`, which it relies on internally).
+- It must end with **`RET`** and must not jump into the engine's internals on its
+  own. It may freely use `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (the engine saves and
+  restores `IX`/`IY`, which it relies on internally). For what you _do_ need —
+  reaching arrays across banks, or calling another native routine — there are
+  **resident services** documented below (`CYD_PEEK`/`CYD_POKE`,
+  `CYD_ARR_MAP`/`CYD_ARR_FLUSH`, `CYD_CALL`).
 - It **must fit in one 16 KB bank** and must not leave the hardware in a state that
   breaks the engine on return (if it changes paging via `$7FFD`, it must restore
   it).
@@ -627,6 +630,156 @@ with `peek.asm` (you write just this):
 ```
 
 There is a full, runnable example in `examples/import_demo`.
+
+### Writing the routine inline (`ASM … ENDASM`)
+
+You don't always want a separate file. You can write the body **directly in the
+`.cyd`** between `ASM name` and `ENDASM`, and call it with `CALL` as usual:
+
+```cyd
+[[
+    ASM put42
+        ld a, 42
+        ld (de), a          ; DE = FLAGS -> FLAGS+0 = 42
+        ret
+    ENDASM
+    CALL put42
+]]
+```
+
+- The body is taken **verbatim**: `;` comments, labels, `0x…` numbers… all go to
+  sjasmplus without CYD interpreting them. You may **indent the block** however you
+  like to line it up with the `[[ ]]`: CYD moves label (and `EQU`) lines to column 0
+  for you; just keep the instructions indented more than the labels.
+- The **same ABI** applies as with `IMPORT` (entered with `DE = FLAGS`, ends in
+  `RET`) and the same `CALL`. `ASM … ENDASM` is just an `IMPORT` with the body
+  inline. If sjasmplus reports an error, CYD remaps it to your **`.cyd` line**.
+
+### Blocks with several entry points (`EXPORTS`)
+
+A block can expose **several routines** that share private helpers and call each
+other with a plain `call` (they live in the same bank). Declare them with
+`EXPORTS`:
+
+```cyd
+[[
+    ASM matrix EXPORTS put_a, put_b
+    put_a:
+        ld a, 42
+        jr store
+    put_b:
+        inc de
+        ld a, 99
+    store:
+        ld (de), a          ; private, shared helper
+        ret
+    ENDASM
+    CALL put_a             ; FLAGS+0 = 42
+    CALL put_b             ; FLAGS+1 = 99
+]]
+```
+
+Each `EXPORTS` name is a `CALL` target. The block is assembled and placed as **one
+unit** (the natural unit of a "library").
+
+### Reaching the engine's data
+
+When it assembles your routine, CYD injects the addresses of the resident
+structures by name, so you don't have to guess them:
+
+| Symbol | What it is |
+|---|---|
+| `FLAGS` | base of the 256-variable array (same as `DE` on entry) |
+| `SCREEN_BUFFER_PXL` / `SCREEN_BUFFER_ATT` | the engine's image buffer (pixels / attributes) |
+| `VIDEO_PXL` / `VIDEO_ATT` | the physical Spectrum screen (`$4000` / `$5800`) |
+
+So, for instance, `ld hl, SCREEN_BUFFER_PXL` gives you the image buffer directly.
+
+#### Arrays
+
+Your script's arrays (`DIM`) are reachable too. For each array `<name>` CYD injects:
+
+| Symbol | What it is |
+|---|---|
+| `ARR_<name>` | address of element 0 |
+| `ARR_<name>_LEN` | element count |
+| `ARR_<name>_BANK` | physical bank it lives in, or `$FF` if resident |
+
+On 128K/+3 an array may live in a **paged bank** that your routine can't map
+without evicting itself. So access goes through **resident services** that do the
+paging for you (on 48K, or when the bank is `$FF`, they are direct access). All of
+them preserve `BC`/`DE`/`HL`/`IX`/`IY` (except the result):
+
+- **`CYD_PEEK`** — read a byte. In: `A = bank`, `HL = address`; out: `A = byte`.
+- **`CYD_POKE`** — write a byte. In: `A = bank`, `HL = address`, `E = byte`.
+- **`CYD_ARR_MAP`** — copy the whole array to a resident buffer and return a direct
+  pointer so you can work without paging. In: `A = bank`, `HL = ARR_<n>`,
+  `BC = ARR_<n>_LEN`; out: `HL = working pointer`.
+- **`CYD_ARR_FLUSH`** — write that buffer back to the array. Same input parameters.
+  (Only one array mapped at a time.)
+
+Example — increment element 3 of `inv`:
+
+```cyd
+[[
+    DIM inv(4) = {10, 20, 30, 40}
+    ASM inc3
+        ld a, ARR_inv_BANK
+        ld hl, ARR_inv + 3
+        call CYD_PEEK       ; A = inv[3]
+        inc a
+        ld e, a
+        ld a, ARR_inv_BANK
+        ld hl, ARR_inv + 3
+        call CYD_POKE       ; inv[3] = inv[3] + 1
+        ret
+    ENDASM
+    CALL inc3
+]]
+```
+
+If you are going to touch many elements, `CYD_ARR_MAP` + `CYD_ARR_FLUSH` is faster:
+map once, walk the pointer directly, and flush at the end.
+
+### Calling another native routine (`USES` + `CYD_CALL`)
+
+Two routines in the **same block** (`EXPORTS`) call each other with a plain `call`.
+To call a routine in **another block** (which on 128K/+3 may be in another bank),
+use the resident trampoline `CYD_CALL` and declare whom you call with `USES`:
+
+```cyd
+[[
+    ASM greeter EXPORTS greet
+    greet:
+        ld a, 55
+        ld (FLAGS+1), a
+        ret
+    ENDASM
+    ASM main USES greet
+        ld a, 11
+        ld (FLAGS), a
+        ld a, RT_greet      ; index injected by USES
+        call CYD_CALL       ; calls 'greet', whatever bank it is in
+        ret
+    ENDASM
+    CALL main               ; FLAGS = [11, 55]
+]]
+```
+
+- `USES a, b, …` declares the callees; for each one CYD injects an `RT_<name>`
+  index.
+- `ld a, RT_<name> : call CYD_CALL` runs that callee. It is entered with
+  `DE = FLAGS` (like a script `CALL`) and CYD does the paging for you.
+
+### Unused routines
+
+An `IMPORT`/`ASM` routine that **nobody calls** is not assembled and takes no
+memory: CYD drops it automatically. So you can keep a "library" of routines and
+pay only for the ones you actually use. (The resident services above are likewise
+removed from the engine if no routine uses them.)
+
+There is an example with `ASM`, `EXPORTS`, arrays and `CYD_CALL` in
+`examples/inline_asm`.
 
 ### Supported targets
 
@@ -1887,6 +2040,20 @@ Shows how to call a Z80 routine from a script with `IMPORT` / `CALL`:
 - **Advanced, at your own risk:** see the "Native routines (IMPORT / CALL)" section above.
 
 See the `examples\import_demo\README.md` file for more details.
+
+#### `examples\inline_asm` - Inline assembler (ASM / EXPORTS / USES / CYD_CALL)
+
+**Level:** Advanced
+
+Write native Z80 routines **inside the script itself** with `ASM … ENDASM` and
+combine them into a small "library":
+
+- **`ASM` / `EXPORTS`:** one block with two entry points that share code, no separate file.
+- **Array broker:** the routines read a script `DIM` array by name (`ARR_stats`) with `CYD_ARR_MAP`, working even when the array is in a paged bank.
+- **`USES` / `CYD_CALL`:** one routine calls others in another block (and another bank) through the resident trampoline.
+- **Dead code:** routines nothing reaches are dropped automatically.
+
+See the `examples\inline_asm\README.md` file for more details.
 
 ### Advanced Graphics Examples
 

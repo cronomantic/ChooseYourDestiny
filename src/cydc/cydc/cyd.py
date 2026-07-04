@@ -934,6 +934,32 @@ def _attribute_extern_error(err, kind, name, src_path, cyd_line, framing_lines):
     return f"{tag} '{name}': failed to assemble\n{text}"
 
 
+# A line that DEFINES a symbol, which sjasmplus only recognises in column 0:
+# "label:", "label: instr", or "name EQU/=/DEFL value".
+_ASM_LABEL_RE = re.compile(
+    r"^[ \t]+[A-Za-z_.@][\w.@]*"          # leading indent + identifier
+    r"(:|[ \t]+(?:EQU|EQUAL|DEFL|=)\b)",  # then a colon, or an EQU-style keyword
+    re.IGNORECASE,
+)
+
+
+def _dedent_asm_labels(body):
+    """Move symbol-defining lines (labels / EQU) to column 0, leaving every other
+    line exactly as written.
+
+    sjasmplus reads the first token of a column-0 line as a label and the first
+    token of an indented line as an instruction, so labels MUST start in column 0
+    while instructions must stay indented. Authors, however, naturally indent the
+    whole ASM block to line up with the surrounding ``[[ ]]``. Rather than dedent
+    the block as a whole (which would also push instructions to column 0 and make
+    sjasmplus mistake them for labels), only the label lines are un-indented; the
+    line count is unchanged, so error remapping to the ``.cyd`` line stays exact."""
+    out = []
+    for line in body.splitlines(keepends=True):
+        out.append(line.lstrip(" \t") if _ASM_LABEL_RE.match(line) else line)
+    return "".join(out)
+
+
 def assemble_extern_routine(
     sjasmplus_path,
     output_path,
@@ -975,8 +1001,10 @@ def assemble_extern_routine(
         if not os.path.isfile(asm_file_abs):
             raise OSError(f"IMPORT '{name}': assembler file not found: {payload}")
         body = f'    INCLUDE "{asm_file_abs}"\n'
-    else:  # inline: embed the verbatim body (starts at _EXTERN_FRAMING_LINES + 1)
-        body = payload if payload.endswith("\n") else payload + "\n"
+    else:  # inline: embed the body (starts at framing_lines + 1)
+        body = _dedent_asm_labels(payload)
+        if not body.endswith("\n"):
+            body += "\n"
 
     header = "    DEVICE ZXSPECTRUM48\n"
     if abi_inc:

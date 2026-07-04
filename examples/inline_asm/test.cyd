@@ -1,0 +1,83 @@
+[[
+    /* Ensamblador inline (ASM ... ENDASM): una "librería" nativa que opera sobre
+       un array del guion usando el broker residente, y una rutina que llama a las
+       otras entre bloques con CYD_CALL. Ver examples/inline_asm/README.md y la
+       sección "Rutinas nativas" del manual.
+
+       AVANZADO, bajo tu responsabilidad: es código Z80 nativo, sin red de
+       seguridad. Si no te manejas con ensamblador, no necesitas esto. */
+
+    BORDER 0 : PAPER 0 : INK 7 : BRIGHT 1 : FLASH 0 : CLEAR
+
+    DIM stats(4) = {12, 7, 15, 9}     /* unas estadísticas de ejemplo */
+
+    DECLARE 0 as total
+    DECLARE 1 as mayor
+    DECLARE 2 as resto
+
+    /* Bloque-librería con DOS entradas (EXPORTS) que comparten el patrón de
+       recorrer el array. Alcanzan 'stats' por nombre con el broker: en 128K/+3 el
+       array puede estar en un banco paginado, así que CYD_ARR_MAP lo copia a un
+       buffer residente y devuelve un puntero directo (en 48K es acceso directo). */
+    ASM arraylib EXPORTS suma_stats, mayor_stat
+    suma_stats:
+        ld a, ARR_stats_BANK
+        ld hl, ARR_stats
+        ld bc, ARR_stats_LEN
+        call CYD_ARR_MAP        ; HL -> copia de trabajo residente
+        ld b, ARR_stats_LEN
+        xor a                   ; A = acumulador
+    .loop:
+        add a, (hl)
+        inc hl
+        djnz .loop
+        ld (FLAGS), a           ; total = suma de todos los elementos
+        ret
+    mayor_stat:
+        ld a, ARR_stats_BANK
+        ld hl, ARR_stats
+        ld bc, ARR_stats_LEN
+        call CYD_ARR_MAP
+        ld b, ARR_stats_LEN
+        xor a                   ; A = máximo hasta ahora
+    .loop:
+        cp (hl)                 ; si A >= (hl), nos quedamos con A
+        jr nc, .skip
+        ld a, (hl)              ; si no, A = (hl)
+    .skip:
+        inc hl
+        djnz .loop
+        ld (FLAGS+1), a         ; mayor = máximo elemento
+        ret
+    ENDASM
+
+    /* Rutina que llama a las anteriores entre bloques con CYD_CALL. Declara sus
+       callees con USES (CYD inyecta un índice RT_<nombre> por cada uno). Como solo
+       CALLamos a 'resumen' desde el guion, 'arraylib' se conserva por el cierre de
+       USES: las rutinas nativas que nadie alcanza se descartan solas. */
+    ASM resumen USES suma_stats, mayor_stat
+        ld a, RT_suma_stats
+        call CYD_CALL           ; total = FLAGS+0
+        ld a, RT_mayor_stat
+        call CYD_CALL           ; mayor = FLAGS+1
+        ld a, (FLAGS)           ; A = total
+        ld hl, FLAGS+1
+        sub (hl)                ; A = total - mayor
+        ld (FLAGS+2), a         ; resto = suma de los demás
+        ret
+    ENDASM
+
+    CALL resumen
+]]Estadísticas nativas
+====================
+
+Las 4 estadísticas suman [[ PRINT @total ]], la mayor es [[ PRINT @mayor ]]
+y las otras tres suman [[ PRINT @resto ]].
+
+[[
+    NEWLINE : NEWLINE
+    ]]Pulsa una tecla para terminar.[[
+    WAITKEY
+    CLEAR
+    END
+]]
