@@ -279,34 +279,21 @@ class Mld2RomEndToEndTests(unittest.TestCase):
             sig = bytes(out[s * SLOT + SIG_OFF : s * SLOT + SIG_OFF + 3])
             self.assertEqual(sig, b"MLD", f"missing MLD signature at slot {s}")
 
-    def test_append_to_rom_with_existing_game(self):
-        """Regression A2: adding a second game to a ROM that already has one
-        must not overwrite the first."""
-        # First invocation: add one game to a clean ROM.
-        m1 = make_mld(num_slots=2)
-        p1 = self._write(m1, "g1.mld")
-        first_out = self._run(p1)
-        first_used = mld2rom.read_existing_uncompressed_slots(first_out)
-        self.assertEqual(len(first_used), 1)
-        first_slot, first_n = first_used[0]
-        first_sig = bytes(
-            first_out[first_slot * SLOT + SIG_OFF : first_slot * SLOT + SIG_OFF + 3]
-        )
+    def test_two_games_both_present(self):
+        """Two MLD games packed in a single ROM must both be present, each with
+        its MLD signature, in disjoint slot ranges. (The new mld2rom builds a
+        complete ROM from all the given MLDs at once, like the reference tool;
+        the old "append to an existing base ROM" mode no longer exists.)"""
+        p1 = self._write(make_mld(num_slots=2), "g1.mld")
+        p2 = self._write(make_mld(num_slots=3), "g2.mld")
+        out = self._run(p1, p2)
 
-        # Second invocation: use the previous output as base, add a second game.
-        m2 = make_mld(num_slots=3)
-        p2 = self._write(m2, "g2.mld")
-        second_out = self._run(p2, base=first_out)
-
-        # The first game's signature must still be intact.
-        still_there = bytes(
-            second_out[first_slot * SLOT + SIG_OFF : first_slot * SLOT + SIG_OFF + 3]
-        )
-        self.assertEqual(still_there, first_sig, "first MLD was overwritten")
-
-        used = mld2rom.read_existing_uncompressed_slots(second_out)
+        used = mld2rom.read_existing_uncompressed_slots(out)
         self.assertEqual(len(used), 2)
-        # Both ranges must be disjoint
+        for slot, _n in used:
+            sig = bytes(out[slot * SLOT + SIG_OFF : slot * SLOT + SIG_OFF + 3])
+            self.assertEqual(sig, b"MLD", f"MLD signature missing at slot {slot}")
+
         ranges = sorted([(s, s + n) for s, n in used])
         for (_, a_hi), (b_lo, _) in zip(ranges, ranges[1:]):
             self.assertLessEqual(a_hi, b_lo, f"slot ranges overlap: {ranges}")

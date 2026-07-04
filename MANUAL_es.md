@@ -267,12 +267,29 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 ni WyzTracker y se carga todo de una vez. Depende del tamaño de la memoria disponible.
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
-  -- **mld**: Esta versión genera un fichero MLD estricto de 48K para Dandanator (runtime sin bancos) y utiliza el sistema de guardado del cartucho (Experimental, no usable por el momento).
-  -- **mld128**: Esta versión genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se reservan para la reproducción musical, mientras que los datos de la aventura no se distribuyen entre bancos RAM (Experimental, no usable por el momento).
+  -- **mld**: Genera un fichero `.MLD` para cartucho **Dandanator Mini** en modo 48K. El texto, las imágenes y el bytecode se leen directamente desde los slots del cartucho (no usa bancos de RAM ni reproduce música), y aprovecha varios slots Dandanator (hasta ~256 KB de contenido). Usa el sistema de guardado del cartucho.
+  -- **mld128**: Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM quedan libres para la **música** (PT3/WyzTracker), que se reproduce desde RAM. Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: música + más de ~96 KB de contenido no cabe (la música obliga a usar los 6 bancos de RAM); en ese caso la compilación aborta con un error claro.
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
 - **OUTPUT_PATH**: Ruta donde se depositarán los ficheros de salida.
+
+> **Nota sobre Dandanator (mld/mld128).** El compilador genera un fichero `.MLD`,
+> que es el juego, pero **no es directamente cargable**: hay que empaquetarlo en una
+> **ROM de cartucho Dandanator Mini de 512 KB**. Para ello se usa la utilidad
+> `mld2rom.py` incluida (Python puro; el firmware y el menú van incorporados, no
+> hace falta ninguna ROM base externa):
+>
+> ```bash
+> python mld2rom.py -o mi_juego.rom -a mi_juego.MLD
+> ```
+>
+> El parámetro `-a` activa el autoarranque (lanza el juego sin pasar por el menú).
+> La ROM resultante se puede grabar en un Dandanator Mini real o cargar en un
+> emulador que lo soporte (p.ej. **EsPectrum**, o **ZEsarUX** con
+> `--enable-dandanator --dandanator-rom mi_juego.rom`). La ROM generada es byte a
+> byte idéntica a la de la herramienta oficial
+> [dandanator-mini](https://github.com/cronomantic/dandanator-mini).
 
 El compilador es un programa escrito en Python, por lo que se requiere tener el entorno de Python instalado. Para mayor comodidad, se incluye en la distribución un Python embebido y un guion batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 

@@ -202,6 +202,8 @@ def get_common_files():
     """Return list of files common to all platforms."""
     return [
         "make_adventure.py",
+        "mld2rom.py",
+        "dan_romgen.py",
         "LICENSE",
         "version.txt",
         "test.cyd",
@@ -222,7 +224,8 @@ def get_common_files():
 
 def get_common_dirs():
     """Return list of directories common to all platforms."""
-    return ["assets", "examples", "lib", "dist/cydc", "locale", "dist/locale"]
+    return ["assets", "examples", "lib", "dist/cydc", "locale", "dist/locale",
+            "external/dandanator-mini"]
 
 
 def get_platform_specific_files(target_platform):
