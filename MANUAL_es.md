@@ -573,8 +573,8 @@ Intervienen dos palabras clave:
 
 - **`IMPORT nombre FROM "fichero.asm"`** registra una rutina nativa bajo `nombre`.
   Es una declaración de compilación (como `DECLARE` o `CONST`, **no** como
-  `INCLUDE`, que incluye fuente CYD). La ruta se resuelve respecto a donde ejecutas
-  el compilador.
+  `INCLUDE`, que incluye fuente CYD). Una ruta relativa se resuelve respecto a la
+  carpeta de tu guion `.cyd`.
 - **`CALL nombre`** ejecuta la rutina. Piénsalo como el equivalente nativo de
   `GOSUB`: `GOSUB etiqueta` llama a una subrutina escrita en CYD, `CALL nombre`
   llama a una escrita en Z80.

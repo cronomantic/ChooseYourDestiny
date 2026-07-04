@@ -570,8 +570,8 @@ Two keywords are involved:
 
 - **`IMPORT name FROM "file.asm"`** registers a native routine under `name`. It is
   a compile-time declaration (like `DECLARE` or `CONST`, **not** like `INCLUDE`,
-  which includes CYD source). The path is resolved relative to where you run the
-  compiler.
+  which includes CYD source). A relative path is resolved relative to the folder
+  of your `.cyd` script.
 - **`CALL name`** runs the routine. Think of it as the native counterpart of
   `GOSUB`: `GOSUB label` calls a subroutine written in CYD, `CALL name` calls one
   written in Z80.
