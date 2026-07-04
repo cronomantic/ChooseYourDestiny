@@ -32,3 +32,6 @@ parsetab.py
 /*.DSK
 /*.dsk
 *.rom
+
+# Excepción: recurso Dandanator vendorizado (el *.rom global lo ignoraría)
+!external/dandanator-mini/extra.rom

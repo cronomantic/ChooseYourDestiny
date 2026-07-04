@@ -80,6 +80,9 @@ import struct
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dan_romgen  # noqa: E402  (pure-Python Dandanator ROM assembler)
+
 # ---------------------------------------------------------------------------
 # Dandanator Mini ROM layout constants (firmware version 9/10)
 # These must match the Java dandanator-mini constants exactly.
@@ -98,9 +101,6 @@ MAX_GAMES = 25              # Hard limit: 25 games per cartridge
 
 # Slot 31 = extra/test ROM (last 16 KB of the ROM image)
 EXTRA_ROM_SLOT = 31
-# Uncompressed games (MLD etc.) occupy slots just below slot 31, growing
-# backwards as more games are added.
-UNCOMPRESSED_TOP_SLOT = 30  # highest slot available for (uncompressed) game data
 
 # Within each 131-byte game struct, field byte offsets:
 _GS_SNA_HEADER   = 0        # 31 bytes (zeros for MLD)
@@ -467,28 +467,6 @@ def read_existing_uncompressed_slots(rom: bytearray) -> list[tuple[int, int]]:
     return used
 
 
-def find_start_slot(rom: bytearray, needed_slots: int) -> int:
-    """Return the lowest slot index where we can place a new *needed_slots*-slot
-    uncompressed game, growing backwards from UNCOMPRESSED_TOP_SLOT.
-
-    Raises ValueError if there is not enough room.
-    """
-    existing = read_existing_uncompressed_slots(rom)
-    # Find the lowest slot currently occupied by any uncompressed game.
-    if existing:
-        min_used_slot = min(s for s, _ in existing)
-        start_slot = min_used_slot - needed_slots
-    else:
-        start_slot = UNCOMPRESSED_TOP_SLOT - needed_slots + 1
-
-    if start_slot < 2:  # Slot 0 = firmware, slot 1 = reserved
-        raise ValueError(
-            f"Not enough free ROM space: need {needed_slots} slot(s) but "
-            f"only {start_slot + needed_slots - 2} free slot(s) remain."
-        )
-    return start_slot
-
-
 # ---------------------------------------------------------------------------
 # Game-struct builder
 # ---------------------------------------------------------------------------
@@ -562,36 +540,12 @@ def mld2rom(
     verbose: bool,
     validate: bool = True,
 ) -> None:
-    # --- Read base ROM -------------------------------------------------------
-    base_path = Path(base_rom_path)
-    if not base_path.exists():
-        sys.exit(f"ERROR: Base ROM not found: {base_rom_path}")
-
-    rom_data = bytearray(base_path.read_bytes())
-    if len(rom_data) == BASEROM_SIZE:
-        # The raw dandanator-mini.rom resource file (as shipped in the JAR and
-        # on GitHub) is only the firmware code (3 584 bytes).  Pad it to the
-        # full 512 KB with zeros to produce a valid empty-template ROM.
-        if verbose:
-            print(
-                f"Note: Base ROM is {BASEROM_SIZE} bytes (firmware only); "
-                f"padding to {ROM_SIZE} bytes ({ROM_SIZE // 1024} KB) "
-                f"with zeros to create an empty template."
-            )
-        rom_data = rom_data + bytearray(ROM_SIZE - BASEROM_SIZE)
-    elif len(rom_data) != ROM_SIZE:
-        sys.exit(
-            f"ERROR: Base ROM must be exactly {ROM_SIZE} bytes "
-            f"({ROM_SIZE // 1024} KB); got {len(rom_data)} bytes.\n"
-            f"Tip: The raw dandanator-mini.rom from the JAR/GitHub is only "
-            f"{BASEROM_SIZE} bytes and is also accepted (it will be "
-            f"zero-padded to {ROM_SIZE // 1024} KB automatically)."
-        )
-
-    if verbose:
-        current_game_count = rom_data[GAME_COUNT_OFFSET]
-        print(f"Base ROM loaded: {base_rom_path!r} "
-              f"({current_game_count} game(s) already present)")
+    # The complete firmware + menu is assembled from vendored resources by
+    # dan_romgen (external/dandanator-mini/), so no external base ROM is needed.
+    # base_rom_path is accepted for backwards compatibility but ignored.
+    if base_rom_path and verbose:
+        print(f"Note: --base-rom {base_rom_path!r} ignored; "
+              f"the ROM is assembled from vendored resources.")
 
     # --- Parse + optionally validate all MLD files ---------------------------
     mld_list: list[dict] = []
@@ -658,78 +612,41 @@ def mld2rom(
             mld_list[i]["display_name"] = name_override
 
     # --- Capacity check -------------------------------------------------------
-    current_game_count = rom_data[GAME_COUNT_OFFSET]
-    needed_game_slots = len(mld_list)
-    if current_game_count + needed_game_slots > MAX_GAMES:
+    total_slots = sum(m["num_slots"] for m in mld_list)
+    if len(mld_list) > MAX_GAMES:
+        sys.exit(f"ERROR: {len(mld_list)} game(s) exceed the maximum of {MAX_GAMES}.")
+    if total_slots > (ROM_SLOTS - 2):
         sys.exit(
-            f"ERROR: Base ROM already has {current_game_count} game(s); "
-            f"adding {needed_game_slots} would exceed the maximum of {MAX_GAMES}."
+            f"ERROR: games need {total_slots} slot(s), but only {ROM_SLOTS - 2} "
+            f"game slots are available in a {ROM_SLOTS}-slot Dandanator ROM."
         )
 
-    # --- Allocate ROM slots and embed MLD data --------------------------------
-    # Games are allocated backwards from slot UNCOMPRESSED_TOP_SLOT.
-    # We do it in list order (same as Java's "first game → highest slots").
-    working_rom = bytearray(rom_data)
-    allocated: list[tuple[int, int, int]] = []  # (start_slot, num_slots, mld_index)
+    # --- Build the complete, bootable Dandanator ROM (pure Python) -----------
+    rom = dan_romgen.build_dandanator_rom(
+        [
+            {
+                "data": bytes(m["data"]),
+                "num_slots": m["num_slots"],
+                "mld_type": m["mld_type"],
+                "header_slot": m["header_slot"],
+                "display_name": m["display_name"],
+            }
+            for m in mld_list
+        ],
+        names=[m["display_name"] for m in mld_list],
+        autoboot=autoboot,
+    )
 
-    for idx, mld in enumerate(mld_list):
-        num_slots = mld["num_slots"]
-        try:
-            start_slot = find_start_slot(working_rom, num_slots)
-        except ValueError as exc:
-            sys.exit(f"ERROR: {exc}")
-
-        # Patch MLDoffset byte in slot 0 of the MLD data
-        footer_offset = mld["header_slot"] * SLOT_SIZE + MLD_HEADER_OFFSET
-        mld["data"][footer_offset] = start_slot & 0xFF
-
-        # Write MLD slots into ROM
-        rom_byte_offset = start_slot * SLOT_SIZE
-        working_rom[rom_byte_offset : rom_byte_offset + num_slots * SLOT_SIZE] = \
-            mld["data"][: num_slots * SLOT_SIZE]
-
-        # Build and write game struct
-        game_index = current_game_count + idx
-        gs_offset = GAME_STRUCT_BASE + game_index * GAME_STRUCT_SIZE
-        gs = build_game_struct(
-            game_index,
-            mld["display_name"],
-            mld["mld_type"],
-            start_slot,
-            num_slots,
-        )
-        working_rom[gs_offset : gs_offset + GAME_STRUCT_SIZE] = gs
-
-        allocated.append((start_slot, num_slots, idx))
-
-        if verbose:
-            print(
-                f"  Adding {mld['display_name']!r} at ROM slots "
-                f"{start_slot}-{start_slot + num_slots - 1} "
-                f"(MLDoffset={start_slot:#04x}, {num_slots} slot(s))"
-            )
-
-        # Mark slots as used so find_start_slot sees them on next iteration
-        # by bumping the game count temporarily
-        working_rom[GAME_COUNT_OFFSET] = (current_game_count + idx + 1) & 0xFF
-
-    # Final game count
-    final_count = current_game_count + len(mld_list)
-    working_rom[GAME_COUNT_OFFSET] = final_count & 0xFF
     if verbose:
-        print(f"Game count updated to {final_count}")
-
-    # --- Autoboot ------------------------------------------------------------
-    if autoboot:
-        working_rom[AUTOBOOT_OFFSET] = 1
-        if verbose:
+        for m in mld_list:
+            print(f"  Packed {m['display_name']!r}: {m['num_slots']} slot(s), "
+                  f"type 0x{m['mld_type']:02X}")
+        if autoboot:
             print("Autoboot enabled")
 
-    # --- Write output ROM ----------------------------------------------------
-    out_path = Path(output_path)
-    out_path.write_bytes(bytes(working_rom))
+    Path(output_path).write_bytes(rom)
     if verbose:
-        print(f"ROM written to {output_path!r} ({ROM_SIZE} bytes)")
+        print(f"ROM written to {output_path!r} ({len(rom)} bytes)")
 
 
 # ---------------------------------------------------------------------------
@@ -744,18 +661,14 @@ def main() -> None:
             "image for testing in emulators."
         ),
         epilog=(
-            "The Dandanator Mini base ROM (--base-rom) is required.  "
-            "Obtain it from the dandanator-mini project: "
-            "https://github.com/cronomantic/dandanator-mini"
+            "The complete firmware + menu is assembled from resources vendored "
+            "with CYD (external/dandanator-mini/); no external base ROM is needed."
         ),
     )
     parser.add_argument(
         "-b", "--base-rom",
         metavar="FILE",
-        help=(
-            "512 KB Dandanator Mini ROM template (required unless "
-            "--validate-only is used)."
-        ),
+        help=argparse.SUPPRESS,   # deprecated: ignored (kept for backwards compat)
     )
     parser.add_argument(
         "mld_files",
@@ -841,13 +754,10 @@ def main() -> None:
                     any_issues = True
         sys.exit(1 if any_issues else 0)
 
-    if not args.base_rom:
-        parser.error("--base-rom is required unless --validate-only is used.")
-
     if args.output:
         output_path = args.output
     else:
-        base = Path(args.base_rom)
+        base = Path(args.base_rom) if args.base_rom else Path(args.mld_files[0])
         output_path = str(base.with_suffix("").with_suffix(".out.rom"))
 
     mld2rom(
