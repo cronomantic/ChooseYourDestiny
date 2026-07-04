@@ -249,6 +249,41 @@ def _arr_map_banked_src():
     return "[[\n" + _bank0_filler() + "DIM inv(4) = {11, 22, 33, 44}\n" + ARR_MAP_ROUTINE + "]]\n"
 
 
+# Cross-block native calls (CYD_CALL): a native routine calls another one that
+# lives in a DIFFERENT block (and, on banked targets, a different RAM bank) via
+# the resident trampoline. blockA declares `USES setb`, so the compiler injects
+# RT_setb; `ld a, RT_setb : call CYD_CALL` dispatches to setb through the resident
+# EXTERN_DISPATCH table. blockA writes 11, calls setb (writes 55), and the
+# interpreter resumes (123).
+def _cyd_call_src(filler=0):
+    """CYD_CALL program. ``filler`` bytes bloat blockA so that on a banked target
+    setb is pushed into a different physical RAM bank, exercising the cross-bank
+    trampoline (page callee in, call, page caller back)."""
+    pad = f"    DEFS {filler}, 0\n" if filler else ""
+    return (
+        "[[\n"
+        "ASM blockB EXPORTS setb\n"
+        "setb:\n"
+        "    ld a, 55\n"
+        "    ld (FLAGS+1), a\n"
+        "    ret\n"
+        "ENDASM\n"
+        "ASM blockA USES setb\n"
+        "    ld a, 11\n"
+        "    ld (FLAGS), a\n"
+        "    ld a, RT_setb\n"
+        "    call CYD_CALL\n"
+        "    ret\n"
+        + pad +
+        "ENDASM\n"
+        "CALL blockA\n"
+        "SET 2 TO 123\n"
+        "LABEL spin\n"
+        "GOTO spin\n"
+        "]]\n"
+    )
+
+
 @unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not found under tools/")
 class TestInlineAsm(unittest.TestCase):
     def _roundtrip(self, src, model, machine):
@@ -335,6 +370,27 @@ class TestInlineAsm(unittest.TestCase):
         """128k: CYD_ARR_MAP copies a paged array to the scratch; FLUSH writes back."""
         self._map_roundtrip(_arr_map_banked_src(), "128k", "128k", resident=False)
 
+    def _cyd_call_roundtrip(self, src, model, machine):
+        with tempfile.TemporaryDirectory(prefix="cyd_ccall_") as wd:
+            tap, flags = compile_cyd(src, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=4, machine=machine, max_wait=45.0)
+        self.assertEqual(f[0], 11, "caller block did not run before CYD_CALL")
+        self.assertEqual(f[1], 55, "CYD_CALL did not reach the callee in the other block")
+        self.assertEqual(f[2], 123, "interpreter did not resume after the CALL")
+
+    def test_inline_cyd_call_48k(self):
+        """48k: cross-block native call through the resident dispatch table."""
+        self._cyd_call_roundtrip(_cyd_call_src(), "48k", "48k")
+
+    def test_inline_cyd_call_128k(self):
+        """128k: CYD_CALL between two blocks (banked callee and caller)."""
+        self._cyd_call_roundtrip(_cyd_call_src(), "128k", "128k")
+
+    def test_inline_cyd_call_crossbank_128k(self):
+        """128k: caller and callee forced into different RAM banks; CYD_CALL pages
+        the callee in and the caller back."""
+        self._cyd_call_roundtrip(_cyd_call_src(filler=15000), "128k", "128k")
+
 
 # Broker extirpation (UNUSED_ARR_BROKER): the resident CYD_PEEK/POKE/ARR_MAP/
 # ARR_FLUSH services must be stripped from the build when no native routine
@@ -374,25 +430,39 @@ EXTERN_WITH_ARRAY = (
 
 @unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
 class TestBrokerExtirpation(unittest.TestCase):
-    def _broker_present(self, src, model="48k"):
+    def _sym_has(self, src, symbol, model="48k"):
         with tempfile.TemporaryDirectory(prefix="cyd_strip_") as wd:
             compile_cyd(src, model, wd)  # writes cyd.sym in wd
             sym = Path(wd) / "cyd.sym"
             text = sym.read_text(encoding="utf-8", errors="ignore") if sym.is_file() else ""
-        return "CYD_PEEK" in text
+        return symbol in text
 
     def test_broker_stripped_when_unused(self):
         """A native routine that never touches an array drops the whole broker."""
         self.assertFalse(
-            self._broker_present(EXTERN_NO_ARRAY),
+            self._sym_has(EXTERN_NO_ARRAY, "CYD_PEEK"),
             "broker should be extirpated when no routine references it",
         )
 
     def test_broker_kept_when_used(self):
         """A native routine that reaches an array keeps the broker resident."""
         self.assertTrue(
-            self._broker_present(EXTERN_WITH_ARRAY),
+            self._sym_has(EXTERN_WITH_ARRAY, "CYD_PEEK"),
             "broker must be present when a routine references it",
+        )
+
+    def test_cyd_call_stripped_when_unused(self):
+        """No CYD_CALL anywhere -> the trampoline is extirpated (UNUSED_CYD_CALL)."""
+        self.assertFalse(
+            self._sym_has(EXTERN_NO_ARRAY, "CYD_CALL"),
+            "CYD_CALL should be stripped when no routine references it",
+        )
+
+    def test_cyd_call_kept_when_used(self):
+        """A cross-block CYD_CALL keeps the trampoline resident."""
+        self.assertTrue(
+            self._sym_has(_cyd_call_src(), "CYD_CALL"),
+            "CYD_CALL must be present when a routine references it",
         )
 
 

@@ -41,6 +41,12 @@ def get_unused_opcodes_defines(unused_opcodes=None):
 # references any of them the whole broker is stripped (UNUSED_ARR_BROKER).
 BROKER_SERVICES = ("CYD_PEEK", "CYD_POKE", "CYD_ARR_MAP", "CYD_ARR_FLUSH")
 
+# Cross-block native call trampoline. Stripped (UNUSED_CYD_CALL) when unused.
+CYD_CALL_SERVICE = "CYD_CALL"
+
+# Everything the unused-machinery probe looks for.
+PROBE_SERVICES = BROKER_SERVICES + (CYD_CALL_SERVICE,)
+
 
 def build_probe_abi(array_names):
     """A service-less ``cyd_abi.inc`` for the unused-broker probe: every ABI
@@ -93,15 +99,16 @@ def probe_block_services(sjasmplus_path, output_path, name, source, base_dir, pr
         if os.path.isfile(src_path):
             os.remove(src_path)
     missing = set(re.findall(r"Label not found:\s*([A-Za-z_]\w*)", text))
-    return missing & set(BROKER_SERVICES)
+    return missing & set(PROBE_SERVICES)
 
 
-def extern_broker_unused(codegen, code, sjasmplus_path, output_path, base_dir):
-    """True if the array broker can be stripped: native routines exist but none
-    references a broker service. (With no externs the broker is already gone via
-    UNUSED_OP_EXTERN, so there is nothing extra to strip.)"""
+def extern_probe_used(codegen, code, sjasmplus_path, output_path, base_dir):
+    """Return the set of resident services (broker + CYD_CALL) that native
+    routines actually reference, via the undefined-symbol probe. Empty when there
+    are no externs (the whole machinery is already gone via UNUSED_OP_EXTERN).
+    Used to strip unreferenced machinery: UNUSED_ARR_BROKER, UNUSED_CYD_CALL."""
     if len(codegen.externs) == 0:
-        return False
+        return set()
     array_names = [
         t[1] for t in code if isinstance(t, tuple) and t and t[0] == "ARRAY"
     ]
@@ -111,7 +118,29 @@ def extern_broker_unused(codegen, code, sjasmplus_path, output_path, base_dir):
         used |= probe_block_services(
             sjasmplus_path, output_path, name, d["source"], base_dir, probe_abi
         )
-    return len(used) == 0
+    return used
+
+
+def build_uses_inc(uses, route_index):
+    """Inject ``RT_<name> EQU <index>`` for each routine the block declares in
+    USES, so it can reach them with ``ld a, RT_<name> : call CYD_CALL``."""
+    lines = [f"RT_{n} EQU {route_index[n]}" for n in (uses or []) if n in route_index]
+    if not lines:
+        return ""
+    return "; --- CYD_CALL routine indices (from USES) ---\n" + "\n".join(lines) + "\n"
+
+
+def build_dispatch_table(route_names, extern_addr):
+    """The resident EXTERN_DISPATCH table: one ``[bank, addr_lo, addr_hi]`` row
+    per callable, in RT_ index order (its position in ``route_names``). Rows are
+    filled after placement; ``CYD_CALL`` indexes this table by RT_ index."""
+    rows = []
+    for name in route_names:
+        bank_byte, addr = extern_addr[name]
+        rows.append(
+            f"    DEFB ${bank_byte:02X}, ${addr & 0xFF:02X}, ${(addr >> 8) & 0xFF:02X}"
+        )
+    return "\n".join(rows) + "\n" if rows else ""
 
 
 def get_game_id(name=None):
@@ -141,6 +170,7 @@ def get_asm_plus3(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -155,6 +185,7 @@ def get_asm_plus3(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         DSK_PATH=dsk_path,
@@ -231,6 +262,7 @@ def get_asm_128(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -246,6 +278,7 @@ def get_asm_128(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -319,6 +352,7 @@ def get_asm_mld(
     use_wyz_tracker=False,
     name="",
     loading_scr=None,
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -338,6 +372,7 @@ def get_asm_mld(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -400,6 +435,7 @@ def get_asm_mld128(
     use_wyz_tracker=False,
     name="",
     loading_scr=None,
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -419,6 +455,7 @@ def get_asm_mld128(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -501,6 +538,7 @@ def get_asm_48(
     unused_opcodes=None,
     pause_start_value=None,
     name="",
+    extern_dispatch="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -516,6 +554,7 @@ def get_asm_48(
         CHARS=bytes2str(chars, ""),
         CHARW=bytes2str(charw, ""),
         INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -761,6 +800,7 @@ def build_abi_inc(sym_path):
         "CYD_POKE",
         "CYD_ARR_MAP",
         "CYD_ARR_FLUSH",
+        "CYD_CALL",
     )
     found = {}
     if sym_path and os.path.exists(sym_path):
@@ -966,6 +1006,7 @@ def do_asm_48(
     unused_opcodes=None,
     pause_start_value=None,
     name="",
+    extern_dispatch="",
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
@@ -985,14 +1026,19 @@ def do_asm_48(
         unused_opcodes=unused_opcodes,
         pause_start_value=pause_start_value,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     if loading_scr is not None:
         block_list += f"    DEFW LD_SCR_ADDR\n"
         block_list += f"    DEFW LD_SCR_SIZE\n"
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
         if i == 0:
@@ -1065,6 +1111,7 @@ def do_asm_128(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
 
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -1087,7 +1134,12 @@ def do_asm_128(
         pause_start_value=pause_start_value,
         use_wyz_tracker=use_wyz_tracker,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     if loading_scr is not None:
@@ -1095,7 +1147,7 @@ def do_asm_128(
         block_list += f"    DEFW LD_SCR_SIZE\n"
         block_list += f"    DEFB $0\n"
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     block_list += f"    DEFB $0\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
@@ -1170,6 +1222,7 @@ def do_asm_plus3(
     pause_start_value=None,
     use_wyz_tracker=False,
     name="",
+    extern_dispatch="",
 ):
 
     dsk_path = os.path.join(output_path, dsk_name + ".BIN").replace(os.sep, "/")
@@ -1206,11 +1259,16 @@ def do_asm_plus3(
         pause_start_value=pause_start_value,
         use_wyz_tracker=use_wyz_tracker,
         name=name,
+        extern_dispatch=extern_dispatch,
     )
+
+    # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
+    # entry, right after the block index), so the loader must read those bytes too.
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
 
     block_list = ""
     block_list += f"    DEFW $8000\n"
-    block_list += f"    DEFW ${(size_interpreter + 5 * len(index)):X}\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
     block_list += f"    DEFB $0\n"
     for i, block in enumerate(blocks):
         bank = banks[i]
@@ -1286,6 +1344,7 @@ def do_asm_mld(
     mld_type="$83",
     mld_is_128=False,
     name="",
+    extern_dispatch="",
 ):
     # Each aggregated code/data block is placed in one dedicated Dandanator slot.
     # Slot layout: 0=loader/footer, 1=interpreter, 2..N=aggregated blocks.
@@ -1338,6 +1397,7 @@ def do_asm_mld(
         use_wyz_tracker=use_wyz_tracker,
         name=name,
         loading_scr=loading_scr,
+        extern_dispatch=extern_dispatch,
     )
 
     int_bin_path = os.path.join(output_path, "__INTERP.BIN").replace(os.sep, "/")

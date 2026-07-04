@@ -2935,6 +2935,55 @@ CYD_ARR_FLUSH:
     ret                     ; 48k: written in place, nothing to flush
     ENDIF
     ENDIF                   ; UNUSED_ARR_BROKER
+
+    IFNDEF UNUSED_CYD_CALL
+; CYD_CALL: call a native routine that lives in ANOTHER block (cross-bank), from
+; within a native routine. The callee's (bank,address) is unknown when the caller
+; is assembled, so the caller passes a routine index (RT_<name>, injected by the
+; compiler from the block's USES clause) and CYD_CALL looks it up in the resident
+; dispatch table (EXTERN_DISPATCH, filled by the compiler after placement), then
+; performs the banked call: page the callee in, enter it with DE=FLAGS, and page
+; the caller's bank back. Composes with nesting because each level saves and
+; restores the real $7FFD port on the hardware stack.
+;   In:  A = routine index (RT_<name>); args/results travel through FLAGS.
+;   Same clobber contract as a script CALL (AF/BC/DE/HL and IX/IY are free).
+CYD_CALL:
+    ld l, a
+    ld h, 0
+    ld d, h
+    ld e, l             ; DE = index
+    add hl, hl          ; HL = index*2
+    add hl, de          ; HL = index*3 (3-byte entries)
+    ld de, EXTERN_DISPATCH
+    add hl, de          ; HL -> [bank, addr_lo, addr_hi]
+    ld a, (hl)
+    inc hl
+    ld e, (hl)
+    inc hl
+    ld d, (hl)          ; A = bank, DE = callee address
+    IFDEF OP_EXTERN_BANKED
+    or ROM48KBASIC
+    call SET_RAM_BANK   ; page the callee's bank at $C000; A = previous port
+    push af             ; save the caller's bank
+    ld hl, .cont
+    push hl             ; return address for the callee's RET
+    push de             ; callee address (target of the RET below)
+    ld de, FLAGS
+    ret                 ; enter the callee with DE=FLAGS
+.cont:
+    pop af              ; caller's previous port
+    call SET_RAM_BANK   ; page the caller's bank back
+    ret
+    ELSE
+    ld hl, .cont        ; 48k: callee is resident, call it directly
+    push hl
+    push de
+    ld de, FLAGS
+    ret
+.cont:
+    ret
+    ENDIF
+    ENDIF                   ; UNUSED_CYD_CALL
     ENDIF                   ; UNUSED_OP_EXTERN
 ;------------------------
 ERROR_NOP:
