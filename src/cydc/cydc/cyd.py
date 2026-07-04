@@ -28,8 +28,90 @@ def get_unused_opcodes_defines(unused_opcodes=None):
     if unused_opcodes is None:
         return asm
     for c in unused_opcodes:
-        asm += f"    DEFINE UNUSED_OP_{c}\n"
+        # Entries that already name a full guard (e.g. "UNUSED_ARR_BROKER") are
+        # emitted verbatim; plain opcode names get the UNUSED_OP_ prefix.
+        if isinstance(c, str) and c.startswith("UNUSED_"):
+            asm += f"    DEFINE {c}\n"
+        else:
+            asm += f"    DEFINE UNUSED_OP_{c}\n"
     return asm
+
+
+# Resident memory-broker services (see interpreter.asm). If no native routine
+# references any of them the whole broker is stripped (UNUSED_ARR_BROKER).
+BROKER_SERVICES = ("CYD_PEEK", "CYD_POKE", "CYD_ARR_MAP", "CYD_ARR_FLUSH")
+
+
+def build_probe_abi(array_names):
+    """A service-less ``cyd_abi.inc`` for the unused-broker probe: every ABI
+    symbol a block may legitimately reference is defined as a dummy EXCEPT the
+    broker services, so a block that calls one leaves an undefined-symbol trace
+    ("Label not found: CYD_...") we can detect. Values are irrelevant (the probe
+    only assembles to see which broker labels stay unresolved)."""
+    lines = [
+        "FLAGS EQU 0",
+        "SCREEN_BUFFER_PXL EQU 0",
+        "SCREEN_BUFFER_ATT EQU 0",
+        "VIDEO_PXL EQU 0",
+        "VIDEO_ATT EQU 0",
+    ]
+    for n in array_names:
+        lines += [f"ARR_{n} EQU 0", f"ARR_{n}_LEN EQU 0", f"ARR_{n}_BANK EQU 0"]
+    return "\n".join(lines) + "\n"
+
+
+def probe_block_services(sjasmplus_path, output_path, name, source, base_dir, probe_abi):
+    """Assemble a native block against a service-less ABI and return the set of
+    broker services it references (via sjasmplus "Label not found" diagnostics).
+    Author errors surface as other undefined labels and are ignored here; the
+    real assembly pass reports them properly."""
+    kind, payload = source
+    src_path = os.path.join(output_path, f"__probe_{name}.asm").replace(os.sep, "/")
+    if kind == "file":
+        asm_file = payload
+        if base_dir and not os.path.isabs(asm_file):
+            asm_file = os.path.join(base_dir, asm_file)
+        asm_file_abs = os.path.abspath(asm_file).replace(os.sep, "/")
+        if not os.path.isfile(asm_file_abs):
+            return set()  # missing file: the real pass will report it
+        body = f'    INCLUDE "{asm_file_abs}"\n'
+    else:
+        body = payload if payload.endswith("\n") else payload + "\n"
+    asm = "    DEVICE ZXSPECTRUM48\n" + probe_abi + "    ORG $C000\n" + body + "    END\n"
+    try:
+        run_assembler(
+            asm_path=sjasmplus_path,
+            asm=asm,
+            filename=src_path,
+            listing=False,
+            capture_output=True,
+        )
+        text = ""  # assembled clean: references no undefined service
+    except OSError as e:
+        text = str(e)
+    finally:
+        if os.path.isfile(src_path):
+            os.remove(src_path)
+    missing = set(re.findall(r"Label not found:\s*([A-Za-z_]\w*)", text))
+    return missing & set(BROKER_SERVICES)
+
+
+def extern_broker_unused(codegen, code, sjasmplus_path, output_path, base_dir):
+    """True if the array broker can be stripped: native routines exist but none
+    references a broker service. (With no externs the broker is already gone via
+    UNUSED_OP_EXTERN, so there is nothing extra to strip.)"""
+    if len(codegen.externs) == 0:
+        return False
+    array_names = [
+        t[1] for t in code if isinstance(t, tuple) and t and t[0] == "ARRAY"
+    ]
+    probe_abi = build_probe_abi(array_names)
+    used = set()
+    for name, d in codegen.externs.items():
+        used |= probe_block_services(
+            sjasmplus_path, output_path, name, d["source"], base_dir, probe_abi
+        )
+    return len(used) == 0
 
 
 def get_game_id(name=None):

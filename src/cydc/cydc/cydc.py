@@ -706,6 +706,22 @@ def main():
     else:
         unused_opcodes = set()
 
+    # Strip the resident array broker (CYD_PEEK/POKE/ARR_MAP/ARR_FLUSH) when no
+    # native routine references it, so a program that never touches arrays from
+    # asm doesn't pay its resident cost. Detection is an undefined-symbol probe
+    # (assemble each block against a service-less ABI); it must be decided before
+    # the size pass so the interpreter is measured at its stripped size. Populate
+    # codegen.externs first (generate_code re-does this harmlessly later).
+    codegen.code_extract_declarations(code)
+    if extern_broker_unused(
+        codegen,
+        code,
+        args.sjasmplus_path,
+        args.output_path,
+        os.path.dirname(os.path.abspath(args.input)),
+    ):
+        unused_opcodes = set(unused_opcodes) | {"UNUSED_ARR_BROKER"}
+
     if font is None:
         font = CydcFont()
     l_chars = font.font_chars

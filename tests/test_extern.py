@@ -16,7 +16,12 @@ from pathlib import Path
 
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
-from emu_harness import emulator_available, compile_cyd, run_in_zesarux  # noqa: E402
+from emu_harness import (  # noqa: E402
+    emulator_available,
+    compile_cyd,
+    run_in_zesarux,
+    find_sjasmplus,
+)
 
 # Native routine body. The author writes only the body; CYD frames it with the
 # ORG/SAVEBIN. Entered with DE=FLAGS, ends with RET. Clobbers IX/IY and uses the
@@ -329,6 +334,66 @@ class TestInlineAsm(unittest.TestCase):
     def test_inline_array_map_banked_128k(self):
         """128k: CYD_ARR_MAP copies a paged array to the scratch; FLUSH writes back."""
         self._map_roundtrip(_arr_map_banked_src(), "128k", "128k", resident=False)
+
+
+# Broker extirpation (UNUSED_ARR_BROKER): the resident CYD_PEEK/POKE/ARR_MAP/
+# ARR_FLUSH services must be stripped from the build when no native routine
+# references them. This is a compile-time check (reads the engine symbol dump),
+# so it only needs sjasmplus, not the full emulator.
+EXTERN_NO_ARRAY = (
+    "[[\n"
+    "ASM nativo\n"
+    "    ld a, 42\n"
+    "    ld (de), a\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL nativo\n"
+    "SET 2 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+EXTERN_WITH_ARRAY = (
+    "[[\n"
+    "DIM inv(4) = {11, 22, 33, 44}\n"
+    "ASM nativo\n"
+    "    ld a, ARR_inv_BANK\n"
+    "    ld hl, ARR_inv\n"
+    "    call CYD_PEEK\n"
+    "    ld (FLAGS), a\n"
+    "    ret\n"
+    "ENDASM\n"
+    "CALL nativo\n"
+    "SET 2 TO 123\n"
+    "LABEL spin\n"
+    "GOTO spin\n"
+    "]]\n"
+)
+
+
+@unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
+class TestBrokerExtirpation(unittest.TestCase):
+    def _broker_present(self, src, model="48k"):
+        with tempfile.TemporaryDirectory(prefix="cyd_strip_") as wd:
+            compile_cyd(src, model, wd)  # writes cyd.sym in wd
+            sym = Path(wd) / "cyd.sym"
+            text = sym.read_text(encoding="utf-8", errors="ignore") if sym.is_file() else ""
+        return "CYD_PEEK" in text
+
+    def test_broker_stripped_when_unused(self):
+        """A native routine that never touches an array drops the whole broker."""
+        self.assertFalse(
+            self._broker_present(EXTERN_NO_ARRAY),
+            "broker should be extirpated when no routine references it",
+        )
+
+    def test_broker_kept_when_used(self):
+        """A native routine that reaches an array keeps the broker resident."""
+        self.assertTrue(
+            self._broker_present(EXTERN_WITH_ARRAY),
+            "broker must be present when a routine references it",
+        )
 
 
 if __name__ == "__main__":
