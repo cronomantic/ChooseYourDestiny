@@ -68,7 +68,10 @@ Ejemplo completo: [examples/math_library/](../examples/math_library/).
 Entrada por teclado, impresión y manejo de cadenas guardadas como arrays de
 caracteres en variables consecutivas (idiom de indirección `[@ptr]`), terminadas
 en `0`. Generaliza el ejemplo [examples/input_test/](../examples/input_test/)
-para operar sobre un buffer elegido por el autor.
+para operar sobre un buffer elegido por el autor. Las rutinas de datos
+(`strClear`/`strLen`/`strCopy`/`strCmp`) y `strPrint` están en **ensamblador Z80
+nativo** (bloque `ASM`; `strPrint` usa `SVC_PRINT_CHAR`); `strInput` es interactivo
+y se queda en CYD (no gana con el nativo). La interfaz `GOSUB` no cambia.
 
 Antes de llamar, fija los registros:
 
@@ -80,7 +83,7 @@ Antes de llamar, fija los registros:
 |--------|--------|
 | `strClear` | pone a 0 el buffer |
 | `strLen`   | cuenta caracteres hasta el 0 o el final → `stRes` |
-| `strPrint` | imprime el buffer (`CHAR`) hasta el 0 o el final |
+| `strPrint` | imprime el buffer hasta el 0 o el final |
 | `strInput` | lee una cadena del teclado (cursor, ENTER termina, DELETE borra) |
 | `strCopy`  | copia `stBase` → `stB2` (`stLen` bytes) |
 | `strCmp`   | compara `stBase` con `stB2` → `stRes = 0/1/2` (menor/igual/mayor) |

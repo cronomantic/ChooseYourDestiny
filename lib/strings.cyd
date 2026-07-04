@@ -3,10 +3,11 @@
    strings.cyd  -  Libreria de cadenas de texto para CYD
    --------------------------------------------------------------------------
    Entrada/salida y manejo de cadenas guardadas como arrays de caracteres en
-   las variables (idiom de indireccion), sin tocar la maquina virtual.
-   Generaliza el ejemplo examples/input_test para trabajar sobre un buffer
-   elegido por el autor. Verificada en emulador (incl. entrada de teclado
-   inyectada por el harness; ver doc/dev/EMULATOR_TESTING.md).
+   las variables (idiom de indireccion). Las rutinas de DATOS (clear, len,
+   copy, cmp) y la impresion estan escritas en ENSAMBLADOR Z80 nativo (bloque
+   ASM 'strcore'), mucho mas rapidas que recorrer el buffer desde CYD. La
+   entrada por teclado (strInput) es interactiva (no se beneficia del nativo) y
+   se queda en CYD. La interfaz GOSUB no cambia. Verificada en emulador.
 
    USO: incluye este fichero al PRINCIPIO de tu programa con la directiva de
    inclusion del preprocesador (ver el manual, seccion INCLUDE). Se auto-salta
@@ -21,12 +22,12 @@
    REGISTROS reservados: variables 216..223
      stBase 216   stLen 217   stPtr 218   stEnd 219
      stChr  220   stI   221   stB2  222   stRes 223
-   (No colisiona con la libreria math16_32, que reserva 224..254.)
+   (No colisiona con la libreria math16_32, que reserva 224..247 y 253.)
 
    API:
      strClear : pone a 0 el buffer (stBase, stLen)
      strLen   : cuenta caracteres hasta el 0 o el final  ->  stRes
-     strPrint : imprime el buffer (CHAR) hasta el 0 o el final
+     strPrint : imprime el buffer (hasta el 0 o el final)
      strInput : lee una cadena del teclado al buffer (cursor, ENTER, DELETE)
      strCopy  : copia el buffer stBase -> stB2 (stLen bytes)
      strCmp   : compara stBase con stB2  ->  stRes = 0/1/2 (menor/igual/mayor)
@@ -38,36 +39,14 @@ DECLARE 222 AS stB2   : DECLARE 223 AS stRes
 
 GOTO stSkip
 
-LABEL strClear
-SET stPtr TO @stBase
-LET stEnd = @stBase + @stLen
-WHILE (@stPtr < @stEnd)
- SET [stPtr] TO 0
- LET stPtr += 1
-WEND
-RETURN
+LABEL strClear : CALL nat_strClear : RETURN
+LABEL strLen   : CALL nat_strLen   : RETURN
+LABEL strPrint : CALL nat_strPrint : RETURN
+LABEL strCopy  : CALL nat_strCopy  : RETURN
+LABEL strCmp   : CALL nat_strCmp   : RETURN
 
-LABEL strLen
-SET stPtr TO @stBase
-LET stEnd = @stBase + @stLen
-SET stRes TO 0
-WHILE (@stPtr < @stEnd)
- IF [@stPtr] = 0 THEN RETURN ENDIF
- LET stRes += 1
- LET stPtr += 1
-WEND
-RETURN
-
-LABEL strPrint
-SET stPtr TO @stBase
-LET stEnd = @stBase + @stLen
-WHILE (@stPtr < @stEnd)
- IF [@stPtr] = 0 THEN RETURN ENDIF
- CHAR [@stPtr]
- LET stPtr += 1
-WEND
-RETURN
-
+/* strInput es interactivo (lee del teclado): se queda en CYD, no gana con el
+   nativo. Usa las rutinas nativas via GOSUB strClear. */
 LABEL strInput
 GOSUB strClear
 SET stPtr TO @stBase
@@ -94,32 +73,139 @@ WHILE ()
 WEND
 RETURN
 
-LABEL strCopy
-SET stPtr TO @stBase
-SET stI TO @stB2
-LET stEnd = @stBase + @stLen
-WHILE (@stPtr < @stEnd)
- SET stChr TO [@stPtr]
- SET [stI] TO @stChr
- LET stPtr += 1
- LET stI += 1
-WEND
-RETURN
+/* --- Nucleo nativo (Z80). El buffer vive en FLAGS+stBase; las rutinas leen
+       stBase/stLen/stB2 y escriben stRes. Entra con DE=FLAGS. --- */
+ASM strcore EXPORTS nat_strClear, nat_strLen, nat_strPrint, nat_strCopy, nat_strCmp
 
-LABEL strCmp
-SET stPtr TO @stBase
-SET stI TO @stB2
-LET stEnd = @stBase + @stLen
-SET stRes TO 1
-WHILE (@stPtr < @stEnd)
- SET stChr TO [@stPtr]
- IF @stChr > [@stI] THEN SET stRes TO 2 : RETURN ENDIF
- IF @stChr < [@stI] THEN SET stRes TO 0 : RETURN ENDIF
- IF @stChr = 0 THEN RETURN ENDIF
- LET stPtr += 1
- LET stI += 1
-WEND
-RETURN
+nat_strClear:
+    ld hl, FLAGS
+    ld a, (FLAGS+216)
+    ld e, a
+    ld d, 0
+    add hl, de              ; HL = buffer
+    ld a, (FLAGS+217)       ; stLen
+    or a
+    ret z
+    ld b, a
+.l:
+    ld (hl), 0
+    inc hl
+    djnz .l
+    ret
+
+nat_strLen:
+    ld hl, FLAGS
+    ld a, (FLAGS+216)
+    ld e, a
+    ld d, 0
+    add hl, de
+    ld c, 0                 ; count
+    ld a, (FLAGS+217)
+    or a
+    jr z, .done
+    ld b, a
+.l:
+    ld a, (hl)
+    or a
+    jr z, .done
+    inc c
+    inc hl
+    djnz .l
+.done:
+    ld a, c
+    ld (FLAGS+223), a       ; stRes
+    ret
+
+nat_strPrint:
+    ld hl, FLAGS
+    ld a, (FLAGS+216)
+    ld e, a
+    ld d, 0
+    add hl, de
+    ld a, (FLAGS+217)
+    or a
+    ret z
+    ld c, a                 ; remaining
+.l:
+    ld a, (hl)
+    or a
+    ret z                   ; terminator
+    ld e, a
+    push hl
+    push bc
+    ld a, SVC_PRINT_CHAR
+    call CYD_SYSCALL
+    pop bc
+    pop hl
+    inc hl
+    dec c
+    jr nz, .l
+    ret
+
+nat_strCopy:
+    ld hl, FLAGS
+    ld a, (FLAGS+216)
+    ld e, a
+    ld d, 0
+    add hl, de              ; HL = src
+    push hl
+    ld hl, FLAGS
+    ld a, (FLAGS+222)
+    ld e, a
+    ld d, 0
+    add hl, de              ; HL = dest
+    ex de, hl               ; DE = dest
+    pop hl                  ; HL = src
+    ld a, (FLAGS+217)
+    or a
+    ret z
+    ld c, a
+    ld b, 0
+    ldir                    ; copy stLen bytes src -> dest
+    ret
+
+nat_strCmp:
+    ld hl, FLAGS
+    ld a, (FLAGS+216)
+    ld e, a
+    ld d, 0
+    add hl, de              ; HL = buf1
+    push hl
+    ld hl, FLAGS
+    ld a, (FLAGS+222)
+    ld e, a
+    ld d, 0
+    add hl, de              ; HL = buf2
+    ex de, hl               ; DE = buf2
+    pop hl                  ; HL = buf1
+    ld a, (FLAGS+217)
+    or a
+    jr z, .equal
+    ld b, a
+.l:
+    ld a, (de)
+    ld c, a
+    ld a, (hl)
+    cp c
+    jr c, .less
+    jr nz, .greater
+    or a                    ; both equal: if 0, strings match
+    jr z, .equal
+    inc hl
+    inc de
+    djnz .l
+.equal:
+    ld a, 1
+    jr .store
+.less:
+    xor a
+    jr .store
+.greater:
+    ld a, 2
+.store:
+    ld (FLAGS+223), a
+    ret
+ENDASM
 
 LABEL stSkip
 ]]
