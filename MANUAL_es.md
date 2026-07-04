@@ -774,12 +774,43 @@ usa el trampolín residente `CYD_CALL` y declara a quién llamas con `USES`:
 - `ld a, RT_<nombre> : call CYD_CALL` ejecuta ese callee. Entra con `DE = FLAGS`
   (igual que un `CALL` del guion) y CYD hace la paginación por ti.
 
+### Llamar a servicios del motor (`CYD_SYSCALL`)
+
+Algunas cosas las hace el motor, no la máquina virtual: **imprimir un carácter** o
+**leer el teclado**. Tu rutina puede pedírselas por un único punto de entrada,
+`CYD_SYSCALL`, indicando en `A` el **número de servicio** (constantes `SVC_*` que CYD
+inyecta) y los argumentos en registros:
+
+```cyd
+[[
+    ASM saluda
+        ld e, 72            ; código de 'H'
+        ld a, SVC_PRINT_CHAR
+        call CYD_SYSCALL    ; imprime 'H' en el cursor
+        ret
+    ENDASM
+    CALL saluda
+]]
+```
+
+Servicios disponibles (empezamos con un conjunto pequeño; crecerá):
+
+| Servicio | Entrada / salida |
+|---|---|
+| `SVC_PRINT_CHAR` | `E` = carácter — lo imprime en el cursor (avanza, respeta tinta/papel/ventana) |
+| `SVC_WAIT_KEY` | espera una tecla → `A` = código |
+| `SVC_INKEY` | lee una tecla sin esperar → `A` = código (`0` si ninguna) |
+
+Los números de servicio son un **contrato estable**: aunque el intérprete cambie por
+dentro, tus rutinas siguen valiendo sin recompilar. Trata `CYD_SYSCALL` como cualquier
+`call` (puede alterar los registros); en particular, no toques `IY` antes de llamarlo.
+
 ### Rutinas no usadas
 
 Una rutina `IMPORT`/`ASM` que **nadie llama** no se ensambla ni ocupa memoria: CYD
 la descarta sola. Puedes tener así una "librería" de rutinas y pagar solo por las
-que uses de verdad. (Los servicios residentes de arriba también se eliminan del
-motor si ninguna rutina los usa.)
+que uses de verdad. (Los servicios residentes de arriba —broker de arrays,
+`CYD_CALL`, `CYD_SYSCALL`— también se eliminan del motor si ninguna rutina los usa.)
 
 Hay un ejemplo con `ASM`, `EXPORTS`, arrays y `CYD_CALL` en `examples/inline_asm`.
 

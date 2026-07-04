@@ -391,6 +391,42 @@ class TestInlineAsm(unittest.TestCase):
         the callee in and the caller back."""
         self._cyd_call_roundtrip(_cyd_call_src(filler=15000), "128k", "128k")
 
+    def _syscall_roundtrip(self, model, machine):
+        # A native routine prints two characters through CYD_SYSCALL (an engine
+        # service) and then leaves a marker; reaching the marker proves the
+        # service ran and returned cleanly (on 128k, from a banked routine).
+        src = (
+            "[[\n"
+            "    BORDER 0 : PAPER 0 : INK 7 : CLEAR\n"
+            "    ASM printer\n"
+            "        ld e, 53\n"                # '5'
+            "        ld a, SVC_PRINT_CHAR\n"
+            "        call CYD_SYSCALL\n"
+            "        ld e, 51\n"                # '3'
+            "        ld a, SVC_PRINT_CHAR\n"
+            "        call CYD_SYSCALL\n"
+            "        ld a, 200\n"
+            "        ld (FLAGS), a\n"
+            "        ret\n"
+            "    ENDASM\n"
+            "    CALL printer\n"
+            "    LABEL spin\n"
+            "    GOTO spin\n"
+            "]]\n"
+        )
+        with tempfile.TemporaryDirectory(prefix="cyd_svc_") as wd:
+            tap, flags = compile_cyd(src, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=1, machine=machine, max_wait=35.0)
+        self.assertEqual(f[0], 200, "interpreter did not resume after CYD_SYSCALL")
+
+    def test_inline_syscall_print_48k(self):
+        """48k: native routine prints via CYD_SYSCALL/SVC_PRINT_CHAR and returns."""
+        self._syscall_roundtrip("48k", "48k")
+
+    def test_inline_syscall_print_128k(self):
+        """128k: banked routine reaches the resident CYD_SYSCALL and returns."""
+        self._syscall_roundtrip("128k", "128k")
+
 
 # Broker extirpation (UNUSED_ARR_BROKER): the resident CYD_PEEK/POKE/ARR_MAP/
 # ARR_FLUSH services must be stripped from the build when no native routine
@@ -463,6 +499,34 @@ class TestBrokerExtirpation(unittest.TestCase):
         self.assertTrue(
             self._sym_has(_cyd_call_src(), "CYD_CALL"),
             "CYD_CALL must be present when a routine references it",
+        )
+
+    def test_syscall_stripped_when_unused(self):
+        """No CYD_SYSCALL anywhere -> the dispatcher is extirpated (UNUSED_SYSCALL)."""
+        self.assertFalse(
+            self._sym_has(EXTERN_NO_ARRAY, "CYD_SYSCALL:"),
+            "CYD_SYSCALL should be stripped when no routine references it",
+        )
+
+    def test_syscall_kept_when_used(self):
+        """A routine that calls an engine service keeps CYD_SYSCALL resident."""
+        src = (
+            "[[\n"
+            "ASM pr\n"
+            "    ld e, 65\n"
+            "    ld a, SVC_PRINT_CHAR\n"
+            "    call CYD_SYSCALL\n"
+            "    ret\n"
+            "ENDASM\n"
+            "CALL pr\n"
+            "SET 1 TO 1\n"
+            "LABEL spin\n"
+            "GOTO spin\n"
+            "]]\n"
+        )
+        self.assertTrue(
+            self._sym_has(src, "CYD_SYSCALL:"),
+            "CYD_SYSCALL must be present when a routine references it",
         )
 
 

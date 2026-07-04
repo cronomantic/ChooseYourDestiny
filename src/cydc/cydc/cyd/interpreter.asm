@@ -2984,6 +2984,52 @@ CYD_CALL:
     ret
     ENDIF
     ENDIF                   ; UNUSED_CYD_CALL
+
+    IFNDEF UNUSED_SYSCALL
+; CYD_SYSCALL: numbered gateway to curated engine services (print a character,
+; read a key, ...), callable from a native routine. The id indexes SVC_TABLE and
+; the selected service runs and returns to CYD_SYSCALL's caller. Only ONE address
+; is injected into cyd_abi.inc (CYD_SYSCALL); the ids (SVC_*) are a stable numeric
+; contract, so author routines survive an interpreter rewrite without recompiling
+; against internals that move.
+;   In:  A = service id (SVC_*); further args in registers, per service.
+CYD_SYSCALL:
+    add a, a                ; id * 2 (2-byte table entries)
+    push de                 ; preserve the caller's DE (may carry a service arg)
+    ld l, a
+    ld h, 0
+    ld de, SVC_TABLE
+    add hl, de
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a                 ; HL = service routine address
+    pop de
+    jp (hl)                 ; tail-call the service; its RET returns to the caller
+
+SVC_TABLE:
+    DW _SVC_PRINT_CHAR      ; SVC_PRINT_CHAR = 0
+    DW _SVC_WAIT_KEY        ; SVC_WAIT_KEY   = 1
+    DW _SVC_INKEY           ; SVC_INKEY      = 2
+
+; SVC_PRINT_CHAR: print one character at the cursor (advances it, honours the
+; current ink/paper/window). In: E = character code.
+_SVC_PRINT_CHAR:
+    ld a, e
+    jp PUT_VAR_CHAR
+
+; SVC_WAIT_KEY: wait for a debounced keypress. Out: A = key code.
+_SVC_WAIT_KEY:
+    ld d, HIGH FLAGS
+    xor a                   ; A = 0 -> wait mode
+    jp INKEY_SELECT_WAIT_MODE
+
+; SVC_INKEY: read a key without waiting. Out: A = key code (0 if none).
+_SVC_INKEY:
+    ld d, HIGH FLAGS
+    ld a, 1                 ; A <> 0 -> no-wait mode
+    jp INKEY_SELECT_WAIT_MODE
+    ENDIF                   ; UNUSED_SYSCALL
     ENDIF                   ; UNUSED_OP_EXTERN
 ;------------------------
 ERROR_NOP:

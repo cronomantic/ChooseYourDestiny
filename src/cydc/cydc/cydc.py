@@ -728,6 +728,8 @@ def main():
     cyd_call_used = CYD_CALL_SERVICE in used_services
     if not cyd_call_used:
         unused_opcodes |= {"UNUSED_CYD_CALL"}
+    if CYD_SYSCALL_SERVICE not in used_services:
+        unused_opcodes |= {"UNUSED_SYSCALL"}
     # route_names / route_index / dispatch_size are computed after the first
     # generate_code below, once native-block DCE has settled which blocks (and
     # therefore which callables) survive (they get a dispatch slot each).

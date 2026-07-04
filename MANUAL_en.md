@@ -771,12 +771,44 @@ use the resident trampoline `CYD_CALL` and declare whom you call with `USES`:
 - `ld a, RT_<name> : call CYD_CALL` runs that callee. It is entered with
   `DE = FLAGS` (like a script `CALL`) and CYD does the paging for you.
 
+### Calling engine services (`CYD_SYSCALL`)
+
+Some things are done by the engine, not the virtual machine: **printing a
+character** or **reading the keyboard**. Your routine can ask for them through a
+single entry point, `CYD_SYSCALL`, passing the **service number** in `A` (the
+`SVC_*` constants CYD injects) and the arguments in registers:
+
+```cyd
+[[
+    ASM greet
+        ld e, 72            ; code for 'H'
+        ld a, SVC_PRINT_CHAR
+        call CYD_SYSCALL    ; prints 'H' at the cursor
+        ret
+    ENDASM
+    CALL greet
+]]
+```
+
+Available services (a small set to start with; it will grow):
+
+| Service | In / out |
+|---|---|
+| `SVC_PRINT_CHAR` | `E` = character — prints it at the cursor (advances it, honours ink/paper/window) |
+| `SVC_WAIT_KEY` | waits for a key → `A` = code |
+| `SVC_INKEY` | reads a key without waiting → `A` = code (`0` if none) |
+
+The service numbers are a **stable contract**: even if the interpreter is rewritten
+internally, your routines keep working without recompiling. Treat `CYD_SYSCALL` like
+any `call` (it may clobber registers); in particular, do not touch `IY` before it.
+
 ### Unused routines
 
 An `IMPORT`/`ASM` routine that **nobody calls** is not assembled and takes no
 memory: CYD drops it automatically. So you can keep a "library" of routines and
-pay only for the ones you actually use. (The resident services above are likewise
-removed from the engine if no routine uses them.)
+pay only for the ones you actually use. (The resident services above — the array
+broker, `CYD_CALL`, `CYD_SYSCALL` — are likewise removed from the engine if no
+routine uses them.)
 
 There is an example with `ASM`, `EXPORTS`, arrays and `CYD_CALL` in
 `examples/inline_asm`.
