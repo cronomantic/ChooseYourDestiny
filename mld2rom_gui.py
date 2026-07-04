@@ -74,6 +74,14 @@ SLOT_SIZE = 0x4000
 GAME_SLOTS = dan_romgen.GAME_SLOTS
 SCR_SIZE = 6912
 
+# Default option values shown in the GUI. These paths are RELATIVE on purpose:
+# this is a portable, redistributable package, so no absolute path is ever baked
+# into a field. When a field is empty or still holds its default value, the build
+# passes None and lets dan_romgen resolve the vendored resource itself (honouring
+# CYD_DANDANATOR_RES and the packaged layout). Only a user-chosen file is read.
+DEF_CHARSET = os.path.join("external", "dandanator-mini", "extcharset.bin")
+DEF_BACKGROUND = os.path.join("external", "dandanator-mini", "menu.scr")
+
 
 def _human_type(mld_type: int) -> str:
     return {0x83: "48K", 0x88: "128K", 0xC8: "+2A"}.get(mld_type, f"0x{mld_type:02X}")
@@ -91,17 +99,11 @@ class RomBuilderApp:
         self.games: list[dict] = []
         self._building = False
 
-        # Option variables. Font and background default to the vendored
-        # resources (the same bytes the CLI/dan_romgen use by default), shown so
-        # the user sees the defaults and can Browse to replace them. Clearing a
-        # field also means "vendored default" at build time.
-        _res = dan_romgen.RES_DIR
-        _def_charset = _res / "extcharset.bin"
-        _def_bg = _res / "menu.scr"
-        self.var_charset = tk.StringVar(
-            value=str(_def_charset) if _def_charset.is_file() else "")
-        self.var_background = tk.StringVar(
-            value=str(_def_bg) if _def_bg.is_file() else "")
+        # Option variables. Font and background show their default as a RELATIVE
+        # path (portable); an unchanged/empty field means "vendored default" and
+        # is resolved by dan_romgen at build time (see _resolve_override).
+        self.var_charset = tk.StringVar(value=DEF_CHARSET)
+        self.var_background = tk.StringVar(value=DEF_BACKGROUND)
         self.var_output = tk.StringVar()
         self.var_autoboot = tk.BooleanVar(value=False)
         self.var_disable_border = tk.BooleanVar(value=False)
@@ -344,6 +346,16 @@ class RomBuilderApp:
                 label, " or ".join(str(x) for x in expected_lens), len(data)))
         return data
 
+    def _resolve_override(self, field, default_rel, expected_lens, label):
+        """Decide the resource override for a field. Returns None (let dan_romgen
+        use its own vendored default, resolved portably) when the field is empty
+        or still holds its default relative value; otherwise reads the file the
+        user chose. No absolute default path is ever read here."""
+        field = field.strip()
+        if not field or os.path.normpath(field) == os.path.normpath(default_rel):
+            return None
+        return self._read_optional(field, expected_lens, label)
+
     def _generate(self):
         if self._building:
             return
@@ -360,9 +372,10 @@ class RomBuilderApp:
                 total, GAME_SLOTS))
             return
         try:
-            charset = self._read_optional(self.var_charset.get(), (768, 896), _("Charset"))
-            background = self._read_optional(self.var_background.get(), (SCR_SIZE,),
-                                             _("Background"))
+            charset = self._resolve_override(self.var_charset.get(), DEF_CHARSET,
+                                             (768, 896), _("Charset"))
+            background = self._resolve_override(self.var_background.get(), DEF_BACKGROUND,
+                                                (SCR_SIZE,), _("Background"))
         except (OSError, ValueError) as exc:
             messagebox.showerror(TITLE, str(exc))
             return
