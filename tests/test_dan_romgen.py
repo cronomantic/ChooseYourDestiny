@@ -68,6 +68,36 @@ class TestDanRomgen(unittest.TestCase):
             [_game(FIXTURES / "test128.mld", "TEST")], autoboot=True)
         self.assertEqual(rom[16381], 1)
 
+    # ---- optional overrides (standalone GUI) --------------------------------
+    def test_disable_border_flag(self):
+        g = _game(FIXTURES / "test128.mld", "TEST")
+        self.assertEqual(dan_romgen.build_dandanator_rom([g])[16380], 0)
+        self.assertEqual(dan_romgen.build_dandanator_rom([g], disable_border=True)[16380], 1)
+
+    def test_text_override_is_deterministic_and_changes_output(self):
+        g = _game(FIXTURES / "test128.mld", "TEST")
+        base = self._sha(dan_romgen.build_dandanator_rom([g]))
+        a = self._sha(dan_romgen.build_dandanator_rom([g], text_launchgame="Play"))
+        b = self._sha(dan_romgen.build_dandanator_rom([g], text_launchgame="Play"))
+        self.assertNotEqual(a, base)
+        self.assertEqual(a, b, "text override must be deterministic")
+
+    def test_charset_override(self):
+        g = _game(FIXTURES / "test128.mld", "TEST")
+        base = self._sha(dan_romgen.build_dandanator_rom([g]))
+        rom = dan_romgen.build_dandanator_rom([g], charset=bytes(range(256)) * 3)  # 768 B
+        self.assertEqual(len(rom), 0x80000)
+        self.assertNotEqual(self._sha(rom), base)
+        with self.assertRaises(ValueError):
+            dan_romgen.build_dandanator_rom([g], charset=b"\x00" * 100)
+
+    def test_background_override_changes_output(self):
+        g = _game(FIXTURES / "test128.mld", "TEST")
+        base = self._sha(dan_romgen.build_dandanator_rom([g]))
+        rom = dan_romgen.build_dandanator_rom([g], background_scr=bytes(6912))
+        self.assertEqual(len(rom), 0x80000)
+        self.assertNotEqual(self._sha(rom), base)
+
 
 if __name__ == "__main__":
     unittest.main()

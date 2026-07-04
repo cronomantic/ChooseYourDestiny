@@ -290,6 +290,11 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > `--enable-dandanator --dandanator-rom my_game.rom`). The generated ROM is
 > byte-for-byte identical to the one produced by the official
 > [dandanator-mini](https://github.com/cronomantic/dandanator-mini) tool.
+>
+> As an alternative to the command line, the distribution ships a standalone
+> graphical utility, **`mld2rom_gui.py`** (launchers `mld2rom_gui.cmd` /
+> `mld2rom_gui.sh`), to build the ROM with more options: game name, menu font,
+> background graphic, menu texts, autoboot and border effect.
 
 The compiler is a program written in Python, so it requires the Python environment installed. For convenience, the distribution includes an embedded Python package and a batch script called `cydc.cmd` to launch it from the command line.
 
