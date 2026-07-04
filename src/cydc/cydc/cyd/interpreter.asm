@@ -2801,6 +2801,7 @@ OP_EXTERN:
     pop hl              ; restore interpreter PC
     jp EXEC_LOOP
 
+    IFNDEF UNUSED_ARR_BROKER
 ; ------------------------------------------------------------------------------
 ; Resident memory broker for native routines (inline ASM / IMPORT).
 ;
@@ -2933,7 +2934,8 @@ CYD_ARR_FLUSH:
     ELSE
     ret                     ; 48k: written in place, nothing to flush
     ENDIF
-    ENDIF
+    ENDIF                   ; UNUSED_ARR_BROKER
+    ENDIF                   ; UNUSED_OP_EXTERN
 ;------------------------
 ERROR_NOP:
     ld a, 6
