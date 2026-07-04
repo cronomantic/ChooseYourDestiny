@@ -12,8 +12,17 @@
 > "(a verificar)". Asume [ARCHITECTURE.md](ARCHITECTURE.md) y
 > [EXTERN_DESIGN.md](EXTERN_DESIGN.md).
 >
-> **Estado: DISEÑO. Nada implementado.** `IMPORT`/`CALL` (EXTERN) sí está hecho y
-> verificado (48k/128k/+3); este estudio construye encima.
+> **Estado: IMPLEMENTADO Y VERIFICADO (documento histórico de diseño).** Todo lo
+> que sigue está hecho y probado en emulador: ensamblador inline (`ASM…ENDASM`,
+> `EXPORTS`), broker de arrays, `CYD_CALL`, **`CYD_SYSCALL`** (servicios del motor),
+> extirpación de maquinaria no usada, DCE de bloques nativos y sangrado gestionado.
+> Las librerías `lib/math16_32.cyd` y `lib/strings.cyd` están migradas a nativo
+> usando esta ABI. **La referencia de implementación al día (para desarrollar el
+> motor) es [`doc/dev/EXPANSION_ABI.md`](doc/dev/EXPANSION_ABI.md)**; la doc de
+> autor está en el manual, sección "Rutinas nativas". Este estudio se conserva por
+> el razonamiento de diseño (algunos detalles finales difieren: p.ej. los
+> argumentos de servicio van en `E`/registros, no en `A`/`L`; la extirpación es
+> whole-syscall, no per-servicio).
 
 ---
 
