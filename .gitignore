@@ -21,6 +21,10 @@ parsetab.py
 /Es.pectrum_*.zip
 /tools/ZEsarUX*/
 
+# --- Herramientas nativas locales (ya no se usan: sustituidas por Python) ---
+/tools/zx0.exe
+/tools/mkp3fs.exe
+
 # --- Ficheros de prueba locales (raíz) ---
 /test.tap
 /test.eep
