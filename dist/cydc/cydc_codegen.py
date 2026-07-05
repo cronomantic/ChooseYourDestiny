@@ -1269,7 +1269,20 @@ class CydcCodegen(object):
             width = 32 - col
         return (col, width)
 
-    def generate_code(self, code, slice_text=False, show_debug=False):
+    # Sentinel "bank" byte for an array relocated to the resident RAM pool
+    # (MLD targets, where the array's own chunk lives in read-only Dandanator
+    # flash). The array-access opcodes recognise it under IS_MLD_DAN and address
+    # ARR_POOL + offset directly instead of paging the flash slot.
+    ARR_RESIDENT_BANK = 0xFE
+
+    def generate_code(
+        self,
+        code,
+        slice_text=False,
+        show_debug=False,
+        relocate_arrays_resident=False,
+        array_bank_map=None,
+    ):
 
         (code, self.variables, self.constants) = self.code_extract_declarations(code)
         if show_debug:
@@ -1292,6 +1305,41 @@ class CydcCodegen(object):
 
         self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
+
+        # MLD only: arrays live inline in their bytecode chunk, which on Dandanator
+        # is a read-only flash slot, so writes are lost. Relocate each array to
+        # writable RAM; the operand becomes [bank, addr] and the boot routine
+        # (ARR_INIT) copies the array's [len-1][data] record from flash to that RAM
+        # location. self.symbols is remapped BEFORE symbol_replacement bakes the
+        # operands. 48k/128k/+3 keep arrays in place (already in writable RAM).
+        #
+        # Two MLD variants:
+        #  - strict mld (48K, no banks): a single resident pool ARR_POOL. Operand
+        #    [ARR_RESIDENT_BANK, pool_offset]; ARR_INIT -> ARR_POOL+pool_offset.
+        #  - mld128 (banked): each array in a real 128K RAM bank at $C000+offset,
+        #    given by array_bank_map (allocated so it never collides with music).
+        #    Operand [real_bank, $C000+offset]; the array opcodes page that bank in
+        #    ($7FFD) per access. Entry: (name, src_chunk, src_off, bank, addr, nbytes).
+        self.arr_init_table = []
+        self.arr_pool_size = 0
+        if relocate_arrays_resident:
+            pool_off = 0
+            for name in sorted(self.array_lengths):
+                chunk, sym_off = self.symbols[name]  # points at the len-1 byte
+                nbytes = self.array_lengths[name] + 1  # len byte + data bytes
+                self.arr_init_table.append((name, chunk, sym_off, pool_off, nbytes))
+                self.symbols[name] = (self.ARR_RESIDENT_BANK, pool_off)
+                pool_off += nbytes
+            self.arr_pool_size = pool_off
+        elif array_bank_map is not None:
+            for name in sorted(self.array_lengths):
+                chunk, sym_off = self.symbols[name]  # points at the len-1 byte
+                nbytes = self.array_lengths[name] + 1  # len byte + data bytes
+                dest_bank, dest_addr = array_bank_map[name]
+                self.arr_init_table.append(
+                    (name, chunk, sym_off, dest_bank, dest_addr, nbytes)
+                )
+                self.symbols[name] = (dest_bank, dest_addr)
 
         self.extern_calls = []
         self.code = [

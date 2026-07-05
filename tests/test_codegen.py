@@ -238,5 +238,107 @@ class TestNativeRoutines(CodegenTestBase):
         self.assertTrue(len(self.parser.errors) > 0)
 
 
+class TestMld128ArrayRelocation(CodegenTestBase):
+    """mld128 relocates DIM arrays to real RAM banks (writable) via array_bank_map.
+
+    On MLD the array's inline data is read-only flash, so writes are lost. For
+    mld128 each array is moved to a 128K RAM bank at $C000+offset: the operand
+    becomes [bank, $C000+off] and the boot routine copies flash -> that bank.
+    """
+
+    def _relocate(self, src, array_bank_map):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        g = CydcCodegen(gettext)
+        # MLD addresses bytecode slot-relative (bank_offset_list=[0,0]).
+        g.set_bank_offset_list([0, 0])
+        g.set_bank_size_list([16 * 1024, 16 * 1024])
+        chunks = g.generate_code(code=code, array_bank_map=array_bank_map)
+        return g, chunks
+
+    def test_symbol_and_operand_are_banked(self):
+        g, chunks = self._relocate(
+            "[[DIM t(4)={10,20,30,40}\nLET t(1)=99]]", {"t": (7, 0xC000)}
+        )
+        # symbol remapped to (bank, $C000+off)
+        self.assertEqual(g.symbols["t"], (7, 0xC000))
+        # the POP_VAL_ARRAY operand (0x7B) bakes [bank, lo, hi] = [7, $00, $C0]
+        bc = chunks[0]
+        i = bc.index(0x7B)
+        self.assertEqual(bc[i + 1 : i + 4], [7, 0x00, 0xC0])
+
+    def test_arr_init_table_entry(self):
+        g, _c = self._relocate("[[DIM t(4)={10,20,30,40}]]", {"t": (3, 0xC100)})
+        self.assertEqual(len(g.arr_init_table), 1)
+        name, chunk, src_off, dest_bank, dest_addr, nbytes = g.arr_init_table[0]
+        self.assertEqual(name, "t")
+        self.assertEqual((dest_bank, dest_addr), (3, 0xC100))
+        self.assertEqual(nbytes, 5)  # [len-1] byte + 4 data bytes
+
+    def test_build_arrays_inc_uses_real_bank(self):
+        # The native-routine ABI (ARR_<n>/_BANK) must report the array's REAL
+        # relocated bank, not spectrum_banks[bank]. Element 0 is dest_addr+1.
+        from cyd import build_arrays_inc
+
+        g, _c = self._relocate("[[DIM t(4)={10,20,30,40}]]", {"t": (7, 0xC100)})
+        inc = build_arrays_inc(g, [0, 1, 3, 4])  # spectrum_banks WITHOUT bank 7
+        self.assertIn("ARR_t_BANK EQU $07", inc)
+        self.assertIn("ARR_t EQU $C101", inc)
+        self.assertIn("ARR_t_LEN EQU 4", inc)
+
+    def test_no_map_keeps_arrays_in_place(self):
+        # Without array_bank_map (and without resident relocation) arrays stay put.
+        code = self.parser.parse(input="[[DIM t(4)={10,20,30,40}\nLET t(1)=99]]")
+        g = CydcCodegen(gettext)
+        g.set_bank_offset_list([0, 0])
+        g.set_bank_size_list([16 * 1024, 16 * 1024])
+        g.generate_code(code=code)
+        self.assertEqual(g.arr_init_table, [])
+        # symbol keeps its logical (bank, offset), not a $Cxxx banked address
+        self.assertNotEqual(g.symbols["t"][1] & 0xC000, 0xC000)
+
+
+class TestMld128ArrayBankPlanner(unittest.TestCase):
+    """plan_mld128_array_banks: bin-pack arrays into dedicated RAM banks."""
+
+    @classmethod
+    def setUpClass(cls):
+        import gettext as _gt
+
+        _gt.install("cydc")  # make _() available for the planner's error paths
+        import cydc
+
+        cls.plan = staticmethod(cydc.plan_mld128_array_banks)
+        cls.RAM = [0, 1, 3, 4, 6, 7]
+
+    def test_single_array_top_bank(self):
+        m, banks = self.plan({"x": 4}, self.RAM)
+        self.assertEqual(m, {"x": (7, 0xC000)})
+        self.assertEqual(banks, [7])
+
+    def test_packs_multiple_in_one_bank(self):
+        m, banks = self.plan({"a": 250, "b": 250, "c": 100}, self.RAM)
+        self.assertEqual(banks, [7])  # 251+251+101 fits in one 16K bank
+        # packed at increasing offsets, largest first
+        self.assertEqual(m["a"][0], 7)
+        self.assertEqual({v[0] for v in m.values()}, {7})
+
+    def test_spills_to_second_bank(self):
+        al = {f"a{i}": 250 for i in range(70)}  # 70*251 = 17570 > 16384
+        m, banks = self.plan(al, self.RAM)
+        self.assertEqual(banks, [7, 6])
+        self.assertEqual(len(m), 70)
+
+    def test_never_uses_bank_zero(self):
+        al = {f"a{i}": 250 for i in range(70)}
+        _m, banks = self.plan(al, self.RAM)
+        self.assertNotIn(0, banks)
+
+    def test_overflow_errors(self):
+        al = {f"a{i}": 250 for i in range(400)}  # far more than the pool holds
+        with self.assertRaises(SystemExit):
+            self.plan(al, self.RAM)
+
+
 if __name__ == "__main__":
     unittest.main()

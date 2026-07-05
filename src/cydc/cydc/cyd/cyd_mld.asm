@@ -394,6 +394,8 @@ ISR_TABLE:
     DEFS 257, HIGH ISR
 
 START_LOADING:
+    call ARR_INIT             ; copy DIM arrays from flash slots to resident RAM
+                              ; (ARR_POOL) so writes persist; no-op if no arrays
     ld ix, INT_STACK_ADDR     ;Set internal Stack
 
     xor a
@@ -547,7 +549,10 @@ CHARSET_W:
     IFDEF SHOW_SIZE_INTERPRETER
 INDEX:
 EXTERN_DISPATCH:
+ARR_INIT_TABLE:
+    DEFB $FF
 SIZE_INTERPRETER = $ - START_INTERPRETER
+ARR_POOL:
     DISPLAY "SIZE_INTERPRETER=", /D, SIZE_INTERPRETER, " <"
     ENDIF
 
@@ -560,7 +565,14 @@ INDEX:
 @{INDEX}
 EXTERN_DISPATCH:
 @{EXTERN_DISPATCH}
+    ; Array relocation table (7-byte entries, $FF-terminated), read by ARR_INIT to
+    ; copy each DIM array from its flash slot to the resident pool. Emitted inside
+    ; the saved interpreter image; ARR_POOL is the RAM right after it (not saved).
+ARR_INIT_TABLE:
+@{ARR_INIT_TABLE}
+    DEFB $FF
 
 SIZE_INTERPRETER = $ - START_INTERPRETER
+ARR_POOL:
     SAVETAP "@TAP_PATH", HEADLESS,START_INTERPRETER, SIZE_INTERPRETER
     ENDIF

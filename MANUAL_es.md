@@ -268,7 +268,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
   -- **mld**: Genera un fichero `.MLD` para cartucho **Dandanator Mini** en modo 48K. El texto, las imágenes y el bytecode se leen directamente desde los slots del cartucho (no usa bancos de RAM ni reproduce música), y aprovecha varios slots Dandanator (hasta ~256 KB de contenido). Usa el sistema de guardado del cartucho.
-  -- **mld128**: Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM quedan libres para la **música** (PT3/WyzTracker), que se reproduce desde RAM. Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: música + más de ~96 KB de contenido no cabe (la música obliga a usar los 6 bancos de RAM); en ese caso la compilación aborta con un error claro.
+  -- **mld128**: Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM se reservan para lo que debe estar en RAM: la **música** (PT3/WyzTracker, que se reproduce desde RAM) y los **arrays `DIM`** (que deben ser escribibles; se reparten en bancos RAM dedicados que nunca colisionan con la música). Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: si la música, los arrays y el contenido fuerzan a usar todos los bancos de RAM, la compilación aborta con un error claro.
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
@@ -816,9 +816,10 @@ Hay un ejemplo con `ASM`, `EXPORTS`, arrays y `CYD_CALL` en `examples/inline_asm
 
 ### Targets soportados
 
-Las rutinas nativas funcionan en **48K, 128K y +3**. En 128K y +3 la rutina se
-coloca en un banco de RAM paginado y el motor lo pagina automáticamente alrededor
-del `CALL`. (Los targets MLD aún no están cubiertos.)
+Las rutinas nativas funcionan en **48K, 128K, +3 y mld128**. En 128K, +3 y mld128 la
+rutina se coloca en un banco de RAM paginado y el motor lo pagina automáticamente
+alrededor del `CALL`. (El target **mld** estricto de 48K —un solo banco— no las
+soporta y la compilación aborta con un error claro.)
 
 ---
 
@@ -1845,7 +1846,7 @@ REM --------------------------------------
   -- 128k: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
   -- mld: Genera un fichero MLD estricto de 48K (sin bancos) para Dandanator.
-  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se usan para música; los datos de la aventura no se reparten entre bancos RAM.
+  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM se usan para la música y para los arrays `DIM` (que deben ser escribibles); el resto de datos de la aventura (texto/imágenes/bytecode) se lee directamente de los slots del cartucho.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 - La variable `CYDC_EXTRA_PARAMS` se usa para añadir parámetros extra en la llamada al compilador [cydc](#cydc-compilador).
@@ -1962,7 +1963,7 @@ BACKUP_MAX_FILES=0
   -- 128k: Genera un fichero TAP para Spectrum 128K.
   -- plus3: Genera un fichero DSK para Spectrum +3, con mayor capacidad y carga dinámica de recursos.
   -- mld: Genera un fichero MLD estricto de 48K (sin bancos) para Dandanator.
-  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM adicionales se usan para música; los datos de la aventura no se reparten entre bancos RAM.
+  -- mld128: Genera un fichero MLD para Dandanator orientado a Spectrum 128K. Los bancos RAM se usan para la música y para los arrays `DIM` (que deben ser escribibles); el resto de datos de la aventura (texto/imágenes/bytecode) se lee directamente de los slots del cartucho.
 - La variable `IMGLINES` es el número de líneas horizontales de los ficheros de imagen que se comprimirán. Por defecto es 192 (la pantalla completa del Spectrum)
 - La variable `LOAD_SCR` es la ruta a un fichero de tipo SCR (pantalla de Spectrum) con la pantalla que se usará durante la carga.
 - `RUN_EMULATOR` admite `none`, `internal` (ZEsarUX) o `custom`.

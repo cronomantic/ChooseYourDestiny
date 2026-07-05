@@ -96,6 +96,50 @@ def emit_error(stage, message):
     print(f"ERROR [{stage}]: {message}")
 
 
+def plan_mld128_array_banks(array_lengths, ram_banks_full):
+    """Assign each mld128 DIM array to a dedicated RAM bank at $C000+offset.
+
+    On mld128 the array's inline bytecode lives in a read-only Dandanator flash
+    slot, so arrays are relocated to writable 128K RAM banks (paged at $C000 by
+    the array opcodes). To guarantee they never overlap the music (which the block
+    allocator packs into the remaining RAM banks), we reserve dedicated banks here,
+    peeled from the top of the pool (never bank 0, the special resident region),
+    and bin-pack the arrays into them (first-fit-decreasing, each array wholly in
+    one bank).
+
+    Returns ``(array_bank_map, arr_banks)`` where ``array_bank_map[name] =
+    (bank, $C000+offset)`` and ``arr_banks`` are the reserved banks (to remove
+    from the pool the allocator sees).
+    """
+    BANK = 0x4000  # 16 KB paged window $C000-$FFFF
+    items = sorted(array_lengths.items(), key=lambda kv: -(kv[1] + 1))
+    candidates = [b for b in ram_banks_full if b != 0][::-1]  # highest id first
+    bank_used = {}   # bank id -> bytes used so far
+    order = []       # reserved banks, in fill order
+    array_bank_map = {}
+    for name, length in items:
+        nbytes = length + 1  # [len-1] byte + data bytes
+        if nbytes > BANK:
+            sys.exit(_(f"ERROR: Array {name} too big for an MLD RAM bank."))
+        placed = False
+        for b in order:  # first-fit into an already-opened bank
+            if bank_used[b] + nbytes <= BANK:
+                array_bank_map[name] = (b, 0xC000 + bank_used[b])
+                bank_used[b] += nbytes
+                placed = True
+                break
+        if not placed:
+            if not candidates:
+                sys.exit(
+                    _("ERROR: Not enough RAM banks for writable arrays (mld128).")
+                )
+            b = candidates.pop(0)
+            order.append(b)
+            array_bank_map[name] = (b, 0xC000)
+            bank_used[b] = nbytes
+    return array_bank_map, order
+
+
 def main():
     """Main function"""
 
@@ -290,7 +334,7 @@ def main():
         "model",
         default="plus3",
         choices=["48k", "128k", "plus3", "mld", "mld128"],
-        help=_("Model of spectrum to target"),
+        help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
         type=str.lower,
     )
     arg_parser.add_argument(
@@ -331,6 +375,14 @@ def main():
     verbose = 3 if args.verbose > 3 else args.verbose
     model = args.model
     output_name = args.name
+
+    if model in ("mld", "mld128"):
+        print(
+            _(
+                "WARNING: the MLD/Dandanator target is EXPERIMENTAL. It boots and "
+                "runs in emulator but is not yet verified on real hardware."
+            )
+        )
 
     if model != "plus3" and args.disk_720:
         sys.exit(_("ERROR: Invalid parameter this model."))
@@ -844,6 +896,23 @@ def main():
     route_index = {n: i for i, n in enumerate(route_names)}
     dispatch_size = 3 * len(route_names) if cyd_call_used else 0
 
+    # mld128 writable arrays: plan the dedicated RAM banks now (array_lengths is
+    # populated by the first generate_code above). array_bank_map feeds the second
+    # generate_code; arr_banks are removed from the pool the allocator sees.
+    array_bank_map = None
+    arr_banks = []
+    mld128_arr_table_bytes = 0
+    if model == "mld128" and codegen.array_lengths:
+        ram_banks_full = [0, 3, 4, 6, 7] if use_wyz_tracker else [0, 1, 3, 4, 6, 7]
+        array_bank_map, arr_banks = plan_mld128_array_banks(
+            codegen.array_lengths, ram_banks_full
+        )
+        # The 8-byte ARR_INIT_TABLE entries live inside the saved interpreter image
+        # but are absent from the size probe (it emits a 1-byte stub), so grow
+        # bank0_offset by their real size or the block-0 RAM preload lands inside
+        # them and corrupts the table.
+        mld128_arr_table_bytes = 8 * len(codegen.array_lengths)
+
     # To calculate the offset
     if model == "plus3":
         num_blocks = len(chunks)
@@ -851,7 +920,9 @@ def main():
         num_blocks = len(blocks) + len(chunks)
     # The resident image also carries the CYD_CALL dispatch table (dispatch_size
     # bytes) right after the block index, so reserve room for it too.
-    bank0_offset = (5 * num_blocks) + dispatch_size + asm_size + 0x8000
+    bank0_offset = (
+        (5 * num_blocks) + dispatch_size + asm_size + mld128_arr_table_bytes + 0x8000
+    )
     bank0_size_available = (16 * 1024) + (0xC000 - bank0_offset)
 
     # generate block again
@@ -876,7 +947,16 @@ def main():
         codegen.set_bank_offset_list([bank0_offset, 0xC000])
         codegen.set_bank_size_list([bank0_size_available, 16 * 1024])
     chunks = codegen.generate_code(
-        code=code, slice_text=force_slice_texts, show_debug=args.show_bytecode
+        code=code,
+        slice_text=force_slice_texts,
+        show_debug=args.show_bytecode,
+        # DIM arrays live in read-only flash on MLD, so relocate them to writable
+        # RAM. strict mld: a resident pool (operand -> [0xFE, pool_off]). mld128:
+        # dedicated RAM banks via array_bank_map (operand -> [bank, $C000+off]), the
+        # array opcodes paging the bank in per access. 48k/128k/+3 keep arrays in
+        # place (already writable RAM).
+        relocate_arrays_resident=(model == "mld"),
+        array_bank_map=array_bank_map,
     )
 
     if model == "mld128":
@@ -890,6 +970,10 @@ def main():
             ram_banks = [0, 3, 4, 6, 7]
         else:
             ram_banks = [0, 1, 3, 4, 6, 7]
+        # Writable arrays reserve dedicated RAM banks (see plan_mld128_array_banks);
+        # remove them so the allocator never places music/bytecode there.
+        if arr_banks:
+            ram_banks = [b for b in ram_banks if b not in arr_banks]
         # loader (slot 0) + interpreter (slot 1) take two of the 32 Dandanator
         # banks; leave the rest as data slots.
         slot_only = list(range(8, 8 + (30 - len(ram_banks))))
@@ -1316,6 +1400,7 @@ def main():
                 mld_is_128=(model == "mld128"),
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
+                arr_init_table=codegen.arr_init_table,
             )
         else:
             if verbose > 0:

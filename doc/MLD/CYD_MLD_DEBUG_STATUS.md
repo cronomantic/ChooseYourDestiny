@@ -1,5 +1,14 @@
 # CYD MLD / Dandanator — debug status
 
+> **⚠️ HISTÓRICO / SUPERADO (5 jul 2026).** Log de depuración del 3 jul 2026, cuando
+> el MLD "nunca arrancaba". Desde entonces: **mld y mld128 arrancan y están
+> verificados**, están **expuestos en el CLI** (`{48k,128k,plus3,mld,mld128}`) y los
+> **arrays `DIM` son escribibles** en ambos. Algunas afirmaciones de abajo (p.ej.
+> "mld128 ejecuta residente / vía B", "aparcado y oculto del CLI") quedaron obsoletas
+> o refutadas. Estado real y arquitectura en `ARCHITECTURE.md §8.4/§10`,
+> `doc/dev/MLD_WRITABLE_ARRAYS.md` y `doc/dev/EXPANSION_ABI.md`. Se conserva por el
+> valor de las notas del harness.
+
 Estado del intento de desbloquear el target Dandanator/MLD de CYD (que
 históricamente "nunca arrancaba"). Escrito el 3 jul 2026. El MLD sigue
 **aparcado y oculto del CLI**; esto documenta lo aprendido para retomarlo.

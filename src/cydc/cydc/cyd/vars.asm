@@ -189,8 +189,16 @@ WINDOWS_END:
 END_VARS:
 ;--------------------------------------------------
 
+    IFDEF USE_PIC_BUFFER
+    ; PIC_BUFFER: full-screen (6.9 KB) staging buffer used ONLY by the +3 disk image
+    ; loader (screen_manager.asm). Reserved only on +3 (marker USE_PIC_BUFFER). Tape
+    ; (48k/128k) decompress images straight to SCREEN_BUFFER, and MLD reads images
+    ; from flash slots, so on those targets this RAM ($E000+) is NOT reserved and is
+    ; free (on MLD, for the array pool). The MLD save uses its own 4 KB
+    ; DAN_SAVE_BUFFER ($F000, in savegame_mld.asm).
     ORG $E000
 PIC_BUFFER:
     DEFW 0
 PIC_BUFFER_SCR:
     DEFS SCR_PXL_SIZE+SCR_ATT_SIZE
+    ENDIF
