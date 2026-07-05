@@ -47,31 +47,63 @@ assert flags[4] == 42
 una variable distinta, ejecútalo una vez y léelos todos juntos. No arranques el
 emulador por caso.
 
-### Verificar en 48k, 128k y +3 (varios targets)
+### Verificar los 5 targets
 
-`run_cyd` compila para el `model` que le pases **pero arranca ZEsarUX en 48k**. Para
-ejecutar de verdad en 128k o +3 hay que pasar el **nombre de máquina de ZEsarUX** a
-`run_in_zesarux` (que `run_cyd` no propaga). Verificado: DATA da el mismo resultado
-en los tres.
+`run_cyd(source, model=...)` **maneja los 5 targets** y elige solo la máquina de
+ZEsarUX y el método de arranque (`MACHINE_BY_MODEL`). Verificado: DATA da el mismo
+resultado en todos.
 
-| CYD `model` | salida       | máquina ZEsarUX (`machine=`) |
-|-------------|--------------|------------------------------|
-| `48k`       | `test.tap`   | `48k`                        |
-| `128k`      | `test.tap`   | `128k`                       |
-| `plus3`     | `test.DSK`   | `p3`                         |
-| `mld`/`mld128` | `test.MLD` | (Dandanator, sin harness automatizado — solo se comprueba que ensambla) |
+| CYD `model` | salida     | máquina ZEsarUX | arranque                 |
+|-------------|------------|-----------------|--------------------------|
+| `48k`       | `test.tap` | `48k`           | `smartload` (cinta)      |
+| `128k`      | `test.tap` | `128k`          | `smartload` (cinta)      |
+| `plus3`     | `test.DSK` | `p3`            | `smartload` (disco)      |
+| `mld`       | `test.rom` | `48k`           | Dandanator (ver abajo)   |
+| `mld128`    | `test.rom` | `128k`          | Dandanator (ver abajo)   |
 
 ```python
-from emu_harness import compile_cyd, run_in_zesarux
-import tempfile
-for model, mach in [("48k", "48k"), ("128k", "128k"), ("plus3", "p3")]:
-    with tempfile.TemporaryDirectory() as wd:
-        img, flags_addr = compile_cyd(SOURCE, model, wd)   # tap o DSK
-        flags = run_in_zesarux(img, flags_addr, n_bytes=16, machine=mach)
-        assert flags[0] == ...
+from emu_harness import run_cyd
+for model in ("48k", "128k", "plus3", "mld", "mld128"):
+    flags = run_cyd(SOURCE, model=model, n_bytes=16)
+    assert flags[0] == ...
 ```
 
-`smartload` carga tanto TAP como DSK, así que el +3 (disco) funciona con `machine="p3"`.
+(API de bajo nivel si necesitas control: `compile_cyd` / `build_mld_rom` para generar la
+imagen, y `run_in_zesarux(img, flags_addr, machine=..., dandanator_rom=...)` para
+ejecutarla. `smartload` carga TAP o DSK indistintamente.)
+
+### Verificar mld / mld128 (Dandanator) en ZEsarUX
+
+`run_cyd(source, model="mld")` (o `"mld128"`) ya hace todo esto por dentro. Lo que
+sigue es **qué hace y los flags que costó descubrir** (por si necesitas depurar o
+usar la ruta a mano). Es totalmente automatizable, sin hardware. El flujo es
+`.cyd → .MLD → .rom (512 KB) → ZEsarUX con Dandanator`:
+
+1. **Compilar** a `.MLD`: `cydc.py -v mld  t.cyd <sjasmplus> .`  (o `mld128`). Produce
+   `t.MLD` y `cyd.lst` (de donde sale la dirección de `FLAGS`, igual que en cinta).
+2. **Empaquetar** a ROM con el conversor **Python puro** del repo (el firmware+menú
+   Dandanator ya está vendorizado en `external/dandanator-mini/`, **no** hace falta base ROM):
+
+   ```bash
+   python mld2rom.py -o t.rom -a t.MLD      # -a = autoboot; t.rom debe medir 524288 B
+   ```
+3. **Arrancar en ZEsarUX** headless con emulación Dandanator y leer `FLAGS` por ZRCP. Los
+   flags correctos (la doc antigua los tenía mal) son:
+
+   ```text
+   --machine 48k            # mld strict 48K   (mld128 -> --machine 128k)
+   --enable-dandanator
+   --dandanator-rom t.rom
+   --dandanator-press-button   # IMPRESCINDIBLE: sin él ZEsarUX se queda en el menú/ROM
+   --vo null --ao null --enable-remoteprotocol --remoteprotocol-port 10000
+   ```
+
+**El gotcha que costó**: `--dandanator-press-button` es **obligatorio** para disparar el
+autoboot; sin él el PC se queda en la ROM (~`$11xx`/`$38`) y `FLAGS` sale todo ceros.
+Con él, el intérprete arranca (PC ≥ `$8000`) y se lee `FLAGS` como en cualquier target.
+Verificado: DATA da el mismo `[11,22,33,44,55,1,44,0]` en `mld` y `mld128` que en cinta.
+Receta manual completa (con capturas, save/load) en
+[tests/MANUAL_DANDANATOR_SMOKE.md](../../tests/MANUAL_DANDANATOR_SMOKE.md).
 
 ### Cómo escribir el programa `.cyd` de prueba (gotchas reales)
 
@@ -95,17 +127,20 @@ Módulo: [tests/emu_harness.py](../../tests/emu_harness.py).
 ## API
 
 - `emulator_available()` → `bool`. Úsalo en `@unittest.skipUnless`.
-- `run_cyd(source, model="48k", n_bytes=16, max_wait=25.0)` → `bytes` de
-  `FLAGS[0:n_bytes]`.
-- `compile_cyd(source, model, workdir)` → `(tap_path, flags_addr)`.
-- `run_in_zesarux(tap_path, flags_addr, n_bytes, ...)` → `bytes`.
+- `run_cyd(source, model="48k", n_bytes=16, max_wait=None)` → `bytes` de
+  `FLAGS[0:n_bytes]`. **Maneja los 5 targets** (elige máquina y arranque).
+- `MACHINE_BY_MODEL` → dict `model → máquina ZEsarUX`.
+- `compile_cyd(source, model, workdir)` → `(tap_o_dsk_path, flags_addr)` (tape/disk).
+- `build_mld_rom(source, model, workdir)` → `(rom_path, flags_addr)` (mld/mld128).
+- `run_in_zesarux(img, flags_addr, n_bytes, machine=..., dandanator_rom=...)` → `bytes`.
 - `find_sjasmplus()` / `find_zesarux()` → ruta o `None`.
 
 ## Limitaciones / notas
 
-- `run_cyd` arranca en 48k; **48k, 128k y +3 se verifican** pasando `machine=`
-  (`48k`/`128k`/`p3`) a `run_in_zesarux` (ver arriba). `mld`/`mld128` (Dandanator)
-  ensamblan pero **no** tienen harness de ejecución automatizado todavía.
+- `run_cyd` arranca en 48k; **los 5 targets se verifican en runtime**: 48k/128k/+3
+  pasando `machine=` a `run_in_zesarux`, y mld/mld128 vía `mld2rom.py` +
+  `--enable-dandanator`/`--dandanator-press-button` (ver arriba). Ninguno necesita
+  hardware.
 - Es lento (~10 s por sesión de emulador) → **no** metas muchas sesiones en la
   suite rápida; agrupa casos y/o resérvalo para verificación puntual.
 - Lee `FLAGS` como canal de salida. Para observar otra cosa (pantalla, puertos),

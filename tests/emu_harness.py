@@ -32,7 +32,18 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 CYDC = REPO / "src" / "cydc" / "cydc" / "cydc.py"
+MLD2ROM = REPO / "mld2rom.py"
 _PROMPT = b"command> "
+
+# ZEsarUX machine id per CYD target (run_cyd starts 48k; pass this to run_in_zesarux
+# to actually exercise the banked / disk / Dandanator paths).
+MACHINE_BY_MODEL = {
+    "48k": "48k",
+    "128k": "128k",
+    "plus3": "p3",
+    "mld": "48k",       # strict 48K Dandanator
+    "mld128": "128k",   # banked Dandanator
+}
 
 
 def find_sjasmplus():
@@ -145,20 +156,26 @@ def _pc(s):
 
 
 def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
-                   machine="48k"):
-    """Load+run the TAP headless, return FLAGS[0:n_bytes] once the run is stable.
+                   machine="48k", dandanator_rom=None):
+    """Load+run headless, return FLAGS[0:n_bytes] once the run is stable.
 
-    ``machine`` picks the ZEsarUX model ("48k", "128k", ...); use it to exercise
-    the banked runtime paths.
+    ``machine`` picks the ZEsarUX model ("48k", "128k", "p3", ...); use it to
+    exercise the banked / disk runtime paths.
+
+    ``dandanator_rom`` (a 512 KB ROM from ``mld2rom.py``) runs the MLD/Dandanator
+    path instead of smartloading a tape: it enables Dandanator emulation and
+    presses the cartridge button (**required** — without the press ZEsarUX stays
+    in the menu/ROM and FLAGS reads all zeros). See build_mld_rom / run_cyd.
     """
     zes = find_zesarux()
     if not zes:
         raise RuntimeError("ZEsarUX not found under tools/")
-    proc = subprocess.Popen(
-        [zes, "--noconfigfile", "--machine", machine, "--vo", "null", "--ao", "null",
-         "--enable-remoteprotocol", "--remoteprotocol-port", str(port)],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    args = [zes, "--noconfigfile", "--machine", machine, "--vo", "null", "--ao", "null",
+            "--enable-remoteprotocol", "--remoteprotocol-port", str(port)]
+    if dandanator_rom is not None:
+        args += ["--enable-dandanator", "--dandanator-rom",
+                 os.path.abspath(dandanator_rom), "--dandanator-press-button"]
+    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         s = None
         for _ in range(40):
@@ -170,8 +187,9 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
         if s is None:
             raise RuntimeError("ZRCP port never opened")
         _recv_until_prompt(s, 5.0)
-        time.sleep(2.0)  # let the 48k ROM reach BASIC
-        _cmd(s, f"smartload {os.path.abspath(tap_path)}", timeout=12.0)
+        time.sleep(2.5)  # let the ROM / Dandanator autoboot reach the interpreter
+        if dandanator_rom is None:
+            _cmd(s, f"smartload {os.path.abspath(tap_path)}", timeout=12.0)
 
         # Poll until the interpreter is running (PC in $8000+) and FLAGS is stable.
         prev = None
@@ -201,8 +219,58 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
             proc.kill()
 
 
-def run_cyd(source, model="48k", n_bytes=16, max_wait=25.0):
-    """Compile ``source``, run it headless, and return the first ``n_bytes`` of FLAGS."""
+def build_mld_rom(source, model, workdir):
+    """Compile ``source`` to a ``.MLD`` (``model`` = "mld" or "mld128") and pack it
+    into a 512 KB Dandanator ROM with ``mld2rom.py`` (Python-pure; the firmware is
+    vendored under external/dandanator-mini/, no base ROM needed). Returns
+    ``(rom_path, flags_addr)``."""
+    sj = find_sjasmplus()
+    if not sj:
+        raise RuntimeError("sjasmplus not found under tools/")
+    (Path(workdir) / "test.cyd").write_text(source, encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(CYDC), "-v", model, "test.cyd", sj, "."],
+        cwd=workdir, capture_output=True, text=True, timeout=180,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"compilation failed:\n{proc.stdout[-1500:]}\n{proc.stderr[-1500:]}"
+        )
+    if not (Path(workdir) / "test.MLD").is_file():
+        raise RuntimeError("no MLD produced")
+    lst = Path(workdir) / "cyd.lst"
+    flags_addr = _parse_flags_addr(lst) if lst.is_file() else None
+    if flags_addr is None:
+        raise RuntimeError("could not determine FLAGS address from listing")
+    rom = Path(workdir) / "test.rom"
+    p2 = subprocess.run(
+        [sys.executable, str(MLD2ROM), "-o", "test.rom", "-a", "test.MLD"],
+        cwd=workdir, capture_output=True, text=True, timeout=120,
+    )
+    if p2.returncode != 0:
+        raise RuntimeError(
+            f"mld2rom failed:\n{p2.stdout[-1500:]}\n{p2.stderr[-1500:]}"
+        )
+    size = rom.stat().st_size if rom.is_file() else -1
+    if size != 524288:
+        raise RuntimeError(f"bad Dandanator ROM size: {size} (expected 524288)")
+    return str(rom), flags_addr
+
+
+def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
+    """Compile ``source`` for ``model``, run it headless in ZEsarUX, return the
+    first ``n_bytes`` of FLAGS.
+
+    Handles all five targets: tape (48k/128k), disk (plus3) and Dandanator
+    (mld/mld128, packed to a ROM via ``mld2rom.py``). The ZEsarUX machine and boot
+    method are picked from ``MACHINE_BY_MODEL``."""
+    machine = MACHINE_BY_MODEL.get(model, "48k")
     with tempfile.TemporaryDirectory(prefix="cyd_emu_") as wd:
+        if model in ("mld", "mld128"):
+            rom, flags_addr = build_mld_rom(source, model, wd)
+            return run_in_zesarux(None, flags_addr, n_bytes=n_bytes,
+                                  max_wait=max_wait or 35.0, machine=machine,
+                                  dandanator_rom=rom)
         tap, flags_addr = compile_cyd(source, model, wd)
-        return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes, max_wait=max_wait)
+        return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
+                              max_wait=max_wait or 25.0, machine=machine)
