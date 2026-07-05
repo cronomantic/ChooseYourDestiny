@@ -188,11 +188,16 @@ Hoy son cadenas de `IF/ELSEIF`. Muy legible para menús/estados.
    ENDSELECT ]]
 ```
 
-Baja a: evaluar `@v` una vez y una cadena de comparaciones `IF @v == k GOTO cuerpo_k`
-(con `CASE k1,k2` = varias comparaciones a la misma rama), `CASE ELSE` = salto al
-default. **Sin fall-through** (semántica BASIC): cada cuerpo salta a `ENDSELECT` al
+Baja a: evaluar el sujeto una vez y una cadena de comparaciones `IF sujeto == k GOTO
+cuerpo_k` (con `CASE k1,k2` = varias comparaciones a la misma rama), `CASE ELSE` = salto
+al default. **Sin fall-through** (semántica BASIC): cada cuerpo salta a `ENDSELECT` al
 acabar. v1 = cadena `IF`; si los `CASE` son densos y numéricos, una **tabla de saltos**
 es optimización futura (seguiría siendo front-end, reusando `GOTO`).
+
+**DECIDIDO — sintaxis del sujeto (Sergio, jul 2026):** SELECT admite una
+**`varexpression`** (`SELECT @v`, `SELECT @a+1`), así que el **`@` se mantiene**, coherente
+con los demás contextos de lectura (`PRINT @v`/`INK @v`). Es un contexto de LECTURA (se
+evalúa el sujeto), a diferencia de SWAP (§3.5), que son destinos y va pelado.
 
 ### 3.3 `ENUM [nombre] { A, B, C }` — constantes secuenciales
 
@@ -221,11 +226,14 @@ error que redeclarar una `CONST`.
   contextual; `n` es constante de compilación. Combina con anchos y rangos dentro de la
   misma lista `{ …, 255 REPEAT 4, 1..3, … }`.
 
-### 3.5 `SWAP @a, @b` — intercambio sin temporal
+### 3.5 `SWAP a, b` — intercambio sin temporal
 
 Intercambia dos variables **reusando la pila de bytes de la VM**, sin variable temporal
-ni runtime nuevo: `PUSH @a : PUSH @b : POP @a : POP @b` (los opcodes de pila ya existen;
-el azúcar los emite en codegen). Pure front-end.
+ni runtime nuevo. **Operandos PELADOS** (`SWAP a, b`, NO `@a, @b`): son **destinos** que
+se escriben, igual que en `SET`/`LET`/`READ`/`FOR`; el `@` (valor-de) no tiene sentido
+sobre un l-value (no se pueden intercambiar r-values). Baja a `PUSH a : PUSH b : POP a :
+POP b` (el codegen lee/escribe cada variable). Pure front-end. (Decisión con Sergio,
+jul 2026: sin `@` porque solo admite variables.)
 
 ---
 
