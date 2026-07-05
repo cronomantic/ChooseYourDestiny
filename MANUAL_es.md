@@ -819,10 +819,12 @@ Hay un ejemplo con `ASM`, `EXPORTS`, arrays y `CYD_CALL` en `examples/inline_asm
 
 ### Targets soportados
 
-Las rutinas nativas funcionan en **48K, 128K, +3 y mld128**. En 128K, +3 y mld128 la
-rutina se coloca en un banco de RAM paginado y el motor lo pagina automáticamente
-alrededor del `CALL`. (El target **mld** estricto de 48K —un solo banco— no las
-soporta y la compilación aborta con un error claro.)
+Las rutinas nativas funcionan en **los cinco targets** (48K, 128K, +3, mld y mld128). En
+128K, +3 y mld128 la rutina se coloca en un banco de RAM paginado y el motor lo pagina
+automáticamente alrededor del `CALL`. En el **mld** estricto de 48K (Dandanator, sin
+bancos), la rutina se copia de la flash a RAM residente al arrancar —igual que un array
+`DIM`— y se ejecuta desde ahí, por lo que también admite rutinas automodificables o con
+`DEFS` propio. Si no cupiera en la RAM residente, la compilación aborta con un error claro.
 
 ---
 

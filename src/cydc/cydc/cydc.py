@@ -1116,14 +1116,18 @@ def main():
     # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
     # addr_hi] operand of every CALL that references it.
     extern_dispatch_asm = ""  # CYD_CALL dispatch table (filled after placement)
+    # ARR_POOL base used to place strict-mld native routines; passed to do_asm_mld so
+    # it can assert the assembled image ends exactly there (anti-collision). None when
+    # there are no strict-mld native routines.
+    mld_resident_pool_base = None
     if kept_blocks:
         # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
         # mld (single Dandanator-slot bank) is not supported yet.
-        if model not in ("48k", "128k", "plus3", "mld128"):
+        if model not in ("48k", "128k", "plus3", "mld128", "mld"):
             sys.exit(
                 _(
-                    "ERROR: IMPORT/CALL native routines are only supported on the "
-                    "48k, 128k, +3 and mld128 targets for now."
+                    "ERROR: IMPORT/CALL native routines are not supported on the "
+                    f"{model} target."
                 )
             )
         # USES declares the cross-block callees a routine reaches via CYD_CALL:
@@ -1219,6 +1223,55 @@ def main():
             for r in routine_names:
                 _place_block(r, cursor, 0, 0)
                 cursor += sizes[r]
+        elif model == "mld":
+            # Strict mld (48K Dandanator): no $7FFD banks; code/data stream from
+            # READ-ONLY flash slots. A native routine can be self-modifying or use
+            # DEFS as scratch, so it must run from WRITABLE RAM -- exactly the
+            # DIM-array problem. Reuse the resident pool ARR_POOL + ARR_INIT (copied
+            # from flash at boot); no new runtime. Each routine is assembled at its
+            # final ORG in the pool, its bytes ride in chunk 0's flash slot, and an
+            # ARR_INIT_TABLE entry copies them into the pool at boot. CALL uses
+            # [0, ORG] -> the direct-call handler (like 48k; strict mld does not
+            # define OP_EXTERN_BANKED). ARR_POOL sits right after the interpreter
+            # image, whose size is bank0_offset + the 7-byte-per-entry copy table.
+            num_entries = len(codegen.arr_init_table) + len(routine_names)
+            # ARR_POOL sits right after the saved interpreter image. Its size beyond
+            # bank0_offset is the 7-byte-per-entry copy table PLUS the intro/loading
+            # screen (also inside the image, before the block index, but stubbed out
+            # in the size probe). Missing either shifts the routines' load address.
+            arr_pool = (
+                bank0_offset + 7 * num_entries + mld_intro_scr_size(loading_scr)
+            )
+            mld_resident_pool_base = arr_pool  # do_asm_mld asserts the image ends here
+            pool_ceiling = 0xF000  # DAN_SAVE_BUFFER starts here; keep the pool below
+            need = arr_pool + codegen.arr_pool_size + sum(sizes.values())
+            if need > pool_ceiling:
+                sys.exit(
+                    _("ERROR: Not enough resident RAM for native routines on mld.")
+                    + f" (needs up to ${need:04X}, ceiling ${pool_ceiling:04X})"
+                )
+            pool_off = codegen.arr_pool_size  # externs go after the arrays
+            for r in routine_names:
+                org = arr_pool + pool_off
+                data, addrs = _assemble_block(r, org, True)
+                if len(data) != sizes[r]:
+                    sys.exit(
+                        _(
+                            f"ERROR: Native routine {r} changed size between passes "
+                            f"({sizes[r]} -> {len(data)})."
+                        )
+                    )
+                src_off = len(available_banks[0])  # slot-relative pos in chunk 0
+                available_banks[0] += data
+                codegen.arr_init_table.append(
+                    (f"__ext_{r}", 0, src_off, pool_off, len(data))
+                )
+                d = codegen.externs[r]
+                for callable_name in d["exports"]:
+                    addr = addrs[callable_name] if d["explicit"] else org
+                    extern_addr[callable_name] = (0, addr)  # bank 0 -> direct call
+                pool_off += len(data)
+            codegen.arr_pool_size = pool_off
         else:  # 128k / +3 / mld128: place each block in a paged bank (>= 1).
             for r in routine_names:
                 # Best-fit among the already-used paged banks; add a new bank
@@ -1420,6 +1473,7 @@ def main():
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
                 arr_init_table=codegen.arr_init_table,
+                resident_pool_base=mld_resident_pool_base,
             )
         else:
             if verbose > 0:

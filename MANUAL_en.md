@@ -818,10 +818,12 @@ There is an example with `ASM`, `EXPORTS`, arrays and `CYD_CALL` in
 
 ### Supported targets
 
-Native routines work on **48K, 128K, +3 and mld128**. On the 128K, +3 and mld128 the
-routine is placed in a paged RAM bank and the engine pages it in around the `CALL`
-automatically. (The strict 48K **mld** target —a single bank— does not support them
-and compilation aborts with a clear error.)
+Native routines work on **all five targets** (48K, 128K, +3, mld and mld128). On the
+128K, +3 and mld128 the routine is placed in a paged RAM bank and the engine pages it in
+around the `CALL` automatically. On the strict 48K **mld** (Dandanator, no banks) the
+routine is copied from flash to resident RAM at boot —just like a `DIM` array— and runs
+from there, so it also supports self-modifying routines or ones with their own `DEFS`
+scratch. If it does not fit in the resident RAM, compilation aborts with a clear error.
 
 ---
 
