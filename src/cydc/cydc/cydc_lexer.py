@@ -201,6 +201,10 @@ class CydcLexer(object):
         "ASM": "ASM",
         "EXPORTS": "EXPORTS",
         "USES": "USES",
+        "DATA": "DATA",
+        "READ": "READ",
+        "RESTORE": "RESTORE",
+        "DATAEND": "DATAEND",
     }
 
     # token_list

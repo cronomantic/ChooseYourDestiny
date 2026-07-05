@@ -1122,6 +1122,61 @@ Otra limitación es que no se pueden salvar ni recuperar los datos de estos arra
 
 Por último, si se modifican los datos de un array, no se pueden recuperar los valores originales a menos que se haga una copia en otro array previamente.
 
+## Datos inmutables (`DATA` / `READ` / `RESTORE` / `DATAEND()`)
+
+Cuando lo que necesitamos es un bloque de datos de **solo lectura** (tablas, mapas, textos comprimidos byte a byte, secuencias…), `CYD` ofrece el mecanismo `DATA`, análogo al de BASIC. A diferencia de los arrays `DIM` —que son escribibles y están limitados a 256 elementos—, los `DATA` son **inmutables** y forman un **único flujo global** que puede llegar hasta **16 KB** (más de 16000 elementos). Al no modificarse nunca, ocupan **0 bytes de RAM en Dandanator/MLD** (se leen directamente de la flash).
+
+Cada sentencia `DATA` añade sus bytes, en el orden en que aparecen en el fuente, a ese flujo global. Se leen secuencialmente con `READ`, que usa el mismo destino "pelado" que `SET`/`LET`:
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 10, 20, 30      /* estos cinco valores forman un único flujo:  */
+  DATA 40, 50          /* 10, 20, 30, 40, 50                          */
+
+  READ v               /* v = 10, y el cursor avanza      */
+  READ [v]             /* destino indirecto (índice en v), como LET [v] */
+]]
+```
+
+Hay un **único cursor global** que empieza al principio del flujo. `RESTORE` lo rebobina al principio, y `RESTORE etiqueta` lo coloca en el **primer `DATA` que aparezca tras esa etiqueta** (misma semántica que el `RESTORE línea` de BASIC; se reutilizan las etiquetas `LABEL`):
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 11, 22, 33
+  LABEL segundo
+  DATA 44, 55
+
+  RESTORE segundo      /* el cursor se coloca en el '44' */
+  READ v               /* v = 44                        */
+]]
+```
+
+La función `DATAEND()` devuelve `1` si el cursor ha llegado al final del flujo y `0` en caso contrario. Es útil para recorrer todos los datos con un bucle (nótese que es una función, con paréntesis, y que para usarla como condición se compara, p. ej. `DATAEND() = 0`):
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 65, 66, 67
+
+  WHILE (DATAEND() = 0)  /* mientras no lleguemos al final */
+    READ v
+    CHAR v               /* imprime el carácter A, B, C    */
+  WEND
+]]
+```
+
+Consideraciones a tener en cuenta:
+
+- Los `DATA` **no se ejecutan**: pueden colocarse en cualquier punto del guion (el compilador los recoge todos y los saca del flujo de código). Por claridad conviene agruparlos.
+- **Cinta sin fin**: leer más allá del final rebobina automáticamente el cursor al principio del flujo (no da error). Usa `DATAEND()` si quieres detectar el final y parar.
+- Los valores son constantes de byte (aceptan las mismas expresiones y constantes con nombre que la inicialización de un `DIM`).
+- Si un programa no usa `DATA`, los opcodes correspondientes se eliminan del intérprete (coste 0).
+
 ---
 
 ## Listado de comandos
@@ -1165,6 +1220,30 @@ Crea un array de nombre _ID_ con tantos elementos como se indique en _expression
 ### DIM ID(expression) = {expression, expression...}
 
 Igual que [DIM ID(expression)](#dim-idexpression), pero asignando valores separados por comas.
+
+### DATA expression, expression...
+
+Añade los valores (constantes de byte) al flujo global de datos inmutables de solo lectura, en el orden en que aparecen en el fuente. Todas las sentencias `DATA` del guion forman un único flujo (máximo 16 KB). No se ejecutan; el compilador las extrae del código.
+
+### READ varID
+
+Lee el siguiente byte del flujo de datos a la variable _varID_ y avanza el cursor.
+
+### READ [varID]
+
+Igual que [READ varID](#read-varid), pero el destino es la variable cuyo índice corresponde con el contenido de _varID_ (destino indirecto).
+
+### RESTORE
+
+Rebobina el cursor del flujo de datos al principio.
+
+### RESTORE ID
+
+Coloca el cursor del flujo de datos en el primer `DATA` que aparezca tras la etiqueta _ID_ en el fuente.
+
+### DATAEND()
+
+Devuelve `1` si el cursor del flujo de datos ha llegado al final, `0` en caso contrario.
 
 ### GOTO ID
 

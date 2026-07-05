@@ -60,12 +60,12 @@ class CydcCodegen(object):
         "PRINT_D": 0x20,
         "INK_I": 0x21,
         "PAPER_I": 0x22,
-        "BORDER_I": 0x23,
+        "READ": 0x23,
         "PRINT_I": 0x24,
         "BRIGHT_D": 0x25,
         "FLASH_D": 0x26,
-        "BRIGHT_I": 0x27,
-        "FLASH_I": 0x28,
+        "RESTORE": 0x27,
+        "DATAEND": 0x28,
         "PICTURE_D": 0x29,
         "DISPLAY_D": 0x2A,
         "PICTURE_I": 0x2B,
@@ -159,6 +159,11 @@ class CydcCodegen(object):
         self._ = gettext.gettext
         self.symbols = {}
         self.array_lengths = {}
+        # Immutable DATA stream (DATA/READ/RESTORE/DATAEND): the concatenated
+        # read-only blob and its length, filled by code_extract_data. Placed by
+        # cydc.py as a single TYPE_DATA chunk (<=16 KB, one chunk).
+        self.data_blob = []
+        self.data_len = 0
         self.variables = {}
         self.constants = {}
         # Native routine table. block_name -> {"source": ("file", path) |
@@ -560,6 +565,24 @@ class CydcCodegen(object):
                     tup = (instruction[0], instruction[1], lc)
                 else:
                     sys.exit(self._(f"ERROR: Invalid array declaration"))
+            elif len(instruction) == 2 and instruction[0] == "DATA":
+                # Immutable DATA: resolve each byte constant-expression now (same
+                # as array init data). code_extract_data later concatenates every
+                # ("DATA", [bytes]) into the global blob and strips them.
+                lc = []
+                for c in instruction[1]:
+                    if (
+                        isinstance(c, tuple)
+                        and len(c) == 2
+                        and c[0] == "CONSTANT"
+                        and isinstance(c[1], list)
+                    ):
+                        lc.append(
+                            self.constant_expression_calculation(c[1], constants, False)
+                        )
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid DATA declaration"))
+                tup = ("DATA", lc)
             else:
                 tup = ()
                 for c in instruction:
@@ -618,6 +641,53 @@ class CydcCodegen(object):
         self.externs = externs
         self.extern_exports = extern_exports
         return (code, variables, constants)
+
+    def code_extract_data(self, code):
+        """Concatenate every DATA statement into one read-only blob (source order),
+        map each label to the offset of the first DATA following it (for RESTORE
+        label), strip the DATA statements from the executable stream, and bake each
+        RESTORE label into a 16-bit blob offset. Sets self.data_blob / data_len.
+
+        Runs before optimize/DCE, so label offsets are captured even if a
+        DATA-marker label is later dropped as dead code."""
+        blob = []
+        label_offsets = {}
+        pending_labels = []
+        for t in code:
+            if t[0] == "LABEL":
+                pending_labels.append(t[1])
+            elif t[0] == "DATA":
+                off = len(blob)
+                for lbl in pending_labels:
+                    label_offsets[lbl] = off
+                pending_labels = []
+                blob += t[1]
+        # v1: a single TYPE_DATA chunk, 16-bit cursor -> <= 16 KB.
+        if len(blob) > 16 * 1024:
+            sys.exit(
+                self._(
+                    f"ERROR: DATA block too big ({len(blob)} bytes, max 16384)."
+                )
+            )
+        out = []
+        for t in code:
+            if t[0] == "DATA":
+                continue  # not executable: it lives in the blob
+            elif t[0] == "RESTORE_LABEL":
+                name = t[1]
+                off = label_offsets.get(name)
+                if off is None:
+                    sys.exit(
+                        self._(
+                            f"ERROR: RESTORE {name}: no DATA appears after that label."
+                        )
+                    )
+                out.append(("RESTORE", off & 0xFF, (off >> 8) & 0xFF))
+            else:
+                out.append(t)
+        self.data_blob = blob
+        self.data_len = len(blob)
+        return out
 
     def code_simple_optimize(self, code):
         code_tmp = []
@@ -678,27 +748,23 @@ class CydcCodegen(object):
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BORDER":
+                    # Only the immediate form is fused; the _I (from-variable) form
+                    # was dropped to free opcode 0x23 for READ (BORDER @v is rare and
+                    # falls back to PUSH_I:POP_BORDER, 2 opcodes).
                     if c[0] == "PUSH_D":
                         c = ("BORDER_D", c[1])
                         skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("BORDER_I", c[1])
-                        skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BRIGHT":
+                    # _I form dropped to free opcode 0x27 for RESTORE (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("BRIGHT_D", c[1])
                         skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("BRIGHT_I", c[1])
-                        skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_FLASH":
+                    # _I form dropped to free opcode 0x28 for DATAEND (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("FLASH_D", c[1])
-                        skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("FLASH_I", c[1])
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_PRINT":
@@ -1289,6 +1355,10 @@ class CydcCodegen(object):
             print("\nConstants resolved:\n-------------------")
             print(self.constants)
 
+        # Pull the immutable DATA stream out into self.data_blob and resolve
+        # RESTORE labels; must run before optimize/DCE.
+        code = self.code_extract_data(code)
+
         if code is None or len(code) == 0:
             code = [("END",)]
 
@@ -1361,5 +1431,10 @@ class CydcCodegen(object):
         ]
         code = self.code_simple_optimize(code)
         used_opcodes = {c[0] for c in code if c[0] not in excluded_ops}
+        # RESTORE label is emitted as the marker RESTORE_LABEL (resolved to a real
+        # RESTORE opcode only later, in code_extract_data); count it so a program
+        # that uses ONLY "RESTORE label" doesn't get the RESTORE opcode trimmed.
+        if "RESTORE_LABEL" in used_opcodes:
+            used_opcodes.add("RESTORE")
         all_opcodes = {c for c in self.opcodes.keys() if c not in excluded_ops}
         return all_opcodes - used_opcodes

@@ -918,6 +918,12 @@ def main():
         num_blocks = len(chunks)
     else:
         num_blocks = len(blocks) + len(chunks)
+    # The immutable DATA blob (if any) is one extra TYPE_DATA block in the index,
+    # placed by best-fit like SCR/music (on every target, including plus3, where it
+    # lives in a RAM bank rather than a streamed disk file).
+    has_data = codegen.data_len > 0
+    if has_data:
+        num_blocks += 1
     # The resident image also carries the CYD_CALL dispatch table (dispatch_size
     # bytes) right after the block index, so reserve room for it too.
     bank0_offset = (
@@ -1032,6 +1038,13 @@ def main():
     if num_banks > max_banks:
         sys.exit(_("ERROR: Not enough memory available"))
 
+    # Blocks placed by best-fit: media (SCR/TRK/WYZ) only on non-plus3 (on plus3
+    # they are streamed from disk, not banked), plus the immutable DATA blob on
+    # EVERY target (it is read-only data, so on plus3 it goes in a RAM bank too).
+    place_blocks = list(blocks) if model != "plus3" else []
+    if has_data:
+        place_blocks.append(("DATA", 0, codegen.data_len, list(codegen.data_blob), ""))
+
     fits = False
     while not fits:
         index = copy.deepcopy(tmp_index)
@@ -1042,12 +1055,13 @@ def main():
             [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
         )
         fits = True
-        if model != "plus3":
-            for i, block in enumerate(blocks):
+        if place_blocks:
+            for i, block in enumerate(place_blocks):
                 btype, bidx, bsize, bdata, bpath = block
                 # Music (TRK/WYZ) is played from a RAM bank at $C000, so on mld128
                 # it can only live in a real 128K RAM bank (id < 8), never in a
-                # slot-only Dandanator bank (id >= 8).
+                # slot-only Dandanator bank (id >= 8). DATA (read-only, from flash)
+                # has no such restriction.
                 music_ram_only = model == "mld128" and btype in ("TRK", "WYZ")
                 best_fit_index = -1
                 min_leftover = sys.maxsize
@@ -1072,6 +1086,8 @@ def main():
                         b = 1
                     elif btype == "WYZ":
                         b = 3
+                    elif btype == "DATA":
+                        b = 4
                     else:  # btype == "TXT"
                         sys.exit(_("ERROR: Unexpected data"))
                     index.append((b, bidx, best_fit_index, offset))
@@ -1326,6 +1342,7 @@ def main():
                 print(_("Assembling Spectrum 128k TAP..."))
             output_name = output_name[:10]
             do_asm_128(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1352,6 +1369,7 @@ def main():
                 print(_("Assembling Spectrum PLUS3 binary files..."))
             output_name = output_name[:8]
             do_asm_plus3(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1378,6 +1396,7 @@ def main():
                 print(_(f"Assembling Spectrum {model.upper()}..."))
             output_name = output_name[:8]
             do_asm_mld(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1407,6 +1426,7 @@ def main():
                 print(_("Assembling Spectrum 48k TAP..."))
             output_name = output_name[:10]
             do_asm_48(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),

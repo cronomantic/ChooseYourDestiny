@@ -340,5 +340,115 @@ class TestMld128ArrayBankPlanner(unittest.TestCase):
             self.plan(al, self.RAM)
 
 
+class TestImmutableData(CodegenTestBase):
+    """DATA / READ / RESTORE / DATAEND: the immutable-data stream.
+
+    The compiler concatenates every DATA statement into one read-only blob
+    (self.data_blob), strips them from the executable stream, and bakes RESTORE
+    labels into blob offsets. Verified end-to-end on 48k in the emulator; these
+    tests lock the compile-time contract.
+    """
+
+    def _gen(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        g = CydcCodegen(gettext)
+        g.set_bank_offset_list([0xC000])
+        g.set_bank_size_list([16 * 1024])
+        chunks = g.generate_code(code=code)
+        return g, chunks
+
+    def test_blob_concatenates_in_source_order(self):
+        g, _ = self._gen("[[DATA 11, 22, 33 : DATA 44, 55]]")
+        self.assertEqual(g.data_blob, [11, 22, 33, 44, 55])
+        self.assertEqual(g.data_len, 5)
+
+    def test_data_is_stripped_from_bytecode(self):
+        # DATA is not executable: the bytecode is just END (0x00).
+        g, chunks = self._gen("[[DATA 1, 2, 3]]")
+        self.assertEqual(chunks[0], [0x00])
+
+    def test_read_direct_emits_read_then_pop_set(self):
+        g, chunks = self._gen("[[DATA 1 : READ 4]]")
+        self.assertEqual(
+            chunks[0], [g.opcodes["READ"], g.opcodes["POP_SET"], 0x04, 0x00]
+        )
+
+    def test_read_indirect_emits_read_then_pop_set_di(self):
+        # Newline (not ':') before ']]' so the ']' of [4] is not eaten by ']]'.
+        g, chunks = self._gen("[[\nDATA 1\nREAD [4]\n]]")
+        self.assertEqual(
+            chunks[0], [g.opcodes["READ"], g.opcodes["POP_SET_DI"], 0x04, 0x00]
+        )
+
+    def test_restore_bare_is_offset_zero(self):
+        g, chunks = self._gen("[[DATA 1, 2 : RESTORE]]")
+        self.assertEqual(chunks[0], [g.opcodes["RESTORE"], 0x00, 0x00, 0x00])
+
+    def test_restore_label_bakes_offset_of_next_data(self):
+        # 'second' sits between the two DATA blocks -> offset of the first byte of
+        # the second block (index 3).
+        g, chunks = self._gen(
+            "[[DATA 11, 22, 33 : LABEL second : DATA 44, 55 : RESTORE second]]"
+        )
+        self.assertEqual(g.data_blob, [11, 22, 33, 44, 55])
+        self.assertEqual(chunks[0], [g.opcodes["RESTORE"], 0x03, 0x00, 0x00])
+
+    def test_restore_label_survives_code_between_label_and_data(self):
+        # Intervening code does not affect the blob offset (BASIC RESTORE-line).
+        g, chunks = self._gen(
+            "[[DATA 1, 2, 3 : LABEL foo : SET 3 TO 5 : DATA 100 : RESTORE foo]]"
+        )
+        self.assertEqual(g.data_blob, [1, 2, 3, 100])
+        self.assertIn(g.opcodes["RESTORE"], chunks[0])
+        i = chunks[0].index(g.opcodes["RESTORE"])
+        off = chunks[0][i + 1] | (chunks[0][i + 2] << 8)
+        self.assertEqual(off, 3)
+
+    def test_dataend_emits_opcode(self):
+        g, chunks = self._gen("[[DATA 1 : SET 2 TO DATAEND()]]")
+        self.assertIn(g.opcodes["DATAEND"], chunks[0])
+
+    def test_restore_to_label_with_no_following_data_errors(self):
+        code = self.parser.parse(
+            input="[[DATA 1 : RESTORE tail : LABEL tail]]"
+        )
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        self.assertIn("tail", str(cm.exception.code))
+
+    def test_blob_over_16k_errors(self):
+        values = ", ".join(["1"] * (16 * 1024 + 1))
+        code = self.parser.parse(input=f"[[DATA {values}]]")
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        self.assertIn("too big", str(cm.exception.code))
+
+    def test_opcodes_trimmed_when_no_data_used(self):
+        code = self.parser.parse(input="[[CLEAR]]")
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        unused = g.get_unused_opcodes(code)
+        self.assertIn("READ", unused)
+        self.assertIn("RESTORE", unused)
+        self.assertIn("DATAEND", unused)
+
+    def test_restore_label_only_keeps_restore_opcode(self):
+        # A program that uses ONLY "RESTORE label" (marker RESTORE_LABEL) must still
+        # keep the RESTORE opcode (it is what the marker compiles to).
+        code = self.parser.parse(
+            input="[[DATA 1 : LABEL a : DATA 2 : RESTORE a : READ 0]]"
+        )
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        unused = g.get_unused_opcodes(code)
+        self.assertNotIn("RESTORE", unused)
+        self.assertNotIn("READ", unused)
+
+
 if __name__ == "__main__":
     unittest.main()
