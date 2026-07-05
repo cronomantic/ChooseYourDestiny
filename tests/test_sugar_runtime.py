@@ -77,6 +77,9 @@ class TestSugarRuntime(unittest.TestCase):
     def test_mld128(self):
         self._check("mld128")
 
+    def test_esxdos(self):
+        self._check("esxdos")
+
 
 if __name__ == "__main__":
     unittest.main()

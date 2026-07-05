@@ -43,6 +43,7 @@ MACHINE_BY_MODEL = {
     "plus3": "p3",
     "mld": "48k",       # strict 48K Dandanator
     "mld128": "128k",   # banked Dandanator
+    "esxdos": "128k",   # divMMC/esxDOS on a 128K machine (F1: resident)
 }
 
 
@@ -156,7 +157,7 @@ def _pc(s):
 
 
 def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
-                   machine="48k", dandanator_rom=None):
+                   machine="48k", dandanator_rom=None, esxdos_root=None):
     """Load+run headless, return FLAGS[0:n_bytes] once the run is stable.
 
     ``machine`` picks the ZEsarUX model ("48k", "128k", "p3", ...); use it to
@@ -166,6 +167,12 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     path instead of smartloading a tape: it enables Dandanator emulation and
     presses the cartridge button (**required** — without the press ZEsarUX stays
     in the menu/ROM and FLAGS reads all zeros). See build_mld_rom / run_cyd.
+
+    ``esxdos_root`` (a directory) runs the ESXDOS path: it enables divMMC + the
+    esxDOS traps handler with that directory as the SD root, then smartloads the
+    .tap bootstrap (whose BASIC does RANDOMIZE USR into the RST $08 loader, which
+    F_READs the .DAT sitting in ``esxdos_root``). ``--enable-esxdos-handler``
+    requires divmmc paging, so both flags are emitted.
     """
     zes = find_zesarux()
     if not zes:
@@ -175,6 +182,9 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     if dandanator_rom is not None:
         args += ["--enable-dandanator", "--dandanator-rom",
                  os.path.abspath(dandanator_rom), "--dandanator-press-button"]
+    if esxdos_root is not None:
+        args += ["--enable-divmmc", "--enable-esxdos-handler",
+                 "--esxdos-root-dir", os.path.abspath(esxdos_root)]
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         s = None
@@ -272,5 +282,7 @@ def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
                                   max_wait=max_wait or 35.0, machine=machine,
                                   dandanator_rom=rom)
         tap, flags_addr = compile_cyd(source, model, wd)
+        esxdos_root = wd if model == "esxdos" else None
         return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
-                              max_wait=max_wait or 25.0, machine=machine)
+                              max_wait=max_wait or 25.0, machine=machine,
+                              esxdos_root=esxdos_root)

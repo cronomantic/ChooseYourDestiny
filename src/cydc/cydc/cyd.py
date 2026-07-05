@@ -412,6 +412,163 @@ def get_asm_128(
     return asm
 
 
+def get_asm_esxdos(
+    index,
+    size_index,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    has_tracks=False,
+    dat_path="",
+    unused_opcodes=None,
+    pause_start_value=None,
+    use_wyz_tracker=False,
+    name="",
+    extern_dispatch="",
+    data_len=0,
+):
+    # ESXDOS (divMMC/divIDE, SD): F1 mirrors the 128k RESIDENT model (all
+    # content -- text/bytecode/images/music -- lives in RAM banks loaded once at
+    # boot; screen_manager_tape/music_manager_tape are the resident media
+    # modules). What differs from 128k is only I/O at the edges: the bootstrap
+    # loader (loaderesxdos) and the interpreter image are packed into a single
+    # .DAT read via RST $08, and savegame goes through esxdos.asm (RST $08 file
+    # API) instead of savegame_tape -- which is unusable here because its ROM
+    # tape calls ($04C6/$0562) are divMMC automap trap addresses. Disk streaming
+    # of media (screen_manager_esxdos/music_manager_esxdos) is deferred to F2.
+    if sfx_asm is None:
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
+        sfx_asm += "BEEPFX              EQU $0\n"
+        sfx_asm += "SFX_ID              EQU BEEPFX+1\n"
+    else:
+        sfx_asm = "BEEPFX_AVAILABLE      EQU 1\nBEEPFX:\n" + sfx_asm
+        sfx_asm += "\nSFX_ID              EQU BEEPFX+1\n"
+
+    d = dict(
+        INIT_ADDR="$8000",
+        TOKENS=bytes2str(tokens, ""),
+        CHARS=bytes2str(chars, ""),
+        CHARW=bytes2str(charw, ""),
+        INDEX=index,
+        EXTERN_DISPATCH=extern_dispatch,
+        SIZE_INDEX=str(size_index),
+        SIZE_INDEX_ENTRY=str(5),
+        DAT_PATH=dat_path,
+        GAMEID=get_game_id(name),
+    )
+
+    t = get_asm_template("inkey")
+    includes = t.substitute(d)
+    t = get_asm_template("bank_zx128")
+    includes += t.substitute(d)
+    t = get_asm_template("esxdos")
+    includes += t.substitute(d)
+    t = get_asm_template("dzx0_turbo")
+    includes += t.substitute(d)
+    t = get_asm_template("savegame_esxdos")
+    includes += t.substitute(d)
+    if has_tracks:
+        # F2a: music is still RESIDENT (music_manager_tape); only images stream.
+        t = get_asm_template("music_manager_tape")
+        includes += t.substitute(d)
+        if not use_wyz_tracker:
+            t = get_asm_template("VTII10bG")
+            includes += t.substitute(d)
+    # F2: images STREAM from SD (screen_manager_esxdos) into PIC_BUFFER, decompressed
+    # to the resident SCREEN_BUFFER. Replaces the F1 resident screen_manager_tape.
+    t = get_asm_template("screen_manager_esxdos")
+    includes += t.substitute(d)
+    t = get_asm_template("text_manager")
+    includes += t.substitute(d)
+    t = get_asm_template("interpreter")
+    includes += t.substitute(d)
+    if has_tracks and not use_wyz_tracker:
+        t = get_asm_template("VTII10bG_vars")
+        includes += t.substitute(d)
+    includes += sfx_asm
+
+    asm = "    DEVICE ZXSPECTRUM48\n\n"
+
+    if pause_start_value is not None:
+        asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
+
+    # PIC_BUFFER ($E000, 6.9 KB) staging for the streamed .CSC image, in the HIGH
+    # half of the staging bank (IMG_BANK=6); the low half stays allocatable.
+    asm += "    DEFINE USE_PIC_BUFFER\n\n"
+
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
+
+    d.update(INCLUDES=includes)
+    t = get_asm_template("sysvars")
+    asm += t.substitute(d)
+    t = get_asm_template("vars")
+    asm += t.substitute(d)
+    if has_tracks:
+        if use_wyz_tracker:
+            asm += "    DEFINE USE_WYZ\n\n"
+        else:
+            asm += "    DEFINE USE_VORTEX\n\n"
+
+    asm += get_unused_opcodes_defines(unused_opcodes)
+
+    # Same 128K banking + banked OP_EXTERN handler as the 128k target.
+    asm = "    DEFINE IS_128_TAPE\n" + asm
+    asm = "    DEFINE OP_EXTERN_BANKED\n" + asm
+
+    t = get_asm_template("cyd_esxdos")
+    asm += t.substitute(d)
+
+    return asm
+
+
+def get_asm_esxdos_size(
+    sjasmplus_path,
+    output_path,
+    verbose,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    has_tracks=False,
+    unused_opcodes=None,
+    pause_start_value=None,
+    use_wyz_tracker=False,
+):
+    asm = get_asm_esxdos(
+        index="",
+        size_index=0,
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        has_tracks=has_tracks,
+        dat_path="",
+        unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
+        name="",
+    )
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    res = run_assembler(
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=verbose,
+        capture_output=True,
+        sym=os.path.join(output_path, "cyd.sym"),
+    )
+    m = re.search(r"> SIZE_INTERPRETER=\d{1,6} <", res.stderr)
+    if m is None:
+        raise ValueError("Size pattern not found")
+    size = res.stderr[m.start() : m.end()]
+    m = re.search(r"\d{1,6}", size)
+    if m is None:
+        raise ValueError("Size pattern not found")
+    size = int(size[m.start() : m.end()])
+    return size
+
+
 def get_asm_mld(
     index,
     size_index,
@@ -1472,6 +1629,132 @@ def do_asm_plus3(
             )
             with open(dsk_path, "ab") as file_dsk, open(block_path, "rb") as file_block:
                 file_dsk.write(file_block.read())
+            if os.path.exists(block_path):
+                os.remove(block_path)
+
+
+def do_asm_esxdos(
+    sjasmplus_path,
+    output_path,
+    verbose,
+    dat_name,
+    index,
+    blocks,
+    banks,
+    size_interpreter,
+    bank0_offset,
+    tokens,
+    chars,
+    charw,
+    sfx_asm,
+    loading_scr=None,
+    has_tracks=False,
+    unused_opcodes=None,
+    pause_start_value=None,
+    use_wyz_tracker=False,
+    name="",
+    extern_dispatch="",
+    data_len=0,
+):
+    # ESXDOS packaging: like the 128k target every block is RESIDENT (interpreter
+    # + all chunks/media placed in RAM banks), but like the +3 target they are
+    # concatenated into a SINGLE data file (.DAT) instead of separate TAP blocks;
+    # the bootstrap loader (loaderesxdos) F_READs each block to its bank via
+    # RST $08. The .tap only carries the BASIC bootstrap.
+    #
+    # block_list layout formulas are shared with do_asm_128/do_asm_plus3: the
+    # interpreter block size MUST be size_interpreter + 5*len(index) +
+    # dispatch_bytes, because the size probe measures the interpreter with INDEX
+    # and EXTERN_DISPATCH empty (see cyd_esxdos.asm SHOW_SIZE branch). Getting
+    # this wrong makes the loader read too few bytes and hang.
+    #
+    # F1 note: a loading screen (-scr) is not wired yet for esxdos; loading_scr
+    # is accepted but ignored (the F1 runtime test does not use one).
+    dat_path = os.path.join(output_path, dat_name + ".DAT").replace(os.sep, "/")
+    tap_path = os.path.join(output_path, dat_name + ".tap").replace(os.sep, "/")
+
+    asm_ind = ""
+    for i, v in enumerate(index):
+        asm_ind += f"    DEFB ${v[0]:X}, ${v[1]:X}, ${v[2]:X}\n"
+        asm_ind += f"    DEFW ${v[3]:X}\n"
+
+    blk_asm = ""
+    for i, block in enumerate(blocks):
+        block_path = os.path.join(output_path, f"__BLOCK_{i}.BIN").replace(os.sep, "/")
+        if i == 0:
+            blk_asm += f"    ORG ${bank0_offset:X}\n"
+        else:
+            blk_asm += "    ORG $C000\n"
+        blk_asm += f"START_BLOCK_{i}:\n"
+        blk_asm += bytes2str(block)
+        blk_asm += f"\nSIZE_BLOCK_{i} = $ - START_BLOCK_{i}\n"
+        blk_asm += f'    SAVEBIN "{block_path}",START_BLOCK_{i},SIZE_BLOCK_{i}\n\n'
+
+    asm_int = get_asm_esxdos(
+        index=asm_ind,
+        size_index=len(index),
+        tokens=tokens,
+        chars=chars,
+        charw=charw,
+        sfx_asm=sfx_asm,
+        has_tracks=has_tracks,
+        dat_path=dat_path,
+        unused_opcodes=unused_opcodes,
+        pause_start_value=pause_start_value,
+        use_wyz_tracker=use_wyz_tracker,
+        name=name,
+        extern_dispatch=extern_dispatch,
+        data_len=data_len,
+    )
+
+    dispatch_bytes = extern_dispatch.count("DEFB") * 3
+
+    block_list = ""
+    block_list += f"    DEFW $8000\n"
+    block_list += f"    DEFW ${(size_interpreter + 5 * len(index) + dispatch_bytes):X}\n"
+    block_list += f"    DEFB $0\n"
+    for i, block in enumerate(blocks):
+        bank = banks[i]
+        if i == 0:
+            offset = bank0_offset
+        else:
+            offset = 0xC000
+        block_list += f"    DEFW ${offset:X}\n"
+        block_list += f"    DEFW ${len(block):X}\n"
+        block_list += f"    DEFB ${bank:X}\n"
+    block_list += "    DEFW $0\n"  # End mark
+
+    d = dict(
+        INIT_ADDR="$8000",
+        STACK_ADDRESS="$8000",
+        BLOCK_LIST=block_list,
+        DSK_FILENAME_BASE=dat_name + ".DAT",
+        TAP_NAME=tap_path,
+        TAP_LABEL=dat_name,
+        GAMEID=get_game_id(name),
+    )
+
+    t = get_asm_template("loaderesxdos")
+    asm = t.substitute(d)
+    asm += asm_int + blk_asm
+
+    res = run_assembler(
+        asm_path=sjasmplus_path,
+        asm=asm,
+        filename=os.path.join(output_path, "cyd.asm"),
+        listing=verbose,
+        capture_output=False,
+    )
+
+    if res:
+        # Concatenate interpreter image (already SAVEBIN'd to .DAT) + each block,
+        # in block_list order, so the loader can F_READ them sequentially.
+        for i, block in enumerate(blocks):
+            block_path = os.path.join(output_path, f"__BLOCK_{i}.BIN").replace(
+                os.sep, "/"
+            )
+            with open(dat_path, "ab") as file_dat, open(block_path, "rb") as file_block:
+                file_dat.write(file_block.read())
             if os.path.exists(block_path):
                 os.remove(block_path)
 
