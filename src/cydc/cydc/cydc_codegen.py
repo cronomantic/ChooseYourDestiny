@@ -453,6 +453,17 @@ class CydcCodegen(object):
         tag = elem[0]
         if tag == "CONSTANT_STR":
             return [b & 0xFF for b in elem[1]]
+        if tag == "CONSTANT_RANGE":
+            a = self._eval_const_raw(elem[1], constants)
+            b = self._eval_const_raw(elem[2], constants)
+            for v in (a, b):
+                if v not in range(256):
+                    sys.exit(self._(f"ERROR: range bound {v} is not a byte (0..255)."))
+            return list(range(a, b + 1)) if a <= b else list(range(a, b - 1, -1))
+        if tag == "CONSTANT_REPEAT":
+            inner = self._expand_data_element(elem[1], constants)
+            n = self._eval_const_raw(elem[2], constants)
+            return inner * n
         if not (len(elem) == 2 and isinstance(elem[1], list)):
             sys.exit(self._(f"ERROR: Invalid data element {elem}"))
         val = self._eval_const_raw(elem[1], constants)

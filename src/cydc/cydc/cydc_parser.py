@@ -165,6 +165,7 @@ class CydcParser(object):
         statements  : text_statement if_statement
                     | text_statement loop_while_statement
                     | text_statement loop_for_statement
+                    | text_statement select_statement
                     | text_statement loop_do_until_statement
                     | text_statement statement
         """
@@ -186,6 +187,7 @@ class CydcParser(object):
         statements  : statements if_statement
                     | statements loop_while_statement
                     | statements loop_for_statement
+                    | statements select_statement
                     | statements loop_do_until_statement
                     | statements statement
         """
@@ -215,17 +217,20 @@ class CydcParser(object):
         statements  : statements COLON if_statement
                     | statements COLON loop_while_statement
                     | statements COLON loop_for_statement
+                    | statements COLON select_statement
                     | statements COLON loop_do_until_statement
                     | statements COLON statement
                     | statements CODE_BLOCK_END if_statement
                     | statements CODE_BLOCK_END loop_while_statement
                     | statements CODE_BLOCK_END loop_for_statement
+                    | statements CODE_BLOCK_END select_statement
                     | statements CODE_BLOCK_END loop_do_until_statement
                     | statements CODE_BLOCK_END statement
                     | if_statement
                     | loop_do_until_statement
                     | loop_while_statement
                     | loop_for_statement
+                    | select_statement
                     | statement
         """
         if (len(p) == 2) and p[1]:
@@ -512,6 +517,125 @@ class CydcParser(object):
                             | statements_nl
                             | statements
                             | loop_empty
+        """
+        if len(p) == 2:
+            p[0] = []
+            if p[1]:
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_select_statement(self, p):
+        """
+        select_statement : SELECT varexpression newline_seq select_body ENDSELECT
+                         | SELECT varexpression select_body ENDSELECT
+        """
+        # Multi-branch on a subject value, pure front-end (0 runtime). Lowers to a
+        # chain of "IF subject == k GOTO body_k" tests, then a jump to the ELSE
+        # branch (or the end), then the bodies (each ending with GOTO end). No
+        # fall-through (BASIC semantics). The subject is re-evaluated per key test
+        # (no hidden variable, like FOR's limit), so keep it a variable or a
+        # side-effect-free expression.
+        subject = p[2]
+        body = p[4] if len(p) == 6 else p[3]  # optional newline_seq after the subject
+        cases, else_body = body if body else ([], None)
+        if subject is None:
+            p[0] = None
+            return
+
+        def as_list(x):
+            return x if isinstance(x, list) else [x]
+
+        label_end = self._get_hidden_label()
+        label_else = self._get_hidden_label() if else_body is not None else label_end
+        body_labels = [self._get_hidden_label() for _ in cases]
+
+        code = []
+        # tests: subject == k -> jump to that case body
+        for (keys, _body), blabel in zip(cases, body_labels):
+            for k in keys:
+                code += as_list(subject)
+                code.append(("PUSH_D", ("CONSTANT", k)))
+                code.append(("CP_EQ",))
+                code.append(("IF_GOTO", blabel, 0, 0))
+        code.append(("GOTO", label_else, 0, 0))
+        # bodies
+        for (_keys, body), blabel in zip(cases, body_labels):
+            code.append(("LABEL", blabel))
+            if body:
+                code += body
+            code.append(("GOTO", label_end, 0, 0))
+        # else body (label_else == label_end when there is no ELSE)
+        if else_body is not None:
+            code.append(("LABEL", label_else))
+            if else_body:
+                code += else_body
+        code.append(("LABEL", label_end))
+        p[0] = code
+
+    def p_select_body(self, p):
+        """
+        select_body : select_cases CASE ELSE case_subprogram
+                    | select_cases
+        """
+        if len(p) == 5:
+            p[0] = (p[1], p[4] if p[4] else [])
+        else:
+            p[0] = (p[1], None)
+
+    def p_select_cases(self, p):
+        """
+        select_cases : select_cases select_case
+                     | select_case
+        """
+        if len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
+        else:
+            p[0] = p[1] if p[1] else []
+            if p[2]:
+                p[0].append(p[2])
+
+    def p_select_case(self, p):
+        """
+        select_case : CASE case_values case_subprogram
+        """
+        # (list of key constexpressions, body statement list)
+        if p[2]:
+            p[0] = (p[2], p[3] if p[3] else [])
+        else:
+            p[0] = None
+
+    def p_case_values(self, p):
+        """
+        case_values : case_values COMMA constexpression
+                    | constexpression
+        """
+        if len(p) == 2:
+            c = p[1]
+            p[0] = [c if isinstance(c, list) else [c]] if self._is_valid_constexpression(c) else None
+        else:
+            p[0] = p[1] if p[1] else []
+            c = p[3]
+            if self._is_valid_constexpression(c):
+                p[0].append(c if isinstance(c, list) else [c])
+
+    def p_case_subprogram(self, p):
+        """
+        case_subprogram : case_subprogram statements_nl
+                        | case_subprogram statements
+                        | statements_nl
+                        | statements
+                        | loop_empty
         """
         if len(p) == 2:
             p[0] = []
@@ -1727,6 +1851,76 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_enum(self, p):
+        """
+        statement : ENUM ID LCURLY enum_list RCURLY
+                  | ENUM LCURLY enum_list RCURLY
+        """
+        # ENUM [name] { A, B=5, C } -> global CONSTs with C-style auto-increment
+        # (from 0, or from the last explicit value). The optional name is only for
+        # readability (CYD has no dotted notation) and is not declared. 0 runtime.
+        members = p[4] if len(p) == 6 else p[3]
+        if not members:
+            p[0] = None
+            return
+        out = []
+        nextval = 0
+        for name, val, lineno in members:
+            if val is not None:
+                nextval = val
+            if not self._check_byte_value(nextval, lineno):
+                p[0] = None
+                return
+            if self._declare_symbol(name, SymbolType.CONSTANT, lineno):
+                out.append(("CONST", name, [("C_VAL", nextval)]))
+            else:
+                p[0] = None
+                return
+            nextval += 1
+        p[0] = out
+
+    def p_enum_list(self, p):
+        """
+        enum_list : enum_list COMMA nl_enum_member
+                  | enum_list COMMA enum_member_nl
+                  | enum_list COMMA enum_member
+                  | nl_enum_member
+                  | enum_member_nl
+                  | enum_member
+        """
+        # Comma-separated, with newlines allowed around members (like DIM/DATA lists).
+        if len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
+        elif len(p) == 4:
+            p[0] = p[1] if p[1] else []
+            if p[3]:
+                p[0].append(p[3])
+
+    def p_nl_enum_member(self, p):
+        """
+        nl_enum_member : newline_seq enum_member_nl
+                       | newline_seq enum_member
+                       | newline_seq
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[2]:
+            p[0] = p[2]
+
+    def p_enum_member_nl(self, p):
+        """
+        enum_member_nl : enum_member newline_seq
+        """
+        p[0] = p[1] if (len(p) == 3 and p[1]) else None
+
+    def p_enum_member(self, p):
+        """
+        enum_member : ID EQUALS expression
+                    | ID
+        """
+        val = p[3] if len(p) == 4 else None
+        p[0] = (p[1], val, p.lineno(1))
+
     def p_array_constexpressions_list(self, p):
         """
         statement : DIM ID LPAREN constexpression RPAREN EQUALS LCURLY data_elements_list RCURLY
@@ -1900,6 +2094,47 @@ class CydcParser(object):
             else:
                 self.errors.append(self._(f"Symbol at {self._format_error_location(p.lineno(3))} invalid"))
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
+
+    def p_statement_swap(self, p):
+        "statement : SWAP swap_operand COMMA swap_operand"
+        # Exchange two variables with no temporary, reusing the VM byte stack:
+        # push a, push b, pop->a, pop->b (a<-old b, b<-old a). Bare operands (they
+        # are destinations, like SET/LET). Each operand may be direct (a) or
+        # indirect ([a], the variable whose index is in a), like SET/LET. Indirect
+        # is safe: each runtime index is a byte, no displacement. 0 runtime.
+        if len(p) == 5 and p[2] and p[4]:
+            va, ia = p[2]
+            vb, ib = p[4]
+            push_a = "PUSH_DI" if ia else "PUSH_I"
+            pop_a = "POP_SET_DI" if ia else "POP_SET"
+            push_b = "PUSH_DI" if ib else "PUSH_I"
+            pop_b = "POP_SET_DI" if ib else "POP_SET"
+            p[0] = [(push_a, va), (push_b, vb), (pop_a, va), (pop_b, vb)]
+        else:
+            p[0] = None
+
+    def p_swap_operand(self, p):
+        """
+        swap_operand : variableID
+                     | LCARET variableID RCARET
+        """
+        if len(p) == 2:
+            p[0] = (("VARIABLE", p[1], 0), False) if self._is_valid_var(p[1]) else None
+        elif len(p) == 4:
+            p[0] = (("VARIABLE", p[2], 0), True) if self._is_valid_var(p[2]) else None
+        else:
+            p[0] = None
+
+    def p_statement_swap_error(self, p):
+        """
+        statement : SWAP error
+                  | SWAP
+        """
+        loc = self._format_error_location(p.lineno(1))
+        self.errors.append(self._(
+            f"Syntax error on SWAP at {loc}: expected two variables "
+            f"'SWAP a, b' (or indirect 'SWAP [a], [b]')."
+        ))
 
     def p_statement_set_ind(self, p):
         """
@@ -2663,6 +2898,29 @@ class CydcParser(object):
         cl = c if isinstance(c, list) else [c]
         p[0] = ("CONSTANT", cl)
 
+    def p_data_element_range(self, p):
+        "data_element : constexpression DOTDOT constexpression"
+        # {a..b} -> the byte sequence a,a+1,...,b (or a,a-1,...,b if a > b).
+        # Both bounds are compile-time byte constants; expanded in the codegen.
+        a, b = p[1], p[3]
+        if not (self._is_valid_constexpression(a) and self._is_valid_constexpression(b)):
+            p[0] = None
+            return
+        al = a if isinstance(a, list) else [a]
+        bl = b if isinstance(b, list) else [b]
+        p[0] = ("CONSTANT_RANGE", al, bl)
+
+    def p_data_element_repeat(self, p):
+        "data_element : data_element REPEAT constexpression"
+        # { v REPEAT n } -> n copies of the element's bytes (v may itself be a
+        # constant, wide constant, string or range). n is a compile-time constant.
+        n = p[3]
+        if p[1] is None or not self._is_valid_constexpression(n):
+            p[0] = None
+            return
+        nl = n if isinstance(n, list) else [n]
+        p[0] = ("CONSTANT_REPEAT", p[1], nl)
+
     def p_constexpression_binop(self, p):
         """
         constexpression : constexpression PLUS constexpression
@@ -2748,6 +3006,11 @@ class CydcParser(object):
 
     def p_expression_dec_number(self, p):
         "number : DEC_NUMBER"
+        p[0] = p[1]
+
+    def p_expression_char_number(self, p):
+        "number : CHAR_NUMBER"
+        # Character literal 'A' -> glyph code (an int), lexed in cydc_lexer.
         p[0] = p[1]
 
     def p_newline_seq(self, p):

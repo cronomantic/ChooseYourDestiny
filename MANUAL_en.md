@@ -24,6 +24,7 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Arrays or "sequences"](#arrays-or-sequences)
   - [Immutable data (`DATA` / `READ` / `RESTORE` / `DATAEND()`)](#immutable-data-data--read--restore--dataend)
   - [Wide constants (`WORD` / `DWORD` / strings)](#wide-constants-word--dword--strings)
+  - [Handy literals (character, ranges, repetition)](#handy-literals-character-ranges-repetition)
   - [List of commands](#list-of-commands)
     - [INCLUDE "path/to/file.cyd"](#include-pathtofilecyd)
     - [LABEL ID](#label-id)
@@ -39,7 +40,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [IF condexpression THEN ... ELSE ... ENDIF](#if-condexpression-then--else--endif)
     - [IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF](#if-condexpression1-then--elseif-condexpression2-then--else--endif)
     - [WHILE (condexpression) ... WEND](#while-condexpression--wend)
-    - [REPEAT ... UNTIL (condexpression)](#repeat--until-condexpression)
+    - [DO ... UNTIL (condexpression)](#do--until-condexpression)
     - [SET varID TO varexpression](#set-varid-to-varexpression)
     - [SET \[varID\] TO varexpression](#set-varid-to-varexpression-1)
     - [SET varID TO {varexpression1, varexpression2,...}](#set-varid-to-varexpression1-varexpression2)
@@ -965,9 +966,9 @@ If the conditional expression _condexpression1_ evaluates to true, the text is p
 
 The text and commands up to `WEND` are repeated repeatedly as long as the condition _condexpression_ evaluates to true. Evaluation is performed at the beginning of each iteration.
 
-- **REPEAT ... UNTIL (condexpression)**
+- **DO ... UNTIL (condexpression)**
 
-The text and commands from `REPEAT` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
+The text and commands from `DO` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
 
 - **FOR variable = start TO end [STEP step] ... NEXT [variable]**
 
@@ -1231,6 +1232,18 @@ Only a **direct** destination is allowed (known consecutive indices): the `LET [
 
 ---
 
+## Handy literals (character, ranges, repetition)
+
+To avoid memorizing codes or writing long sequences by hand, `CYD` offers several literals the compiler expands at compile time (0 runtime):
+
+- **Character literal `'A'`** -> the **glyph code** of the character. Valid anywhere a number goes (`DATA`, `DIM`, `LET`, expressions, `CASE`...). E.g. `LET key = 'A'` is the same as `LET key = 65`.
+- **Ranges `{a..b}`** -> the byte sequence `a, a+1, ..., b` (or descending if `a > b`). The bounds are byte constants and accept characters: `'A'..'Z'`. E.g. `DIM count() = { 1..8 }`.
+- **Repetition `{ v REPEAT n }`** -> `n` copies of `v` (which may be a value, a wide constant, a string or a range). E.g. `DIM buffer() = { 0 REPEAT 16 }` (sixteen zeros).
+
+Ranges and repetition only make sense in **list** contexts (`DATA`, `DIM` initializers), and combine with each other: `DATA 255 REPEAT 4, 1..3, 'A'`.
+
+---
+
 ## List of commands
 
 Before describing the commands, let's briefly discuss the legend used:
@@ -1325,9 +1338,21 @@ If the conditional expression _condexpression1_ is true, the text is printed and
 
 Text and commands up to `WEND` are repeated repeatedly as long as the _condexpression_ condition evaluates to true. Evaluation is performed at the beginning of each iteration.
 
-### REPEAT ... UNTIL (condexpression)
+### DO ... UNTIL (condexpression)
 
-Text and commands from `REPEAT` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
+Text and commands from `DO` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
+
+### SELECT varexpression ... CASE value[,value...] ... [CASE ELSE ...] ENDSELECT
+
+Multi-branch: evaluates _varexpression_ and runs the `CASE` branch whose value matches (`CASE 1, 2, 3` = several values for the same branch). `CASE ELSE` (optional) is the default branch. **No fall-through**: when a branch ends it jumps to the end (BASIC semantics). The subject is re-evaluated on each comparison (like the FOR limit), so keep it a variable or a side-effect-free expression. See [flow control](#flow-control-and-conditional-expressions).
+
+### ENUM [name] { A, B=value, C, ... }
+
+Declares sequential constants (like several `CONST`): auto-increment from 0, or from the last explicit value (C style). `ENUM { NORTH, SOUTH, EAST }` -> 0, 1, 2. The names are **global constants**; the optional _name_ is only for grouping/readability. Explicit values must be numeric literals.
+
+### SWAP varID, varID
+
+Exchanges the contents of two variables with no temporary. Bare operands (they are destinations). Each side may also be an **indirect** destination: `SWAP [a], [b]`, `SWAP a, [b]`.
 
 ### FOR varID = varexpression TO varexpression [STEP expression] ... NEXT [varID]
 

@@ -138,7 +138,15 @@ explícito: `LET @v = WORD 200`. Documentar este gotcha.
 
 ---
 
-## 3. Azúcares de control y conveniencia (puro compilador, 0 runtime)
+## 3. Azúcares de control y conveniencia (puro compilador, 0 runtime)  ✅ IMPLEMENTADO
+
+> **Estado: implementado y verificado en runtime en los 5 targets (jul 2026).** `FOR`
+> (§3.1), `SELECT/CASE/ENDSELECT` (§3.2), `ENUM` (§3.3, admite miembros multilínea),
+> literales `'A'`/`{a..b}`/`{v REPEAT n}` (§3.4) y `SWAP a,b` con indirecto/mixto
+> `SWAP [a],[b]` (§3.5). `SELECT @v` admite `varexpression` (sujeto re-evaluado por CASE,
+> como el límite del FOR). Nota `REPEAT`: es SOLO el operador de repetición de listas; el
+> bucle es `DO … UNTIL` (el manual antiguo lo llamaba "REPEAT…UNTIL" pero eso nunca
+> compiló — corregido a `DO…UNTIL`, decisión de Sergio jul 2026).
 
 Todas **bajan a construcciones que CYD ya tiene** (asignaciones, comparaciones,
 `IF/GOTO`, `CONST`, la pila de bytes de la VM) con **etiquetas generadas por el
