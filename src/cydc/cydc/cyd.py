@@ -214,6 +214,7 @@ def get_asm_plus3(
     use_wyz_tracker=False,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -278,6 +279,11 @@ def get_asm_plus3(
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
 
+    # Immutable DATA stream: length of the read-only blob (0 if no DATA). DATA_CHUNK
+    # is always 0 (single TYPE_DATA block) -> its IFNDEF default suffices; only
+    # DATA_LEN varies (used by DATAEND).
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -311,6 +317,7 @@ def get_asm_128(
     use_wyz_tracker=False,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -363,6 +370,11 @@ def get_asm_128(
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
 
+    # Immutable DATA stream: length of the read-only blob (0 if no DATA). DATA_CHUNK
+    # is always 0 (single TYPE_DATA block) -> its IFNDEF default suffices; only
+    # DATA_LEN varies (used by DATAEND).
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -402,6 +414,7 @@ def get_asm_mld(
     loading_scr=None,
     extern_dispatch="",
     arr_init_table="",
+    data_len=0,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -458,6 +471,11 @@ def get_asm_mld(
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
 
+    # Immutable DATA stream: length of the read-only blob (0 if no DATA). DATA_CHUNK
+    # is always 0 (single TYPE_DATA block) -> its IFNDEF default suffices; only
+    # DATA_LEN varies (used by DATAEND).
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -487,6 +505,7 @@ def get_asm_mld128(
     loading_scr=None,
     extern_dispatch="",
     arr_init_table="",
+    data_len=0,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -553,6 +572,11 @@ def get_asm_mld128(
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
 
+    # Immutable DATA stream: length of the read-only blob (0 if no DATA). DATA_CHUNK
+    # is always 0 (single TYPE_DATA block) -> its IFNDEF default suffices; only
+    # DATA_LEN varies (used by DATAEND).
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
+
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
@@ -591,6 +615,7 @@ def get_asm_48(
     pause_start_value=None,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -632,6 +657,11 @@ def get_asm_48(
 
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
+
+    # Immutable DATA stream: length of the read-only blob (0 if no DATA). DATA_CHUNK
+    # is always 0 (single TYPE_DATA block) -> its IFNDEF default suffices; only
+    # DATA_LEN varies (used by DATAEND).
+    asm += f"    DEFINE DATA_LEN {data_len}\n\n"
 
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
@@ -1111,6 +1141,7 @@ def do_asm_48(
     pause_start_value=None,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
 
@@ -1131,6 +1162,7 @@ def do_asm_48(
         pause_start_value=pause_start_value,
         name=name,
         extern_dispatch=extern_dispatch,
+        data_len=data_len,
     )
 
     # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
@@ -1216,6 +1248,7 @@ def do_asm_128(
     use_wyz_tracker=False,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
 
     tap_path = os.path.join(output_path, tap_name + ".tap").replace(os.sep, "/")
@@ -1239,6 +1272,7 @@ def do_asm_128(
         use_wyz_tracker=use_wyz_tracker,
         name=name,
         extern_dispatch=extern_dispatch,
+        data_len=data_len,
     )
 
     # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
@@ -1327,6 +1361,7 @@ def do_asm_plus3(
     use_wyz_tracker=False,
     name="",
     extern_dispatch="",
+    data_len=0,
 ):
 
     dsk_path = os.path.join(output_path, dsk_name + ".BIN").replace(os.sep, "/")
@@ -1364,6 +1399,7 @@ def do_asm_plus3(
         use_wyz_tracker=use_wyz_tracker,
         name=name,
         extern_dispatch=extern_dispatch,
+        data_len=data_len,
     )
 
     # The interpreter image also carries the CYD_CALL dispatch table (3 bytes per
@@ -1450,6 +1486,7 @@ def do_asm_mld(
     name="",
     extern_dispatch="",
     arr_init_table=None,
+    data_len=0,
 ):
     # Array relocation table: DIM arrays live in read-only flash on MLD, so the
     # compiler relocates them to writable RAM. Emit the boot copy table ARR_INIT
@@ -1499,7 +1536,9 @@ def do_asm_mld(
     for entry_type, entry_idx, entry_bank, entry_offset in index:
         mapped_bank = entry_bank
         mapped_offset = entry_offset
-        if entry_type in (0, 1):  # TYPE_TXT, TYPE_SCR
+        if entry_type in (0, 1, 4):  # TYPE_TXT, TYPE_SCR, TYPE_DATA
+            # TYPE_DATA (immutable blob) is read from its Dandanator flash slot,
+            # exactly like TXT/SCR -> slot ID + slot-relative offset.
             mapped_bank = slot_by_ram_bank.get(entry_bank, entry_bank)
             if entry_bank == first_bank:
                 mapped_offset = (entry_offset - bank0_offset) & 0xFFFF
@@ -1530,6 +1569,7 @@ def do_asm_mld(
         loading_scr=loading_scr,
         extern_dispatch=extern_dispatch,
         arr_init_table=arr_init_table_asm,
+        data_len=data_len,
     )
 
     int_bin_path = os.path.join(output_path, "__INTERP.BIN").replace(os.sep, "/")

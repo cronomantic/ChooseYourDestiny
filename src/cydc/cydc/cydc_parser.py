@@ -1750,6 +1750,53 @@ class CydcParser(object):
                 p[0] = [p[4]]
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
+    def p_statement_data(self, p):
+        """
+        statement : DATA constexpressions_list
+        """
+        # Immutable DATA stream: all DATA statements are concatenated (in source
+        # order) into one read-only blob (TYPE_DATA chunk) by the codegen. The
+        # values are byte constant-expressions, exactly like DIM array init data.
+        if len(p) == 3 and isinstance(p[2], list) and len(p[2]) > 0:
+            p[0] = ("DATA", [("CONSTANT", c) for c in p[2]])
+        else:
+            p[0] = None
+
+    def p_statement_read_dir(self, p):
+        """
+        statement : READ variableID
+        """
+        # READ v: opcode READ pushes the next data byte, POP_SET stores it into v.
+        if len(p) == 3 and self._is_valid_var(p[2]):
+            p[0] = [("READ",), ("POP_SET", ("VARIABLE", p[2], 0))]
+        else:
+            p[0] = None
+
+    def p_statement_read_ind(self, p):
+        """
+        statement : READ LCARET variableID RCARET
+        """
+        # READ [v]: indirect destination (v holds the target variable index),
+        # like LET [v] = ... -> POP_SET_DI.
+        if len(p) == 5 and self._is_valid_var(p[3]):
+            p[0] = [("READ",), ("POP_SET_DI", ("VARIABLE", p[3], 0))]
+        else:
+            p[0] = None
+
+    def p_statement_restore(self, p):
+        """
+        statement : RESTORE
+                  | RESTORE ID
+        """
+        # RESTORE rewinds the global cursor to 0; RESTORE label rewinds it to the
+        # first DATA appearing after 'label' (resolved to a blob offset in codegen).
+        if len(p) == 2:
+            p[0] = ("RESTORE", 0, 0)
+        elif len(p) == 3 and self._symbol_usage(p[2], SymbolType.LABEL, p.lineno(2)):
+            p[0] = ("RESTORE_LABEL", p[2])
+        else:
+            p[0] = None
+
     def p_statement_choose(self, p):
         """
         statement : CHOOSE IF WAIT constexpression THEN GOTO ID
@@ -2267,6 +2314,11 @@ class CydcParser(object):
     def p_varexpression_isdisk(self, p):
         "varexpression : ISDISK LPAREN RPAREN"
         p[0] = ("PUSH_IS_DISK",)
+
+    def p_varexpression_dataend(self, p):
+        "varexpression : DATAEND LPAREN RPAREN"
+        # Boolean 0/1: 1 when the global DATA cursor has reached the end.
+        p[0] = ("DATAEND",)
 
     def p_varexpression_expression(self, p):
         """

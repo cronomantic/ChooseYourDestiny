@@ -1120,6 +1120,61 @@ Another limitation is that you cannot save or retrieve data from these arrays us
 
 Finally, if you modify the data in an array, you cannot retrieve the original values unless you make a copy to another array first.
 
+## Immutable data (`DATA` / `READ` / `RESTORE` / `DATAEND()`)
+
+When you need a **read-only** block of data (tables, maps, byte-by-byte packed text, sequences…), `CYD` offers the `DATA` mechanism, analogous to BASIC's. Unlike `DIM` arrays —which are writable and limited to 256 elements—, `DATA` is **immutable** and forms a **single global stream** that can be up to **16 KB** (over 16000 elements). Since it is never modified, it takes **0 bytes of RAM on Dandanator/MLD** (it is read straight from flash).
+
+Each `DATA` statement appends its bytes, in source order, to that global stream. They are read sequentially with `READ`, which uses the same bare destination as `SET`/`LET`:
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 10, 20, 30      /* these five values form a single stream:  */
+  DATA 40, 50          /* 10, 20, 30, 40, 50                       */
+
+  READ v               /* v = 10, and the cursor advances     */
+  READ [v]             /* indirect destination (index in v), like LET [v] */
+]]
+```
+
+There is a **single global cursor** that starts at the beginning of the stream. `RESTORE` rewinds it to the start, and `RESTORE label` places it at the **first `DATA` appearing after that label** (same semantics as BASIC's `RESTORE line`; it reuses `LABEL`s):
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 11, 22, 33
+  LABEL second
+  DATA 44, 55
+
+  RESTORE second       /* the cursor is placed at '44' */
+  READ v               /* v = 44                       */
+]]
+```
+
+The `DATAEND()` function returns `1` if the cursor has reached the end of the stream and `0` otherwise. It is useful to walk all the data with a loop (note it is a function, with parentheses, and to use it as a condition you compare it, e.g. `DATAEND() = 0`):
+
+```cyd
+[[
+  DECLARE 0 AS v
+
+  DATA 65, 66, 67
+
+  WHILE (DATAEND() = 0)  /* while we have not reached the end */
+    READ v
+    CHAR v               /* prints the character A, B, C      */
+  WEND
+]]
+```
+
+Things to keep in mind:
+
+- `DATA` statements **are not executed**: they can be placed anywhere in the script (the compiler gathers them all and removes them from the code stream). Grouping them helps readability.
+- **Endless tape**: reading past the end automatically rewinds the cursor to the start of the stream (it is not an error). Use `DATAEND()` if you want to detect the end and stop.
+- Values are byte constants (they accept the same expressions and named constants as a `DIM` initializer).
+- If a program does not use `DATA`, the corresponding opcodes are stripped from the interpreter (zero cost).
+
 ---
 
 ## List of commands
@@ -1163,6 +1218,30 @@ Create an array named _ID_ with as many elements as indicated by _expression_. T
 ### DIM ID(expression) = {expression, expression...}
 
 Same as [DIM ID(expression)](#dim-idexpression), but assigning comma-separated values.
+
+### DATA expression, expression...
+
+Appends the values (byte constants) to the global read-only immutable data stream, in source order. All `DATA` statements in the script form a single stream (16 KB max). They are not executed; the compiler extracts them from the code.
+
+### READ varID
+
+Reads the next byte of the data stream into variable _varID_ and advances the cursor.
+
+### READ [varID]
+
+Same as [READ varID](#read-varid), but the destination is the variable whose index matches the content of _varID_ (indirect destination).
+
+### RESTORE
+
+Rewinds the data stream cursor to the beginning.
+
+### RESTORE ID
+
+Places the data stream cursor at the first `DATA` appearing after the _ID_ label in the source.
+
+### DATAEND()
+
+Returns `1` if the data stream cursor has reached the end, `0` otherwise.
 
 ### GOTO ID
 
