@@ -653,5 +653,121 @@ class TestWideConstants(CodegenTestBase):
         )
 
 
+class TestFeature3Sugar(CodegenTestBase):
+    """SWAP, ENUM, char literals, ranges {a..b}, repetition {v REPEAT n} and
+    SELECT/CASE — all pure front-end (0 new runtime)."""
+
+    def _tuples(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        return code
+
+    def _blob(self, src):
+        g, _ = self._genv(src)
+        return g.data_blob
+
+    def _genv(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        g = CydcCodegen(gettext)
+        g.set_bank_offset_list([0xC000])
+        g.set_bank_size_list([16 * 1024])
+        return g, g.generate_code(code=code)
+
+    # --- SWAP ---
+    def test_swap_direct(self):
+        t = self._tuples("[[ DECLARE 0 AS a : DECLARE 1 AS b : SWAP a, b ]]")
+        self.assertIn(("PUSH_I", ("VARIABLE", "a", 0)), t)
+        self.assertIn(("PUSH_I", ("VARIABLE", "b", 0)), t)
+        self.assertIn(("POP_SET", ("VARIABLE", "a", 0)), t)
+        self.assertIn(("POP_SET", ("VARIABLE", "b", 0)), t)
+
+    def test_swap_indirect(self):
+        t = self._tuples("[[ DECLARE 0 AS a : DECLARE 1 AS b : SWAP [a], [b] ]]")
+        self.assertIn(("PUSH_DI", ("VARIABLE", "a", 0)), t)
+        self.assertIn(("POP_SET_DI", ("VARIABLE", "b", 0)), t)
+
+    def test_swap_mixed(self):
+        t = self._tuples("[[ DECLARE 0 AS a : DECLARE 1 AS b : SWAP a, [b] ]]")
+        self.assertIn(("PUSH_I", ("VARIABLE", "a", 0)), t)
+        self.assertIn(("PUSH_DI", ("VARIABLE", "b", 0)), t)
+        self.assertIn(("POP_SET", ("VARIABLE", "a", 0)), t)
+        self.assertIn(("POP_SET_DI", ("VARIABLE", "b", 0)), t)
+
+    # --- ENUM ---
+    def test_enum_auto_increment(self):
+        t = self._tuples("[[ ENUM { A, B, C } ]]")
+        self.assertEqual(t, [("CONST", "A", [("C_VAL", 0)]),
+                             ("CONST", "B", [("C_VAL", 1)]),
+                             ("CONST", "C", [("C_VAL", 2)])])
+
+    def test_enum_explicit_values_continue(self):
+        t = self._tuples("[[ ENUM Item { S=1, E, P=10, K } ]]")
+        vals = [(x[1], x[2][0][1]) for x in t]
+        self.assertEqual(vals, [("S", 1), ("E", 2), ("P", 10), ("K", 11)])
+
+    def test_enum_multiline(self):
+        t = self._tuples("[[ ENUM {\n R,\n G=5,\n B\n } ]]")
+        vals = [(x[1], x[2][0][1]) for x in t]
+        self.assertEqual(vals, [("R", 0), ("G", 5), ("B", 6)])
+
+    # --- literals ---
+    def test_char_literal_is_glyph_code(self):
+        self.assertEqual(self._blob("[[ DATA 'A', 'z' ]]"), [65, 122])
+
+    def test_range_ascending_and_descending(self):
+        self.assertEqual(self._blob("[[ DATA 1..5 ]]"), [1, 2, 3, 4, 5])
+        self.assertEqual(self._blob("[[ DATA 5..1 ]]"), [5, 4, 3, 2, 1])
+
+    def test_range_of_chars(self):
+        self.assertEqual(self._blob("[[ DATA 'A'..'D' ]]"), [65, 66, 67, 68])
+
+    def test_repeat(self):
+        self.assertEqual(self._blob("[[ DATA 7 REPEAT 4 ]]"), [7, 7, 7, 7])
+
+    def test_repeat_of_range_and_wide(self):
+        self.assertEqual(self._blob("[[ DATA 1..3 REPEAT 2 ]]"), [1, 2, 3, 1, 2, 3])
+        self.assertEqual(self._blob("[[ DATA WORD 1000 REPEAT 2 ]]"), [232, 3, 232, 3])
+
+    def test_mixed_list_ranges_repeat_char(self):
+        self.assertEqual(
+            self._blob("[[ DATA 255 REPEAT 3, 1..2, 'A' ]]"),
+            [255, 255, 255, 1, 2, 65],
+        )
+
+    # --- SELECT ---
+    def test_select_lowers_to_eq_tests_and_no_fallthrough(self):
+        t = self._tuples(
+            "[[ DECLARE 0 AS v \n SELECT @v \n"
+            " CASE 0 GOSUB a \n CASE 1, 2 GOSUB a \n CASE ELSE GOSUB a \n"
+            " ENDSELECT \n LABEL a : RETURN ]]"
+        )
+        ops = [x[0] for x in t]
+        # one CP_EQ per key (0, 1, 2) -> 3 comparisons
+        self.assertEqual(ops.count("CP_EQ"), 3)
+        self.assertIn("IF_GOTO", ops)
+        # no fall-through: every non-else body ends jumping to the shared end label
+        self.assertGreaterEqual(ops.count("GOTO"), 2)
+
+    def test_select_without_else(self):
+        t = self._tuples(
+            "[[ DECLARE 0 AS v \n SELECT @v \n CASE 0 GOSUB a \n ENDSELECT \n"
+            " LABEL a : RETURN ]]"
+        )
+        ops = [x[0] for x in t]
+        self.assertEqual(ops.count("CP_EQ"), 1)
+        self.assertIn("IF_GOTO", ops)
+
+    def test_select_subject_reevaluated_per_key(self):
+        # The subject @v is pushed before each key comparison (re-evaluated).
+        t = self._tuples(
+            "[[ DECLARE 0 AS v \n SELECT @v \n CASE 0, 1, 2 GOSUB a \n ENDSELECT \n"
+            " LABEL a : RETURN ]]"
+        )
+        self.assertEqual(
+            [x for x in t if x == ("PUSH_I", ("VARIABLE", "v", 0))].__len__(), 3
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
