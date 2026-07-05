@@ -22,6 +22,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
   - [Asignaciones e indirección](#asignaciones-e-indirección)
   - [Constantes](#constantes)
   - [Arrays o "secuencias"](#arrays-o-secuencias)
+  - [Datos inmutables (`DATA` / `READ` / `RESTORE` / `DATAEND()`)](#datos-inmutables-data--read--restore--dataend)
+  - [Constantes anchas (`WORD` / `DWORD` / cadenas)](#constantes-anchas-word--dword--cadenas)
   - [Listado de comandos](#listado-de-comandos)
     - [INCLUDE "ruta/al/archivo.cyd"](#include-rutaalarchivocyd)
     - [LABEL ID](#label-id)
@@ -969,6 +971,24 @@ Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientr
 
 Se repiten repetidamente el texto y los comandos que haya desde `REPEAT` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
 
+- **FOR variable = inicio TO fin [STEP paso] ... NEXT [variable]**
+
+Bucle contado: repite el texto y los comandos hasta `NEXT` recorriendo _variable_ desde _inicio_ hasta _fin_. El `STEP` (paso) es **opcional** y por defecto vale `1`; puede ser negativo (`STEP -2`) para contar hacia atrás. El paso debe ser una **constante** (no una variable ni una constante `CONST`), porque el compilador necesita conocer la dirección del bucle. La variable del contador va **pelada** (como en `SET`/`LET`); dentro del cuerpo se lee su valor con `@variable`. El `NEXT` puede llevar opcionalmente el nombre de la variable (`NEXT i`), que debe coincidir. Los límites _inicio_ y _fin_ pueden ser expresiones (incluso variables); _fin_ se re-evalúa en cada iteración. Si al empezar el contador ya ha pasado el límite, el bucle se ejecuta **cero veces** (semántica BASIC). Ejemplo:
+
+```cyd
+[[
+DECLARE 0 AS i
+FOR i = 1 TO 5           /* i = 1, 2, 3, 4, 5 */
+  PRINT @i
+NEXT
+FOR i = 10 TO 0 STEP -2  /* cuenta atrás: 10, 8, 6, 4, 2, 0 */
+  PRINT @i
+NEXT
+]]
+```
+
+El contador es un **byte** (0..255). El bucle está protegido internamente contra el desbordamiento del byte, de modo que `FOR i = 0 TO 255` y `FOR i = 10 TO 0 STEP -1` funcionan correctamente (no entran en bucle infinito). Ten en cuenta, eso sí, que los límites deben caber en un byte.
+
 Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
 
 ```cyd
@@ -1179,6 +1199,40 @@ Consideraciones a tener en cuenta:
 
 ---
 
+## Constantes anchas (`WORD` / `DWORD` / cadenas)
+
+`CYD` trabaja con bytes, pero a menudo necesitas colocar en memoria valores de **16 bits** (0..65535) o **32 bits** (compatibles con la librería `math16_32`), o el código de los caracteres de una **cadena**. Para eso están las constantes anchas: valores que el compilador expande a una secuencia **fija de bytes consecutivos en formato _little-endian_** (byte bajo primero). Todo ocurre en tiempo de compilación: **no añaden ningún runtime**.
+
+Se pueden usar en tres sitios: en `DATA`, en la inicialización de un `DIM` y en `LET`/`SET` de una variable.
+
+- **Autodetección por magnitud** (solo en `DATA` y `DIM`): un valor de 0 a 255 ocupa 1 byte, de 256 a 65535 ocupa 2 bytes y de 65536 en adelante ocupa 4 bytes, automáticamente.
+- **Marcadores `WORD` y `DWORD`**: fuerzan 2 o 4 bytes aunque el valor quepa en menos (`WORD 5` = 2 bytes). `WORD` no admite valores mayores de 16 bits y `DWORD` no admite mayores de 32 bits.
+- **Cadenas** `"..."`: se expanden a los códigos de sus caracteres (sin terminador; tú conoces la longitud porque la escribiste).
+
+```cyd
+[[
+  DATA WORD 1000, 5, "HI"         /* 2 bytes + 1 byte + 2 bytes */
+  DIM tabla() = { DWORD 100000, 42 }  /* 4 bytes + 1 byte -> array de 5 bytes */
+]]
+```
+
+Los arrays quedan **byte a byte** (_byte-plano_): no hay acceso "ancho" a un array, eres tú quien recompone el valor leyendo los bytes que necesites (con `math16_32` si vas a operar).
+
+En `LET`/`SET`, el ancho lo marca **siempre el keyword** (`WORD`/`DWORD`) o la cadena; los bytes se escriben en la variable de destino y las siguientes consecutivas. Aquí **no hay autodetección** (el número de variables ocupadas debe conocerse al compilar, así que un `LET v = 1000` sin marcador seguiría siendo de 1 byte y daría error por no caber):
+
+```cyd
+[[
+  DECLARE 0 AS puntos     /* ocupará las variables 0 y 1 */
+  DECLARE 2 AS nombre     /* ocupará las variables 2 y 3 */
+  LET puntos = WORD 1000  /* var 0 = byte bajo (232), var 1 = byte alto (3) */
+  LET nombre = "AB"       /* var 2 = cód. 'A', var 3 = cód. 'B'             */
+]]
+```
+
+Solo se admite destino **directo** (índices consecutivos conocidos): la indirección `LET [v]` no se puede usar con constantes anchas.
+
+---
+
 ## Listado de comandos
 
 Antes de describir los comandos, vamos a hablar resumidamente de la leyenda utilizada:
@@ -1219,11 +1273,11 @@ Crea un array de nombre _ID_ con tantos elementos como se indique en _expression
 
 ### DIM ID(expression) = {expression, expression...}
 
-Igual que [DIM ID(expression)](#dim-idexpression), pero asignando valores separados por comas.
+Igual que [DIM ID(expression)](#dim-idexpression), pero asignando valores separados por comas. Los elementos pueden ser constantes de byte, **constantes anchas** (`WORD`/`DWORD` o autodetectadas) o cadenas; el array queda byte a byte (ver [Constantes anchas](#constantes-anchas-word--dword--cadenas)).
 
 ### DATA expression, expression...
 
-Añade los valores (constantes de byte) al flujo global de datos inmutables de solo lectura, en el orden en que aparecen en el fuente. Todas las sentencias `DATA` del guion forman un único flujo (máximo 16 KB). No se ejecutan; el compilador las extrae del código.
+Añade los valores al flujo global de datos inmutables de solo lectura, en el orden en que aparecen en el fuente. Todas las sentencias `DATA` del guion forman un único flujo (máximo 16 KB). No se ejecutan; el compilador las extrae del código. Cada elemento puede ser una constante de byte, una **constante ancha** (`WORD`/`DWORD` o autodetectada por magnitud) o una cadena; ver [Constantes anchas](#constantes-anchas-word--dword--cadenas).
 
 ### READ varID
 
@@ -1278,9 +1332,17 @@ Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientr
 
 Se repiten repetidamente el texto y los comandos que haya desde `REPEAT` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
 
+### FOR varID = varexpression TO varexpression [STEP expression] ... NEXT [varID]
+
+Bucle contado: recorre _varID_ desde el valor inicial hasta el final. `STEP` es opcional (por defecto `1`) y debe ser una **constante** (puede ser negativa). El contador es un byte y va pelado; en el cuerpo se lee con `@varID`. Si el inicio ya ha pasado el límite, se ejecuta cero veces. Ver la sección de [control de flujo](#control-de-flujo-y-expresiones-condicionales) para más detalles.
+
 ### SET varID TO varexpression
 
 Asigna el valor de _varexpression_ a la variable _varID_.
+
+### SET varID TO WORD expression / DWORD expression / "cadena"
+
+Asigna una **constante ancha** a _varID_ y las variables consecutivas: `WORD` escribe 2 bytes (little-endian), `DWORD` 4 bytes y una cadena sus códigos de carácter. Ver [Constantes anchas](#constantes-anchas-word--dword--cadenas). (También válido con `LET varID = ...`.)
 
 ### SET [varID] TO varexpression
 

@@ -450,5 +450,208 @@ class TestImmutableData(CodegenTestBase):
         self.assertNotIn("READ", unused)
 
 
+class TestForLoop(CodegenTestBase):
+    """FOR ... NEXT: a counted loop lowered entirely in the front-end (0 runtime).
+
+    It compiles to existing opcodes with compiler-generated labels: init SET, a
+    guard (i<=b for step>0, i>=b for step<0) checked BEFORE the body (BASIC
+    semantics, may run 0 times), the body, an increment (ADD/SUB |step|) and a
+    jump back. STEP is a compile-time signed literal (default +1)."""
+
+    def _tuples(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        return code
+
+    def _errors(self, src):
+        self.parser.parse(input=src)
+        return self.parser.errors
+
+    def test_ascending_uses_gt_compare_and_add(self):
+        t = self._tuples("[[ DECLARE 0 AS i \n FOR i = 1 TO 3 \n PRINT @i \n NEXT ]]")
+        ops = [x[0] for x in t]
+        self.assertIn("CP_MT", ops)  # stop-if i > b (both top and pass-limit guards)
+        self.assertIn("IF_GOTO", ops)
+        self.assertIn("ADD", ops)
+        self.assertEqual(ops.count("GOTO"), 1)
+        self.assertEqual(ops.count("LABEL"), 2)
+        # counter initialised before the loop label
+        self.assertEqual(t[1], ("PUSH_D", ("CONSTANT", [("C_VAL", 1)])))
+        self.assertEqual(t[2], ("POP_SET", ("VARIABLE", "i", 0)))
+        # overflow guard against the compile-time constant 255-step
+        self.assertIn(("PUSH_D", ("CONSTANT", [("C_VAL", 254)])), t)
+
+    def test_descending_uses_lt_compare_and_sub(self):
+        t = self._tuples(
+            "[[ DECLARE 0 AS j \n FOR j = 10 TO 0 STEP -2 \n PRINT @j \n NEXT j ]]"
+        )
+        ops = [x[0] for x in t]
+        self.assertIn("CP_LT", ops)
+        self.assertIn("SUB", ops)
+        self.assertNotIn("CP_MT", ops)
+        self.assertNotIn("ADD", ops)
+        self.assertIn(("PUSH_D", ("CONSTANT", [("C_VAL", 2)])), t)  # |step|
+
+    def test_default_step_is_one(self):
+        t = self._tuples("[[ DECLARE 0 AS i \n FOR i = 0 TO 5 \n NEXT ]]")
+        self.assertIn(("PUSH_D", ("CONSTANT", [("C_VAL", 1)])), t)
+        self.assertIn(("ADD",), t)
+
+    def test_variable_limit_is_re_read(self):
+        t = self._tuples(
+            "[[ DECLARE 0 AS n \n DECLARE 1 AS i \n FOR i = 0 TO @n \n NEXT ]]"
+        )
+        self.assertIn(("PUSH_I", ("VARIABLE", "n", 0)), t)
+
+    def test_top_guard_is_before_body(self):
+        # May run 0 times: the top guard (compare + IF_GOTO end) precedes the body.
+        t = self._tuples("[[ DECLARE 0 AS i \n FOR i = 5 TO 0 \n PRINT @i \n NEXT ]]")
+        ops = [x[0] for x in t]
+        self.assertLess(ops.index("IF_GOTO"), ops.index("POP_PRINT"))
+
+    def test_step_zero_errors(self):
+        errs = self._errors("[[ DECLARE 0 AS i \n FOR i = 0 TO 5 STEP 0 \n NEXT ]]")
+        self.assertTrue(any("STEP" in e for e in errs), errs)
+
+    def test_step_out_of_range_errors(self):
+        errs = self._errors("[[ DECLARE 0 AS i \n FOR i = 0 TO 5 STEP 300 \n NEXT ]]")
+        self.assertTrue(any("STEP" in e for e in errs), errs)
+
+    def test_next_variable_mismatch_errors(self):
+        errs = self._errors(
+            "[[ DECLARE 0 AS i \n DECLARE 1 AS k \n FOR i = 1 TO 3 \n NEXT k ]]"
+        )
+        self.assertTrue(any("NEXT" in e for e in errs), errs)
+
+    def test_nested_for_uses_distinct_labels(self):
+        t = self._tuples(
+            "[[ DECLARE 0 AS i \n DECLARE 1 AS j \n"
+            " FOR i = 0 TO 2 \n FOR j = 0 TO 2 \n NEXT \n NEXT ]]"
+        )
+        labels = [x[1] for x in t if x[0] == "LABEL"]
+        self.assertEqual(len(labels), 4)
+        self.assertEqual(len(labels), len(set(labels)))
+
+    def test_for_opcodes_present_only_from_existing_set(self):
+        # FOR adds NO new opcode: it must not introduce a "FOR"/"NEXT" tuple.
+        t = self._tuples("[[ DECLARE 0 AS i \n FOR i = 0 TO 3 \n NEXT ]]")
+        ops = {x[0] for x in t}
+        self.assertNotIn("FOR", ops)
+        self.assertNotIn("NEXT", ops)
+
+
+class TestWideConstants(CodegenTestBase):
+    """WORD/DWORD/string constants expanded to little-endian bytes (0 runtime).
+
+    In DATA and DIM init the width auto-detects by magnitude, and WORD/DWORD force
+    a wider slot. In LET the width is fixed by the keyword (the slot count must be
+    known while lowering). CONST references resolve normally."""
+
+    def _gen(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [], f"parser errors: {self.parser.errors}")
+        g = CydcCodegen(gettext)
+        g.set_bank_offset_list([0xC000])
+        g.set_bank_size_list([16 * 1024])
+        chunks = g.generate_code(code=code)
+        return g, chunks
+
+    def _sysexit(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        return str(cm.exception.code)
+
+    def test_data_autodetects_width_by_magnitude(self):
+        g, _ = self._gen("[[ DATA 5, 300, 70000 ]]")
+        # 5->[5]; 300=0x012C->[44,1]; 70000=0x011170->[112,17,1,0]
+        self.assertEqual(g.data_blob, [5, 44, 1, 112, 17, 1, 0])
+
+    def test_data_word_and_dword_force_width(self):
+        g, _ = self._gen("[[ DATA WORD 5, DWORD 5 ]]")
+        self.assertEqual(g.data_blob, [5, 0, 5, 0, 0, 0])
+
+    def test_data_string_is_glyph_bytes(self):
+        g, _ = self._gen('[[ DATA "HI" ]]')
+        self.assertEqual(g.data_blob, [ord("H"), ord("I")])
+
+    def test_word_value_overflow_errors(self):
+        self.assertIn("16 bits", self._sysexit("[[ DATA WORD 70000 ]]"))
+
+    def test_let_word_overflow_shares_data_message(self):
+        # LET WORD and DATA WORD report the same "does not fit in 16 bits" wording.
+        msg = self._sysexit("[[ CONST K = 70000 : DECLARE 0 AS s : LET s = WORD K ]]")
+        self.assertIn("WORD value 70000 does not fit in 16 bits", msg)
+
+    def test_dim_wide_init_is_byte_plano(self):
+        g, _ = self._gen('[[ DIM t() = { WORD 1000, 42, "AB" } ]]')
+        self.assertEqual(g.array_lengths["t"], 5)  # 2 + 1 + 2
+
+    def test_dim_declared_size_pads(self):
+        g, _ = self._gen("[[ DIM t(8) = { WORD 1000, 42 } ]]")
+        self.assertEqual(g.array_lengths["t"], 8)
+
+    def test_dim_wide_too_small_errors(self):
+        self.assertIn("too small", self._sysexit("[[ DIM t(2) = { DWORD 1 } ]]"))
+
+    def test_let_word_writes_two_le_bytes(self):
+        g, chunks = self._gen("[[ DECLARE 0 AS s : LET s = WORD 1000 ]]")
+        sd = g.opcodes["SET_D"]
+        # 1000 = 0x03E8 -> low 0xE8=232, high 0x03=3
+        self.assertEqual(chunks[0], [sd, 0, 232, sd, 1, 3, 0x00])
+
+    def test_let_dword_writes_four_le_bytes(self):
+        g, chunks = self._gen("[[ DECLARE 0 AS d : LET d = DWORD 100000 ]]")
+        sd = g.opcodes["SET_D"]
+        # 100000 = 0x000186A0 -> A0 86 01 00
+        self.assertEqual(
+            chunks[0], [sd, 0, 0xA0, sd, 1, 0x86, sd, 2, 0x01, sd, 3, 0x00, 0x00]
+        )
+
+    def test_let_string_writes_glyph_bytes(self):
+        g, chunks = self._gen('[[ DECLARE 0 AS b : LET b = "HI" ]]')
+        sd = g.opcodes["SET_D"]
+        self.assertEqual(chunks[0], [sd, 0, ord("H"), sd, 1, ord("I"), 0x00])
+
+    def test_const_reference_inside_word_resolves(self):
+        g, chunks = self._gen("[[ CONST K = 1000 : DECLARE 0 AS s : LET s = WORD K ]]")
+        sd = g.opcodes["SET_D"]
+        self.assertEqual(chunks[0], [sd, 0, 232, sd, 1, 3, 0x00])
+
+    def test_plain_let_stays_one_byte(self):
+        # Without a keyword, LET is unchanged (1 byte); no auto-widening in LET.
+        g, chunks = self._gen("[[ DECLARE 0 AS x : LET x = 5 ]]")
+        sd = g.opcodes["SET_D"]
+        self.assertEqual(chunks[0], [sd, 0, 5, 0x00])
+
+    def test_wide_numeric_index_overflow_errors(self):
+        # LET 255 = WORD writes indices 255 AND 256; 256 is out of the variable
+        # space, so it must error at compile time (not emit an invalid operand).
+        self.assertIn("out of bounds", self._sysexit("[[ LET 255 = WORD 65000 ]]"))
+
+    def test_wide_dword_numeric_index_overflow_errors(self):
+        self.assertIn("out of bounds", self._sysexit("[[ LET 254 = DWORD 100000 ]]"))
+
+    def test_wide_string_numeric_index_overflow_errors(self):
+        self.assertIn("out of bounds", self._sysexit('[[ LET 255 = "AB" ]]'))
+
+    def test_multislot_set_numeric_index_overflow_errors(self):
+        # The same displacement bounds check must guard the pre-existing multi-slot
+        # SET/LET with a numeric index (SET 255 TO {1,2} targets 255 and 256).
+        self.assertIn("out of bounds", self._sysexit("[[ SET 255 TO {1, 2} ]]"))
+
+    def test_wide_indirect_destination_is_rejected(self):
+        # Wide constants require a direct destination (the target index of an
+        # indirect [..] store is only known at runtime and v+1 could leave the
+        # 0..255 space). This must be a clear parser error, not silent code.
+        self.parser.parse(input="[[ LET [1] = WORD 56000 ]]")
+        self.assertTrue(
+            any("direct destination" in e for e in self.parser.errors),
+            self.parser.errors,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

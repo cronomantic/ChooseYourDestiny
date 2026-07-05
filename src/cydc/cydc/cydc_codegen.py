@@ -387,6 +387,94 @@ class CydcCodegen(object):
             else:
                 sys.exit(self._(f"ERROR: Invalid constant expression value {c}!"))
 
+    def _eval_const_raw(self, expression, constants):
+        """Evaluate a constant-expression postfix to its raw non-negative integer,
+        WITHOUT the byte/word range cap that constant_expression_calculation
+        applies. Used for wide constants (WORD/DWORD) and DATA/array width
+        auto-detection, where values legitimately exceed a byte or a word. The
+        caller applies the width-specific range check."""
+        stack = []
+        for c in expression:
+            if isinstance(c, tuple) and len(c) in range(1, 3):
+                op = c[0]
+                try:
+                    if op == "C_REPL":
+                        a = constants.get(c[1])
+                        if a is None:
+                            sys.exit(self._(f"ERROR: Constant {c[1]} does not exists!"))
+                        stack.append(a)
+                    elif op == "C_VAL":
+                        stack.append(c[1])
+                    elif op == "C_+":
+                        b = stack.pop(); a = stack.pop(); stack.append(a + b)
+                    elif op == "C_-":
+                        b = stack.pop(); a = stack.pop(); stack.append(a - b)
+                    elif op == "C_*":
+                        b = stack.pop(); a = stack.pop(); stack.append(a * b)
+                    elif op == "C_/":
+                        b = stack.pop(); a = stack.pop(); stack.append(a // b)
+                    elif op == "C_&":
+                        b = stack.pop(); a = stack.pop(); stack.append(a & b)
+                    elif op == "C_|":
+                        b = stack.pop(); a = stack.pop(); stack.append(a | b)
+                    elif op == "C_<<":
+                        b = stack.pop(); a = stack.pop(); stack.append(a << b)
+                    elif op == "C_>>":
+                        b = stack.pop(); a = stack.pop(); stack.append(a >> b)
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid constant expression, {op}!"))
+                except IndexError:
+                    sys.exit(self._(f"ERROR: Invalid constant expression operation {op}!"))
+            else:
+                sys.exit(self._(f"ERROR: Invalid constant expression {c}!"))
+        if len(stack) != 1 or not isinstance(stack[0], int):
+            sys.exit(self._(f"ERROR: Invalid constant expression operation!"))
+        if stack[0] < 0:
+            sys.exit(self._(f"ERROR: Constant expression value {stack[0]} must not be negative!"))
+        return stack[0]
+
+    def _check_wide_fits(self, val, width):
+        """Range-check a wide constant against its forced width (2 or 4 bytes),
+        with one message shared by DATA/DIM and LET/SET so they read identically."""
+        if val >= (1 << (8 * width)):
+            kw = "WORD" if width == 2 else "DWORD"
+            sys.exit(
+                self._(f"ERROR: {kw} value {val} does not fit in {8 * width} bits.")
+            )
+
+    def _expand_data_element(self, elem, constants):
+        """Expand one DATA/array init element into its little-endian bytes.
+
+        Elements (produced by the parser): ("CONSTANT", postfix) auto-detects the
+        width by magnitude (0..255 -> 1 byte, ..65535 -> 2, ..2^32-1 -> 4);
+        ("CONSTANT_WORD", postfix) forces 2 bytes; ("CONSTANT_DWORD", postfix)
+        forces 4; ("CONSTANT_STR", [bytes]) is the string's glyph bytes. 0 runtime:
+        everything is resolved here at compile time."""
+        tag = elem[0]
+        if tag == "CONSTANT_STR":
+            return [b & 0xFF for b in elem[1]]
+        if not (len(elem) == 2 and isinstance(elem[1], list)):
+            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+        val = self._eval_const_raw(elem[1], constants)
+        if tag == "CONSTANT":
+            if val < (1 << 8):
+                width = 1
+            elif val < (1 << 16):
+                width = 2
+            elif val < (1 << 32):
+                width = 4
+            else:
+                sys.exit(self._(f"ERROR: DATA/array value {val} too big (max 2^32-1)."))
+        elif tag == "CONSTANT_WORD":
+            self._check_wide_fits(val, 2)
+            width = 2
+        elif tag == "CONSTANT_DWORD":
+            self._check_wide_fits(val, 4)
+            width = 4
+        else:
+            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+        return [(val >> (8 * k)) & 0xFF for k in range(width)]
+
     def code_extract_declarations(self, code):
         variables = {}
         constants = {}
@@ -517,6 +605,11 @@ class CydcCodegen(object):
             ):  # Special case for arrays
                 if isinstance(instruction[1], str) and isinstance(instruction[3], list):
                     size = instruction[2]
+                    # Expand every init element to its bytes (a WORD/DWORD/string
+                    # element yields several bytes). Arrays are byte-plano.
+                    lc = []
+                    for c in instruction[3]:
+                        lc += self._expand_data_element(c, constants)
                     if (
                         isinstance(size, tuple)
                         and isinstance(size[1], list)
@@ -526,7 +619,7 @@ class CydcCodegen(object):
                             size[1], constants, True
                         )
                     elif instruction[2] is None:
-                        array_len = len(instruction[3])
+                        array_len = len(lc)  # byte count after expansion
                     else:
                         sys.exit(self._(f"ERROR: Invalid array declaration"))
                     if array_len not in range(1, 257):
@@ -535,25 +628,6 @@ class CydcCodegen(object):
                                 f"ERROR: The array {instruction[1]} has an invalid size."
                             )
                         )
-                    lc = []
-                    for c in instruction[3]:
-                        if (
-                            isinstance(c, tuple)
-                            and len(c) == 2
-                            and c[0] == "CONSTANT"
-                            and isinstance(c[1], list)
-                        ):
-                            lc.append(
-                                self.constant_expression_calculation(
-                                    c[1], constants, False
-                                )
-                            )
-                        else:
-                            sys.exit(
-                                self._(
-                                    f"ERROR: Invalid array declaration {instruction[1]}"
-                                )
-                            )
                     if len(lc) > array_len:
                         sys.exit(
                             self._(
@@ -566,22 +640,12 @@ class CydcCodegen(object):
                 else:
                     sys.exit(self._(f"ERROR: Invalid array declaration"))
             elif len(instruction) == 2 and instruction[0] == "DATA":
-                # Immutable DATA: resolve each byte constant-expression now (same
-                # as array init data). code_extract_data later concatenates every
-                # ("DATA", [bytes]) into the global blob and strips them.
+                # Immutable DATA: expand each element to its bytes now (auto-detect
+                # width / WORD / DWORD / string). code_extract_data later
+                # concatenates every ("DATA", [bytes]) into the global blob.
                 lc = []
                 for c in instruction[1]:
-                    if (
-                        isinstance(c, tuple)
-                        and len(c) == 2
-                        and c[0] == "CONSTANT"
-                        and isinstance(c[1], list)
-                    ):
-                        lc.append(
-                            self.constant_expression_calculation(c[1], constants, False)
-                        )
-                    else:
-                        sys.exit(self._(f"ERROR: Invalid DATA declaration"))
+                    lc += self._expand_data_element(c, constants)
                 tup = ("DATA", lc)
             else:
                 tup = ()
@@ -609,6 +673,16 @@ class CydcCodegen(object):
                                 else:
                                     c = t + disp  # Adds displacement
                             else:
+                                # Numeric variable index. Same bounds check as the
+                                # named path: a displacement (multi-slot SET/LET or a
+                                # wide constant) must not push the target past 255,
+                                # otherwise we would emit an invalid (>255) operand.
+                                if (c + disp) not in range(256):
+                                    sys.exit(
+                                        self._(
+                                            f"ERROR: Multiple assignation of variable {c} is out of bounds!"
+                                        )
+                                    )
                                 c = c + disp
                         elif (
                             len(c) == 2
@@ -636,6 +710,14 @@ class CydcCodegen(object):
                                 c[1], constants, True
                             )
                             c = (c >> 8) & 0xFF
+                        elif (
+                            len(c) == 4
+                            and c[0] == "CONSTANT_WIDE"
+                            and isinstance(c[1], list)
+                        ):  # byte c[2] of a width-c[3] wide constant (WORD/DWORD LET)
+                            v = self._eval_const_raw(c[1], constants)
+                            self._check_wide_fits(v, c[3])
+                            c = (v >> (8 * c[2])) & 0xFF
                     tup += (c,)
             code.append(tup)
         self.externs = externs
