@@ -10,7 +10,6 @@ Run: python tests/run_tests.py   (or: python -m unittest tests.test_extern)
 """
 
 import os
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +22,6 @@ from emu_harness import (  # noqa: E402
     run_in_zesarux,
     find_sjasmplus,
     build_mld_rom,
-    CYDC,
 )
 
 # Native routine body. The author writes only the body; CYD frames it with the
@@ -91,28 +89,54 @@ class TestExtern(unittest.TestCase):
         self.assertEqual(f[2], 123, "interpreter did not resume after CALL")
 
     def test_import_call_mld128(self):
-        """mld128 (128k Dandanator): banked routine reached from the cartridge.
-
-        (The strict mld / 48k-Dandanator target intentionally does NOT support
-        native routines — the compiler rejects IMPORT/CALL there with a clear
-        error; see test_import_call_strict_mld_is_rejected.)"""
+        """mld128 (128k Dandanator): banked routine reached from the cartridge."""
         self._roundtrip_mld("mld128", "128k")
 
-    def test_import_call_strict_mld_is_rejected(self):
-        """Strict mld (48k Dandanator) is a 48k machine (no $7FFD banks) reading
-        from flash slots, so neither extern-placement path (resident-48k /
-        $7FFD-banked) fits: the compiler must reject IMPORT/CALL with a clear
-        error rather than mis-place the routine."""
-        with tempfile.TemporaryDirectory(prefix="cyd_extern_neg_") as wd:
-            (Path(wd) / "nativo.asm").write_text(NATIVE, encoding="utf-8")
-            (Path(wd) / "test.cyd").write_text(SRC, encoding="utf-8")
-            proc = subprocess.run(
-                [sys.executable, str(CYDC), "-v", "mld", "test.cyd",
-                 find_sjasmplus(), "."],
-                cwd=wd, capture_output=True, text=True, timeout=180,
-            )
-        self.assertNotEqual(proc.returncode, 0, "strict mld should reject IMPORT/CALL")
-        self.assertIn("only supported on", proc.stdout + proc.stderr)
+    def test_import_call_mld(self):
+        """strict mld (48K Dandanator): the routine is copied from flash to the
+        resident pool ARR_POOL by ARR_INIT at boot (like a DIM array) and called
+        directly from RAM. No $7FFD banks; runs on a 48K machine."""
+        self._roundtrip_mld("mld", "48k")
+
+    def test_import_call_mld_writable_ram(self):
+        """A native routine on strict mld runs from WRITABLE RAM (ARR_POOL), so a
+        self-modifying routine and one using DEFS as scratch both work -- this is
+        exactly why the routine is copied to RAM (like arrays) instead of run from
+        the read-only flash slot."""
+        src = (
+            "[[\n"
+            "ASM defstest\n"
+            "    ld a, 88\n"
+            "    ld (dscratch), a\n"      # write DEFS scratch (needs writable RAM)
+            "    xor a\n"
+            "    ld a, (dscratch)\n"      # read it back
+            "    ld (de), a\n"           # FLAGS+0 = 88 if the scratch is writable
+            "    ret\n"
+            "dscratch:\n"
+            "    DEFS 4\n"
+            "ENDASM\n"
+            "ASM selfmod\n"
+            "    ld a, 55\n"
+            "    ld (patchpt+1), a\n"    # patch the immediate below (self-modify)
+            "patchpt:\n"
+            "    ld a, 0\n"              # becomes ld a, 55 if code is writable
+            "    inc de\n"
+            "    ld (de), a\n"           # FLAGS+1 = 55 if self-modification worked
+            "    ret\n"
+            "ENDASM\n"
+            "CALL defstest\n"
+            "CALL selfmod\n"
+            "SET 2 TO 123\n"
+            "LABEL spin\nGOTO spin\n"
+            "]]\n"
+        )
+        with tempfile.TemporaryDirectory(prefix="cyd_extern_mldrw_") as wd:
+            rom, flags = build_mld_rom(src, "mld", wd)
+            f = run_in_zesarux(None, flags, n_bytes=4, machine="48k",
+                               dandanator_rom=rom, max_wait=40.0)
+        self.assertEqual(f[0], 88, "DEFS scratch is not writable RAM on mld")
+        self.assertEqual(f[1], 55, "self-modifying code did not run from writable RAM")
+        self.assertEqual(f[2], 123, "interpreter did not resume after the CALLs")
 
 
 # Inline ASM blocks (ASM ... ENDASM): the body is written verbatim in the .cyd

@@ -19,8 +19,22 @@
 
 import os
 import re
+import sys
 from cydc_utils import bytes2str, run_assembler, get_asm_template
 from pyZX7.compress import compress_data as zx7_compress_data
+
+
+def mld_intro_scr_size(loading_scr):
+    """Compressed size (bytes) of the MLD intro/loading screen, or 0 if none.
+
+    On strict mld the intro screen (MLD_INTRO_SCR_DATA) is emitted inside the saved
+    interpreter image, BEFORE the block index, but the size probe stubs it out. So
+    it must be added to the resident pool base (ARR_POOL) that cydc.py computes to
+    place native routines -- otherwise they land at the wrong address. cydc.py calls
+    this at most ONCE per build (only when there are strict-mld native routines AND a
+    loading screen), so pyZX7's O(n^2) pass is not repeated. Not cached globally: a
+    module-level cache would persist across builds/tests and defeat mocking."""
+    return len(zx7_compress_data(loading_scr)) if loading_scr is not None else 0
 
 
 def get_unused_opcodes_defines(unused_opcodes=None):
@@ -1487,6 +1501,7 @@ def do_asm_mld(
     extern_dispatch="",
     arr_init_table=None,
     data_len=0,
+    resident_pool_base=None,
 ):
     # Array relocation table: DIM arrays live in read-only flash on MLD, so the
     # compiler relocates them to writable RAM. Emit the boot copy table ARR_INIT
@@ -1591,6 +1606,23 @@ def do_asm_mld(
         os.remove(int_bin_path)
     if os.path.exists(dummy_tap):
         os.remove(dummy_tap)
+
+    # Invariant that guarantees native routines and DIM arrays never collide in the
+    # resident pool on strict mld: ARR_POOL (= $8000 + SIZE_INTERPRETER, right after
+    # the saved image) MUST equal the base cydc.py used to assemble each native
+    # routine's fixed ORG and lay out the pool offsets. cydc.py passes that base as
+    # ``resident_pool_base`` ONLY when there are strict-mld native routines (so the
+    # check is skipped for array-only / no-routine builds and for the standalone
+    # unit tests that pass a mock bank0_offset). If a future layout change breaks it,
+    # fail the build loudly instead of shipping a corrupt ROM.
+    if resident_pool_base is not None:
+        actual_arr_pool = 0x8000 + len(int_bytes)
+        if resident_pool_base != actual_arr_pool:
+            sys.exit(
+                "ERROR (internal): strict mld ARR_POOL mismatch "
+                f"(expected ${resident_pool_base:04X}, got ${actual_arr_pool:04X}); "
+                "native-routine / array pool placement would be wrong."
+            )
 
     slots = {1: list(int_bytes)}
     for i, block in enumerate(blocks):
