@@ -333,8 +333,8 @@ def main():
     arg_parser.add_argument(
         "model",
         default="plus3",
-        choices=["48k", "128k", "plus3", "mld", "mld128"],
-        help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
+        choices=["48k", "128k", "plus3", "mld", "mld128", "esxdos"],
+        help=_("Model of spectrum to target (mld/mld128/esxdos are EXPERIMENTAL)"),
         type=str.lower,
     )
     arg_parser.add_argument(
@@ -634,7 +634,7 @@ def main():
                     force_mirror=scr_force_mirror,
                     verbose=(verbose >= 1),
                 )
-                if (model == "plus3") and (len(b) > (7 * 1024)):
+                if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                     sys.exit(_("ERROR: Invalid SCR file, it is too big"))
                 with open(dpath, "wb") as f:
                     f.write(bytearray(b))
@@ -645,7 +645,7 @@ def main():
                     b = list(f.read())
                     t = ("SCR", i, len(b), b, dpath)
                     blocks.append(t)
-                    if (model == "plus3") and (len(b) > (7 * 1024)):
+                    if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
         print(_(f"Images processing completed ({tmp_timer})"))
 
@@ -828,6 +828,22 @@ def main():
                 pause_start_value=args.pause_after_load,
                 use_wyz_tracker=use_wyz_tracker,
             )
+        elif model == "esxdos":
+            if verbose > 0:
+                print(_("Assembling interpreter for size..."))
+            asm_size = get_asm_esxdos_size(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+            )
         elif model == "mld" or model == "mld128":
             if verbose > 0:
                 print(_("Assembling interpreter for size..."))
@@ -989,6 +1005,17 @@ def main():
             spectrum_banks = [0, 3, 4, 6, 7]
         else:
             spectrum_banks = [0, 1, 3, 4, 6, 7]
+    elif model == "esxdos":
+        # ESXDOS streams images from SD into PIC_BUFFER ($E000), which lives in the
+        # HIGH half of the staging bank IMG_BANK=6; its LOW half ($C000-$DFFF, 8 KB)
+        # stays allocatable (capped below). Bank 6 is placed LAST so text chunks
+        # fill the full-size banks first and only spill into the 8 KB staging bank
+        # for large adventures (a clean "Block too big" error if a chunk > 8 KB).
+        # No banks are reserved for a disk OS (no +3DOS): 6 content banks.
+        if use_wyz_tracker:
+            spectrum_banks = [0, 3, 4, 7, 6]
+        else:
+            spectrum_banks = [0, 1, 3, 4, 7, 6]
     elif model == "plus3":
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 6]
@@ -1023,6 +1050,11 @@ def main():
         elif i == 3 and model == "plus3" and use_wyz_tracker:
             offset = 0xC000
             size = 8 * 1024
+        elif model == "esxdos" and spectrum_banks[i] == 6:
+            # esxdos staging bank: only the 8 KB low half ($C000-$DFFF) is usable;
+            # $E000+ is PIC_BUFFER for the streamed image.
+            offset = 0xC000
+            size = 8 * 1024
         else:
             offset = 0xC000
             size = 16 * 1024
@@ -1041,7 +1073,14 @@ def main():
     # Blocks placed by best-fit: media (SCR/TRK/WYZ) only on non-plus3 (on plus3
     # they are streamed from disk, not banked), plus the immutable DATA blob on
     # EVERY target (it is read-only data, so on plus3 it goes in a RAM bank too).
-    place_blocks = list(blocks) if model != "plus3" else []
+    # esxdos (F2) streams images too, so SCR are excluded from residency (opened as
+    # SD files by name); music (TRK/WYZ) stays resident in F2a.
+    if model == "plus3":
+        place_blocks = []
+    elif model == "esxdos":
+        place_blocks = [b for b in blocks if b[0] != "SCR"]
+    else:
+        place_blocks = list(blocks)
     if has_data:
         place_blocks.append(("DATA", 0, codegen.data_len, list(codegen.data_blob), ""))
 
@@ -1051,9 +1090,13 @@ def main():
         available_banks = copy.deepcopy(tmp_blocks)
         available_banks.extend([[] for x in range(num_banks - len(tmp_blocks))])
         available_bank_size = copy.deepcopy(tmp_available_bank_size)
-        available_bank_size.extend(
-            [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
-        )
+        for j in range(len(tmp_available_bank_size), num_banks):
+            # esxdos staging bank (id 6) only exposes its 8 KB low half to the
+            # allocator; the rest of the banks are full 16 KB.
+            if model == "esxdos" and spectrum_banks[j] == 6:
+                available_bank_size.append(8 * 1024)
+            else:
+                available_bank_size.append(16 * 1024)
         fits = True
         if place_blocks:
             for i, block in enumerate(place_blocks):
@@ -1121,9 +1164,9 @@ def main():
     # there are no strict-mld native routines.
     mld_resident_pool_base = None
     if kept_blocks:
-        # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
-        # mld (single Dandanator-slot bank) is not supported yet.
-        if model not in ("48k", "128k", "plus3", "mld128", "mld"):
+        # 48k = resident; 128k/+3/mld128/esxdos = paged bank at $C000 ($7FFD).
+        # Strict mld (single Dandanator-slot bank) is not supported yet.
+        if model not in ("48k", "128k", "plus3", "mld128", "mld", "esxdos"):
             sys.exit(
                 _(
                     "ERROR: IMPORT/CALL native routines are not supported on the "
@@ -1417,6 +1460,33 @@ def main():
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
             )
+        elif model == "esxdos":
+            if verbose > 0:
+                print(_("Assembling ESXDOS data file and loader..."))
+            output_name = output_name[:8]
+            do_asm_esxdos(
+                data_len=codegen.data_len,
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                dat_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+                name=output_name,
+                extern_dispatch=extern_dispatch_asm,
+            )
         elif model == "plus3":
             if verbose > 0:
                 print(_("Assembling Spectrum PLUS3 binary files..."))
@@ -1552,6 +1622,22 @@ def main():
         finally:
             if not res:
                 sys.exit("ERROR: could not create DSK file")
+
+    ######################################################################
+    if model == "esxdos":
+        # ESXDOS distributes streamed media as loose files on the SD card root
+        # (same folder as the .DAT); screen_manager_esxdos opens them by "NNN.CSC".
+        if verbose > 0:
+            print(_("Copying ESXDOS media files..."))
+        for b in blocks:
+            if b[0] == "SCR":
+                src = b[4]
+                dst = os.path.join(args.output_path, f"{b[1]:03d}.CSC")
+                try:
+                    with open(src, "rb") as fi, open(dst, "wb") as fo:
+                        fo.write(fi.read())
+                except OSError:
+                    sys.exit("ERROR: could not copy ESXDOS media file")
 
     ######################################################################
     if model == "mld" or model == "mld128":

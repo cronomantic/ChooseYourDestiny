@@ -79,6 +79,9 @@ class TestDataRuntime(unittest.TestCase):
     def test_mld128(self):
         self._check("mld128")
 
+    def test_esxdos(self):
+        self._check("esxdos")
+
     def test_wrap_around_48k(self):
         flags = run_cyd(WRAP_PROGRAM, model="48k", n_bytes=16)
         self.assertEqual(list(flags)[3:10], WRAP_EXPECTED)
