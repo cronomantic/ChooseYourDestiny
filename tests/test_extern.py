@@ -10,6 +10,7 @@ Run: python tests/run_tests.py   (or: python -m unittest tests.test_extern)
 """
 
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,8 @@ from emu_harness import (  # noqa: E402
     compile_cyd,
     run_in_zesarux,
     find_sjasmplus,
+    build_mld_rom,
+    CYDC,
 )
 
 # Native routine body. The author writes only the body; CYD frames it with the
@@ -73,6 +76,43 @@ class TestExtern(unittest.TestCase):
     def test_import_call_plus3(self):
         """+3: same $7FFD-banked path as 128k, loaded from disk (DSK)."""
         self._roundtrip("plus3", "P341")
+
+    def _roundtrip_mld(self, model, machine):
+        # MLD/Dandanator path: the native routine (nativo.asm, referenced by the
+        # IMPORT relative to the .cyd) is pre-placed in the workdir; build_mld_rom
+        # compiles + packs the ROM, then we boot it with the Dandanator button.
+        with tempfile.TemporaryDirectory(prefix="cyd_extern_mld_") as wd:
+            (Path(wd) / "nativo.asm").write_text(NATIVE, encoding="utf-8")
+            rom, flags = build_mld_rom(SRC, model, wd)
+            f = run_in_zesarux(None, flags, n_bytes=4, machine=machine,
+                               dandanator_rom=rom, max_wait=40.0)
+        self.assertEqual(f[0], 42, "native routine did not write FLAGS+0 (DE=FLAGS)")
+        self.assertEqual(f[1], 99, "native routine did not write FLAGS+1")
+        self.assertEqual(f[2], 123, "interpreter did not resume after CALL")
+
+    def test_import_call_mld128(self):
+        """mld128 (128k Dandanator): banked routine reached from the cartridge.
+
+        (The strict mld / 48k-Dandanator target intentionally does NOT support
+        native routines — the compiler rejects IMPORT/CALL there with a clear
+        error; see test_import_call_strict_mld_is_rejected.)"""
+        self._roundtrip_mld("mld128", "128k")
+
+    def test_import_call_strict_mld_is_rejected(self):
+        """Strict mld (48k Dandanator) is a 48k machine (no $7FFD banks) reading
+        from flash slots, so neither extern-placement path (resident-48k /
+        $7FFD-banked) fits: the compiler must reject IMPORT/CALL with a clear
+        error rather than mis-place the routine."""
+        with tempfile.TemporaryDirectory(prefix="cyd_extern_neg_") as wd:
+            (Path(wd) / "nativo.asm").write_text(NATIVE, encoding="utf-8")
+            (Path(wd) / "test.cyd").write_text(SRC, encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(CYDC), "-v", "mld", "test.cyd",
+                 find_sjasmplus(), "."],
+                cwd=wd, capture_output=True, text=True, timeout=180,
+            )
+        self.assertNotEqual(proc.returncode, 0, "strict mld should reject IMPORT/CALL")
+        self.assertIn("only supported on", proc.stdout + proc.stderr)
 
 
 # Inline ASM blocks (ASM ... ENDASM): the body is written verbatim in the .cyd
