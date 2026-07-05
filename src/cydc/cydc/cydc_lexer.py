@@ -205,6 +205,11 @@ class CydcLexer(object):
         "READ": "READ",
         "RESTORE": "RESTORE",
         "DATAEND": "DATAEND",
+        "FOR": "FOR",
+        "NEXT": "NEXT",
+        "STEP": "STEP",
+        "WORD": "WORD",
+        "DWORD": "DWORD",
     }
 
     # token_list

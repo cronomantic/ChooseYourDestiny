@@ -22,6 +22,8 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Assignments and indirection](#assignments-and-indirection)
   - [Constants](#constants)
   - [Arrays or "sequences"](#arrays-or-sequences)
+  - [Immutable data (`DATA` / `READ` / `RESTORE` / `DATAEND()`)](#immutable-data-data--read--restore--dataend)
+  - [Wide constants (`WORD` / `DWORD` / strings)](#wide-constants-word--dword--strings)
   - [List of commands](#list-of-commands)
     - [INCLUDE "path/to/file.cyd"](#include-pathtofilecyd)
     - [LABEL ID](#label-id)
@@ -967,6 +969,24 @@ The text and commands up to `WEND` are repeated repeatedly as long as the condit
 
 The text and commands from `REPEAT` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
 
+- **FOR variable = start TO end [STEP step] ... NEXT [variable]**
+
+Counted loop: the text and commands up to `NEXT` are repeated, running _variable_ from _start_ to _end_. `STEP` is **optional** and defaults to `1`; it may be negative (`STEP -2`) to count down. The step must be a **constant** (not a variable or a `CONST`), because the compiler needs to know the loop direction. The counter variable is written **bare** (as in `SET`/`LET`); inside the body you read its value with `@variable`. `NEXT` may optionally carry the variable name (`NEXT i`), which must match. The _start_ and _end_ limits may be expressions (even variables); _end_ is re-evaluated on every iteration. If the counter has already passed the limit at the start, the loop runs **zero times** (BASIC semantics). Example:
+
+```cyd
+[[
+DECLARE 0 AS i
+FOR i = 1 TO 5           /* i = 1, 2, 3, 4, 5 */
+  PRINT @i
+NEXT
+FOR i = 10 TO 0 STEP -2  /* count down: 10, 8, 6, 4, 2, 0 */
+  PRINT @i
+NEXT
+]]
+```
+
+The counter is a **byte** (0..255). The loop is internally protected against byte overflow, so `FOR i = 0 TO 255` and `FOR i = 10 TO 0 STEP -1` work correctly (they do not become infinite loops). Do keep in mind, though, that the limits must fit in a byte.
+
 As you can see, many of these functions are executed depending on whether a condition is met. For example:
 
 ```cyd
@@ -1177,6 +1197,40 @@ Things to keep in mind:
 
 ---
 
+## Wide constants (`WORD` / `DWORD` / strings)
+
+`CYD` works with bytes, but you often need to place **16-bit** (0..65535) or **32-bit** (compatible with the `math16_32` library) values in memory, or the character codes of a **string**. That is what wide constants are for: values the compiler expands into a **fixed sequence of consecutive bytes in _little-endian_ order** (low byte first). Everything happens at compile time: they add **no runtime**.
+
+They can be used in three places: in `DATA`, in a `DIM` initializer and in `LET`/`SET` of a variable.
+
+- **Auto-detection by magnitude** (only in `DATA` and `DIM`): a value from 0 to 255 takes 1 byte, from 256 to 65535 takes 2 bytes, and 65536 upwards takes 4 bytes, automatically.
+- **`WORD` and `DWORD` markers**: force 2 or 4 bytes even if the value fits in fewer (`WORD 5` = 2 bytes). `WORD` does not accept values larger than 16 bits and `DWORD` not larger than 32 bits.
+- **Strings** `"..."`: expand to their character codes (no terminator; you know the length because you wrote it).
+
+```cyd
+[[
+  DATA WORD 1000, 5, "HI"          /* 2 bytes + 1 byte + 2 bytes */
+  DIM table() = { DWORD 100000, 42 }   /* 4 bytes + 1 byte -> 5-byte array */
+]]
+```
+
+Arrays stay **byte by byte** (_byte-flat_): there is no "wide" access to an array; you recompose the value yourself by reading the bytes you need (with `math16_32` if you are going to operate on it).
+
+In `LET`/`SET`, the width is **always** set by the keyword (`WORD`/`DWORD`) or the string; the bytes are written into the destination variable and the following consecutive ones. There is **no auto-detection** here (the number of variables used must be known at compile time, so a `LET v = 1000` without a marker would still be 1 byte and would error for not fitting):
+
+```cyd
+[[
+  DECLARE 0 AS score      /* uses variables 0 and 1 */
+  DECLARE 2 AS name       /* uses variables 2 and 3 */
+  LET score = WORD 1000   /* var 0 = low byte (232), var 1 = high byte (3) */
+  LET name = "AB"         /* var 2 = code of 'A', var 3 = code of 'B'       */
+]]
+```
+
+Only a **direct** destination is allowed (known consecutive indices): the `LET [v]` indirection cannot be used with wide constants.
+
+---
+
 ## List of commands
 
 Before describing the commands, let's briefly discuss the legend used:
@@ -1217,11 +1271,11 @@ Create an array named _ID_ with as many elements as indicated by _expression_. T
 
 ### DIM ID(expression) = {expression, expression...}
 
-Same as [DIM ID(expression)](#dim-idexpression), but assigning comma-separated values.
+Same as [DIM ID(expression)](#dim-idexpression), but assigning comma-separated values. Elements may be byte constants, **wide constants** (`WORD`/`DWORD` or auto-detected) or strings; the array stays byte by byte (see [Wide constants](#wide-constants-word--dword--strings)).
 
 ### DATA expression, expression...
 
-Appends the values (byte constants) to the global read-only immutable data stream, in source order. All `DATA` statements in the script form a single stream (16 KB max). They are not executed; the compiler extracts them from the code.
+Appends the values to the global read-only immutable data stream, in source order. All `DATA` statements in the script form a single stream (16 KB max). They are not executed; the compiler extracts them from the code. Each element may be a byte constant, a **wide constant** (`WORD`/`DWORD` or auto-detected by magnitude) or a string; see [Wide constants](#wide-constants-word--dword--strings).
 
 ### READ varID
 
@@ -1275,9 +1329,17 @@ Text and commands up to `WEND` are repeated repeatedly as long as the _condexpre
 
 Text and commands from `REPEAT` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
 
+### FOR varID = varexpression TO varexpression [STEP expression] ... NEXT [varID]
+
+Counted loop: runs _varID_ from the start value to the end value. `STEP` is optional (defaults to `1`) and must be a **constant** (it may be negative). The counter is a byte and is written bare; read it in the body with `@varID`. If the start has already passed the limit, it runs zero times. See the [flow control](#flow-control-and-conditional-expressions) section for details.
+
 ### SET varID TO varexpression
 
 Assigns the value of _varexpression_ to the variable _varID_.
+
+### SET varID TO WORD expression / DWORD expression / "string"
+
+Assigns a **wide constant** to _varID_ and the following consecutive variables: `WORD` writes 2 bytes (little-endian), `DWORD` 4 bytes and a string its character codes. See [Wide constants](#wide-constants-word--dword--strings). (Also valid with `LET varID = ...`.)
 
 ### SET [varID] TO varexpression
 

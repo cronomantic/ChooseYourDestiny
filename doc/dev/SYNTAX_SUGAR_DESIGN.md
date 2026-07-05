@@ -119,25 +119,22 @@ Tres contextos, una sola regla:
   terminador por defecto** (el autor conoce la longitud porque la escribió). Un
   prefijo de longitud / centinela sería del subsistema de strings (futuro), no de esto.
 
-### ABIERTO — cómo se determina el ancho (SIN decidir)
+### Cómo se determina el ancho (DECIDIDO — jul 2026)
 
-Sergio: los marcadores `WORD`/`DWORD` **por sí solos no convencen**; el ancho **también
-podría autodetectarse**. Opciones sobre la mesa:
+**Híbrido con marcador por keyword** (decisión de Sergio):
 
-- **(a) Autodetección por magnitud.** `1000` → 2 bytes, `100000` → 4 bytes. Cómodo y sin
-  keywords. **Riesgo:** en `LET @v = 200` gastaría 1 slot y `LET @v = 300` gastaría 2 →
-  el nº de variables consumidas cambia con el valor (sorpresa). Aceptable en `DATA`/`DIM`
-  (ves el valor) pero delicado en `LET`.
-- **(b) Marcador explícito** `WORD n` / `DWORD n` (la cadena `"…"` se autodescribe).
-  Predecible (el autor sabe cuántos slots reserva) pero verboso, sobre todo por-elemento
-  en listas.
-- **(c) Híbrido (candidato preferente a documentar):** autodetección por magnitud por
-  defecto **+** marcador explícito para **forzar un ancho mayor** que el mínimo (p. ej.
-  `WORD 5` = 2 bytes aunque 5 quepa en 1). Da comodidad y, cuando importa, predecibilidad.
+- **Por defecto: autodetección por magnitud.** `1000` → 2 bytes, `100000` → 4 bytes,
+  `5` → 1 byte. Cómodo y sin keywords para el caso común.
+- **Marcador `WORD n` / `DWORD n` para FORZAR un ancho mayor** que el mínimo: `WORD 5`
+  = 2 bytes aunque 5 quepa en 1; `DWORD 5` = 4 bytes. `WORD`/`DWORD` son **keywords
+  nuevas** (reservadas en el lexer + reglas de gramática + resaltador). No pueden forzar
+  un ancho *menor* que el que exige la magnitud (`WORD 100000` = error).
+- La cadena `"…"` se autodescribe (nº de glifos), no necesita marcador.
 
-Decisión pendiente para cuando se pase a implementar. Sintaxis del marcador si se usa:
-keyword `WORD`/`DWORD` (al reservado + reglas) o sufijo de lexer (`1000w`/`100000d`, sin
-keywords nuevas) — también sin decidir.
+**Cuidado con `LET @v` en autodetección:** el nº de slots consumidos depende del valor
+(`LET @v = 200` = 1 slot, `LET @v = 300` = 2 slots). Cuando el autor quiere un nº de
+slots **estable** (p. ej. reservar siempre 2 bytes para un contador), usa el marcador
+explícito: `LET @v = WORD 200`. Documentar este gotcha.
 
 ---
 
@@ -162,13 +159,22 @@ Falta el bucle contado (hoy solo `WHILE`/`DO`). Es el de más ergonomía.
    NEXT ]]
 ```
 
-Baja a: `LET @i = a` → `LABEL ini` → cuerpo → `@i += s` → comparación → `IF cond GOTO
-ini`. Como **`s` es constante de compilación**, el compilador sabe la dirección y emite
-la comparación correcta: `s > 0` → continúa mientras `@i <= b`; `s < 0` → mientras
-`@i >= b`. `NEXT` (o `NEXT @i`) cierra el `FOR` más interno; el compilador lleva la pila
-de anidamiento. **Gotcha a documentar:** contador de byte (0-255) → `FOR @i = 0 TO 255
-STEP 1` desborda al incrementar (255→0) y no termina; es responsabilidad del autor
-(igual que en BASIC de 8 bits).
+Baja (contador **pelado**, coherente con `SET`/`LET`; en el cuerpo se lee `@i`) a:
+`LET i = a` → guarda-cero superior → `LABEL cuerpo` → cuerpo → guardas de
+actualización → `GOTO cuerpo`. Como **`s` es constante de compilación**, el compilador
+sabe la dirección. **Semántica BASIC**: la guarda superior permite **0 iteraciones** si
+el inicio ya pasó el límite; el cuerpo corre para `a, a±|s|, …` hasta pasar `b`.
+
+**Contador de byte + aritmética que satura.** En CYD `ADD` clampa a 255 y `SUB` clampa a
+0 (ver `OP_ADD`/`OP_SUB`), no hacen wrap. Un `while i<=b`/`i>=b` ingenuo se quedaría
+**atascado** en el borde del byte (`255+1` vuelve a 255, `0-1` vuelve a 0) y NO
+terminaría para los idioms comunes `FOR i = N TO 0 STEP -1` y `FOR i = 0 TO 255 STEP 1`.
+Para evitarlo, la actualización se protege contra una **constante de compilación ANTES**
+de que pueda saturar: al subir para si `i > 255-|s|` (el siguiente `+` clamparía) o si
+`i+|s|` pasa `b`; al bajar para si `i < |s|` (el siguiente `-` clamparía) o si `i-|s|`
+pasa `b`. Así `TO 0` y `TO 255` son correctos con **0 runtime nuevo** (solo un par de
+comparaciones/saltos de más por iteración). `NEXT` (o `NEXT i`) cierra el `FOR` más
+interno. Límite re-evaluado cada iteración (sin variable oculta), refleja cambios en vivo.
 
 ### 3.2 `SELECT @v … CASE … [CASE ELSE …] ENDSELECT` — multi-rama
 
@@ -210,8 +216,10 @@ error que redeclarar una `CONST`.
 - **Rangos `{1..8}`** → `1,2,3,4,5,6,7,8` (y descendente `{8..1}`).
 - **Repetición** → N copias de un valor. **Ojo:** dentro de `{}` las expresiones
   constantes ya se evalúan, así que `{0 * 16}` daría **un** `0` (0·16=0), no 16 ceros →
-  la repetición necesita **sintaxis propia** no aritmética. Candidatos (sin decidir):
-  `{ 16 OF 0 }`, `{ 0 REPEAT 16 }`. A elegir al implementar.
+  la repetición necesita **sintaxis propia** no aritmética. **DECIDIDO (jul 2026):
+  `{ valor REPEAT n }`** (`{ 0 REPEAT 16 }` = dieciséis ceros). `REPEAT` es keyword
+  contextual; `n` es constante de compilación. Combina con anchos y rangos dentro de la
+  misma lista `{ …, 255 REPEAT 4, 1..3, … }`.
 
 ### 3.5 `SWAP @a, @b` — intercambio sin temporal
 
