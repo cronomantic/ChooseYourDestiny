@@ -19,7 +19,7 @@ Tiempo estimado: 10-15 min la primera vez (descargar emulador/ROM base si hace f
    Colocar el archivo en `./external/dandanator-mini.rom` (ruta que espera el [Makefile](../Makefile)).
 4. **Emulador** con soporte Dandanator. Opciones:
    - **ESPectrum** (incluido en el repo: `EsPectrum.exe` + `Espectrum.ini`). Configurar `MachineType=Dandanator` en el `.ini` o desde el menú interno.
-   - **ZEsarUX**: lanzar con `zesarux --machine dandanator --rom <rom_file>`.
+   - **ZEsarUX**: `zesarux --machine 48k --enable-dandanator --dandanator-rom <rom_file> --dandanator-press-button` (para `mld128`, usa `--machine 128k`). El `--dandanator-press-button` es **imprescindible** para disparar el autoboot; sin él ZEsarUX se queda en el menú/ROM. Para verificación automatizada headless añade `--vo null --ao null --enable-remoteprotocol --remoteprotocol-port 10000` y lee `FLAGS` por ZRCP (ver [doc/dev/EMULATOR_TESTING.md](../doc/dev/EMULATOR_TESTING.md)).
    - **FUSE** con plugin Dandanator instalado.
 
 ---
@@ -52,8 +52,10 @@ Salida esperada: `0 critical, 0 error(s)`. Pueden aparecer INFO/WARNING informat
 ### Paso 3 — Empaquetar a `.rom`
 
 ```powershell
-python ../mld2rom.py -b ../external/dandanator-mini.rom -o test.rom -a -v test.MLD
+python ../mld2rom.py -o test.rom -a -v test.MLD
 ```
+
+El firmware + menú Dandanator ya está vendorizado en `external/dandanator-mini/`, así que **no** hace falta pasar una base ROM (`-b`/`--base-rom` ya no existe).
 
 Flags:
 - `-a` → autoboot (arranca el juego al encender, sin pasar por el menú Dandanator).
