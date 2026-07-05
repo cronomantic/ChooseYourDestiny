@@ -282,18 +282,30 @@ solo-lectura en la práctica — **no** una pantalla-sombra. El texto NO pasa po
 Índice de recursos: entradas `(tipo, idx, banco, offset)`; tipos **TYPE_TXT=0,
 TYPE_SCR=1, TYPE_TRK=2, TYPE_WYZ=3**. `FIND_IN_INDEX` lo recorre.
 
-| Recurso | Cinta (48k/128k) | Disco (plus3) |
-|---|---|---|
-| Texto | residente en banco; `LOAD_CHUNK`→`FIND_IN_INDEX`→`SET_RAM_BANK` | **idéntico** (residente) |
-| Imágenes | residentes; `IMG_LOAD` descomprime banco→buffer ([screen_manager_tape.asm:33](src/cydc/cydc/cyd/screen_manager_tape.asm#L33)) | `IMG_LOAD` abre `.CSC` (`+3DOS`)→banco staging (img=6)→descomprime ([screen_manager.asm:36](src/cydc/cydc/cyd/screen_manager.asm#L36)) |
-| Música | residente; `LOAD_MUSIC` apunta el player al banco ([music_manager_tape.asm:34](src/cydc/cydc/cyd/music_manager_tape.asm#L34)) | abre `.BIN`→banco→`VTR_INIT` ([music_manager.asm:34](src/cydc/cydc/cyd/music_manager.asm#L34)) |
+| Recurso | Cinta (48k/128k) | Disco (plus3) | **MLD / mld128 (Dandanator)** |
+|---|---|---|---|
+| Texto/bytecode | residente en banco; `LOAD_CHUNK`→`FIND_IN_INDEX`→`SET_RAM_BANK` | **idéntico** (residente) | **NO residente: `LOAD_CHUNK`→`SET_DAN_BANK` mapea el SLOT FLASH en `$0000` y se lee de ahí** ([cyd_mld.asm:435-445](src/cydc/cydc/cyd/cyd_mld.asm#L435), `IS_MLD_DAN`) |
+| Imágenes | residentes; `IMG_LOAD` descomprime banco→buffer ([screen_manager_tape.asm:33](src/cydc/cydc/cyd/screen_manager_tape.asm#L33)) | `IMG_LOAD` abre `.CSC` (`+3DOS`)→banco staging (img=6)→descomprime ([screen_manager.asm:36](src/cydc/cydc/cyd/screen_manager.asm#L36)) | leídas del slot flash (`SET_DAN_BANK`) |
+| Música | residente; `LOAD_MUSIC` apunta el player al banco ([music_manager_tape.asm:34](src/cydc/cydc/cyd/music_manager_tape.asm#L34)) | abre `.BIN`→banco→`VTR_INIT` ([music_manager.asm:34](src/cydc/cydc/cyd/music_manager.asm#L34)) | se precarga a banco RAM `$C000` (loader `BLOCK_TABLE`/`table_entries`, [cyd.py:1504-1522](src/cydc/cydc/cyd/cyd.py#L1504)) porque el player la lee rápido por ISR |
+| Arrays `DIM` (mutables) | residentes en banco RAM (escritura directa) | **idéntico** | **relocalizados a RAM escribible** (`ARR_INIT` copia flash→RAM al arrancar): strict mld → pool residente `ARR_POOL`; mld128 → banco RAM dedicado a `$C000+off` (ver §8.4 y `doc/dev/MLD_WRITABLE_ARRAYS.md`) |
 
-**Regla:** texto **siempre residente** (se accede constantemente; streamearlo sería
-letal). **Cinta = todo residente** (límite RAM). **Disco = imágenes y música
-streameadas** de fichero a un banco de staging, bajo demanda (límite disco). El
-reparto lo fija [cydc.py:803-806](src/cydc/cydc/cydc.py#L803) (`num_blocks`:
-plus3 = solo chunks de texto; resto = texto+medios) y la elección de módulo
-(`screen_manager` disco vs `screen_manager_tape`; `music_manager` vs `_tape`).
+**Regla (cinta/disco):** texto **residente** (se accede constantemente); disco
+streamea imágenes/música a un banco de staging. El reparto lo fija
+[cydc.py:855-859](src/cydc/cydc/cydc.py#L855) y la elección de módulo.
+
+**MLD diverge (clave, verificado en código — antes NO documentado):** para no gastar
+los ~96 KB de bancos RAM, MLD lee **texto/bytecode/imágenes directamente de los slots
+flash del Dandanator** (`SET_DAN_BANK`), NO residentes. El loader `BLOCK_TABLE` SÍ
+sabe copiar un bloque a RAM (`table_entries`, [cyd.py:1504](src/cydc/cydc/cyd/cyd.py#L1504)),
+pero solo lo hace para la música. **Consecuencia:** los slots flash son de solo
+lectura → el **dato mutable (arrays `DIM`) no persistiría sus escrituras** si viviera
+en el slot (confirmado en emulador: FLAGS[5] se quedaba en 20). **Arreglo — arrays
+escribibles (HECHO+VERIFICADO):** cada array `DIM` se relocaliza a RAM escribible y
+`ARR_INIT` copia flash→RAM al arrancar. En **strict mld** (48K, sin `$7FFD`) van a un
+pool RESIDENTE `ARR_POOL`; en **mld128** van a **bancos RAM dedicados** (asignados por
+`plan_mld128_array_banks`, fuera del pool que ve el allocator ⇒ sin colisión con
+música), operando `[banco, $C000+off]`, y los opcodes de array paginan el banco con
+`SET_RAM_BANK`. Diseño y verificación en `doc/dev/MLD_WRITABLE_ARRAYS.md`.
 
 ---
 
@@ -333,13 +345,15 @@ intérprete (copiado a `$8000` al arrancar), slots 2..N = datos.
   (cada chunk en su slot de 16 KB). `bank_dan.asm SET_DAN_BANK` escribe el nº de
   comando en `$0001` (protocolo dual: vale para HW real por conteo de pulsos y para
   ZEsarUX por valor).
-- **Diferencia `mld` vs `mld128`.** Es solo `spectrum_banks` y la música, NO el
-  direccionamiento: `mld` (48K, `$83`) usa varios slots vía conmutación Dandanator
-  (sin banking `$7FFD`), hasta 16 slots (~256 KB). `mld128` (128K, `$88`) además
-  precarga la **música** a bancos RAM (el ISa del player lee de `$C000`); como el
-  resto se lee de slots, desacopla slots (muchos, ids ≥ 8 "slot-only", sin precarga)
-  de bancos RAM (≤6, solo música) → hasta ~480 KB. Limitación conocida: música +
-  >96 KB de contenido no cabe (la música obliga a los 6 bancos RAM) → error limpio.
+- **Diferencia `mld` vs `mld128`.** Es solo `spectrum_banks`, la música y los arrays
+  escribibles, NO el direccionamiento: `mld` (48K, `$83`) usa varios slots vía
+  conmutación Dandanator (sin banking `$7FFD`), hasta 16 slots (~256 KB); sus arrays
+  escribibles van a un pool residente. `mld128` (128K, `$88`) además usa **bancos
+  RAM** para la **música** (el ISR del player lee de `$C000`) y para los **arrays
+  `DIM` escribibles** (bancos dedicados, ver §8.4); como el resto se lee de slots,
+  desacopla slots (muchos, ids ≥ 8 "slot-only", sin precarga) de bancos RAM (≤6,
+  música + arrays) → hasta ~480 KB. Limitación conocida: música + arrays + >96 KB de
+  contenido que fuerce todos los bancos RAM → error limpio de compilación.
 - **Runtime NO verificable en HW físico desde aquí** (no hay Dandanator); ZEsarUX es
   la vía autoritativa, salvo el *timing de pulsos* del PIC que no emula.
 

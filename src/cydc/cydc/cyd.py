@@ -270,6 +270,11 @@ def get_asm_plus3(
     # same banked OP_EXTERN handler (routine paged in before the call).
     asm += "    DEFINE OP_EXTERN_BANKED\n\n"
 
+    # PIC_BUFFER ($E000, 6.9 KB) is the disk image-staging buffer used ONLY by the
+    # +3 disk image loader (screen_manager.asm). It is reserved (in vars.asm) only
+    # when this marker is defined, so tape (48k/128k) and MLD do not waste that RAM.
+    asm += "    DEFINE USE_PIC_BUFFER\n\n"
+
     if pause_start_value is not None:
         asm += f"    DEFINE PAUSE_AT_START_VAL {pause_start_value}\n\n"
 
@@ -396,6 +401,7 @@ def get_asm_mld(
     name="",
     loading_scr=None,
     extern_dispatch="",
+    arr_init_table="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -416,6 +422,7 @@ def get_asm_mld(
         CHARW=bytes2str(charw, ""),
         INDEX=index,
         EXTERN_DISPATCH=extern_dispatch,
+        ARR_INIT_TABLE=arr_init_table,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -479,6 +486,7 @@ def get_asm_mld128(
     name="",
     loading_scr=None,
     extern_dispatch="",
+    arr_init_table="",
 ):
     if sfx_asm is None:
         sfx_asm = "BEEPFX_AVAILABLE      EQU 0\n"
@@ -499,6 +507,7 @@ def get_asm_mld128(
         CHARW=bytes2str(charw, ""),
         INDEX=index,
         EXTERN_DISPATCH=extern_dispatch,
+        ARR_INIT_TABLE=arr_init_table,
         SIZE_INDEX=str(size_index),
         SIZE_INDEX_ENTRY=str(5),
         TAP_PATH=tap_path,
@@ -887,19 +896,38 @@ def build_arrays_inc(codegen, spectrum_banks):
     header's length byte, so the data starts at ``offset+2``. ``_convert_address``
     turns the (chunk, offset) pair into the final load address exactly as the
     bytecode uses it. Chunk 0 is resident; every other chunk is a paged bank whose
-    physical id is ``spectrum_banks[chunk]``."""
+    physical id is ``spectrum_banks[chunk]``.
+
+    Exception — mld128 writable arrays: those are relocated to dedicated RAM banks,
+    so ``symbols[name]`` already holds ``(physical_bank, $C000+addr)`` (not a
+    logical chunk index). ``arr_init_table`` carries the authoritative destination,
+    so use it directly — ``ARR_<n>_BANK`` is the real bank, ``ARR_<n>`` the paged
+    ``$C000`` address of element 0."""
+    # name -> (dest_bank, dest_addr) for arrays relocated to a RAM bank (mld128).
+    # arr_init_table entries are 6-tuples there; strict mld uses 5-tuples (resident,
+    # no native-routine support) which we leave to the generic path below.
+    banked = {}
+    for entry in getattr(codegen, "arr_init_table", None) or []:
+        if len(entry) == 6:
+            b_name, _c, _s, dest_bank, dest_addr, _n = entry
+            banked[b_name] = (dest_bank, dest_addr)
     lines = []
     for name in sorted(codegen.array_lengths):
         length = codegen.array_lengths[name]
-        chunk, off1 = codegen.symbols[name]
-        lo, hi = codegen._convert_address(off1 + 1, chunk)  # data addr (skip len byte)
-        addr = lo | (hi << 8)
-        if chunk == 0:
-            bank_byte = 0xFF  # resident: always mapped, no paging
-        elif chunk < len(spectrum_banks):
-            bank_byte = spectrum_banks[chunk]
+        if name in banked:
+            dest_bank, dest_addr = banked[name]
+            addr = (dest_addr + 1) & 0xFFFF  # element 0 (skip the len byte)
+            bank_byte = dest_bank
         else:
-            bank_byte = spectrum_banks[-1]
+            chunk, off1 = codegen.symbols[name]
+            lo, hi = codegen._convert_address(off1 + 1, chunk)  # data addr (skip len)
+            addr = lo | (hi << 8)
+            if chunk == 0:
+                bank_byte = 0xFF  # resident: always mapped, no paging
+            elif chunk < len(spectrum_banks):
+                bank_byte = spectrum_banks[chunk]
+            else:
+                bank_byte = spectrum_banks[-1]
         lines.append(f"ARR_{name} EQU ${addr:04X}")
         lines.append(f"ARR_{name}_LEN EQU {length}")
         lines.append(f"ARR_{name}_BANK EQU ${bank_byte:02X}")
@@ -1421,7 +1449,34 @@ def do_asm_mld(
     mld_is_128=False,
     name="",
     extern_dispatch="",
+    arr_init_table=None,
 ):
+    # Array relocation table: DIM arrays live in read-only flash on MLD, so the
+    # compiler relocates them to writable RAM. Emit the boot copy table ARR_INIT
+    # reads (src is slot-relative, since MLD bank_offset_list=[0,0]), $FF-terminated:
+    #  - strict mld (48K): 7-byte entries into the resident pool ARR_POOL
+    #        DEFB chunk / DEFW src_off / DEFW pool_off / DEFW nbytes
+    #  - mld128 (banked): 8-byte entries into a real RAM bank at $C000+offset
+    #        DEFB chunk / DEFW src_off / DEFB dest_bank / DEFW dest_addr / DEFW nbytes
+    arr_init_table_asm = ""
+    if mld_is_128:
+        for _name, chunk, src_off, dest_bank, dest_addr, nbytes in arr_init_table or []:
+            arr_init_table_asm += (
+                f"    DEFB ${chunk:02X}\n"
+                f"    DEFW ${src_off:04X}\n"
+                f"    DEFB ${dest_bank:02X}\n"
+                f"    DEFW ${dest_addr:04X}\n"
+                f"    DEFW ${nbytes:04X}\n"
+            )
+    else:
+        for _name, chunk, src_off, pool_off, nbytes in arr_init_table or []:
+            arr_init_table_asm += (
+                f"    DEFB ${chunk:02X}\n"
+                f"    DEFW ${src_off:04X}\n"
+                f"    DEFW ${pool_off:04X}\n"
+                f"    DEFW ${nbytes:04X}\n"
+            )
+
     # Each aggregated code/data block is placed in one dedicated Dandanator slot.
     # Slot layout: 0=loader/footer, 1=interpreter, 2..N=aggregated blocks.
     slot_by_ram_bank = {}
@@ -1474,6 +1529,7 @@ def do_asm_mld(
         name=name,
         loading_scr=loading_scr,
         extern_dispatch=extern_dispatch,
+        arr_init_table=arr_init_table_asm,
     )
 
     int_bin_path = os.path.join(output_path, "__INTERP.BIN").replace(os.sep, "/")

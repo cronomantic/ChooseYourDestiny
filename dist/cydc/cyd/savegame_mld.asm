@@ -8,6 +8,12 @@ SAVE_SECTOR_BASE    EQU 124
 SAVE_SECTOR_SIZE    EQU $1000
 SAVE_SLOTS_MASK     EQU %00000011
 
+; 4KB scratch buffer for building/reading an EEPROM save sector. On MLD there is
+; no disk image-staging PIC_BUFFER (that is +3-only), so the save uses this
+; dedicated buffer at the very top of RAM ($F000-$FFFF); everything below (down to
+; the end of the interpreter) is free for the array pool. Size = SAVE_SECTOR_SIZE.
+DAN_SAVE_BUFFER     EQU $F000
+
 ; B <- Start flag
 ; C <- Number of flags to save
 CHK_RAMLOAD_PARAMETERS:
@@ -242,7 +248,7 @@ DAN_EEPROM_WRITE_SECTOR:
     ret
 
 ; Input: A = absolute sector [0..127]
-; Output: PIC_BUFFER contains 4KB payload
+; Output: DAN_SAVE_BUFFER contains 4KB payload
 DAN_READ_SECTOR_TO_BUFFER:
     push af
     ; Sector 124..127 all live in slot 32 of EEPROM map.
@@ -257,7 +263,7 @@ DAN_READ_SECTOR_TO_BUFFER:
     rlca
     ld h, a
     ld l, 0
-    ld de, PIC_BUFFER
+    ld de, DAN_SAVE_BUFFER
     ld bc, SAVE_SECTOR_SIZE
     ldir
 
@@ -288,13 +294,13 @@ DO_SAVE:
     call CRC16
     ld (SAVE_CHECKSUM), hl
 
-    ; Build fixed 4KB snapshot in PIC_BUFFER
+    ; Build fixed 4KB snapshot in DAN_SAVE_BUFFER
     ld hl, SAVE_START
-    ld de, PIC_BUFFER
+    ld de, DAN_SAVE_BUFFER
     ld bc, SAVE_SIZE
     ldir
-    ld hl, PIC_BUFFER + SAVE_SIZE
-    ld de, PIC_BUFFER + SAVE_SIZE + 1
+    ld hl, DAN_SAVE_BUFFER + SAVE_SIZE
+    ld de, DAN_SAVE_BUFFER + SAVE_SIZE + 1
     ld bc, SAVE_SECTOR_SIZE - SAVE_SIZE - 1
     ld (hl), $FF
     ldir
@@ -304,7 +310,7 @@ DO_SAVE:
     push af
     call DAN_EEPROM_ERASE_SECTOR
     pop af
-    ld hl, PIC_BUFFER
+    ld hl, DAN_SAVE_BUFFER
     call DAN_EEPROM_WRITE_SECTOR
 
     call DAN_RESTORE_ROM
@@ -331,7 +337,7 @@ DO_LOAD:
     call GET_SAVE_SECTOR
     call DAN_READ_SECTOR_TO_BUFFER
 
-    ld hl, PIC_BUFFER
+    ld hl, DAN_SAVE_BUFFER
     ld de, SAVE_START
     ld bc, SAVE_SIZE
     ldir

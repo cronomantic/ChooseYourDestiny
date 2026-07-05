@@ -353,7 +353,7 @@ def main():
     arg_parser.add_argument(
         "model",
         choices=["48k", "128k", "plus3", "mld", "mld128"],
-        help=_("Model of spectrum to target"),
+        help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
         type=str.lower,
         default="plus3",
     )

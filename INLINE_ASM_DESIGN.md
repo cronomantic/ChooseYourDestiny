@@ -152,8 +152,9 @@ todo directamente accesible en `$C000` mientras está paginada.
   bloque, uso directo con `ld (hl),a`.
 - Ese scratch **persiste entre llamadas** en 128k/+3 (la RAM del banco no se limpia y
   el allocator no reusa su región) → estado nativo entre CALLs (semilla RNG, buffer).
-  **(a verificar)** en mld128 (los bloques se precargan una vez; la persistencia
-  depende de que no se re-paginen desde slots).
+  **VERIFICADO también en mld128 (5 jul 2026):** los bancos RAM de mld128 conservan las
+  escrituras entre accesos (test de arrays escribibles: una escritura en un banco RAM
+  persiste y se relee; ver `doc/dev/MLD_WRITABLE_ARRAYS.md`).
 - **Tamaño real:** la rutina se coloca por best-fit **compartiendo banco** con otros
   recursos; su RAM privada = lo que declare (`DEFS`), que el allocator le reserva. No
   se lleva 16 KB salvo que quepa/lo pida.
@@ -387,7 +388,7 @@ cada bloque, análogo a `USES` para rutinas. A diseñar en fase 3 junto con la A
 | 48k | residente, `call` directo | todo residente (broker = no-op de copia) | intra-región | listón; sin banking |
 | 128k | banco paginado | broker `$7FFD` + `SAVE_FLAGS` | trampolín | verificado (base EXTERN) |
 | +3 | banco paginado (excluye banco 7) | íd. | trampolín | verificado (base EXTERN) |
-| mld128 | banco paginado | íd. | trampolín | **runtime a verificar** cuando arranque MLD |
+| mld128 | banco paginado | íd. | trampolín | **verificado en emulador (5 jul 2026)**: rutina nativa + `CYD_POKE` sobre array bancado |
 | mld | — | — | — | error limpio (allocator de 1 banco) |
 
 `VIDEO_PXL/ATT` y la geometría son target-dependientes (el port CPC redefine
@@ -413,8 +414,8 @@ cada bloque, análogo a `USES` para rutinas. A diseñar en fase 3 junto con la A
   (`ASM '<nombre>'` / `IMPORT '<nombre>'`); (c) propagar el stderr de sjasmplus íntegro.
   Base: el `assemble_extern_routine` actual ya reporta `IMPORT '<nombre>': failed to
   assemble <fichero>\n{stderr}`; falta el mapeo de línea para inline. Fase 2/3.
-- **Persistencia del scratch de banco en mld128** (§5.1) — a verificar en emulador
-  cuando arranque MLD.
+- **Persistencia del scratch de banco en mld128** (§5.1) — ✅ VERIFICADO (5 jul 2026):
+  los bancos RAM de mld128 conservan escrituras entre accesos (test de arrays escribibles).
 - **Anidamiento profundo de banking** (CALL→CYD_CALL→broker): validar que el guardado
   del puerto por-nivel en la pila hardware no desborda ni descuadra IX/SP.
 - **Verificación empírica obligatoria** (emulador real, no lectura): un bloque inline
@@ -478,7 +479,7 @@ cada bloque, análogo a `USES` para rutinas. A diseñar en fase 3 junto con la A
 - **Rutina→rutina**: mismo bloque (multi-export, `call` intra-banco, sin banking) o
   `CYD_CALL` (trampolín residente, resuelto por índice + tabla de despacho + `USES`).
 - **Banco propio** = RAM privada directa (código+tablas+`DEFS`), para datos >256 B;
-  persiste entre CALLs (a verificar en mld128).
+  persiste entre CALLs (verificado también en mld128, 5 jul 2026).
 - **Limpieza `-dce`**: bloque conservado si ≥1 export es alcanzable (cierre transitivo
   por `USES`); si no, se descarta entero. Casi gratis: `extern_calls` ya es post-DCE.
   **Además, la maquinaria de la ABI se extirpa si no se usa** (§10.1): dispatcher

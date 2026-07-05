@@ -65,7 +65,7 @@ guardando el valor real del puerto `$7FFD` en la pila y restaurándolo tras el
 |---|---|---|
 | 48k | residente al final del bank 0; `call` directo | no |
 | 128k / +3 | banco de RAM paginado (`$C000+offset`), best-fit entre `spectrum_banks[j≥1]` | sí |
-| mld128 | banco paginado (reusa el camino `$7FFD`) | sí — runtime sin verificar |
+| mld128 | banco paginado (reusa el camino `$7FFD`) | sí — verificado en emulador (rutina nativa + `CYD_POKE` sobre array bancado) |
 | mld (estricto) | error limpio (1 solo banco) | — |
 
 **Regla de oro:** una rutina bancada corre en su propio banco en `$C000` y **NUNCA
@@ -112,6 +112,13 @@ En 128k/+3 un array puede estar en un banco paginado; el acceso va por servicios
 residentes (`interpreter.asm`, bajo `IFNDEF UNUSED_ARR_BROKER`) que paginan con la
 regla de oro. Scratch de MAP/FLUSH = `SAVE_FLAGS` (256 B en `vars.asm`, libre fuera
 de SAVE/LOAD → 0 bytes residentes nuevos). Con `$FF` (o en 48k) son acceso directo.
+
+**mld128:** los arrays `DIM` se reubican a **bancos RAM dedicados** (escribibles; ver
+`doc/dev/MLD_WRITABLE_ARRAYS.md`), así que `codegen.symbols[<n>]` guarda ya
+`(banco_real, $C000+offset)`. `build_arrays_inc` toma el destino autoritativo de
+`codegen.arr_init_table` ⇒ `ARR_<n>_BANK` = el banco RAM real (no `spectrum_banks[·]`)
+y `ARR_<n>` = `$C000+offset+1`. Verificado en emulador (rutina nativa que hace
+`CYD_POKE` sobre un array bancado y el opcode lo lee de vuelta).
 
 | Servicio | In | Out | Preserva |
 |---|---|---|---|

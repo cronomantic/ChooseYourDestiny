@@ -269,7 +269,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **128k**: Version for tape in TAP format, everything is loaded at once in the memory banks and depends on the size of the available memory.
   -- **plus3**: This version will generate a DSK file to run on Spectrum+3. Resources are loaded dynamically as needed and depends on the size on disk.
   -- **mld**: Generates an `.MLD` file for the **Dandanator Mini** cartridge in 48K mode. Text, images and bytecode are read directly from the cartridge slots (no RAM banking and no music playback), spanning several Dandanator slots (up to ~256 KB of content). It uses the cartridge save system.
-  -- **mld128**: Generates an `.MLD` file for **Dandanator Mini** targeting Spectrum 128K. Because everything else (text/images/bytecode) is read from the cartridge slots, the RAM banks are free for **music** (PT3/WyzTracker), which plays from RAM. Spans many Dandanator slots (up to ~480 KB of content). Known limitation: music plus more than ~96 KB of content does not fit (music forces the use of the 6 RAM banks); in that case compilation aborts with a clear error.
+  -- **mld128**: Generates an `.MLD` file for **Dandanator Mini** targeting Spectrum 128K. Because everything else (text/images/bytecode) is read from the cartridge slots, the RAM banks are reserved for what must live in RAM: **music** (PT3/WyzTracker, which plays from RAM) and the **`DIM` arrays** (which must be writable; they are placed in dedicated RAM banks that never collide with the music). Spans many Dandanator slots (up to ~480 KB of content). Known limitation: if music, arrays and content together force all RAM banks to be used, compilation aborts with a clear error.
 
 - **input.txt**: Input file with the adventure script.
 - **SJASMPLUS_PATH**: Path to the SjASMPlus executable.
@@ -815,9 +815,10 @@ There is an example with `ASM`, `EXPORTS`, arrays and `CYD_CALL` in
 
 ### Supported targets
 
-Native routines work on **48K, 128K and +3**. On the 128K and +3 the routine is
-placed in a paged RAM bank and the engine pages it in around the `CALL`
-automatically. (MLD targets are not covered yet.)
+Native routines work on **48K, 128K, +3 and mld128**. On the 128K, +3 and mld128 the
+routine is placed in a paged RAM bank and the engine pages it in around the `CALL`
+automatically. (The strict 48K **mld** target —a single bank— does not support them
+and compilation aborts with a clear error.)
 
 ---
 
@@ -1833,7 +1834,7 @@ REM --------------------------------------
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
--- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The extra RAM banks are used for music; adventure data is not split across RAM banks.
+-- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
@@ -1949,7 +1950,7 @@ BACKUP_MAX_FILES=0
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
--- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The extra RAM banks are used for music; adventure data is not split across RAM banks.
+-- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.

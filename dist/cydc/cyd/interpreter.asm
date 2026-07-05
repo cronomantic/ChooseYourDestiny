@@ -2613,6 +2613,13 @@ OP_SKIP_ARRAY:
     jp EXEC_LOOP
     ENDIF
 
+; ARR_RESIDENT_BANK: sentinel "bank" byte the compiler puts in an array operand on
+; MLD, where the array's own chunk is read-only Dandanator flash. It means "the
+; array was copied to the resident RAM pool ARR_POOL; the operand address is a
+; pool offset". Only meaningful under IS_MLD_DAN; on 48k/128k/+3 arrays keep their
+; real chunk bank and this branch never triggers.
+ARR_RESIDENT_BANK EQU $FE
+
     IFNDEF UNUSED_OP_PUSH_VAL_ARRAY
 OP_PUSH_VAL_ARRAY:
     ld c, (hl)
@@ -2622,6 +2629,31 @@ OP_PUSH_VAL_ARRAY:
     ld d, (hl)
     inc hl
     push hl
+    IFDEF IS_MLD_DAN
+    IFDEF OP_EXTERN_BANKED
+    ; mld128: the array lives in a real 128K RAM bank at $C000+offset (DE), with C
+    ; the physical bank. Page it in, access the paged window, restore the caller's
+    ; bank. The Dandanator slot ($0000) and $7FFD bank ($C000) are independent HW.
+    ld a, c
+    or ROM48KBASIC
+    call SET_RAM_BANK         ; page the array's bank; A = previous $7FFD value
+    push af
+    call .push_val_array      ; DE -> [len-1][data] in the paged window
+    pop af
+    call SET_RAM_BANK         ; restore the caller's bank
+    jr 1f
+    ELSE
+    ld a, c
+    cp ARR_RESIDENT_BANK      ; resident (RAM pool) array?
+    jr nz, .flash
+    ld hl, ARR_POOL
+    add hl, de                ; DE was the pool offset -> ARR_POOL+offset
+    ex de, hl
+    call .push_val_array
+    jr 1f
+.flash:
+    ENDIF
+    ENDIF
     ld a, (CHUNK)
     cp c                      ; If the CHUNK is the same...
     jr z, .same_CHUNK
@@ -2663,6 +2695,30 @@ OP_POP_VAL_ARRAY:
     ld d, (hl)
     inc hl
     push hl
+    IFDEF IS_MLD_DAN
+    IFDEF OP_EXTERN_BANKED
+    ; mld128: array in a real RAM bank at $C000+offset (DE); C = physical bank.
+    ; Page it in, write to the paged window (persists in RAM), restore.
+    ld a, c
+    or ROM48KBASIC
+    call SET_RAM_BANK         ; page the array's bank; A = previous $7FFD value
+    push af
+    call .pop_val_array       ; DE -> [len-1][data] in the paged window
+    pop af
+    call SET_RAM_BANK         ; restore the caller's bank
+    jr 1f
+    ELSE
+    ld a, c
+    cp ARR_RESIDENT_BANK      ; resident (RAM pool) array?
+    jr nz, .flash
+    ld hl, ARR_POOL
+    add hl, de                ; DE was the pool offset -> ARR_POOL+offset
+    ex de, hl
+    call .pop_val_array
+    jr 1f
+.flash:
+    ENDIF
+    ENDIF
     ld a, (CHUNK)
     cp c       ; If the CHUNK is the same...
     jr z, .same_CHUNK
@@ -2705,6 +2761,33 @@ OP_PUSH_LEN_ARRAY:
     inc hl
     ld d, (hl)
     inc hl
+    IFDEF IS_MLD_DAN
+    IFDEF OP_EXTERN_BANKED
+    ; mld128: array in a real RAM bank at $C000+offset (DE); C = physical bank.
+    ; Page it in, read the length byte, restore, push it.
+    ld a, c
+    or ROM48KBASIC
+    call SET_RAM_BANK         ; page the array's bank; A = previous $7FFD value
+    ld b, a                   ; B = previous bank (survives the read below)
+    ld a, (de)                ; length byte (size-1) from the paged window
+    push af                   ; save the length across the restore
+    ld a, b
+    call SET_RAM_BANK         ; restore the caller's bank
+    pop af                    ; A = length byte
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+    ELSE
+    ld a, c
+    cp ARR_RESIDENT_BANK      ; resident (RAM pool) array?
+    jr nz, .flash
+    ld hl, ARR_POOL
+    add hl, de                ; DE was the pool offset -> ARR_POOL+offset
+    ld a, (hl)                ; length byte (size-1)
+    PUSH_INT_STACK
+    jp EXEC_LOOP
+.flash:
+    ENDIF
+    ENDIF
     ld a, (CHUNK)
     cp c                  ; If the CHUNK is the same...
     jr z, .same_CHUNK
@@ -2724,6 +2807,69 @@ OP_PUSH_LEN_ARRAY:
     ld a, (de)
     PUSH_INT_STACK
     jp EXEC_LOOP
+    ENDIF
+
+    IFDEF IS_MLD_DAN
+; ARR_INIT: copy every DIM array's [len-1][data] record from its (read-only)
+; Dandanator flash chunk into writable RAM, once at boot (called from
+; START_LOADING before EXEC_LOOP). ARR_INIT_TABLE is emitted by the compiler
+; (cyd_mld.asm), $FF-terminated. The destination differs per MLD variant.
+    IFDEF OP_EXTERN_BANKED
+; mld128: destination is a real 128K RAM bank at $C000+addr. LOAD_CHUNK maps the
+; source flash slot at $0000 (SET_DAN_BANK) and SET_RAM_BANK pages the destination
+; bank at $C000 -- independent hardware, both active for the LDIR. Table = 8-byte
+; entries: DEFB chunk : DEFW src_off : DEFB dest_bank : DEFW dest_addr : DEFW nbytes
+ARR_INIT:
+    ld ix, ARR_INIT_TABLE
+.loop:
+    ld a, (ix+0)
+    inc a
+    jr z, .done               ; chunk byte $FF -> end of table
+    ld a, (ix+0)
+    call LOAD_CHUNK           ; map source flash slot at $0000 (IX preserved)
+    ld a, (ix+3)              ; dest_bank
+    or ROM48KBASIC
+    call SET_RAM_BANK         ; page destination bank at $C000 (IX/DE/HL preserved)
+    ld c, (ix+6)
+    ld b, (ix+7)              ; BC = nbytes
+    ld e, (ix+4)
+    ld d, (ix+5)              ; DE = dest_addr ($C000+offset, in the paged bank)
+    ld l, (ix+1)
+    ld h, (ix+2)              ; HL = src_off (0-based inside the mapped flash slot)
+    ldir                      ; copy the record: flash slot -> RAM bank
+    ld de, 8
+    add ix, de                ; advance to next 8-byte entry
+    jr .loop
+.done:
+    xor a
+    or ROM48KBASIC
+    call SET_RAM_BANK         ; leave bank 0 paged at $C000 (a clean default)
+    ret
+    ELSE
+; strict mld (48K): destination is the resident pool ARR_POOL (no banking).
+; Table = 7-byte entries: DEFB chunk : DEFW src_off : DEFW pool_off : DEFW nbytes
+ARR_INIT:
+    ld ix, ARR_INIT_TABLE
+.loop:
+    ld a, (ix+0)
+    inc a
+    ret z                     ; chunk byte $FF -> end of table
+    ld a, (ix+0)
+    call LOAD_CHUNK           ; map source chunk's flash slot at $0000 (IX preserved)
+    ld c, (ix+5)
+    ld b, (ix+6)              ; BC = nbytes
+    ld e, (ix+3)
+    ld d, (ix+4)
+    ld hl, ARR_POOL
+    add hl, de                ; HL = ARR_POOL + pool_off (destination)
+    ex de, hl                 ; DE = destination
+    ld l, (ix+1)
+    ld h, (ix+2)              ; HL = src_off (0-based inside the mapped slot)
+    ldir                      ; copy the record: flash slot -> resident pool
+    ld de, 7
+    add ix, de                ; advance to next 7-byte entry
+    jr .loop
+    ENDIF
     ENDIF
 
 /*

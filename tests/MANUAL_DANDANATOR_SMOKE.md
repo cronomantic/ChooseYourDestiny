@@ -94,6 +94,10 @@ Repetir pasos 2-5 con `mld128` en lugar de `mld`. Verifica adicionalmente:
 
 - [ ] **Música AY** suena correctamente (PT3 o WYZ según el script).
 - [ ] **Cambios de banco RAM** no producen pops ni cortes en la música.
+- [ ] **Arrays escribibles**: si el script modifica un `DIM` (`LET a(i)=x`, `+=`) y
+      lee el valor después, el nuevo valor persiste (en mld128 los arrays viven en
+      bancos RAM dedicados; en strict mld en un pool residente). Con música presente,
+      la escritura del array y la música conviven sin corromperse.
 
 ---
 

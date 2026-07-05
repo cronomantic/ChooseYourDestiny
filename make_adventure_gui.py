@@ -936,8 +936,8 @@ class MakeAdventureGUI:
             ("48k", "48K (TAP)"),
             ("128k", "128K (TAP)"),
             ("plus3", "+3 (DSK)"),
-            ("mld", "Dandanator (MLD)"),
-            ("mld128", "Dandanator 128K (MLD)"),
+            ("mld", "Dandanator (MLD) ⚠ exp."),
+            ("mld128", "Dandanator 128K (MLD) ⚠ exp."),
         ]:
             ttk.Radiobutton(
                 target_frame, text=label, variable=self.var_target, value=val
