@@ -1657,6 +1657,7 @@ def do_asm_esxdos(
     name="",
     extern_dispatch="",
     data_len=0,
+    autoboot=False,
 ):
     # ESXDOS packaging: like the 128k target every block is RESIDENT (interpreter
     # + all chunks/media placed in RAM banks), but like the +3 target they are
@@ -1770,6 +1771,60 @@ def do_asm_esxdos(
                 file_dat.write(file_block.read())
             if os.path.exists(block_path):
                 os.remove(block_path)
+
+        if autoboot:
+            _esxdos_autoboot_files(tap_path, output_path, verbose)
+
+
+def _esxdos_autoboot_files(tap_path, output_path, verbose):
+    """EXPERIMENTAL: emit AUTOBOOT.BAS + ESXDOS.CFG so the game cold-boots from the SD.
+
+    AUTOBOOT.BAS = a +3DOS 128-byte header (BASIC program, autostart at the loader's
+    line, no variables) followed by the loader's tokenised BASIC program, which is
+    extracted from the just-built .tap (block 0 = header, block 1 = program). Copied to
+    /SYS/AUTOBOOT.BAS on the SD, with AutoBoot=1 in /SYS/CONFIG/ESXDOS.CFG (ESXDOS 0.8.7+),
+    ESXDOS auto-loads and runs it -> the loader streams the .DAT and starts the game.
+
+    NOTE: the ESXDOS AutoBoot cold-boot is NOT verifiable in ZEsarUX headless (it runs
+    the ESXDOS ROM but not the AutoBoot logic), so this is validated only against the
+    +3DOS spec and MUST be checked on real hardware. Hence --autoboot is experimental
+    (the esxdos target itself is verified: loading/streaming/savegame)."""
+    d = open(tap_path, "rb").read()
+    blocks = []
+    i = 0
+    while i + 2 <= len(d):
+        blen = int.from_bytes(d[i : i + 2], "little")
+        i += 2
+        blocks.append(d[i : i + blen])
+        i += blen
+    if len(blocks) < 2:
+        return
+    line = int.from_bytes(blocks[0][14:16], "little")  # autostart line (tape header)
+    prog = blocks[1][1:-1]                              # strip block flag + xor checksum
+
+    h = bytearray(128)
+    h[0:8] = b"PLUS3DOS"
+    h[8] = 0x1A
+    h[9] = 1
+    h[11:15] = (128 + len(prog)).to_bytes(4, "little")
+    h[15] = 0                                # file type 0 = BASIC program
+    h[16:18] = len(prog).to_bytes(2, "little")
+    h[18:20] = line.to_bytes(2, "little")    # autostart line
+    h[20:22] = len(prog).to_bytes(2, "little")  # vars offset = end of program
+    h[127] = sum(h[0:127]) & 0xFF
+
+    ab = os.path.join(output_path, "AUTOBOOT.BAS").replace(os.sep, "/")
+    with open(ab, "wb") as f:
+        f.write(bytes(h) + prog)
+    cfg = os.path.join(output_path, "ESXDOS.CFG").replace(os.sep, "/")
+    with open(cfg, "wb") as f:
+        f.write(b"#esxDOS cfg\n#AutoBoot: 0=off 1=cold 2=warm 3=always\nAutoBoot=1\n")
+    if verbose:
+        print(
+            "AUTOBOOT.BAS + ESXDOS.CFG generated (EXPERIMENTAL). Copy AUTOBOOT.BAS to "
+            "/SYS/ and set AutoBoot=1 in /SYS/CONFIG/ESXDOS.CFG on the SD card. Verify "
+            "on real hardware (not emulable in ZEsarUX)."
+        )
 
 
 def do_asm_mld(

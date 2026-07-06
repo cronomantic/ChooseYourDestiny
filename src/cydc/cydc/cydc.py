@@ -225,12 +225,33 @@ def main():
         metavar=_("NAME"),
         help=_("Name of the output file"),
     )
-    arg_parser.add_argument(
+    # Options that only apply to a specific target are grouped so that --help shows
+    # them under one titled section, each tagged with the target it belongs to. The
+    # runtime check (target_only_options in main) rejects using them with any other
+    # target.
+    target_opts = arg_parser.add_argument_group(
+        _("Target-specific options"),
+        _(
+            "Each option below is only valid with the target shown in [brackets]; "
+            "using it with any other target is an error."
+        ),
+    )
+    target_opts.add_argument(
         "-720",
         "--disk-720",
         action="store_true",
         default=False,
-        help=_("Use 720 Kb disk images"),
+        help=_("[plus3] Use 720 Kb disk images"),
+    )
+    target_opts.add_argument(
+        "-autoboot",
+        "--autoboot",
+        action="store_true",
+        default=False,
+        help=_(
+            "[esxdos, EXPERIMENTAL] Also emit AUTOBOOT.BAS + ESXDOS.CFG so the game "
+            "cold-boots from the SD card (verify on real hardware)."
+        ),
     )
     arg_parser.add_argument(
         "-il",
@@ -334,7 +355,7 @@ def main():
         "model",
         default="plus3",
         choices=["48k", "128k", "plus3", "mld", "mld128", "esxdos"],
-        help=_("Model of spectrum to target (mld/mld128/esxdos are EXPERIMENTAL)"),
+        help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
         type=str.lower,
     )
     arg_parser.add_argument(
@@ -384,8 +405,29 @@ def main():
             )
         )
 
-    if model != "plus3" and args.disk_720:
-        sys.exit(_("ERROR: Invalid parameter this model."))
+    # Compiler options restricted to specific targets, kept declarative in one place
+    # so a new target-specific option (or a new target) is a one-line addition instead
+    # of another scattered `if model != ...` check.
+    target_only_options = {
+        # arg attribute: (flag name for the message, allowed models)
+        "disk_720": ("-720", ("plus3",)),
+        "autoboot": ("-autoboot", ("esxdos",)),
+    }
+    for attr, (flag, allowed) in target_only_options.items():
+        if getattr(args, attr) and model not in allowed:
+            sys.exit(
+                _("ERROR: {flag} is only valid for the {models} target.").format(
+                    flag=flag, models="/".join(allowed)
+                )
+            )
+
+    if args.autoboot:
+        print(
+            _(
+                "WARNING: --autoboot is EXPERIMENTAL and cannot be verified in the "
+                "emulator; check the cold-boot from the SD card on real hardware."
+            )
+        )
 
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
@@ -1493,6 +1535,7 @@ def main():
                 use_wyz_tracker=use_wyz_tracker,
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
+                autoboot=args.autoboot,
             )
         elif model == "plus3":
             if verbose > 0:

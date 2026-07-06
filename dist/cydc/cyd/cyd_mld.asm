@@ -35,7 +35,8 @@
     DEFINE IS_MLD 1
 
     DEFINE IS_PLUS3 0
-    
+    DEFINE IS_DISK 0          ; ISDISK() false: Dandanator cartridge (flash slots)
+
     IFDEF USE_WYZ
 WYZ_BANK     EQU 1
 WYZ_TRACKER  EQU $C000
@@ -431,6 +432,7 @@ TYPE_TXT EQU  0
 TYPE_SCR EQU  1
 TYPE_TRK EQU  2
 TYPE_WYZ EQU  3
+TYPE_DATA EQU 4
 
 ; A - New CHUNK number
 ; On exit, new CHUNK in C
@@ -444,6 +446,19 @@ LOAD_CHUNK:
     ; TXT chunks are always read from Dandanator slots in MLD targets.
     ; CHUNK_ADDR (HL) is a 0x0000-based offset inside that slot.
     call SET_DAN_BANK
+    ret
+
+; A = immutable-DATA chunk id (DATA_CHUNK). Maps its Dandanator flash slot at
+; $0000 and returns its slot-relative base offset in HL, without touching
+; CHUNK/CHUNK_ADDR/SCRIPT_BANK (so OP_READ pages the running bytecode slot back
+; with a plain LOAD_CHUNK afterwards -- both share the $0000 window).
+LOAD_DATA_CHUNK:
+    ld c, a
+    ld b, TYPE_DATA
+    call FIND_IN_INDEX        ; A = slot, HL = slot-relative offset
+    push hl
+    call SET_DAN_BANK
+    pop hl
     ret
 
 ;Input: B = type of element, C = index of element

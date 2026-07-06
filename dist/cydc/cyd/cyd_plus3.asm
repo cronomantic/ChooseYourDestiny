@@ -33,6 +33,7 @@
     DEFINE RELEASE "1.3"
 
     DEFINE IS_PLUS3 1
+    DEFINE IS_DISK 1          ; ISDISK() -> media streamed from a filesystem
 
     ORG @INIT_ADDR
 START_INTERPRETER:
@@ -428,6 +429,7 @@ TYPE_TXT EQU  0
 TYPE_SCR EQU  1
 TYPE_TRK EQU  2
 TYPE_WYZ EQU  3
+TYPE_DATA EQU 4
 
 ; A - New CHUNK number
 ; On exit, new CHUNK in C
@@ -440,6 +442,18 @@ LOAD_CHUNK:
     ld (SCRIPT_BANK), a
     or ROM48KBASIC
     call SET_RAM_BANK
+    ret
+
+; A = immutable-DATA chunk id (DATA_CHUNK). Maps its RAM bank at $C000 and returns
+; its base offset in HL, without touching CHUNK/CHUNK_ADDR/SCRIPT_BANK.
+LOAD_DATA_CHUNK:
+    ld c, a
+    ld b, TYPE_DATA
+    call FIND_IN_INDEX        ; A = bank, HL = offset
+    push hl
+    or ROM48KBASIC
+    call SET_RAM_BANK
+    pop hl
     ret
 
 ;Input: B = type of element, C = index of element

@@ -33,7 +33,8 @@
     DEFINE RELEASE "1.3"
 
     DEFINE IS_PLUS3 0
-    
+    DEFINE IS_DISK 0          ; ISDISK() false: tape (resident media)
+
     IFDEF USE_WYZ
 WYZ_BANK     EQU 1
 WYZ_TRACKER  EQU $C000
@@ -417,6 +418,7 @@ TYPE_TXT EQU  0
 TYPE_SCR EQU  1
 TYPE_TRK EQU  2
 TYPE_WYZ EQU  3
+TYPE_DATA EQU 4
 
 ; A - New CHUNK number
 ; On exit, new CHUNK in C
@@ -429,6 +431,20 @@ LOAD_CHUNK:
     ld (SCRIPT_BANK), a
     or ROM48KBASIC
     call SET_RAM_BANK
+    ret
+
+; A = immutable-DATA chunk id (DATA_CHUNK). Maps its bank at $C000 (48k: resident)
+; and returns its base offset in HL. Unlike LOAD_CHUNK it does NOT touch
+; CHUNK/CHUNK_ADDR/SCRIPT_BANK, so OP_READ can page the running bytecode chunk back
+; with a plain LOAD_CHUNK afterwards.
+LOAD_DATA_CHUNK:
+    ld c, a
+    ld b, TYPE_DATA
+    call FIND_IN_INDEX        ; A = bank, HL = offset
+    push hl
+    or ROM48KBASIC
+    call SET_RAM_BANK
+    pop hl
     ret
 
 ;Input: B = type of element, C = index of element

@@ -119,6 +119,11 @@ PRINTED_LINES:
 CHUNK:
     DEFB 0
 
+; 16-bit read cursor into the immutable DATA stream (READ/RESTORE/DATAEND).
+; Lives in the boot-cleared var area, so it starts at 0 (start of the stream).
+DATA_PTR:
+    DEFW 0
+
 WAIT_NEW_SCREEN:
     DEFB 0
 SKIP_SPACES:

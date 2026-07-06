@@ -60,12 +60,12 @@ class CydcCodegen(object):
         "PRINT_D": 0x20,
         "INK_I": 0x21,
         "PAPER_I": 0x22,
-        "BORDER_I": 0x23,
+        "READ": 0x23,
         "PRINT_I": 0x24,
         "BRIGHT_D": 0x25,
         "FLASH_D": 0x26,
-        "BRIGHT_I": 0x27,
-        "FLASH_I": 0x28,
+        "RESTORE": 0x27,
+        "DATAEND": 0x28,
         "PICTURE_D": 0x29,
         "DISPLAY_D": 0x2A,
         "PICTURE_I": 0x2B,
@@ -159,6 +159,11 @@ class CydcCodegen(object):
         self._ = gettext.gettext
         self.symbols = {}
         self.array_lengths = {}
+        # Immutable DATA stream (DATA/READ/RESTORE/DATAEND): the concatenated
+        # read-only blob and its length, filled by code_extract_data. Placed by
+        # cydc.py as a single TYPE_DATA chunk (<=16 KB, one chunk).
+        self.data_blob = []
+        self.data_len = 0
         self.variables = {}
         self.constants = {}
         # Native routine table. block_name -> {"source": ("file", path) |
@@ -382,6 +387,105 @@ class CydcCodegen(object):
             else:
                 sys.exit(self._(f"ERROR: Invalid constant expression value {c}!"))
 
+    def _eval_const_raw(self, expression, constants):
+        """Evaluate a constant-expression postfix to its raw non-negative integer,
+        WITHOUT the byte/word range cap that constant_expression_calculation
+        applies. Used for wide constants (WORD/DWORD) and DATA/array width
+        auto-detection, where values legitimately exceed a byte or a word. The
+        caller applies the width-specific range check."""
+        stack = []
+        for c in expression:
+            if isinstance(c, tuple) and len(c) in range(1, 3):
+                op = c[0]
+                try:
+                    if op == "C_REPL":
+                        a = constants.get(c[1])
+                        if a is None:
+                            sys.exit(self._(f"ERROR: Constant {c[1]} does not exists!"))
+                        stack.append(a)
+                    elif op == "C_VAL":
+                        stack.append(c[1])
+                    elif op == "C_+":
+                        b = stack.pop(); a = stack.pop(); stack.append(a + b)
+                    elif op == "C_-":
+                        b = stack.pop(); a = stack.pop(); stack.append(a - b)
+                    elif op == "C_*":
+                        b = stack.pop(); a = stack.pop(); stack.append(a * b)
+                    elif op == "C_/":
+                        b = stack.pop(); a = stack.pop(); stack.append(a // b)
+                    elif op == "C_&":
+                        b = stack.pop(); a = stack.pop(); stack.append(a & b)
+                    elif op == "C_|":
+                        b = stack.pop(); a = stack.pop(); stack.append(a | b)
+                    elif op == "C_<<":
+                        b = stack.pop(); a = stack.pop(); stack.append(a << b)
+                    elif op == "C_>>":
+                        b = stack.pop(); a = stack.pop(); stack.append(a >> b)
+                    else:
+                        sys.exit(self._(f"ERROR: Invalid constant expression, {op}!"))
+                except IndexError:
+                    sys.exit(self._(f"ERROR: Invalid constant expression operation {op}!"))
+            else:
+                sys.exit(self._(f"ERROR: Invalid constant expression {c}!"))
+        if len(stack) != 1 or not isinstance(stack[0], int):
+            sys.exit(self._(f"ERROR: Invalid constant expression operation!"))
+        if stack[0] < 0:
+            sys.exit(self._(f"ERROR: Constant expression value {stack[0]} must not be negative!"))
+        return stack[0]
+
+    def _check_wide_fits(self, val, width):
+        """Range-check a wide constant against its forced width (2 or 4 bytes),
+        with one message shared by DATA/DIM and LET/SET so they read identically."""
+        if val >= (1 << (8 * width)):
+            kw = "WORD" if width == 2 else "DWORD"
+            sys.exit(
+                self._(f"ERROR: {kw} value {val} does not fit in {8 * width} bits.")
+            )
+
+    def _expand_data_element(self, elem, constants):
+        """Expand one DATA/array init element into its little-endian bytes.
+
+        Elements (produced by the parser): ("CONSTANT", postfix) auto-detects the
+        width by magnitude (0..255 -> 1 byte, ..65535 -> 2, ..2^32-1 -> 4);
+        ("CONSTANT_WORD", postfix) forces 2 bytes; ("CONSTANT_DWORD", postfix)
+        forces 4; ("CONSTANT_STR", [bytes]) is the string's glyph bytes. 0 runtime:
+        everything is resolved here at compile time."""
+        tag = elem[0]
+        if tag == "CONSTANT_STR":
+            return [b & 0xFF for b in elem[1]]
+        if tag == "CONSTANT_RANGE":
+            a = self._eval_const_raw(elem[1], constants)
+            b = self._eval_const_raw(elem[2], constants)
+            for v in (a, b):
+                if v not in range(256):
+                    sys.exit(self._(f"ERROR: range bound {v} is not a byte (0..255)."))
+            return list(range(a, b + 1)) if a <= b else list(range(a, b - 1, -1))
+        if tag == "CONSTANT_REPEAT":
+            inner = self._expand_data_element(elem[1], constants)
+            n = self._eval_const_raw(elem[2], constants)
+            return inner * n
+        if not (len(elem) == 2 and isinstance(elem[1], list)):
+            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+        val = self._eval_const_raw(elem[1], constants)
+        if tag == "CONSTANT":
+            if val < (1 << 8):
+                width = 1
+            elif val < (1 << 16):
+                width = 2
+            elif val < (1 << 32):
+                width = 4
+            else:
+                sys.exit(self._(f"ERROR: DATA/array value {val} too big (max 2^32-1)."))
+        elif tag == "CONSTANT_WORD":
+            self._check_wide_fits(val, 2)
+            width = 2
+        elif tag == "CONSTANT_DWORD":
+            self._check_wide_fits(val, 4)
+            width = 4
+        else:
+            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+        return [(val >> (8 * k)) & 0xFF for k in range(width)]
+
     def code_extract_declarations(self, code):
         variables = {}
         constants = {}
@@ -512,6 +616,11 @@ class CydcCodegen(object):
             ):  # Special case for arrays
                 if isinstance(instruction[1], str) and isinstance(instruction[3], list):
                     size = instruction[2]
+                    # Expand every init element to its bytes (a WORD/DWORD/string
+                    # element yields several bytes). Arrays are byte-plano.
+                    lc = []
+                    for c in instruction[3]:
+                        lc += self._expand_data_element(c, constants)
                     if (
                         isinstance(size, tuple)
                         and isinstance(size[1], list)
@@ -521,7 +630,7 @@ class CydcCodegen(object):
                             size[1], constants, True
                         )
                     elif instruction[2] is None:
-                        array_len = len(instruction[3])
+                        array_len = len(lc)  # byte count after expansion
                     else:
                         sys.exit(self._(f"ERROR: Invalid array declaration"))
                     if array_len not in range(1, 257):
@@ -530,25 +639,6 @@ class CydcCodegen(object):
                                 f"ERROR: The array {instruction[1]} has an invalid size."
                             )
                         )
-                    lc = []
-                    for c in instruction[3]:
-                        if (
-                            isinstance(c, tuple)
-                            and len(c) == 2
-                            and c[0] == "CONSTANT"
-                            and isinstance(c[1], list)
-                        ):
-                            lc.append(
-                                self.constant_expression_calculation(
-                                    c[1], constants, False
-                                )
-                            )
-                        else:
-                            sys.exit(
-                                self._(
-                                    f"ERROR: Invalid array declaration {instruction[1]}"
-                                )
-                            )
                     if len(lc) > array_len:
                         sys.exit(
                             self._(
@@ -560,6 +650,14 @@ class CydcCodegen(object):
                     tup = (instruction[0], instruction[1], lc)
                 else:
                     sys.exit(self._(f"ERROR: Invalid array declaration"))
+            elif len(instruction) == 2 and instruction[0] == "DATA":
+                # Immutable DATA: expand each element to its bytes now (auto-detect
+                # width / WORD / DWORD / string). code_extract_data later
+                # concatenates every ("DATA", [bytes]) into the global blob.
+                lc = []
+                for c in instruction[1]:
+                    lc += self._expand_data_element(c, constants)
+                tup = ("DATA", lc)
             else:
                 tup = ()
                 for c in instruction:
@@ -586,6 +684,16 @@ class CydcCodegen(object):
                                 else:
                                     c = t + disp  # Adds displacement
                             else:
+                                # Numeric variable index. Same bounds check as the
+                                # named path: a displacement (multi-slot SET/LET or a
+                                # wide constant) must not push the target past 255,
+                                # otherwise we would emit an invalid (>255) operand.
+                                if (c + disp) not in range(256):
+                                    sys.exit(
+                                        self._(
+                                            f"ERROR: Multiple assignation of variable {c} is out of bounds!"
+                                        )
+                                    )
                                 c = c + disp
                         elif (
                             len(c) == 2
@@ -613,11 +721,66 @@ class CydcCodegen(object):
                                 c[1], constants, True
                             )
                             c = (c >> 8) & 0xFF
+                        elif (
+                            len(c) == 4
+                            and c[0] == "CONSTANT_WIDE"
+                            and isinstance(c[1], list)
+                        ):  # byte c[2] of a width-c[3] wide constant (WORD/DWORD LET)
+                            v = self._eval_const_raw(c[1], constants)
+                            self._check_wide_fits(v, c[3])
+                            c = (v >> (8 * c[2])) & 0xFF
                     tup += (c,)
             code.append(tup)
         self.externs = externs
         self.extern_exports = extern_exports
         return (code, variables, constants)
+
+    def code_extract_data(self, code):
+        """Concatenate every DATA statement into one read-only blob (source order),
+        map each label to the offset of the first DATA following it (for RESTORE
+        label), strip the DATA statements from the executable stream, and bake each
+        RESTORE label into a 16-bit blob offset. Sets self.data_blob / data_len.
+
+        Runs before optimize/DCE, so label offsets are captured even if a
+        DATA-marker label is later dropped as dead code."""
+        blob = []
+        label_offsets = {}
+        pending_labels = []
+        for t in code:
+            if t[0] == "LABEL":
+                pending_labels.append(t[1])
+            elif t[0] == "DATA":
+                off = len(blob)
+                for lbl in pending_labels:
+                    label_offsets[lbl] = off
+                pending_labels = []
+                blob += t[1]
+        # v1: a single TYPE_DATA chunk, 16-bit cursor -> <= 16 KB.
+        if len(blob) > 16 * 1024:
+            sys.exit(
+                self._(
+                    f"ERROR: DATA block too big ({len(blob)} bytes, max 16384)."
+                )
+            )
+        out = []
+        for t in code:
+            if t[0] == "DATA":
+                continue  # not executable: it lives in the blob
+            elif t[0] == "RESTORE_LABEL":
+                name = t[1]
+                off = label_offsets.get(name)
+                if off is None:
+                    sys.exit(
+                        self._(
+                            f"ERROR: RESTORE {name}: no DATA appears after that label."
+                        )
+                    )
+                out.append(("RESTORE", off & 0xFF, (off >> 8) & 0xFF))
+            else:
+                out.append(t)
+        self.data_blob = blob
+        self.data_len = len(blob)
+        return out
 
     def code_simple_optimize(self, code):
         code_tmp = []
@@ -678,27 +841,23 @@ class CydcCodegen(object):
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BORDER":
+                    # Only the immediate form is fused; the _I (from-variable) form
+                    # was dropped to free opcode 0x23 for READ (BORDER @v is rare and
+                    # falls back to PUSH_I:POP_BORDER, 2 opcodes).
                     if c[0] == "PUSH_D":
                         c = ("BORDER_D", c[1])
                         skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("BORDER_I", c[1])
-                        skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_BRIGHT":
+                    # _I form dropped to free opcode 0x27 for RESTORE (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("BRIGHT_D", c[1])
                         skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("BRIGHT_I", c[1])
-                        skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_FLASH":
+                    # _I form dropped to free opcode 0x28 for DATAEND (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("FLASH_D", c[1])
-                        skip = True
-                    elif c[0] == "PUSH_I":
-                        c = ("FLASH_I", c[1])
                         skip = True
                     code_tmp.append(c)
                 elif next[0] == "POP_PRINT":
@@ -1289,6 +1448,10 @@ class CydcCodegen(object):
             print("\nConstants resolved:\n-------------------")
             print(self.constants)
 
+        # Pull the immutable DATA stream out into self.data_blob and resolve
+        # RESTORE labels; must run before optimize/DCE.
+        code = self.code_extract_data(code)
+
         if code is None or len(code) == 0:
             code = [("END",)]
 
@@ -1361,5 +1524,10 @@ class CydcCodegen(object):
         ]
         code = self.code_simple_optimize(code)
         used_opcodes = {c[0] for c in code if c[0] not in excluded_ops}
+        # RESTORE label is emitted as the marker RESTORE_LABEL (resolved to a real
+        # RESTORE opcode only later, in code_extract_data); count it so a program
+        # that uses ONLY "RESTORE label" doesn't get the RESTORE opcode trimmed.
+        if "RESTORE_LABEL" in used_opcodes:
+            used_opcodes.add("RESTORE")
         all_opcodes = {c for c in self.opcodes.keys() if c not in excluded_ops}
         return all_opcodes - used_opcodes
