@@ -91,6 +91,26 @@ queda inicializada). Ver §5.3 y §9 del diseño.
     OK y el fallo está en el loader bajo autoboot; si no → formato/AutoBoot. (Requiere
     tokenizar BASIC a mano con el encoding de números, o extraerlo de un .cyd trivial.)
 
+- **DESCARTADO sistemáticamente (jul 2026, más pruebas):** (a) modelo de máquina —
+  probado un `AUTOBOOT.BAS` TRIVIAL (`10 POKE 16384,255: GO TO 10`, con cabecera +3DOS,
+  hecho a mano con encoding de números) en `48k`, `128k` y `p2`: **ninguno ejecuta el
+  POKE** (no autoarranca); (b) line-endings del `ESXDOS.CFG` — el original ya usa LF
+  (no CRLF), y con copia binaria (bytes preservados) tampoco autoarranca. Sumado a lo
+  ya verificado (ESXDOS arranca ✓, `AutoBoot=3` correcto en `/SYS/CONFIG/` ✓), el
+  autoarranque **NO se dispara en ZEsarUX bajo ninguna combinación probada**.
+- **Candidato principal restante: ZEsarUX no emula (completa) el AutoBoot de ESXDOS.**
+  ZEsarUX corre la ROM del divMMC (ESXDOS arranca), pero la lógica de AutoBoot —que
+  probablemente vive en `ESXDOS.SYS` cargado de la SD— no se completa headless (¿carga
+  parcial de `ESXDOS.SYS`? ¿feature no emulada?). Si es así, el autoarranque es
+  **INVERIFICABLE en ZEsarUX** y solo comprobable en HW real. Segundo candidato: el
+  formato exacto del `.BAS` (solo confirmable con un `.BAS` REAL guardado por ESXDOS con
+  `SAVE *"x" LINE 10` — comparar bytes; si difiere de la cabecera +3DOS, ese es el fallo).
+- **Vías para desatascar (próxima sesión):** (1) conseguir un `.BAS` real de ESXDOS y
+  comparar su formato con mi +3DOS header; (2) probar si ZEsarUX emula AutoBoot con la
+  imagen de referencia 0.8.x que trae ZEsarUX (arrancarla y ver si SU AUTOBOOT.BAS —si
+  lo tiene— autoarranca; si tampoco → ZEsarUX no emula AutoBoot → HW real); (3)
+  verificar en HW real directamente.
+
 ### Decisión pendiente (para Sergio)
 Verificación en emulador del arranque en frío BLOQUEADA. Opciones: (A) seguir
 peleando la config de ESXDOS-en-ZEsarUX (conseguir la imagen 0.8.5 de referencia);
