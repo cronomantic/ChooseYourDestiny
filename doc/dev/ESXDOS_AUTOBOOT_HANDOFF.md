@@ -68,23 +68,28 @@ queda inicializada). Ver §5.3 y §9 del diseño.
   cabecera **+3DOS de 128 B** (`PLUS3DOS`\x1A, issue1 ver0, len32=128+prog, tipo0,
   datalen=prog, param1=línea 10, param2=prog, checksum=sum(0..126)&0xFF). Reusable en
   cyd.py.
-- **BLOQUEO REAL (no resuelto): ESXDOS 0.8.9 NO hace el arranque en frío en ZEsarUX
-  headless.** Con `--machine 128k --enable-divmmc --diviface-ram-size 512 --divmmc-rom
-  ESXMMC.BIN --enable-mmc --mmc-file <img>` (superfloppy Y MBR, `AutoBoot=1` y `=3`), la
-  máquina cae al **menú 128 BASIC** (PC≈0x15e1/0x15e8), sin autoarrancar `AUTOBOOT.BAS`.
-  Sin mensajes de error. La FAT es válida (ZEsarUX copia bien) y el formato .BAS es
-  correcto por spec, así que el fallo está en el **arranque/AutoBoot interno de ESXDOS
-  en ZEsarUX** (no aislable headless: no hay visibilidad del boot de ESXDOS; no hay
-  imagen de referencia conocida-buena; Sergio tampoco conoce la config exacta de
-  ZEsarUX para ESXDOS). Hipótesis por descartar: (1) ZEsarUX necesita otra secuencia/
-  flags para que el divMMC tome el control en el reset (¿hard-reset tras montar?, ¿otro
-  orden?, ¿`--enable-esxdos-handler` NO debe estar?); (2) 128 vs 48 BASIC en el
-  AutoBoot; (3) `ESXDOS.SYS` 0.8.9 debe casar con la ROM `ESXMMC.BIN` 0.8.9 (lo hacen,
-  del mismo zip); (4) el AutoBoot en 128K requiere algo extra. **Referencia útil:** la
-  doc de ZEsarUX menciona que trae `divmmcesx085.mmc` (0.8.5) y que se activa "enable
-  MMC + enable DIVMMC desde el menú" — conseguir/inspeccionar esa imagen 0.8.5
-  conocida-buena y arrancarla daría el patrón correcto (flags + estructura de la SD)
-  para replicarlo con 0.8.9.
+- **DIAGNÓSTICO (jul 2026): ESXDOS 0.8.9 SÍ arranca en ZEsarUX; lo que falla es el
+  AutoBoot.** Verificado con trazas de PC/pantalla:
+  - **ESXDOS arranca y toma el control con el divMMC.** Comparando pantalla CON vs SIN
+    `--enable-divmmc --divmmc-rom ESXMMC.BIN`: DIFIEREN (con divMMC PC pasa por la ROM
+    ESXDOS 0x1e58→0xf6, atributos distintos). El divMMC + ROM 0.8.9 funcionan. NO es
+    problema de flags de arranque.
+  - **El `ESXDOS.CFG` con `AutoBoot=3` está correctamente en `/SYS/CONFIG/ESXDOS.CFG`
+    dentro de la partición** (verificado en la imagen: `AutoBoot=3` presente, sin
+    `AutoBoot=0` residual, en el cluster del dir CONFIG). Config correcto y en su sitio.
+  - **Traza de PC (AutoBoot=3, AUTOBOOT.BAS presente):** t5s=0x1e58 → t6-10s=0xf6 (ROM
+    ESXDOS) → t11s+=0x15e1/0x15e6/0x15e8/0x38 = **menú 128 BASIC** (bucle del menú +
+    IM1). Es decir, ESXDOS arranca, NO ejecuta AUTOBOOT.BAS, y hand-off al menú 128.
+  - **Conclusión:** el bloqueo es el **AutoBoot** (ESXDOS no carga/ejecuta
+    `/SYS/AUTOBOOT.BAS` pese a `AutoBoot=3`). Dos hipótesis vivas: **(1) formato de
+    `AUTOBOOT.BAS`** — asumí cabecera +3DOS de 128 B, pero quizá ESXDOS `SAVE *"x"`
+    escribe otro formato (¿headerless? ¿cabecera propia?); conviene **obtener un .BAS
+    real guardado por ESXDOS y comparar bytes**. **(2) 128K** — el menú 128 podría
+    interceptar el AutoBoot; probar con máquina **+2A/+3 o 48K**, o ver si el AutoBoot
+    exige entrar en 48 BASIC. **Test aislante recomendado:** un `AUTOBOOT.BAS` TRIVIAL
+    (p.ej. `10 POKE 16384,255`) con cabecera +3DOS; si el POKE ocurre → formato+AutoBoot
+    OK y el fallo está en el loader bajo autoboot; si no → formato/AutoBoot. (Requiere
+    tokenizar BASIC a mano con el encoding de números, o extraerlo de un .cyd trivial.)
 
 ### Decisión pendiente (para Sergio)
 Verificación en emulador del arranque en frío BLOQUEADA. Opciones: (A) seguir
