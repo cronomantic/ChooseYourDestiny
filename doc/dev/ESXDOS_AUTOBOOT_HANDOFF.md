@@ -54,19 +54,60 @@ queda inicializada). Ver §5.3 y §9 del diseño.
   crea la entrada de directorio correcta (root dir en sector 65 = 0x8200; datos desde
   cluster 2 = 0xC200). p.ej. copiar `ESXDOS.SYS` a `ESXDOS.SYS` → entrada
   `ESXDOS  SYS`, cluster 2, size 4090. ✔
-- **OBSTÁCULO (pendiente):** `--copy-file-to-mmc` **NO crea subdirectorios**. Copiar a
-  `SYS/ESXDOS.SYS` deja el root vacío. ESXDOS necesita `/SYS/...`. **Siguiente paso:**
-  (a) pre-crear en `mkfat16.py` los directorios `SYS/` y `SYS/CONFIG/` (entrada attr
-  0x10 + cluster con `.`/`..`), y PROBAR si `--copy-file-to-mmc SYS/x` escribe dentro
-  del subdir existente; si NO, (b) construir el FS FAT16 completo en Python (escribir
-  todos los ficheros + subdirs directamente, sin depender de `--copy-file-to-mmc`).
-- **Arranque a probar:** `zesarux --noconfigfile --machine 128k --vo null --ao null
-  --enable-remoteprotocol --remoteprotocol-port N --enable-divmmc --divmmc-rom
-  <.../ESXMMC.BIN> --enable-mmc --mmc-file <img.mmc>`. Con `AutoBoot=1` y
-  `/SYS/AUTOBOOT.BAS` presentes, ESXDOS debe auto-cargarlo → el juego arranca. Leer
-  `FLAGS` por ZRCP (como los demás tests) para confirmar (p.ej. programa DATA →
-  `[11,22,33,44,55,1,44,0]`). Handler NO sirve para esto (necesita el arranque en frío
-  de la ROM real, por eso la `.mmc`+ROM).
+- **Subdirectorios: RESUELTO.** `--copy-file-to-mmc` **no CREA** subdirs, pero **SÍ
+  escribe dentro de uno pre-existente**. Solución: `mkfat16b.py` pre-crea `SYS/` y
+  `SYS/CONFIG/` (entrada attr 0x10 + cluster con `.`/`..`). VERIFICADO: copiar a
+  `SYS/ESXDOS.SYS` mete el fichero en el `SYS/` correcto (entrada attr 0x20).
+- **MBR/partición: RESUELTO.** `mkfat16c.py` genera imagen con MBR (partición FAT16
+  LBA tipo 0x0E en sector 2048). VERIFICADO que **el copiador de ZEsarUX es consciente
+  de la partición** (escribe en el `SYS/` DENTRO de la partición, no en superfloppy).
+  Ambas (superfloppy `mkfat16b` y MBR `mkfat16c`) son FAT válidas que ZEsarUX escribe.
+- **Generación de `AUTOBOOT.BAS`: VALIDADA (formato).** `test_autoboot.py` en scratchpad:
+  compila el juego a esxdos, extrae el programa BASIC del `.tap` (bloque 2, quita
+  flag+checksum → 204 B para el DATA de prueba, autostart línea 10), y le antepone la
+  cabecera **+3DOS de 128 B** (`PLUS3DOS`\x1A, issue1 ver0, len32=128+prog, tipo0,
+  datalen=prog, param1=línea 10, param2=prog, checksum=sum(0..126)&0xFF). Reusable en
+  cyd.py.
+- **BLOQUEO REAL (no resuelto): ESXDOS 0.8.9 NO hace el arranque en frío en ZEsarUX
+  headless.** Con `--machine 128k --enable-divmmc --diviface-ram-size 512 --divmmc-rom
+  ESXMMC.BIN --enable-mmc --mmc-file <img>` (superfloppy Y MBR, `AutoBoot=1` y `=3`), la
+  máquina cae al **menú 128 BASIC** (PC≈0x15e1/0x15e8), sin autoarrancar `AUTOBOOT.BAS`.
+  Sin mensajes de error. La FAT es válida (ZEsarUX copia bien) y el formato .BAS es
+  correcto por spec, así que el fallo está en el **arranque/AutoBoot interno de ESXDOS
+  en ZEsarUX** (no aislable headless: no hay visibilidad del boot de ESXDOS; no hay
+  imagen de referencia conocida-buena; Sergio tampoco conoce la config exacta de
+  ZEsarUX para ESXDOS). Hipótesis por descartar: (1) ZEsarUX necesita otra secuencia/
+  flags para que el divMMC tome el control en el reset (¿hard-reset tras montar?, ¿otro
+  orden?, ¿`--enable-esxdos-handler` NO debe estar?); (2) 128 vs 48 BASIC en el
+  AutoBoot; (3) `ESXDOS.SYS` 0.8.9 debe casar con la ROM `ESXMMC.BIN` 0.8.9 (lo hacen,
+  del mismo zip); (4) el AutoBoot en 128K requiere algo extra. **Referencia útil:** la
+  doc de ZEsarUX menciona que trae `divmmcesx085.mmc` (0.8.5) y que se activa "enable
+  MMC + enable DIVMMC desde el menú" — conseguir/inspeccionar esa imagen 0.8.5
+  conocida-buena y arrancarla daría el patrón correcto (flags + estructura de la SD)
+  para replicarlo con 0.8.9.
+
+### Decisión pendiente (para Sergio)
+Verificación en emulador del arranque en frío BLOQUEADA. Opciones: (A) seguir
+peleando la config de ESXDOS-en-ZEsarUX (conseguir la imagen 0.8.5 de referencia);
+(B) implementar el flag `-autoboot` con el formato ya validado (genera
+`/SYS/AUTOBOOT.BAS` + `ESXDOS.CFG` con `AutoBoot=1` + carpeta lista para la SD) y
+**verificar en HW real** (Sergio tiene divMMC + 0.8.9); el loader en sí ya está
+verificado en emulador (F1/F2), lo único sin verificar es que ESXDOS auto-cargue el
+`.BAS` (comportamiento estándar de ESXDOS). Recomendación: B (entrega la función; la
+única incógnita es comportamiento estándar de ESXDOS, verificable en HW).
+
+### Scripts del harness (en scratchpad, FUNCIONAN): `mkfat16.py`, `mkfat16b.py`
+(superfloppy+subdirs), `mkfat16c.py` (MBR+partición), `test_autoboot.py` (genera
+AUTOBOOT.BAS + monta .mmc + arranca). El `mkfat16` original está inline abajo; los
+otros añaden pre-creación de `SYS/`/`SYS/CONFIG/` y MBR.
+
+### Arranque a probar (comando):
+`zesarux --noconfigfile --machine 128k --vo null --ao null --enable-remoteprotocol
+--remoteprotocol-port N --enable-divmmc --diviface-ram-size 512 --divmmc-rom
+<.../ESXMMC.BIN> --enable-mmc --mmc-file <img.mmc>`. Con `AutoBoot=1`+`/SYS/AUTOBOOT.BAS`
+ESXDOS debe auto-cargarlo → el juego arranca; leer `FLAGS` por ZRCP (DATA →
+`[11,22,33,44,55,1,44,0]`). El `--enable-esxdos-handler` NO sirve aquí (no hace el
+arranque en frío de la ROM real).
 
 ### `mkfat16.py` (formateador FAT16 que funciona — reconstruir en scratchpad/tests)
 ```python
