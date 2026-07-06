@@ -64,6 +64,8 @@ START_ADDRESS EQU 23755
 
 ;INIT_ADDR must be passed as parameter on SJASMPLUS
 
+    @DEFINE_LOADING_SCREEN
+
     ORG START_ADDRESS
 
 LINEA0:
@@ -81,11 +83,19 @@ START_LOADER:
 
     XOR A
     OUT (254), A                    ;Black border
+    IFNDEF LOADING_SCREEN
     LD HL, LD_SCR_ADDR              ;pixels
     LD DE, LD_SCR_ADDR+1            ;pixels + 1
     LD BC, LD_SCR_SIZE              ;T
     LD (HL), L                      ;first byte to 0 (HL=$4000 -> L=0)
     LDIR
+    ENDIF
+    IFDEF LOADING_SCREEN
+    LD HL, LOADSCR_DAT              ;show the loading screen at $4000 while loading
+    LD DE, LD_SCR_ADDR
+    LD BC, LD_SCR_SIZE
+    LDIR
+    ENDIF
 
     CALL MAINROM                    ;page 48K BASIC ROM (interpreter expects it)
     LD C, 0
@@ -181,6 +191,11 @@ FILE_HANDLE:
 
 FILENAME_LOAD:
     DB "@DSK_FILENAME_BASE", 0      ; ASCIIZ (esxDOS F_OPEN)
+
+    IFDEF LOADING_SCREEN
+LOADSCR_DAT:
+@{LOADSCR_DAT}
+    ENDIF
 
 SIZE_LINE0 = $ - LINEA0
 LINEA10:
