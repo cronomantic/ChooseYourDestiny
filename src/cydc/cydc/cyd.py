@@ -1670,8 +1670,9 @@ def do_asm_esxdos(
     # and EXTERN_DISPATCH empty (see cyd_esxdos.asm SHOW_SIZE branch). Getting
     # this wrong makes the loader read too few bytes and hang.
     #
-    # F1 note: a loading screen (-scr) is not wired yet for esxdos; loading_scr
-    # is accepted but ignored (the F1 runtime test does not use one).
+    # The loading screen (-scr) is embedded raw in the BASIC bootstrap loader (like
+    # the +3), which copies it to $4000 before streaming the banks, so it stays
+    # visible during the load. It is NOT part of the .DAT / block_list.
     dat_path = os.path.join(output_path, dat_name + ".DAT").replace(os.sep, "/")
     tap_path = os.path.join(output_path, dat_name + ".tap").replace(os.sep, "/")
 
@@ -1726,6 +1727,14 @@ def do_asm_esxdos(
         block_list += f"    DEFB ${bank:X}\n"
     block_list += "    DEFW $0\n"  # End mark
 
+    # Loading screen: embedded raw in the bootstrap loader (mirrors do_asm_plus3).
+    loading_scr_def = ""
+    if loading_scr is None:
+        loading_scr_bytes = ""
+    else:
+        loading_scr_bytes = bytes2str(loading_scr, "")
+        loading_scr_def = "DEFINE LOADING_SCREEN"
+
     d = dict(
         INIT_ADDR="$8000",
         STACK_ADDRESS="$8000",
@@ -1733,6 +1742,8 @@ def do_asm_esxdos(
         DSK_FILENAME_BASE=dat_name + ".DAT",
         TAP_NAME=tap_path,
         TAP_LABEL=dat_name,
+        DEFINE_LOADING_SCREEN=loading_scr_def,
+        LOADSCR_DAT=loading_scr_bytes,
         GAMEID=get_game_id(name),
     )
 
