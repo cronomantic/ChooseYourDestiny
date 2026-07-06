@@ -201,6 +201,21 @@ class CydcLexer(object):
         "ASM": "ASM",
         "EXPORTS": "EXPORTS",
         "USES": "USES",
+        "DATA": "DATA",
+        "READ": "READ",
+        "RESTORE": "RESTORE",
+        "DATAEND": "DATAEND",
+        "FOR": "FOR",
+        "NEXT": "NEXT",
+        "STEP": "STEP",
+        "WORD": "WORD",
+        "DWORD": "DWORD",
+        "SWAP": "SWAP",
+        "ENUM": "ENUM",
+        "SELECT": "SELECT",
+        "CASE": "CASE",
+        "ENDSELECT": "ENDSELECT",
+        "REPEAT": "REPEAT",
     }
 
     # token_list
@@ -218,6 +233,7 @@ class CydcLexer(object):
         "BIN_NUMBER",
         "DEC_NUMBER",
         "HEX_NUMBER",
+        "CHAR_NUMBER",
         "ID",
         "AT_CHAR",
         "COMMA",
@@ -226,6 +242,7 @@ class CydcLexer(object):
     tokens += ["INCREMENT", "DECREMENT"]
     tokens += ["NOT_EQUALS", "LESS_EQUALS", "MORE_EQUALS", "LESS_THAN", "MORE_THAN"]
     tokens += ["LPAREN", "RPAREN", "LCARET", "RCARET", "LCURLY", "RCURLY"]
+    tokens += ["DOTDOT"]
     tokens += ["AND_B", "OR_B", "NOT_B"]
     tokens += ["STRING"]
     # Verbatim body of an ASM ... ENDASM inline native-routine block.
@@ -323,6 +340,7 @@ class CydcLexer(object):
     t_RCARET = r"\]"
     t_LCURLY = r"\{"
     t_RCURLY = r"\}"
+    t_DOTDOT = r"\.\."
 
     # Ignored characters in code mode
     t_INITIAL_ignore = " \t"
@@ -379,6 +397,14 @@ class CydcLexer(object):
     def t_STRING(self, t):
         r'"[^"\n]*"'
         t.value = t.value[1:-1]  # strip the surrounding quotes
+        return t
+
+    def t_CHAR_NUMBER(self, t):
+        r"'[^'\n]'"
+        # Character literal 'A' -> its glyph code (same charset mapping as text),
+        # usable anywhere a numeric literal is (DATA, DIM, LET, expressions).
+        mapped = self._replace_chars(t.value[1])
+        t.value = (ord(mapped[0]) & 0xFF) if mapped else 0
         return t
 
     def t_SHORT_LABEL(self, t):

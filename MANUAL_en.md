@@ -267,12 +267,13 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-il NUM_IMAGE_LINES**: Number of lines to use in image files (default 192).
 - **\-720**: If using the Plus3 format, a 720 KB disk image will be used instead of the standard 180 KB size.
 
--**{48k,128k,plus3,mld,mld128}**: Spectrum model to be used:
+-**{48k,128k,plus3,mld,mld128,esxdos}**: Spectrum model to be used:
   -- **48k**: Version for tape in TAP format, does not include the PT3 player and everything is loaded at once. It depends on the size of the available memory.
   -- **128k**: Version for tape in TAP format, everything is loaded at once in the memory banks and depends on the size of the available memory.
   -- **plus3**: This version will generate a DSK file to run on Spectrum+3. Resources are loaded dynamically as needed and depends on the size on disk.
   -- **mld**: Generates an `.MLD` file for the **Dandanator Mini** cartridge in 48K mode. Text, images and bytecode are read directly from the cartridge slots (no RAM banking and no music playback), spanning several Dandanator slots (up to ~256 KB of content). It uses the cartridge save system.
   -- **mld128**: Generates an `.MLD` file for **Dandanator Mini** targeting Spectrum 128K. Because everything else (text/images/bytecode) is read from the cartridge slots, the RAM banks are reserved for what must live in RAM: **music** (PT3/WyzTracker, which plays from RAM) and the **`DIM` arrays** (which must be writable; they are placed in dedicated RAM banks that never collide with the music). Spans many Dandanator slots (up to ~480 KB of content). Known limitation: if music, arrays and content together force all RAM banks to be used, compilation aborts with a clear error.
+  -- **esxdos**: Version for **divMMC/divIDE interfaces with an SD card** (esxDOS), targeting Spectrum 128K. It works like `plus3` (resources loaded dynamically on demand from files), but accessing the SD through the esxDOS API (`RST $08`) instead of the +3 disk. Unlike the other targets it **does not produce a single file**, but a set of files to copy onto the SD (see the note below). It includes the experimental `-autoboot` option.
 
 - **input.txt**: Input file with the adventure script.
 - **SJASMPLUS_PATH**: Path to the SjASMPlus executable.
@@ -298,6 +299,29 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > graphical utility, **`mld2rom_gui.py`** (launchers `mld2rom_gui.cmd` /
 > `mld2rom_gui.sh`), to build the ROM with more options: game name, menu font,
 > background graphic, menu texts, autoboot and border effect.
+
+> **Note on ESXDOS (output files and their location on the SD card).** Unlike the
+> other targets, the `esxdos` target **does not produce a single file** but a set of
+> files in `OUTPUT_PATH` that must be copied onto the SD card:
+>
+> - **`NAME.tap`** — the bootstrap loader (a BASIC program). This is what you launch.
+> - **`NAME.DAT`** — the game's resident data (interpreter + text/bytecode + WyzTracker
+>   music if any). The loader opens it by name.
+> - **`NNN.CSC`** — one per image (streamed); **`NNN.BIN`** — one per Vortex (PT3) music
+>   track (streamed). Only generated if the adventure uses images/music.
+>
+> Because the loader and the engine open these files **by name relative to the current
+> directory**, they all (`NAME.tap`, `NAME.DAT`, `NNN.CSC`, `NNN.BIN`) must live **in the
+> same folder on the SD**. To play: press NMI and select `NAME.tap` in the esxDOS
+> browser (which sets the current directory to that folder). Savegame files (`NN.SAV`)
+> are also created in that folder.
+>
+> **With `-autoboot` (EXPERIMENTAL, requires esxDOS 0.8.7+).** Two extra files are
+> produced: **`AUTOBOOT.BAS`** and **`ESXDOS.CFG`**. To make the game boot on power-on:
+> copy `AUTOBOOT.BAS` to **`/SYS/`** on the SD, set **`AutoBoot=1`** in
+> **`/SYS/CONFIG/ESXDOS.CFG`** (use the generated `ESXDOS.CFG`, or edit your own), and
+> place `NAME.DAT` and the media in the SD root. **This feature can only be verified on
+> real hardware** (the esxDOS cold-boot is not emulable), hence it is experimental.
 
 The compiler is a program written in Python, so it requires the Python environment installed. For convenience, the distribution includes an embedded Python package and a batch script called `cydc.cmd` to launch it from the command line.
 
@@ -556,7 +580,7 @@ touching an arbitrary memory address, or a tight piece of number-crunching that
 needs to be fast — you can write a small routine in **Z80 assembly** and call it
 from your script.
 
-> ⚠️ **Advanced, use at your own risk.** This runs your own native code with no
+> **Advanced, use at your own risk.** This runs your own native code with no
 > sandbox: a bug in the routine can hang or crash the machine, exactly like the
 > BeepFX or WyzTracker code you already trust. If you are not comfortable with
 > Z80 assembly, you do not need this feature.

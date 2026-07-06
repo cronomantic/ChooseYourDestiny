@@ -164,6 +164,8 @@ class CydcParser(object):
         """
         statements  : text_statement if_statement
                     | text_statement loop_while_statement
+                    | text_statement loop_for_statement
+                    | text_statement select_statement
                     | text_statement loop_do_until_statement
                     | text_statement statement
         """
@@ -184,6 +186,8 @@ class CydcParser(object):
         """
         statements  : statements if_statement
                     | statements loop_while_statement
+                    | statements loop_for_statement
+                    | statements select_statement
                     | statements loop_do_until_statement
                     | statements statement
         """
@@ -212,15 +216,21 @@ class CydcParser(object):
         """
         statements  : statements COLON if_statement
                     | statements COLON loop_while_statement
+                    | statements COLON loop_for_statement
+                    | statements COLON select_statement
                     | statements COLON loop_do_until_statement
                     | statements COLON statement
                     | statements CODE_BLOCK_END if_statement
                     | statements CODE_BLOCK_END loop_while_statement
+                    | statements CODE_BLOCK_END loop_for_statement
+                    | statements CODE_BLOCK_END select_statement
                     | statements CODE_BLOCK_END loop_do_until_statement
                     | statements CODE_BLOCK_END statement
                     | if_statement
                     | loop_do_until_statement
                     | loop_while_statement
+                    | loop_for_statement
+                    | select_statement
                     | statement
         """
         if (len(p) == 2) and p[1]:
@@ -337,6 +347,295 @@ class CydcParser(object):
                                     | statements_nl
                                     | statements
                                     | loop_empty
+        """
+        if len(p) == 2:
+            p[0] = []
+            if p[1]:
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_loop_for_statement(self, p):
+        """
+        loop_for_statement : FOR variableID EQUALS varexpression TO varexpression loop_for_subprogram loop_for_next
+                           | FOR variableID EQUALS varexpression TO varexpression STEP loop_for_step loop_for_subprogram loop_for_next
+        """
+        # Counted loop, pure front-end (0 runtime): lowers to existing opcodes with
+        # compiler-generated labels. BASIC semantics: a top guard makes it run 0 times
+        # when the start is already past the limit; the body then runs for the counter
+        # values from a towards b in steps of STEP. STEP is a compile-time signed
+        # literal (default +1), so the compiler knows the direction.
+        #
+        # The counter is a byte and CYD arithmetic SATURATES (ADD clamps to 255, SUB
+        # clamps to 0 — see OP_ADD/OP_SUB), so a naive "loop while i<=b / i>=b" would
+        # get STUCK at the byte edge (255+1 clamps back to 255, 0-1 clamps back to 0)
+        # and never terminate for the very common FOR i = N TO 0 STEP -1 and
+        # FOR i = 0 TO 255 STEP 1. To stay correct we guard the counter update against
+        # a COMPILE-TIME constant BEFORE it can saturate: ascending stops if
+        # i > 255-|s| (next add would clamp) or if i+|s| passes b; descending stops if
+        # i < |s| (next sub would clamp) or if i-|s| passes b. This keeps 0 new runtime
+        # while making TO 0 / TO 255 safe.
+        # The limit is re-evaluated each iteration (no hidden variable), so keep it
+        # cheap; it reflects live changes.
+        if len(p) == 9:
+            var, a_expr, b_expr, body, nxt = p[2], p[4], p[6], p[7], p[8]
+            step = 1
+            step_lineno = p.lineno(1)
+        elif len(p) == 11:
+            var, a_expr, b_expr, step, body, nxt = p[2], p[4], p[6], p[8], p[9], p[10]
+            step_lineno = p.lineno(7)
+        else:
+            p[0] = None
+            return
+
+        if var is None or a_expr is None or b_expr is None or step is None:
+            p[0] = None
+            return
+
+        if step == 0:
+            loc = self._format_error_location(step_lineno)
+            self.errors.append(self._(f"FOR STEP cannot be 0 at {loc}."))
+            p[0] = None
+            return
+        if abs(step) not in range(1, 256):
+            loc = self._format_error_location(step_lineno)
+            self.errors.append(self._(
+                f"FOR STEP {step} out of range (1..255 in magnitude) at {loc}."
+            ))
+            p[0] = None
+            return
+
+        if nxt is not None and nxt != var:
+            loc = self._format_error_location(p.lineno(1))
+            self.errors.append(self._(
+                f"NEXT variable '{nxt}' does not match FOR variable '{var}' at {loc}."
+            ))
+            p[0] = None
+            return
+
+        def as_list(x):
+            return x if isinstance(x, list) else [x]
+
+        mag = abs(step)
+        ivar = ("VARIABLE", var, 0)
+
+        def push_i():
+            return ("PUSH_I", ivar)
+
+        def push_const(n):
+            return ("PUSH_D", ("CONSTANT", [("C_VAL", n)]))
+
+        label_body = self._get_hidden_label()
+        label_end = self._get_hidden_label()
+        code = []
+        # i = a
+        code += as_list(a_expr)
+        code.append(("POP_SET", ivar))
+        # top guard: 0 iterations when the start is already past the limit
+        #   ascending stop-if i > b ; descending stop-if i < b
+        code.append(push_i())
+        code += as_list(b_expr)
+        code.append(("CP_MT",) if step > 0 else ("CP_LT",))
+        code.append(("IF_GOTO", label_end, 0, 0))
+        code.append(("LABEL", label_body))
+        # body
+        if body:
+            code += body
+        if step > 0:
+            # stop if the next add would overflow the byte
+            code.append(push_i())
+            code.append(push_const(255 - mag))
+            code.append(("CP_MT",))
+            code.append(("IF_GOTO", label_end, 0, 0))
+            # i += mag  (safe: no overflow)
+            code.append(push_i())
+            code.append(push_const(mag))
+            code.append(("ADD",))
+            code.append(("POP_SET", ivar))
+            # stop if we passed the limit
+            code.append(push_i())
+            code += as_list(b_expr)
+            code.append(("CP_MT",))
+            code.append(("IF_GOTO", label_end, 0, 0))
+        else:
+            # stop if the next subtract would underflow the byte
+            code.append(push_i())
+            code.append(push_const(mag))
+            code.append(("CP_LT",))
+            code.append(("IF_GOTO", label_end, 0, 0))
+            # i -= mag  (safe: no underflow)
+            code.append(push_i())
+            code.append(push_const(mag))
+            code.append(("SUB",))
+            code.append(("POP_SET", ivar))
+            # stop if we passed the limit
+            code.append(push_i())
+            code += as_list(b_expr)
+            code.append(("CP_LT",))
+            code.append(("IF_GOTO", label_end, 0, 0))
+        code.append(("GOTO", label_body, 0, 0))
+        code.append(("LABEL", label_end))
+        p[0] = code
+
+    def p_loop_for_step(self, p):
+        """
+        loop_for_step : expression
+                      | MINUS expression
+        """
+        # Compile-time signed integer literal (evaluated by the parser). A named
+        # CONST is intentionally not allowed here: the loop direction must be known
+        # while lowering, before codegen resolves constant references.
+        if len(p) == 2:
+            p[0] = p[1] if isinstance(p[1], int) else None
+        elif len(p) == 3 and isinstance(p[2], int):
+            p[0] = -p[2]
+        else:
+            p[0] = None
+
+    def p_loop_for_next(self, p):
+        """
+        loop_for_next : NEXT
+                      | NEXT variableID
+        """
+        # Optional trailing variable name; when present it must match the FOR var.
+        p[0] = p[2] if len(p) == 3 else None
+
+    def p_loop_for_subprogram(self, p):
+        """
+        loop_for_subprogram : loop_for_subprogram statements_nl
+                            | loop_for_subprogram statements
+                            | statements_nl
+                            | statements
+                            | loop_empty
+        """
+        if len(p) == 2:
+            p[0] = []
+            if p[1]:
+                if isinstance(p[1], list):
+                    p[0] += p[1]
+                else:
+                    p[0].append(p[1])
+        elif len(p) == 3:
+            p[0] = p[1]
+            if not p[0]:
+                p[0] = []
+            if p[2]:
+                if isinstance(p[2], list):
+                    p[0] += p[2]
+                else:
+                    p[0].append(p[2])
+
+    def p_select_statement(self, p):
+        """
+        select_statement : SELECT varexpression newline_seq select_body ENDSELECT
+                         | SELECT varexpression select_body ENDSELECT
+        """
+        # Multi-branch on a subject value, pure front-end (0 runtime). Lowers to a
+        # chain of "IF subject == k GOTO body_k" tests, then a jump to the ELSE
+        # branch (or the end), then the bodies (each ending with GOTO end). No
+        # fall-through (BASIC semantics). The subject is re-evaluated per key test
+        # (no hidden variable, like FOR's limit), so keep it a variable or a
+        # side-effect-free expression.
+        subject = p[2]
+        body = p[4] if len(p) == 6 else p[3]  # optional newline_seq after the subject
+        cases, else_body = body if body else ([], None)
+        if subject is None:
+            p[0] = None
+            return
+
+        def as_list(x):
+            return x if isinstance(x, list) else [x]
+
+        label_end = self._get_hidden_label()
+        label_else = self._get_hidden_label() if else_body is not None else label_end
+        body_labels = [self._get_hidden_label() for _ in cases]
+
+        code = []
+        # tests: subject == k -> jump to that case body
+        for (keys, _body), blabel in zip(cases, body_labels):
+            for k in keys:
+                code += as_list(subject)
+                code.append(("PUSH_D", ("CONSTANT", k)))
+                code.append(("CP_EQ",))
+                code.append(("IF_GOTO", blabel, 0, 0))
+        code.append(("GOTO", label_else, 0, 0))
+        # bodies
+        for (_keys, body), blabel in zip(cases, body_labels):
+            code.append(("LABEL", blabel))
+            if body:
+                code += body
+            code.append(("GOTO", label_end, 0, 0))
+        # else body (label_else == label_end when there is no ELSE)
+        if else_body is not None:
+            code.append(("LABEL", label_else))
+            if else_body:
+                code += else_body
+        code.append(("LABEL", label_end))
+        p[0] = code
+
+    def p_select_body(self, p):
+        """
+        select_body : select_cases CASE ELSE case_subprogram
+                    | select_cases
+        """
+        if len(p) == 5:
+            p[0] = (p[1], p[4] if p[4] else [])
+        else:
+            p[0] = (p[1], None)
+
+    def p_select_cases(self, p):
+        """
+        select_cases : select_cases select_case
+                     | select_case
+        """
+        if len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
+        else:
+            p[0] = p[1] if p[1] else []
+            if p[2]:
+                p[0].append(p[2])
+
+    def p_select_case(self, p):
+        """
+        select_case : CASE case_values case_subprogram
+        """
+        # (list of key constexpressions, body statement list)
+        if p[2]:
+            p[0] = (p[2], p[3] if p[3] else [])
+        else:
+            p[0] = None
+
+    def p_case_values(self, p):
+        """
+        case_values : case_values COMMA constexpression
+                    | constexpression
+        """
+        if len(p) == 2:
+            c = p[1]
+            p[0] = [c if isinstance(c, list) else [c]] if self._is_valid_constexpression(c) else None
+        else:
+            p[0] = p[1] if p[1] else []
+            c = p[3]
+            if self._is_valid_constexpression(c):
+                p[0].append(c if isinstance(c, list) else [c])
+
+    def p_case_subprogram(self, p):
+        """
+        case_subprogram : case_subprogram statements_nl
+                        | case_subprogram statements
+                        | statements_nl
+                        | statements
+                        | loop_empty
         """
         if len(p) == 2:
             p[0] = []
@@ -1552,10 +1851,80 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    def p_statement_enum(self, p):
+        """
+        statement : ENUM ID LCURLY enum_list RCURLY
+                  | ENUM LCURLY enum_list RCURLY
+        """
+        # ENUM [name] { A, B=5, C } -> global CONSTs with C-style auto-increment
+        # (from 0, or from the last explicit value). The optional name is only for
+        # readability (CYD has no dotted notation) and is not declared. 0 runtime.
+        members = p[4] if len(p) == 6 else p[3]
+        if not members:
+            p[0] = None
+            return
+        out = []
+        nextval = 0
+        for name, val, lineno in members:
+            if val is not None:
+                nextval = val
+            if not self._check_byte_value(nextval, lineno):
+                p[0] = None
+                return
+            if self._declare_symbol(name, SymbolType.CONSTANT, lineno):
+                out.append(("CONST", name, [("C_VAL", nextval)]))
+            else:
+                p[0] = None
+                return
+            nextval += 1
+        p[0] = out
+
+    def p_enum_list(self, p):
+        """
+        enum_list : enum_list COMMA nl_enum_member
+                  | enum_list COMMA enum_member_nl
+                  | enum_list COMMA enum_member
+                  | nl_enum_member
+                  | enum_member_nl
+                  | enum_member
+        """
+        # Comma-separated, with newlines allowed around members (like DIM/DATA lists).
+        if len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
+        elif len(p) == 4:
+            p[0] = p[1] if p[1] else []
+            if p[3]:
+                p[0].append(p[3])
+
+    def p_nl_enum_member(self, p):
+        """
+        nl_enum_member : newline_seq enum_member_nl
+                       | newline_seq enum_member
+                       | newline_seq
+        """
+        if len(p) == 2:
+            p[0] = None
+        elif len(p) == 3 and p[2]:
+            p[0] = p[2]
+
+    def p_enum_member_nl(self, p):
+        """
+        enum_member_nl : enum_member newline_seq
+        """
+        p[0] = p[1] if (len(p) == 3 and p[1]) else None
+
+    def p_enum_member(self, p):
+        """
+        enum_member : ID EQUALS expression
+                    | ID
+        """
+        val = p[3] if len(p) == 4 else None
+        p[0] = (p[1], val, p.lineno(1))
+
     def p_array_constexpressions_list(self, p):
         """
-        statement : DIM ID LPAREN constexpression RPAREN EQUALS LCURLY constexpressions_list RCURLY
-                  | DIM ID LPAREN RPAREN EQUALS LCURLY constexpressions_list RCURLY
+        statement : DIM ID LPAREN constexpression RPAREN EQUALS LCURLY data_elements_list RCURLY
+                  | DIM ID LPAREN RPAREN EQUALS LCURLY data_elements_list RCURLY
                   | DIM ID LPAREN constexpression RPAREN
                   | DIM ID LPAREN RPAREN
 
@@ -1570,13 +1939,13 @@ class CydcParser(object):
                 size = ("CONSTANT", p[4])
             else:
                 size = ("CONSTANT", [p[4]])
-            p[0] = ("ARRAY", p[2], size, [("CONSTANT", c) for c in p[8]])
+            p[0] = ("ARRAY", p[2], size, p[8])
         elif (
             len(p) == 9
             and self._check_array(p[7], p.lineno(7))
             and self._declare_symbol(p[2], SymbolType.ARRAY, p.lineno(2))
         ):
-            p[0] = ("ARRAY", p[2], None, [("CONSTANT", c) for c in p[7]])
+            p[0] = ("ARRAY", p[2], None, p[7])
         elif (
             len(p) == 6
             and (isinstance(p[4], tuple) or isinstance(p[4], list))
@@ -1726,6 +2095,47 @@ class CydcParser(object):
                 self.errors.append(self._(f"Symbol at {self._format_error_location(p.lineno(3))} invalid"))
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
+    def p_statement_swap(self, p):
+        "statement : SWAP swap_operand COMMA swap_operand"
+        # Exchange two variables with no temporary, reusing the VM byte stack:
+        # push a, push b, pop->a, pop->b (a<-old b, b<-old a). Bare operands (they
+        # are destinations, like SET/LET). Each operand may be direct (a) or
+        # indirect ([a], the variable whose index is in a), like SET/LET. Indirect
+        # is safe: each runtime index is a byte, no displacement. 0 runtime.
+        if len(p) == 5 and p[2] and p[4]:
+            va, ia = p[2]
+            vb, ib = p[4]
+            push_a = "PUSH_DI" if ia else "PUSH_I"
+            pop_a = "POP_SET_DI" if ia else "POP_SET"
+            push_b = "PUSH_DI" if ib else "PUSH_I"
+            pop_b = "POP_SET_DI" if ib else "POP_SET"
+            p[0] = [(push_a, va), (push_b, vb), (pop_a, va), (pop_b, vb)]
+        else:
+            p[0] = None
+
+    def p_swap_operand(self, p):
+        """
+        swap_operand : variableID
+                     | LCARET variableID RCARET
+        """
+        if len(p) == 2:
+            p[0] = (("VARIABLE", p[1], 0), False) if self._is_valid_var(p[1]) else None
+        elif len(p) == 4:
+            p[0] = (("VARIABLE", p[2], 0), True) if self._is_valid_var(p[2]) else None
+        else:
+            p[0] = None
+
+    def p_statement_swap_error(self, p):
+        """
+        statement : SWAP error
+                  | SWAP
+        """
+        loc = self._format_error_location(p.lineno(1))
+        self.errors.append(self._(
+            f"Syntax error on SWAP at {loc}: expected two variables "
+            f"'SWAP a, b' (or indirect 'SWAP [a], [b]')."
+        ))
+
     def p_statement_set_ind(self, p):
         """
         statement : SET LCARET variableID RCARET TO varexpression
@@ -1749,6 +2159,118 @@ class CydcParser(object):
             else:
                 p[0] = [p[4]]
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
+
+    def p_statement_set_wide(self, p):
+        """
+        statement : SET variableID TO WORD constexpression
+                  | LET variableID EQUALS WORD constexpression
+                  | SET variableID TO DWORD constexpression
+                  | LET variableID EQUALS DWORD constexpression
+        """
+        # Wide store: LET v = WORD x writes the low/high bytes of x into v+0, v+1
+        # (little-endian, feeds math16_32); DWORD writes 4 bytes. Only a direct
+        # destination (consecutive known indices). 0 runtime: N byte SETs. Width is
+        # fixed by the keyword (NOT auto-detected) so the slot count is known while
+        # lowering, even when x references a CONST resolved later.
+        if len(p) == 6 and self._is_valid_var(p[2]) and self._is_valid_constexpression(p[5]):
+            cl = p[5] if isinstance(p[5], list) else [p[5]]
+            width = 2 if p.slice[4].type == "WORD" else 4
+            p[0] = []
+            for k in range(width):
+                # CONSTANT_WIDE(postfix, byte_k, width): the codegen resolves the
+                # value (may reference CONSTs), range-checks it against the width and
+                # extracts byte k. Shares its overflow message with DATA/DIM wide.
+                p[0].append(("PUSH_D", ("CONSTANT_WIDE", cl, k, width)))
+                p[0].append(("POP_SET", ("VARIABLE", p[2], k)))
+        else:
+            p[0] = None
+
+    def p_statement_set_string(self, p):
+        """
+        statement : SET variableID TO STRING
+                  | LET variableID EQUALS STRING
+        """
+        # LET v = "AB" writes the glyph bytes into v+0, v+1, ... (no terminator).
+        # 0 runtime: one byte SET per glyph.
+        if len(p) == 5 and self._is_valid_var(p[2]):
+            bs = self._string_to_bytes(p[4])
+            if not bs:
+                p[0] = None
+                return
+            p[0] = []
+            for k, b in enumerate(bs):
+                p[0].append(("PUSH_D", ("CONSTANT", [("C_VAL", b)])))
+                p[0].append(("POP_SET", ("VARIABLE", p[2], k)))
+        else:
+            p[0] = None
+
+    def p_statement_set_wide_indirect_error(self, p):
+        """
+        statement : SET LCARET variableID RCARET TO WORD constexpression
+                  | LET LCARET variableID RCARET EQUALS WORD constexpression
+                  | SET LCARET variableID RCARET TO DWORD constexpression
+                  | LET LCARET variableID RCARET EQUALS DWORD constexpression
+                  | SET LCARET variableID RCARET TO STRING
+                  | LET LCARET variableID RCARET EQUALS STRING
+        """
+        # Wide constants need consecutive destination slots known at compile time.
+        # With an indirect destination the target index is only known at runtime,
+        # so v+1 could fall outside the 0..255 variable space. Reject it clearly
+        # instead of the generic "unexpected WORD" syntax error.
+        loc = self._format_error_location(p.lineno(1))
+        self.errors.append(self._(
+            f"Wide constants (WORD/DWORD/string) need a direct destination, not an "
+            f"indirect [..] one, at {loc}."
+        ))
+        p[0] = None
+
+    def p_statement_data(self, p):
+        """
+        statement : DATA data_elements_list
+        """
+        # Immutable DATA stream: all DATA statements are concatenated (in source
+        # order) into one read-only blob (TYPE_DATA chunk) by the codegen. Elements
+        # are byte const-expressions, wide constants (WORD/DWORD) or strings; the
+        # codegen expands each to its bytes (see p_data_element / _expand_data_element).
+        if len(p) == 3 and isinstance(p[2], list) and len(p[2]) > 0:
+            p[0] = ("DATA", p[2])
+        else:
+            p[0] = None
+
+    def p_statement_read_dir(self, p):
+        """
+        statement : READ variableID
+        """
+        # READ v: opcode READ pushes the next data byte, POP_SET stores it into v.
+        if len(p) == 3 and self._is_valid_var(p[2]):
+            p[0] = [("READ",), ("POP_SET", ("VARIABLE", p[2], 0))]
+        else:
+            p[0] = None
+
+    def p_statement_read_ind(self, p):
+        """
+        statement : READ LCARET variableID RCARET
+        """
+        # READ [v]: indirect destination (v holds the target variable index),
+        # like LET [v] = ... -> POP_SET_DI.
+        if len(p) == 5 and self._is_valid_var(p[3]):
+            p[0] = [("READ",), ("POP_SET_DI", ("VARIABLE", p[3], 0))]
+        else:
+            p[0] = None
+
+    def p_statement_restore(self, p):
+        """
+        statement : RESTORE
+                  | RESTORE ID
+        """
+        # RESTORE rewinds the global cursor to 0; RESTORE label rewinds it to the
+        # first DATA appearing after 'label' (resolved to a blob offset in codegen).
+        if len(p) == 2:
+            p[0] = ("RESTORE", 0, 0)
+        elif len(p) == 3 and self._symbol_usage(p[2], SymbolType.LABEL, p.lineno(2)):
+            p[0] = ("RESTORE_LABEL", p[2])
+        else:
+            p[0] = None
 
     def p_statement_choose(self, p):
         """
@@ -2268,6 +2790,11 @@ class CydcParser(object):
         "varexpression : ISDISK LPAREN RPAREN"
         p[0] = ("PUSH_IS_DISK",)
 
+    def p_varexpression_dataend(self, p):
+        "varexpression : DATAEND LPAREN RPAREN"
+        # Boolean 0/1: 1 when the global DATA cursor has reached the end.
+        p[0] = ("DATAEND",)
+
     def p_varexpression_expression(self, p):
         """
         varexpression  : constexpression
@@ -2297,50 +2824,102 @@ class CydcParser(object):
         else:
             p[0] = None
 
-    def p_constexpressions_list(self, p):
+    def p_data_elements_list(self, p):
         """
-        constexpressions_list   : constexpressions_list COMMA nl_constexpression
-                                | constexpressions_list COMMA constexpression_nl
-                                | constexpressions_list COMMA constexpression
-                                | nl_constexpression
-                                | constexpression_nl
-                                | constexpression
+        data_elements_list  : data_elements_list COMMA nl_data_element
+                            | data_elements_list COMMA data_element_nl
+                            | data_elements_list COMMA data_element
+                            | nl_data_element
+                            | data_element_nl
+                            | data_element
         """
-        if len(p) == 2 and p[1]:
-            p[0] = []
-            if isinstance(p[1], list):
-                p[0].append(p[1])
-            else:
-                p[0].append([p[1]])
+        # Flat list of "byte-producing" element tuples (see p_data_element). One
+        # element may expand to several bytes in codegen (WORD/DWORD/string), so
+        # this is a list of tuples, not a list of postfix lists.
+        if len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
         elif len(p) == 4:
-            p[0] = p[1]
-            if not p[0]:
-                p[0] = []
+            p[0] = p[1] if p[1] else []
             if p[3]:
-                if isinstance(p[3], list):
-                    p[0].append(p[3])
-                else:
-                    p[0].append([p[3]])
+                p[0].append(p[3])
 
-    def p_nl_constexpression(self, p):
+    def p_nl_data_element(self, p):
         """
-        nl_constexpression  : newline_seq constexpression_nl
-                            | newline_seq constexpression
-                            | newline_seq
+        nl_data_element : newline_seq data_element_nl
+                        | newline_seq data_element
+                        | newline_seq
         """
         if len(p) == 2:
             p[0] = None
         elif len(p) == 3 and p[2]:
             p[0] = p[2]
 
-    def p_constexpression_nl(self, p):
+    def p_data_element_nl(self, p):
         """
-        constexpression_nl  : constexpression newline_seq
+        data_element_nl : data_element newline_seq
         """
         if len(p) == 3 and p[1]:
             p[0] = p[1]
         else:
             p[0] = None
+
+    def p_data_element_wide(self, p):
+        """
+        data_element : WORD constexpression
+                     | DWORD constexpression
+        """
+        # Wide constant: WORD forces 2 bytes, DWORD forces 4 (little-endian). The
+        # value (a compile-time const-expression, may reference CONSTs) is split
+        # into bytes by the codegen. 0 runtime.
+        c = p[2]
+        if not self._is_valid_constexpression(c):
+            p[0] = None
+            return
+        cl = c if isinstance(c, list) else [c]
+        if p.slice[1].type == "WORD":
+            p[0] = ("CONSTANT_WORD", cl)
+        else:
+            p[0] = ("CONSTANT_DWORD", cl)
+
+    def p_data_element_string(self, p):
+        "data_element : STRING"
+        # A string becomes its glyph bytes (no terminator; the author knows the
+        # length). Lowered at compile time -> 0 runtime.
+        p[0] = ("CONSTANT_STR", self._string_to_bytes(p[1]))
+
+    def p_data_element_const(self, p):
+        "data_element : constexpression"
+        # Plain constant: the codegen auto-detects the width by magnitude
+        # (0..255 -> 1 byte, up to 65535 -> 2, up to 2^32-1 -> 4).
+        c = p[1]
+        if not self._is_valid_constexpression(c):
+            p[0] = None
+            return
+        cl = c if isinstance(c, list) else [c]
+        p[0] = ("CONSTANT", cl)
+
+    def p_data_element_range(self, p):
+        "data_element : constexpression DOTDOT constexpression"
+        # {a..b} -> the byte sequence a,a+1,...,b (or a,a-1,...,b if a > b).
+        # Both bounds are compile-time byte constants; expanded in the codegen.
+        a, b = p[1], p[3]
+        if not (self._is_valid_constexpression(a) and self._is_valid_constexpression(b)):
+            p[0] = None
+            return
+        al = a if isinstance(a, list) else [a]
+        bl = b if isinstance(b, list) else [b]
+        p[0] = ("CONSTANT_RANGE", al, bl)
+
+    def p_data_element_repeat(self, p):
+        "data_element : data_element REPEAT constexpression"
+        # { v REPEAT n } -> n copies of the element's bytes (v may itself be a
+        # constant, wide constant, string or range). n is a compile-time constant.
+        n = p[3]
+        if p[1] is None or not self._is_valid_constexpression(n):
+            p[0] = None
+            return
+        nl = n if isinstance(n, list) else [n]
+        p[0] = ("CONSTANT_REPEAT", p[1], nl)
 
     def p_constexpression_binop(self, p):
         """
@@ -2427,6 +3006,11 @@ class CydcParser(object):
 
     def p_expression_dec_number(self, p):
         "number : DEC_NUMBER"
+        p[0] = p[1]
+
+    def p_expression_char_number(self, p):
+        "number : CHAR_NUMBER"
+        # Character literal 'A' -> glyph code (an int), lexed in cydc_lexer.
         p[0] = p[1]
 
     def p_newline_seq(self, p):
@@ -2693,6 +3277,24 @@ class CydcParser(object):
         self.hidden_label_counter += 1
         return l
 
+    @staticmethod
+    def _symbol_type_name(st):
+        return {
+            SymbolType.LABEL: "label",
+            SymbolType.VARIABLE: "variable",
+            SymbolType.CONSTANT: "constant",
+            SymbolType.ARRAY: "data array",
+            SymbolType.EXTERN: "native routine",
+        }.get(st, "symbol")
+
+    def _string_to_bytes(self, s):
+        """Convert a code-literal string into the glyph byte codes CYD uses for
+        text (same char mapping as printed text: newline -> CR, accented/special
+        chars folded to their charset codes). Used to lower string wide-constants
+        (DATA/DIM init and LET) into byte sequences at compile time (0 runtime)."""
+        mapped = self.lexer._replace_chars(s)
+        return [ord(ch) & 0xFF for ch in mapped]
+
     # LEGACY: _code_text_reversal is no longer needed with refactored lexer
     # The refactored lexer (JSP/PHP style) handles text/code boundaries correctly:
     # - Text outside [[ ]] is tokenized as TEXT
@@ -2820,26 +3422,11 @@ class CydcParser(object):
                 return True
             else:
                 loc = self._format_error_location(lineno)
-                if symbol_type == SymbolType.LABEL:
-                    self.errors.append(self._(
-                        f"Label '{symbol}' on {loc} was already used as variable."
-                    ))
-                elif symbol_type == SymbolType.VARIABLE:
-                    self.errors.append(self._(
-                        f"Variable '{symbol}' on {loc} was already used as label."
-                    ))
-                elif symbol_type == SymbolType.CONSTANT:
-                    self.errors.append(self._(
-                        f"Constant '{symbol}' on {loc} was already used as label."
-                    ))
-                elif symbol_type == SymbolType.ARRAY:
-                    self.errors.append(self._(
-                        f"Data array '{symbol}' on {loc} was already used as label."
-                    ))
-                else:
-                    self.errors.append(self._(
-                        f"Symbol '{symbol}' on {loc} was already used in other context."
-                    ))
+                self.errors.append(self._(
+                    f"Symbol '{symbol}' on {loc} is used as "
+                    f"{self._symbol_type_name(symbol_type)} but was already used as "
+                    f"{self._symbol_type_name(s[0])}."
+                ))
                 return False
         else:
             self.symbols_used[symbol] = (symbol_type, [lineno])
@@ -2876,26 +3463,11 @@ class CydcParser(object):
                 s = self.symbols[symbol]
                 if s[0] != symbol_type:
                     decl_loc = self._format_error_location(s[1])
-                    if symbol_type == SymbolType.LABEL:
-                        self.errors.append(self._(
-                            f"Label '{symbol}' on {lines_str} was already declared as variable on {decl_loc}."
-                        ))
-                    elif symbol_type == SymbolType.VARIABLE:
-                        self.errors.append(self._(
-                            f"Variable '{symbol}' on {lines_str} was already declared as label on {decl_loc}."
-                        ))
-                    elif symbol_type == SymbolType.CONSTANT:
-                        self.errors.append(self._(
-                            f"Constant '{symbol}' on {lines_str} was already declared as label on {decl_loc}."
-                        ))
-                    elif symbol_type == SymbolType.ARRAY:
-                        self.errors.append(self._(
-                            f"Data array '{symbol}' on {lines_str} was already declared as label on {decl_loc}."
-                        ))
-                    else:
-                        self.errors.append(self._(
-                            f"Symbol '{symbol}' on {lines_str} was already declared with another type on {decl_loc}."
-                        ))
+                    self.errors.append(self._(
+                        f"Symbol '{symbol}' on {lines_str} is used as "
+                        f"{self._symbol_type_name(symbol_type)} but was already "
+                        f"declared as {self._symbol_type_name(s[0])} on {decl_loc}."
+                    ))
                     res = False
         return res
 

@@ -266,12 +266,13 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
 - **\-720**: En caso de usar el formato Plus3, se usará una imagen de disco de 720 Kb en lugar del tamaño estándar de 180 Kb.
 
--**{48k,128k,plus3,mld,mld128}**: Modelo de Spectrum a emplear:
+-**{48k,128k,plus3,mld,mld128,esxdos}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 ni WyzTracker y se carga todo de una vez. Depende del tamaño de la memoria disponible.
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
   -- **mld**: Genera un fichero `.MLD` para cartucho **Dandanator Mini** en modo 48K. El texto, las imágenes y el bytecode se leen directamente desde los slots del cartucho (no usa bancos de RAM ni reproduce música), y aprovecha varios slots Dandanator (hasta ~256 KB de contenido). Usa el sistema de guardado del cartucho.
   -- **mld128**: Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM se reservan para lo que debe estar en RAM: la **música** (PT3/WyzTracker, que se reproduce desde RAM) y los **arrays `DIM`** (que deben ser escribibles; se reparten en bancos RAM dedicados que nunca colisionan con la música). Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: si la música, los arrays y el contenido fuerzan a usar todos los bancos de RAM, la compilación aborta con un error claro.
+  -- **esxdos**: Versión para interfaces **divMMC/divIDE con tarjeta SD** (esxDOS), orientada a Spectrum 128K. Funciona como el `plus3` (recursos cargados dinámicamente por demanda desde ficheros), pero accediendo a la SD mediante la API de esxDOS (`RST $08`) en lugar del disco +3. A diferencia del resto de targets, **no produce un único fichero**, sino varios ficheros que hay que copiar a la SD (ver la nota más abajo). Incluye la opción experimental `-autoboot`.
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
@@ -298,6 +299,30 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > gráfica independiente, **`mld2rom_gui.py`** (lanzadores `mld2rom_gui.cmd` /
 > `mld2rom_gui.sh`), para crear la ROM con más opciones: nombre del juego, fuente
 > del menú, gráfico de fondo, los textos del menú, autoarranque y efecto de borde.
+
+> **Nota sobre ESXDOS (ficheros de salida y su ubicación en la SD).** A diferencia
+> del resto de targets, el target `esxdos` **no genera un único fichero**, sino un
+> conjunto de ficheros en `OUTPUT_PATH` que hay que copiar a la tarjeta SD:
+>
+> - **`NOMBRE.tap`** — cargador de arranque (un programa BASIC). Es lo que se lanza.
+> - **`NOMBRE.DAT`** — datos residentes del juego (intérprete + texto/bytecode + música
+>   WyzTracker si la hay). El cargador lo abre por su nombre.
+> - **`NNN.CSC`** — una por cada imagen (streaming); **`NNN.BIN`** — una por cada pista
+>   de música Vortex (PT3, streaming). Solo se generan si la aventura usa imágenes/música.
+>
+> Como el cargador y el motor abren estos ficheros **por nombre relativo al directorio
+> actual**, todos (`NOMBRE.tap`, `NOMBRE.DAT`, `NNN.CSC`, `NNN.BIN`) deben estar **en la
+> misma carpeta de la SD**. Para jugar: pulsar NMI y seleccionar `NOMBRE.tap` en el
+> navegador de esxDOS (que sitúa el directorio actual en esa carpeta). Los ficheros de
+> partida guardada (`NN.SAV`) se crean también en esa carpeta.
+>
+> **Con `-autoboot` (EXPERIMENTAL, requiere esxDOS 0.8.7+).** Se generan además
+> **`AUTOBOOT.BAS`** y **`ESXDOS.CFG`**. Para que el juego arranque solo al encender:
+> copia `AUTOBOOT.BAS` a **`/SYS/`** de la SD, pon **`AutoBoot=1`** en
+> **`/SYS/CONFIG/ESXDOS.CFG`** (puedes usar el `ESXDOS.CFG` generado, o editar el tuyo),
+> y coloca `NOMBRE.DAT` y los medios en la raíz de la SD. **Esta función solo se puede
+> verificar en hardware real** (el arranque en frío de esxDOS no es emulable), por eso
+> es experimental.
 
 El compilador es un programa escrito en Python, por lo que se requiere tener el entorno de Python instalado. Para mayor comodidad, se incluye en la distribución un Python embebido y un guion batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 
@@ -559,7 +584,7 @@ hardware, tocar una dirección de memoria arbitraria, o un cálculo que necesita
 rápido— puedes escribir una pequeña rutina en **ensamblador Z80** y llamarla desde
 tu guion.
 
-> ⚠️ **Avanzado, bajo tu propia responsabilidad.** Esto ejecuta código nativo tuyo
+> **Avanzado, bajo tu propia responsabilidad.** Esto ejecuta código nativo tuyo
 > sin ninguna red de seguridad: un fallo en la rutina puede colgar o bloquear la
 > máquina, igual que el código de BeepFX o WyzTracker en el que ya confías. Si no
 > te manejas con ensamblador Z80, no necesitas esta función.

@@ -225,12 +225,33 @@ def main():
         metavar=_("NAME"),
         help=_("Name of the output file"),
     )
-    arg_parser.add_argument(
+    # Options that only apply to a specific target are grouped so that --help shows
+    # them under one titled section, each tagged with the target it belongs to. The
+    # runtime check (target_only_options in main) rejects using them with any other
+    # target.
+    target_opts = arg_parser.add_argument_group(
+        _("Target-specific options"),
+        _(
+            "Each option below is only valid with the target shown in [brackets]; "
+            "using it with any other target is an error."
+        ),
+    )
+    target_opts.add_argument(
         "-720",
         "--disk-720",
         action="store_true",
         default=False,
-        help=_("Use 720 Kb disk images"),
+        help=_("[plus3] Use 720 Kb disk images"),
+    )
+    target_opts.add_argument(
+        "-autoboot",
+        "--autoboot",
+        action="store_true",
+        default=False,
+        help=_(
+            "[esxdos, EXPERIMENTAL] Also emit AUTOBOOT.BAS + ESXDOS.CFG so the game "
+            "cold-boots from the SD card (verify on real hardware)."
+        ),
     )
     arg_parser.add_argument(
         "-il",
@@ -333,7 +354,7 @@ def main():
     arg_parser.add_argument(
         "model",
         default="plus3",
-        choices=["48k", "128k", "plus3", "mld", "mld128"],
+        choices=["48k", "128k", "plus3", "mld", "mld128", "esxdos"],
         help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
         type=str.lower,
     )
@@ -384,8 +405,29 @@ def main():
             )
         )
 
-    if model != "plus3" and args.disk_720:
-        sys.exit(_("ERROR: Invalid parameter this model."))
+    # Compiler options restricted to specific targets, kept declarative in one place
+    # so a new target-specific option (or a new target) is a one-line addition instead
+    # of another scattered `if model != ...` check.
+    target_only_options = {
+        # arg attribute: (flag name for the message, allowed models)
+        "disk_720": ("-720", ("plus3",)),
+        "autoboot": ("-autoboot", ("esxdos",)),
+    }
+    for attr, (flag, allowed) in target_only_options.items():
+        if getattr(args, attr) and model not in allowed:
+            sys.exit(
+                _("ERROR: {flag} is only valid for the {models} target.").format(
+                    flag=flag, models="/".join(allowed)
+                )
+            )
+
+    if args.autoboot:
+        print(
+            _(
+                "WARNING: --autoboot is EXPERIMENTAL and cannot be verified in the "
+                "emulator; check the cold-boot from the SD card on real hardware."
+            )
+        )
 
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
@@ -634,7 +676,7 @@ def main():
                     force_mirror=scr_force_mirror,
                     verbose=(verbose >= 1),
                 )
-                if (model == "plus3") and (len(b) > (7 * 1024)):
+                if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                     sys.exit(_("ERROR: Invalid SCR file, it is too big"))
                 with open(dpath, "wb") as f:
                     f.write(bytearray(b))
@@ -645,7 +687,7 @@ def main():
                     b = list(f.read())
                     t = ("SCR", i, len(b), b, dpath)
                     blocks.append(t)
-                    if (model == "plus3") and (len(b) > (7 * 1024)):
+                    if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
         print(_(f"Images processing completed ({tmp_timer})"))
 
@@ -697,7 +739,7 @@ def main():
                 if os.path.isfile(fpath):
                     with open(fpath, "rb") as f:
                         b = list(f.read())
-                        if (model == "plus3") and (len(b) > (8 * 1024)):
+                        if (model in ("plus3", "esxdos")) and (len(b) > (8 * 1024)):
                             sys.exit(
                                 _(f"ERROR: Invalid PT3 file {fpath}, it is too big")
                             )
@@ -828,6 +870,22 @@ def main():
                 pause_start_value=args.pause_after_load,
                 use_wyz_tracker=use_wyz_tracker,
             )
+        elif model == "esxdos":
+            if verbose > 0:
+                print(_("Assembling interpreter for size..."))
+            asm_size = get_asm_esxdos_size(
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+            )
         elif model == "mld" or model == "mld128":
             if verbose > 0:
                 print(_("Assembling interpreter for size..."))
@@ -918,6 +976,12 @@ def main():
         num_blocks = len(chunks)
     else:
         num_blocks = len(blocks) + len(chunks)
+    # The immutable DATA blob (if any) is one extra TYPE_DATA block in the index,
+    # placed by best-fit like SCR/music (on every target, including plus3, where it
+    # lives in a RAM bank rather than a streamed disk file).
+    has_data = codegen.data_len > 0
+    if has_data:
+        num_blocks += 1
     # The resident image also carries the CYD_CALL dispatch table (dispatch_size
     # bytes) right after the block index, so reserve room for it too.
     bank0_offset = (
@@ -983,6 +1047,22 @@ def main():
             spectrum_banks = [0, 3, 4, 6, 7]
         else:
             spectrum_banks = [0, 1, 3, 4, 6, 7]
+    elif model == "esxdos":
+        # ESXDOS streams images from SD into PIC_BUFFER ($E000), which lives in the
+        # HIGH half of the staging bank IMG_BANK=6; its LOW half ($C000-$DFFF, 8 KB)
+        # stays allocatable (capped below). Bank 6 is placed LAST so text chunks
+        # fill the full-size banks first and only spill into the 8 KB staging bank
+        # for large adventures (a clean "Block too big" error if a chunk > 8 KB).
+        # No banks are reserved for a disk OS (no +3DOS): 6 content banks.
+        if use_wyz_tracker:
+            spectrum_banks = [0, 3, 4, 7, 6]
+        elif has_tracks:
+            # Vortex (PT3) music streams into bank 6's low half ($C000), sharing the
+            # bank with PIC_BUFFER ($E000). So bank 6 is fully reserved (out of
+            # content allocation) whenever there is Vortex music.
+            spectrum_banks = [0, 1, 3, 4, 7]
+        else:
+            spectrum_banks = [0, 1, 3, 4, 7, 6]
     elif model == "plus3":
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 6]
@@ -1017,6 +1097,11 @@ def main():
         elif i == 3 and model == "plus3" and use_wyz_tracker:
             offset = 0xC000
             size = 8 * 1024
+        elif model == "esxdos" and spectrum_banks[i] == 6:
+            # esxdos staging bank: only the 8 KB low half ($C000-$DFFF) is usable;
+            # $E000+ is PIC_BUFFER for the streamed image.
+            offset = 0xC000
+            size = 8 * 1024
         else:
             offset = 0xC000
             size = 16 * 1024
@@ -1032,22 +1117,43 @@ def main():
     if num_banks > max_banks:
         sys.exit(_("ERROR: Not enough memory available"))
 
+    # Blocks placed by best-fit: media (SCR/TRK/WYZ) only on non-plus3 (on plus3
+    # they are streamed from disk, not banked), plus the immutable DATA blob on
+    # EVERY target (it is read-only data, so on plus3 it goes in a RAM bank too).
+    # esxdos (F2) streams images too, so SCR are excluded from residency (opened as
+    # SD files by name); music (TRK/WYZ) stays resident in F2a.
+    if model == "plus3":
+        place_blocks = []
+    elif model == "esxdos":
+        # SCR images and TRK (Vortex/PT3) music stream from SD files; WYZ music
+        # stays resident (its own bank 1).
+        place_blocks = [b for b in blocks if b[0] not in ("SCR", "TRK")]
+    else:
+        place_blocks = list(blocks)
+    if has_data:
+        place_blocks.append(("DATA", 0, codegen.data_len, list(codegen.data_blob), ""))
+
     fits = False
     while not fits:
         index = copy.deepcopy(tmp_index)
         available_banks = copy.deepcopy(tmp_blocks)
         available_banks.extend([[] for x in range(num_banks - len(tmp_blocks))])
         available_bank_size = copy.deepcopy(tmp_available_bank_size)
-        available_bank_size.extend(
-            [16 * 1024 for x in range(num_banks - len(tmp_available_bank_size))]
-        )
+        for j in range(len(tmp_available_bank_size), num_banks):
+            # esxdos staging bank (id 6) only exposes its 8 KB low half to the
+            # allocator; the rest of the banks are full 16 KB.
+            if model == "esxdos" and spectrum_banks[j] == 6:
+                available_bank_size.append(8 * 1024)
+            else:
+                available_bank_size.append(16 * 1024)
         fits = True
-        if model != "plus3":
-            for i, block in enumerate(blocks):
+        if place_blocks:
+            for i, block in enumerate(place_blocks):
                 btype, bidx, bsize, bdata, bpath = block
                 # Music (TRK/WYZ) is played from a RAM bank at $C000, so on mld128
                 # it can only live in a real 128K RAM bank (id < 8), never in a
-                # slot-only Dandanator bank (id >= 8).
+                # slot-only Dandanator bank (id >= 8). DATA (read-only, from flash)
+                # has no such restriction.
                 music_ram_only = model == "mld128" and btype in ("TRK", "WYZ")
                 best_fit_index = -1
                 min_leftover = sys.maxsize
@@ -1072,6 +1178,8 @@ def main():
                         b = 1
                     elif btype == "WYZ":
                         b = 3
+                    elif btype == "DATA":
+                        b = 4
                     else:  # btype == "TXT"
                         sys.exit(_("ERROR: Unexpected data"))
                     index.append((b, bidx, best_fit_index, offset))
@@ -1100,14 +1208,18 @@ def main():
     # routine at its final ORG, place it, and late-patch the [bank, addr_lo,
     # addr_hi] operand of every CALL that references it.
     extern_dispatch_asm = ""  # CYD_CALL dispatch table (filled after placement)
+    # ARR_POOL base used to place strict-mld native routines; passed to do_asm_mld so
+    # it can assert the assembled image ends exactly there (anti-collision). None when
+    # there are no strict-mld native routines.
+    mld_resident_pool_base = None
     if kept_blocks:
-        # 48k = resident; 128k/+3/mld128 = paged bank at $C000 ($7FFD). Strict
-        # mld (single Dandanator-slot bank) is not supported yet.
-        if model not in ("48k", "128k", "plus3", "mld128"):
+        # 48k = resident; 128k/+3/mld128/esxdos = paged bank at $C000 ($7FFD).
+        # Strict mld (single Dandanator-slot bank) is not supported yet.
+        if model not in ("48k", "128k", "plus3", "mld128", "mld", "esxdos"):
             sys.exit(
                 _(
-                    "ERROR: IMPORT/CALL native routines are only supported on the "
-                    "48k, 128k, +3 and mld128 targets for now."
+                    "ERROR: IMPORT/CALL native routines are not supported on the "
+                    f"{model} target."
                 )
             )
         # USES declares the cross-block callees a routine reaches via CYD_CALL:
@@ -1203,6 +1315,55 @@ def main():
             for r in routine_names:
                 _place_block(r, cursor, 0, 0)
                 cursor += sizes[r]
+        elif model == "mld":
+            # Strict mld (48K Dandanator): no $7FFD banks; code/data stream from
+            # READ-ONLY flash slots. A native routine can be self-modifying or use
+            # DEFS as scratch, so it must run from WRITABLE RAM -- exactly the
+            # DIM-array problem. Reuse the resident pool ARR_POOL + ARR_INIT (copied
+            # from flash at boot); no new runtime. Each routine is assembled at its
+            # final ORG in the pool, its bytes ride in chunk 0's flash slot, and an
+            # ARR_INIT_TABLE entry copies them into the pool at boot. CALL uses
+            # [0, ORG] -> the direct-call handler (like 48k; strict mld does not
+            # define OP_EXTERN_BANKED). ARR_POOL sits right after the interpreter
+            # image, whose size is bank0_offset + the 7-byte-per-entry copy table.
+            num_entries = len(codegen.arr_init_table) + len(routine_names)
+            # ARR_POOL sits right after the saved interpreter image. Its size beyond
+            # bank0_offset is the 7-byte-per-entry copy table PLUS the intro/loading
+            # screen (also inside the image, before the block index, but stubbed out
+            # in the size probe). Missing either shifts the routines' load address.
+            arr_pool = (
+                bank0_offset + 7 * num_entries + mld_intro_scr_size(loading_scr)
+            )
+            mld_resident_pool_base = arr_pool  # do_asm_mld asserts the image ends here
+            pool_ceiling = 0xF000  # DAN_SAVE_BUFFER starts here; keep the pool below
+            need = arr_pool + codegen.arr_pool_size + sum(sizes.values())
+            if need > pool_ceiling:
+                sys.exit(
+                    _("ERROR: Not enough resident RAM for native routines on mld.")
+                    + f" (needs up to ${need:04X}, ceiling ${pool_ceiling:04X})"
+                )
+            pool_off = codegen.arr_pool_size  # externs go after the arrays
+            for r in routine_names:
+                org = arr_pool + pool_off
+                data, addrs = _assemble_block(r, org, True)
+                if len(data) != sizes[r]:
+                    sys.exit(
+                        _(
+                            f"ERROR: Native routine {r} changed size between passes "
+                            f"({sizes[r]} -> {len(data)})."
+                        )
+                    )
+                src_off = len(available_banks[0])  # slot-relative pos in chunk 0
+                available_banks[0] += data
+                codegen.arr_init_table.append(
+                    (f"__ext_{r}", 0, src_off, pool_off, len(data))
+                )
+                d = codegen.externs[r]
+                for callable_name in d["exports"]:
+                    addr = addrs[callable_name] if d["explicit"] else org
+                    extern_addr[callable_name] = (0, addr)  # bank 0 -> direct call
+                pool_off += len(data)
+            codegen.arr_pool_size = pool_off
         else:  # 128k / +3 / mld128: place each block in a paged bank (>= 1).
             for r in routine_names:
                 # Best-fit among the already-used paged banks; add a new bank
@@ -1326,6 +1487,7 @@ def main():
                 print(_("Assembling Spectrum 128k TAP..."))
             output_name = output_name[:10]
             do_asm_128(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1347,11 +1509,40 @@ def main():
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
             )
+        elif model == "esxdos":
+            if verbose > 0:
+                print(_("Assembling ESXDOS data file and loader..."))
+            output_name = output_name[:8]
+            do_asm_esxdos(
+                data_len=codegen.data_len,
+                sjasmplus_path=args.sjasmplus_path,
+                output_path=args.output_path,
+                verbose=(verbose >= 1),
+                dat_name=output_name,
+                index=index,
+                blocks=available_banks,
+                banks=spectrum_banks,
+                size_interpreter=asm_size,
+                bank0_offset=bank0_offset,
+                sfx_asm=sfx,
+                tokens=l_tokens,
+                chars=l_chars,
+                charw=l_charw,
+                loading_scr=loading_scr,
+                has_tracks=has_tracks,
+                unused_opcodes=unused_opcodes,
+                pause_start_value=args.pause_after_load,
+                use_wyz_tracker=use_wyz_tracker,
+                name=output_name,
+                extern_dispatch=extern_dispatch_asm,
+                autoboot=args.autoboot,
+            )
         elif model == "plus3":
             if verbose > 0:
                 print(_("Assembling Spectrum PLUS3 binary files..."))
             output_name = output_name[:8]
             do_asm_plus3(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1378,6 +1569,7 @@ def main():
                 print(_(f"Assembling Spectrum {model.upper()}..."))
             output_name = output_name[:8]
             do_asm_mld(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1401,12 +1593,14 @@ def main():
                 name=output_name,
                 extern_dispatch=extern_dispatch_asm,
                 arr_init_table=codegen.arr_init_table,
+                resident_pool_base=mld_resident_pool_base,
             )
         else:
             if verbose > 0:
                 print(_("Assembling Spectrum 48k TAP..."))
             output_name = output_name[:10]
             do_asm_48(
+                data_len=codegen.data_len,
                 sjasmplus_path=args.sjasmplus_path,
                 output_path=args.output_path,
                 verbose=(verbose >= 1),
@@ -1478,6 +1672,27 @@ def main():
         finally:
             if not res:
                 sys.exit("ERROR: could not create DSK file")
+
+    ######################################################################
+    if model == "esxdos":
+        # ESXDOS distributes streamed media as loose files on the SD card root
+        # (same folder as the .DAT); screen_manager_esxdos opens them by "NNN.CSC".
+        if verbose > 0:
+            print(_("Copying ESXDOS media files..."))
+        for b in blocks:
+            try:
+                if b[0] == "SCR":
+                    src = b[4]
+                    dst = os.path.join(args.output_path, f"{b[1]:03d}.CSC")
+                    with open(src, "rb") as fi, open(dst, "wb") as fo:
+                        fo.write(fi.read())
+                elif b[0] == "TRK":
+                    # Vortex PT3: prepend the 2-byte size header music_manager_esxdos
+                    # expects, writing "NNN.BIN" (mirrors the +3 track packaging).
+                    dst = os.path.join(args.output_path, f"{b[1]:03d}.BIN")
+                    add_size_header(b[4], dst)
+            except OSError:
+                sys.exit("ERROR: could not copy ESXDOS media file")
 
     ######################################################################
     if model == "mld" or model == "mld128":

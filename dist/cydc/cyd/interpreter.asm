@@ -588,39 +588,87 @@ OP_PAPER_I:
     jp PAPER
     ENDIF
 
-    IFNDEF UNUSED_OP_BRIGHT_I
-OP_BRIGHT_I:
-    ld e, (hl)
+; ------------------------------------------------------------------------------
+; Immutable DATA stream (BASIC-style DATA/READ/RESTORE/DATAEND). The compiler
+; gathers every DATA value into one read-only chunk (DATA_CHUNK, DATA_LEN bytes)
+; placed like any other chunk (flash slot on MLD, banked on 128k/+3, resident on
+; 48k), and keeps a 16-bit cursor DATA_PTR. These share the opcode slots freed
+; from the rarely-used BRIGHT_I/FLASH_I/BORDER_I fusions (0x27/0x28/0x23).
+;
+; DATA_LEN (the blob's byte length) is emitted by the compiler (get_asm_*). The
+; default keeps the size pass -- which assembles every opcode -- and DATA-less
+; builds assembling; the real build overrides it with a DEFINE before this include.
+; The single TYPE_DATA resource always has index 0, so OP_READ passes 0 directly
+; (no DATA_CHUNK define: the token would be substring-substituted inside
+; LOAD_DATA_CHUNK -> LOAD_0 by sjasmplus's textual DEFINE).
+    IFNDEF DATA_LEN
+    DEFINE DATA_LEN 0
+    ENDIF
+
+    IFNDEF UNUSED_OP_READ
+; OP_READ: read the byte at the cursor into the VM data stack (a following
+; POP_SET/POP_SET_DI stores it), then advance the cursor. LOAD_DATA_CHUNK maps the
+; TYPE_DATA chunk and returns its base in HL; we save the running bytecode chunk
+; and page it back with LOAD_CHUNK afterwards (like the array flash path). The VM
+; stack (IX) and DATA_PTR are resident, so they survive the paging.
+OP_READ:
+    push hl                   ; save bytecode PC
+    ; Endless tape: if the cursor has reached the end, restart at 0 (reading past
+    ; the end wraps around instead of running off into undefined bytes).
+    ld hl, DATA_LEN
+    ld de, (DATA_PTR)
+    or a
+    sbc hl, de                ; DATA_LEN - DATA_PTR
+    jr c, .wrap               ; DATA_PTR > DATA_LEN
+    jr nz, .noWrap            ; DATA_PTR < DATA_LEN
+.wrap:                        ; DATA_PTR >= DATA_LEN -> rewind
+    ld hl, 0
+    ld (DATA_PTR), hl
+.noWrap:
+    ld a, (CHUNK)
+    push af                   ; save the running bytecode chunk id
+    xor a                     ; the single TYPE_DATA resource has index 0
+    call LOAD_DATA_CHUNK      ; map the TYPE_DATA chunk; HL = its base
+    ld de, (DATA_PTR)
+    add hl, de                ; HL = base + cursor
+    ld a, (hl)                ; A = data byte
+    PUSH_INT_STACK            ; push it to the VM data stack (resident, safe)
+    ld hl, (DATA_PTR)
     inc hl
-    ld d, HIGH FLAGS
-    ld a, (de)
-    push hl
-    call BRIGHT
-    pop hl
+    ld (DATA_PTR), hl         ; advance the cursor (resident, safe)
+    pop af                    ; A = saved bytecode chunk id
+    call LOAD_CHUNK           ; remap the bytecode chunk
+    pop hl                    ; restore bytecode PC
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_FLASH_I
-OP_FLASH_I:
+    IFNDEF UNUSED_OP_RESTORE
+; OP_RESTORE: set the cursor to a 16-bit operand (0 for plain RESTORE, or the
+; data offset of a label for RESTORE label; both baked by the compiler).
+OP_RESTORE:
     ld e, (hl)
     inc hl
-    ld d, HIGH FLAGS
-    ld a, (de)
-    push hl
-    call FLASH
-    pop hl
+    ld d, (hl)
+    inc hl
+    ld (DATA_PTR), de
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_BORDER_I
-OP_BORDER_I:
-    ld de, EXEC_LOOP
-    push de
-    ld e, (hl)
-    inc hl
-    ld d, HIGH FLAGS
-    ld a, (de)
-    jp BORDER
+    IFNDEF UNUSED_OP_DATAEND
+; OP_DATAEND: push 1 if the cursor is at/past the end of the stream, else 0.
+; HL is the bytecode PC, so save it across the DATA_PTR comparison.
+OP_DATAEND:
+    push hl                   ; save bytecode PC (the compare below clobbers HL)
+    ld hl, (DATA_PTR)
+    ld de, DATA_LEN
+    or a
+    sbc hl, de                ; carry set if DATA_PTR < DATA_LEN (more data left)
+    ld a, 0
+    jr c, 1f
+    inc a                     ; DATA_PTR >= DATA_LEN -> at end -> 1
+1:  PUSH_INT_STACK
+    pop hl                    ; restore bytecode PC
+    jp EXEC_LOOP
     ENDIF
 
     IFNDEF UNUSED_OP_PRINT_I
@@ -1983,7 +2031,10 @@ OP_MAX:
 
     IFNDEF UNUSED_OP_PUSH_IS_DISK
 OP_PUSH_IS_DISK:
-    ld a, IS_PLUS3
+    ; ISDISK() is true for every target whose media is streamed from a filesystem
+    ; (Plus3 disk and ESXDOS SD card), not just Plus3. IS_DISK is defined per main
+    ; template (1 on cyd_plus3/cyd_esxdos, 0 on cyd_tape/cyd_mld).
+    ld a, IS_DISK
     PUSH_INT_STACK
     jp EXEC_LOOP
     ENDIF
@@ -3360,10 +3411,10 @@ OPCODES:
     IFDEF UNUSED_OP_PAPER_I
     DW ERROR_NOP
     ENDIF
-    IFNDEF UNUSED_OP_BORDER_I
-    DW OP_BORDER_I
+    IFNDEF UNUSED_OP_READ
+    DW OP_READ
     ENDIF
-    IFDEF UNUSED_OP_BORDER_I
+    IFDEF UNUSED_OP_READ
     DW ERROR_NOP
     ENDIF
     IFNDEF UNUSED_OP_PRINT_I
@@ -3384,16 +3435,16 @@ OPCODES:
     IFDEF UNUSED_OP_FLASH_D
     DW ERROR_NOP
     ENDIF
-    IFNDEF UNUSED_OP_BRIGHT_I
-    DW OP_BRIGHT_I
+    IFNDEF UNUSED_OP_RESTORE
+    DW OP_RESTORE
     ENDIF
-    IFDEF UNUSED_OP_BRIGHT_I
+    IFDEF UNUSED_OP_RESTORE
     DW ERROR_NOP
     ENDIF
-    IFNDEF UNUSED_OP_FLASH_I
-    DW OP_FLASH_I
+    IFNDEF UNUSED_OP_DATAEND
+    DW OP_DATAEND
     ENDIF
-    IFDEF UNUSED_OP_FLASH_I
+    IFDEF UNUSED_OP_DATAEND
     DW ERROR_NOP
     ENDIF
     IFNDEF UNUSED_OP_PICTURE_D

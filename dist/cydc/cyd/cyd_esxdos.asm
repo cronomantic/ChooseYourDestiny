@@ -33,8 +33,8 @@
     DEFINE RELEASE "1.3"
 
     DEFINE IS_PLUS3 0
-    DEFINE IS_DISK 0          ; ISDISK() false: tape (resident media)
-
+    DEFINE IS_DISK 1          ; ISDISK() -> media streamed from the SD card
+    
     IFDEF USE_WYZ
 WYZ_BANK     EQU 1
 WYZ_TRACKER  EQU $C000
@@ -533,6 +533,23 @@ SYS_ERROR:
 
 SYS_ERROR_MSG:
     DB "SYSTEM ERROR No:",0
+
+; Disk (SD/esxDOS) Error message
+; A = Error number
+DISK_ERROR:
+    push af
+    ld a, %11110010
+    ld (ATTR_P), a
+    call INIT_WIN
+    ld hl, DISK_ERROR_MSG
+    call PRINT_STR
+    pop af
+    call PRINT_A_BYTE
+.endless:
+    jr .endless
+
+DISK_ERROR_MSG:
+    DB "DISK ERROR No:",0
 ;---------------------------------------------------
 TOKENS_ADDR         DW TOKENS
 CHARSET_ADDR        DW CHARSET_S
@@ -561,5 +578,7 @@ EXTERN_DISPATCH:
 @{EXTERN_DISPATCH}
 
 SIZE_INTERPRETER = $ - START_INTERPRETER
-    SAVETAP "@TAP_PATH", HEADLESS,START_INTERPRETER, SIZE_INTERPRETER
+    ; ESXDOS: the interpreter image is SAVEBIN'd as the first chunk of the single
+    ; .DAT data file (like the +3 .BIN); the bootstrap loader F_READs it to $8000.
+    SAVEBIN "@DAT_PATH", START_INTERPRETER, SIZE_INTERPRETER
     ENDIF

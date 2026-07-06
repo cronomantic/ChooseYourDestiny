@@ -23,6 +23,7 @@ start, storing each result in a distinct variable, then read them all at once):
 import glob
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -70,22 +71,37 @@ def emulator_available():
     return bool(find_sjasmplus() and find_zesarux())
 
 
-def _parse_flags_addr(lst_path):
-    """Extract the address of the FLAGS label from a sjasmplus listing."""
+def _parse_label_addr(lst_path, label):
+    """Extract the address of ``label`` from a sjasmplus listing.
+
+    Listing rows look like ``  307  5D00              FLAGS:``. Used for FLAGS and
+    also for VTR_START (the Vortex player state block) in the media tests.
+    """
+    pat = re.compile(r"^\s*\d+\s+([0-9A-Fa-f]{4})\s+" + re.escape(label) + r":")
     with open(lst_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
-            # listing rows look like: "  307  5D00              FLAGS:"
-            m = re.search(r"^\s*\d+\s+([0-9A-Fa-f]{4})\s+FLAGS:", line)
+            m = pat.search(line)
             if m:
                 return int(m.group(1), 16)
     return None
 
 
-def compile_cyd(source, model, workdir):
+def _parse_flags_addr(lst_path):
+    """Address of the FLAGS variable array (interpreter state)."""
+    return _parse_label_addr(lst_path, "FLAGS")
+
+
+def compile_cyd(source, model, workdir, images=None, tracks=None):
     """Compile ``source`` under ``workdir``; return (image_path, flags_addr).
 
     The image is a TAP for tape targets and a DSK for the +3 (disk) target;
     ZEsarUX ``smartload`` loads either.
+
+    ``images`` / ``tracks`` are lists of asset files (``NNN.scr`` / ``NNN.pt3``)
+    to drop into ``IMAGES/`` / ``TRACKS/`` under ``workdir`` and expose to the
+    compiler via ``-img`` / ``-trk``. On esxdos the compiled media (``NNN.CSC`` /
+    ``NNN.BIN``) is emitted into the output dir, which the caller uses as the SD
+    root, so the streaming disk path can serve them.
     """
     sj = find_sjasmplus()
     if not sj:
@@ -93,9 +109,23 @@ def compile_cyd(source, model, workdir):
     src = Path(workdir) / "test.cyd"
     src.write_text(source, encoding="utf-8")
     # -v makes run_assembler keep the .lst listing (we parse FLAGS from it).
+    cmd = [sys.executable, str(CYDC), "-v"]
+    if images:
+        idir = Path(workdir) / "IMAGES"
+        idir.mkdir(exist_ok=True)
+        for f in images:
+            shutil.copy(f, idir / Path(f).name)  # NNN.scr (lowercase ext)
+        cmd += ["-img", str(idir)]
+    if tracks:
+        tdir = Path(workdir) / "TRACKS"
+        tdir.mkdir(exist_ok=True)
+        for f in tracks:
+            # the compiler globs NNN.PT3 uppercase (cydc.py:738)
+            shutil.copy(f, tdir / (Path(f).stem + ".PT3"))
+        cmd += ["-trk", str(tdir)]
+    cmd += [model, "test.cyd", sj, "."]
     proc = subprocess.run(
-        [sys.executable, str(CYDC), "-v", model, "test.cyd", sj, "."],
-        cwd=workdir, capture_output=True, text=True, timeout=120,
+        cmd, cwd=workdir, capture_output=True, text=True, timeout=120,
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -157,7 +187,8 @@ def _pc(s):
 
 
 def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
-                   machine="48k", dandanator_rom=None, esxdos_root=None):
+                   machine="48k", dandanator_rom=None, esxdos_root=None,
+                   extra_reads=()):
     """Load+run headless, return FLAGS[0:n_bytes] once the run is stable.
 
     ``machine`` picks the ZEsarUX model ("48k", "128k", "p3", ...); use it to
@@ -215,12 +246,15 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
             prev = cur
         else:
             result = prev or result
+        # Sample any extra memory (screen, VTR_STAT) at the same stable point,
+        # before quitting while the emulator is still live.
+        extra = [_read_mem(s, addr, ln) for (addr, ln) in extra_reads]
         try:
             _cmd(s, "quit", 2.0)
             s.close()
         except OSError:
             pass
-        return result
+        return (result, extra) if extra_reads else result
     finally:
         try:
             proc.terminate()
@@ -286,3 +320,32 @@ def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
         return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
                               max_wait=max_wait or 25.0, machine=machine,
                               esxdos_root=esxdos_root)
+
+
+def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
+               images=None, tracks=None, reads=()):
+    """Extended ``run_cyd`` for the disk-media tests: supply ``-img``/``-trk``
+    asset dirs and sample extra memory after the run stabilises.
+
+    ``reads`` is a sequence of either ``(addr, length)`` (absolute) or
+    ``(label, offset, length)`` where ``label`` is resolved from the ``.lst``
+    (e.g. ``("VTR_START", 10, 1)`` for VTR_STAT). Returns ``(flags, [bytes,...])``
+    with one entry per read. Tape/esxdos boot path only (no MLD)."""
+    machine = MACHINE_BY_MODEL.get(model, "48k")
+    with tempfile.TemporaryDirectory(prefix="cyd_emu_") as wd:
+        tap, flags_addr = compile_cyd(source, model, wd, images=images, tracks=tracks)
+        lst = Path(wd) / "cyd.lst"
+        abs_reads = []
+        for r in reads:
+            if len(r) == 2:
+                abs_reads.append((r[0], r[1]))
+            else:
+                label, off, ln = r
+                addr = _parse_label_addr(lst, label)
+                if addr is None:
+                    raise RuntimeError(f"label {label} not found in listing")
+                abs_reads.append((addr + off, ln))
+        esxdos_root = wd if model == "esxdos" else None
+        return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
+                              max_wait=max_wait or 30.0, machine=machine,
+                              esxdos_root=esxdos_root, extra_reads=tuple(abs_reads))

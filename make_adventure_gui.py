@@ -178,6 +178,7 @@ _SETTINGS_KEYS = [
     ("no_strict_colons",   "var_no_strict_colons",   "bool"),
     ("use_wyz",            "var_use_wyz",            "bool"),
     ("disk_720",           "var_disk_720",           "bool"),
+    ("autoboot",           "var_autoboot",           "bool"),
     ("max_errors",         "var_max_errors",         "int"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
@@ -470,6 +471,27 @@ class SettingsDialog(tk.Toplevel):
                 row=i // 2, column=i % 2, sticky=tk.W, **pad
             )
 
+        # Autoboot is ESXDOS-only: the checkbox is enabled only while the ESXDOS
+        # target is selected, and cleared otherwise.
+        autoboot_chk = ttk.Checkbutton(
+            flags,
+            text=_("Autoboot from SD (esxdos only, EXPERIMENTAL)"),
+            variable=self.app.var_autoboot,
+        )
+        autoboot_chk.grid(
+            row=len(checks) // 2, column=len(checks) % 2, sticky=tk.W, **pad
+        )
+
+        def _sync_autoboot(*_):
+            if self.app.var_target.get() == "esxdos":
+                autoboot_chk.config(state=tk.NORMAL)
+            else:
+                autoboot_chk.config(state=tk.DISABLED)
+                self.app.var_autoboot.set(False)
+
+        self.app.var_target.trace_add("write", _sync_autoboot)
+        _sync_autoboot()
+
         # Pause after load
         pause_frame = ttk.LabelFrame(parent, text=_("Pause After Load"))
         pause_frame.pack(fill=tk.X, **pad)
@@ -718,6 +740,7 @@ class MakeAdventureGUI:
         self.var_no_strict_colons = tk.BooleanVar()
         self.var_use_wyz = tk.BooleanVar()
         self.var_disk_720 = tk.BooleanVar()
+        self.var_autoboot = tk.BooleanVar()
         self.var_max_errors = tk.IntVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
@@ -770,6 +793,7 @@ class MakeAdventureGUI:
         self.var_no_strict_colons.set(False)
         self.var_use_wyz.set(False)
         self.var_disk_720.set(False)
+        self.var_autoboot.set(False)
         self.var_max_errors.set(20)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
@@ -938,6 +962,7 @@ class MakeAdventureGUI:
             ("plus3", "+3 (DSK)"),
             ("mld", "Dandanator (MLD) ⚠ exp."),
             ("mld128", "Dandanator 128K (MLD) ⚠ exp."),
+            ("esxdos", "ESXDOS/divMMC (SD)"),
         ]:
             ttk.Radiobutton(
                 target_frame, text=label, variable=self.var_target, value=val
@@ -1146,6 +1171,9 @@ class MakeAdventureGUI:
             cydc_params = ["-pause", pause_val] + cydc_params
         if self.var_disk_720.get():
             cydc_params = ["-720"] + cydc_params
+
+        if self.var_autoboot.get():
+            cydc_params = ["-autoboot"] + cydc_params
         if self.var_use_wyz.get():
             cydc_params = ["-wyz"] + cydc_params
         if self.var_image_lines.get():
