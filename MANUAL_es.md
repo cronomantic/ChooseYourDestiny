@@ -2452,7 +2452,9 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - System Error 7: Acceso a posición del array fuera del rango.
 - System Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
 
-Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco, y corresponden con los errores de +3DOS:
+Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco o a la tarjeta de almacenamiento. Se muestran en pantalla como `DISK ERROR No:` seguido del código, y detienen la ejecución del juego (a diferencia de los errores recuperables de `SAVE`/`LOAD`, que se consultan con `SAVERESULT()`).
+
+En el target **Plus3** corresponden con los errores de +3DOS:
 
 - Disk Error 0: Drive not ready
 - Disk Error 1: Disk is write protected
@@ -2483,6 +2485,42 @@ Los errores de disco son los errores que pudiesen ocasionarse cuando el motor de
 - Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
 La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
+
+En el target **ESXDOS** (interfaces divMMC/divIDE con tarjeta SD) corresponden con los códigos de error de esxDOS:
+
+- Disk Error 1: O.K. (sin error)
+- Disk Error 2: Nonsense in esxDOS (operación sin sentido)
+- Disk Error 3: Statement end error
+- Disk Error 4: Wrong file type (tipo de fichero incorrecto)
+- Disk Error 5: No such file or directory (fichero o directorio no encontrado)
+- Disk Error 6: I/O error (error de entrada/salida)
+- Disk Error 7: Invalid filename (nombre de fichero inválido)
+- Disk Error 8: Access denied (acceso denegado)
+- Disk Error 9: Drive full (tarjeta/disco lleno)
+- Disk Error 10: Invalid I/O request (petición de E/S inválida)
+- Disk Error 11: No such drive (unidad no encontrada)
+- Disk Error 12: Too many open files (demasiados ficheros abiertos)
+- Disk Error 13: Bad file descriptor (descriptor de fichero inválido)
+- Disk Error 14: No such device (dispositivo no encontrado)
+- Disk Error 15: File pointer overflow (desbordamiento del puntero de fichero)
+- Disk Error 16: Is a directory (es un directorio)
+- Disk Error 17: Not a directory (no es un directorio)
+- Disk Error 18: File already exists (el fichero ya existe)
+- Disk Error 19: Invalid path (ruta inválida)
+- Disk Error 20: No SYS (falta el sistema)
+- Disk Error 21: Path too long (ruta demasiado larga)
+- Disk Error 22: No such command (comando no encontrado)
+- Disk Error 23: File in use (fichero en uso)
+- Disk Error 24: File is read only (fichero de solo lectura)
+- Disk Error 25: Verify failed (fallo de verificación)
+- Disk Error 26: Loading .KO failed (fallo de carga)
+- Disk Error 27: Directory not empty (directorio no vacío)
+- Disk Error 28: MAPRAM is active
+- Disk Error 29: Drive is busy (unidad ocupada)
+- Disk Error 30: Unknown filesystem (sistema de ficheros desconocido)
+- Disk Error 31: Device is busy (dispositivo ocupado)
+
+En el caso de ESXDOS, el error más habitual es el 5 (No such file or directory), que suele indicar que se ha olvidado de copiar en la tarjeta SD algún fichero necesario (la imagen `.CSC`, la música `.BIN`, la partida `.SAV` o el propio fichero de datos `.DAT` del juego).
 
 ---
 

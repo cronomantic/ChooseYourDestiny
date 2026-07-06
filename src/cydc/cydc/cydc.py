@@ -697,7 +697,7 @@ def main():
                 if os.path.isfile(fpath):
                     with open(fpath, "rb") as f:
                         b = list(f.read())
-                        if (model == "plus3") and (len(b) > (8 * 1024)):
+                        if (model in ("plus3", "esxdos")) and (len(b) > (8 * 1024)):
                             sys.exit(
                                 _(f"ERROR: Invalid PT3 file {fpath}, it is too big")
                             )
@@ -1014,6 +1014,11 @@ def main():
         # No banks are reserved for a disk OS (no +3DOS): 6 content banks.
         if use_wyz_tracker:
             spectrum_banks = [0, 3, 4, 7, 6]
+        elif has_tracks:
+            # Vortex (PT3) music streams into bank 6's low half ($C000), sharing the
+            # bank with PIC_BUFFER ($E000). So bank 6 is fully reserved (out of
+            # content allocation) whenever there is Vortex music.
+            spectrum_banks = [0, 1, 3, 4, 7]
         else:
             spectrum_banks = [0, 1, 3, 4, 7, 6]
     elif model == "plus3":
@@ -1078,7 +1083,9 @@ def main():
     if model == "plus3":
         place_blocks = []
     elif model == "esxdos":
-        place_blocks = [b for b in blocks if b[0] != "SCR"]
+        # SCR images and TRK (Vortex/PT3) music stream from SD files; WYZ music
+        # stays resident (its own bank 1).
+        place_blocks = [b for b in blocks if b[0] not in ("SCR", "TRK")]
     else:
         place_blocks = list(blocks)
     if has_data:
@@ -1630,14 +1637,19 @@ def main():
         if verbose > 0:
             print(_("Copying ESXDOS media files..."))
         for b in blocks:
-            if b[0] == "SCR":
-                src = b[4]
-                dst = os.path.join(args.output_path, f"{b[1]:03d}.CSC")
-                try:
+            try:
+                if b[0] == "SCR":
+                    src = b[4]
+                    dst = os.path.join(args.output_path, f"{b[1]:03d}.CSC")
                     with open(src, "rb") as fi, open(dst, "wb") as fo:
                         fo.write(fi.read())
-                except OSError:
-                    sys.exit("ERROR: could not copy ESXDOS media file")
+                elif b[0] == "TRK":
+                    # Vortex PT3: prepend the 2-byte size header music_manager_esxdos
+                    # expects, writing "NNN.BIN" (mirrors the +3 track packaging).
+                    dst = os.path.join(args.output_path, f"{b[1]:03d}.BIN")
+                    add_size_header(b[4], dst)
+            except OSError:
+                sys.exit("ERROR: could not copy ESXDOS media file")
 
     ######################################################################
     if model == "mld" or model == "mld128":

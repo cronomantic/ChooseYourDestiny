@@ -2439,7 +2439,9 @@ Engine errors are, as their name indicates, errors that occur when the engine de
 - System Error 7: Access to array position out of range.
 - System Error 8: Missing option. When scrolling, the declared options shift upwards. If one of them goes over the top of the margins, this error is generated.
 
-Disk errors are errors that could be caused when the game engine accesses the disk, and correspond to +3DOS errors:
+Disk errors are errors that could be caused when the game engine accesses the disk or the storage card. They are shown on screen as `DISK ERROR No:` followed by the code, and they halt the game (unlike the recoverable `SAVE`/`LOAD` errors, which are queried with `SAVERESULT()`).
+
+On the **Plus3** target they correspond to +3DOS errors:
 
 - Disk Error 0: Drive not ready
 - Disk Error 1: Disk is write protected
@@ -2470,6 +2472,42 @@ Disk errors are errors that could be caused when the game engine accesses the di
 - Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
 These errors appear when accessing the disk, when searching for more pieces of text, images, etc. If error 23 appears (File not found), it is usually because you have forgotten to include a necessary file on the disk. Other errors already indicate an error with the disk drive or the disk itself.
+
+On the **ESXDOS** target (divMMC/divIDE interfaces with an SD card) they correspond to the esxDOS error codes:
+
+- Disk Error 1: O.K. (no error)
+- Disk Error 2: Nonsense in esxDOS
+- Disk Error 3: Statement end error
+- Disk Error 4: Wrong file type
+- Disk Error 5: No such file or directory
+- Disk Error 6: I/O error
+- Disk Error 7: Invalid filename
+- Disk Error 8: Access denied
+- Disk Error 9: Drive full
+- Disk Error 10: Invalid I/O request
+- Disk Error 11: No such drive
+- Disk Error 12: Too many open files
+- Disk Error 13: Bad file descriptor
+- Disk Error 14: No such device
+- Disk Error 15: File pointer overflow
+- Disk Error 16: Is a directory
+- Disk Error 17: Not a directory
+- Disk Error 18: File already exists
+- Disk Error 19: Invalid path
+- Disk Error 20: No SYS
+- Disk Error 21: Path too long
+- Disk Error 22: No such command
+- Disk Error 23: File in use
+- Disk Error 24: File is read only
+- Disk Error 25: Verify failed
+- Disk Error 26: Loading .KO failed
+- Disk Error 27: Directory not empty
+- Disk Error 28: MAPRAM is active
+- Disk Error 29: Drive is busy
+- Disk Error 30: Unknown filesystem
+- Disk Error 31: Device is busy
+
+For ESXDOS, the most common error is 5 (No such file or directory), which usually means you have forgotten to copy some required file onto the SD card (the `.CSC` image, the `.BIN` music, the `.SAV` save, or the game's own `.DAT` data file).
 
 ---
 

@@ -184,6 +184,7 @@ def get_source_files():
         "cydc/cyd/loaderplus3.asm",
         "cydc/cyd/loadertape.asm",
         "cydc/cyd/music_manager.asm",
+        "cydc/cyd/music_manager_esxdos.asm",
         "cydc/cyd/music_manager_tape.asm",
         "cydc/cyd/plus3dos.asm",
         "cydc/cyd/savegame_esxdos.asm",
