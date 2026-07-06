@@ -469,8 +469,10 @@ def get_asm_esxdos(
     t = get_asm_template("savegame_esxdos")
     includes += t.substitute(d)
     if has_tracks:
-        # F2a: music is still RESIDENT (music_manager_tape); only images stream.
-        t = get_asm_template("music_manager_tape")
+        # F2b: Vortex (PT3) music STREAMS from SD (music_manager_esxdos, RST $08) to
+        # $C000 in the staging bank 6. WyzTracker stays resident in its own bank 1
+        # (WYZ_CALL only). Replaces the F1/F2a resident music_manager_tape.
+        t = get_asm_template("music_manager_esxdos")
         includes += t.substitute(d)
         if not use_wyz_tracker:
             t = get_asm_template("VTII10bG")

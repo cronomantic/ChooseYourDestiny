@@ -456,14 +456,21 @@ externos, coherente con [[feedback-minimize-external-tooling]]).
      **`DISPLAY 0` es NOP** (`OP_DISPLAY_D` hace `or a; jp z`), usar `DISPLAY 1`.
      Limitación conocida: un chunk de TEXTO que caiga en el banco 6 y exceda 8KB da
      error limpio ("Block too big"); solo en aventuras muy grandes (≥6 chunks).
-   - **F2b — MÚSICA (pendiente):** Vortex Tracker streamea de disco al **resto del
-     banco de staging (banco 6, `$C000-$DFFF`)** compartiendo con `PIC_BUFFER` ($E000)
-     — modelo plus3 (`MDLADDR=$C000`, `VORTEX_BANK=6`). Con música Vortex, el banco 6
-     queda reservado entero (fuera de la allocación de contenido). WyzTracker reserva
-     su propio banco (1). `music_manager_esxdos.asm` (F_READ el `.BIN`) + `.bin`
-     sueltos + allocator condicional a presencia de música. Se puede hacer con las
-     variables `MDLADDR`/`VORTEX_BANK` de cyd_tape puestas a $C000/6 en runtime (sin
-     rebasar cyd_esxdos sobre cyd_plus3).
+   - **F2b — MÚSICA: ✅ HECHO + VERIFICADO (jul 2026).** `music_manager_esxdos.asm`
+     (LOAD_MUSIC Vortex por `RST $08`: F_OPEN "NNN.BIN", F_READ cabecera 2B + cuerpo
+     PT3 a `$C000` del banco de staging 6; `MDLADDR`/`VORTEX_BANK` (variables de
+     cyd_tape) a `$C000`/`6` en runtime + `VTR_INIT_HL` → SIN rebasar cyd_esxdos sobre
+     cyd_plus3; restaura SCRIPT_BANK; `WYZ_CALL` residente igual que tape). El PT3 (≤8KB,
+     límite ya existente) ocupa `$C000-$DFFF` y no solapa `PIC_BUFFER` ($E000).
+     `get_asm_esxdos` usa `music_manager_esxdos`. `cydc.py`: con música Vortex
+     (`has_tracks and not wyz`) `spectrum_banks=[0,1,3,4,7]` (**banco 6 fuera de
+     contenido**, reservado para pista + staging); TRK excluidos de residencia
+     (streameados); WyzTracker sigue residente en su banco 1 (`[0,3,4,7,6]`); límite
+     PT3 8KB extendido a esxdos; `.BIN` (con `add_size_header`) copiados sueltos al
+     output. **Verificado en ZEsarUX: diferencial esxdos vs plus3 IDÉNTICO** —
+     `TRACK 0` + `PLAY 1` llega a FLAGS[0]=200 (el módulo streameó y cargó: si no,
+     DISK_ERROR o SYS_ERROR 5 de `OP_PLAY`) y `VTR_STAT=0xDD` en ambos. Nota: WyzTracker
+     en esxdos queda como en 128k (residente); solo Vortex streamea.
    - **Savegame:** ya hecho en F1 (`savegame_esxdos.asm`, por fichero).
 3. **F3 — TR-DOS bring-up.** Escritor `.TRD` en Python, `boot.B`, `loadertrdos.asm`,
    `trdos.asm` (`#3D13`), plantilla `cyd_trdos`. Fijar modelo de máquina (§6.3).
