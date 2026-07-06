@@ -1838,7 +1838,7 @@ Con cualquier otro valor, el resultado está indefinido.
 
 ### ISDISK()
 
-_Función_ que devuelve 1 si el intérprete es la versión de Plus3 y 0 en caso contrario.
+_Función_ que devuelve 1 si el target carga sus recursos (imágenes, música, partidas) desde un sistema de ficheros —es decir, disco Plus3 o tarjeta SD de ESXDOS— y 0 en caso contrario (cinta o cartucho Dandanator, donde los recursos residen en memoria). Es útil para que la aventura sepa si los medios se cargan bajo demanda.
 
 ### LASTPOS(ID)
 

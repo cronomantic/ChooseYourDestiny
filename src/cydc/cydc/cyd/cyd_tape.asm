@@ -33,7 +33,8 @@
     DEFINE RELEASE "1.3"
 
     DEFINE IS_PLUS3 0
-    
+    DEFINE IS_DISK 0          ; ISDISK() false: tape (resident media)
+
     IFDEF USE_WYZ
 WYZ_BANK     EQU 1
 WYZ_TRACKER  EQU $C000

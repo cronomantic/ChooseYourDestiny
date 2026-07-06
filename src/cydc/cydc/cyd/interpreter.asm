@@ -2031,7 +2031,10 @@ OP_MAX:
 
     IFNDEF UNUSED_OP_PUSH_IS_DISK
 OP_PUSH_IS_DISK:
-    ld a, IS_PLUS3
+    ; ISDISK() is true for every target whose media is streamed from a filesystem
+    ; (Plus3 disk and ESXDOS SD card), not just Plus3. IS_DISK is defined per main
+    ; template (1 on cyd_plus3/cyd_esxdos, 0 on cyd_tape/cyd_mld).
+    ld a, IS_DISK
     PUSH_INT_STACK
     jp EXEC_LOOP
     ENDIF
