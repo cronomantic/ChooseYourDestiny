@@ -1829,7 +1829,7 @@ Any other value results in undefined results.
 
 ### ISDISK()
 
-_Function_ that returns 1 if the interpreter is the Plus3 version and 0 otherwise.
+_Function_ that returns 1 if the target loads its resources (images, music, savegames) from a filesystem —that is, the Plus3 disk or the ESXDOS SD card— and 0 otherwise (tape or Dandanator cartridge, where resources are resident in memory). Useful for the adventure to know whether media is loaded on demand.
 
 ### LASTPOS(ID)
 
