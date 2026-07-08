@@ -1,8 +1,17 @@
-# Diseño: targets de almacenamiento ESXDOS y BetaDisk / TR-DOS
+# Diseño: target de almacenamiento ESXDOS
 
-> Documento de trabajo. Recoge el análisis del framework y el diseño para incorporar
-> dos nuevos **targets de almacenamiento** al motor CYD sobre ZX Spectrum: **ESXDOS**
-> (divMMC/divIDE, tarjeta SD) y **BetaDisk / TR-DOS** (interfaz Beta 128, disquete).
+> ⛔ **TR-DOS / BetaDisk DESCARTADO (jul 2026).** Se llegó a implementar (F3 + streaming
+> de imágenes/música por `#3D13`) pero se descartó: TR-DOS 5.03 usa **`$5D00-$5D21` como
+> su bloque de variables de sistema**, que cabalga sobre `$5D00` y colisiona con la pila
+> máquina del intérprete (por debajo) **y con las variables `FLAGS` del juego (por
+> encima)** — `#3D13` corrompe `FLAGS[2..31]` en cada lectura/escritura (probado). Arreglarlo
+> obligaría a reubicar `FLAGS`, sobre un target ya de por sí con fricción (Pentagon-only,
+> menú de arranque frágil, catálogo de 128 ficheros). El trabajo quedó preservado en la
+> rama `archive/trdos`. Las secciones §6 y las fases F3/F4 se han retirado de este
+> documento; el resto se mantiene como referencia histórica del diseño ESXDOS.
+
+> Documento de trabajo. Recoge el análisis del framework y el diseño del **target de
+> almacenamiento ESXDOS** (divMMC/divIDE, tarjeta SD) para el motor CYD sobre ZX Spectrum.
 >
 > **A diferencia del port a CPC** ([MULTITARGET_DESIGN.md](../../MULTITARGET_DESIGN.md)),
 > aquí **NO cambia ni el lenguaje, ni el bytecode, ni el render, ni el color**: la
@@ -181,8 +190,8 @@ importa porque los dos backends de disco manipulan justo esa zona:
 
 ### 4.1 Por qué esto es MÁS fácil que en Dandanator (pero hay que vigilarlo)
 
-El automap del divMMC y la paginación de la ROM Beta **solo se activan durante la
-llamada de disco y se auto-desmapean al volver** (§5.1, §6.1). A diferencia del
+El automap del divMMC **solo se activa durante la
+llamada de disco y se auto-desmapea al volver** (§5.1). A diferencia del
 Dandanator —que deja un slot mapeado en $0000 de forma persistente y por eso necesita
 `RESTORE_DAN_ROM` antes de cada `KEY_SCAN`— aquí **la ROM Spectrum está visible en
 $0000–$3FFF el 99% del tiempo** (todo lo que no sea el instante de una lectura de
@@ -356,69 +365,8 @@ automap). **Para fiabilidad usar (ii) al menos en una prueba**; (i) para el grue
 
 ---
 
-## 6. Target BetaDisk / TR-DOS (interfaz Beta 128, disquete)
 
-### 6.1 La API TR-DOS y la paginación de la ROM Beta (investigado; §10)
-
-Acceso: `CALL #3D13` con `C`=nº de función (y registros según función). La **ROM
-TR-DOS se pagina por hardware al hacer *fetch* en `#3Dxx`** con la ROM BASIC activa;
-al salir de esa zona, vuelve la ROM Spectrum. Controlador VG93 (=WD1793) por puertos
-`$1F/$3F/$5F/$7F/$FF` si se quisiera pilotar a hierro.
-
-Carga de fichero por nombre (funciones de la ROM TR-DOS):
-- **Fn `#0A` (buscar fichero):** nombre/tipo en variables DOS `#5CDD…`; devuelve nº de
-  descriptor o `#FF` si no existe.
-- **Fn `#0E` (cargar):** descriptor en `#5DCC`; `A=#03` → `HL`=dirección, `DE`=longitud
-  (o `A=#00`/`#FF` para tomar dir/long del catálogo).
-
-Alternativa directa por track/sector (más simple de controlar, sin variables DOS):
-`LD HL,dir : LD DE,track/sector : LD BC,nº_sectores : CALL #3D13` (subfunción de lectura
-de sectores). Requiere conocer la geometría del fichero en el catálogo (lo sabe el
-empaquetador Python al construir el `.TRD`).
-
-### 6.2 Arranque TR-DOS
-
-TR-DOS ejecuta automáticamente un fichero **`boot.B`** (BASIC) al entrar (por
-`RANDOMIZE USR 15616`, botón "magic", o arranque de máquina tipo Pentagon en TR-DOS).
-`boot.B` hace un `RANDOMIZE USR` que lanza el cargador máquina; éste usa `#3D13` para
-leer el fichero de datos a los bancos y salta a $8000. Análogo al loader BASIC de
-`plus3`, pero el auto-arranque lo da TR-DOS (no hace falta navegador).
-
-### 6.3 Riesgos específicos de TR-DOS (mayores que ESXDOS)
-
-1. **Coexistencia con 128K.** TR-DOS clásico es de mundo 48K; la ROM Beta y el banking
-   `$7FFD` deben coordinarse. El intérprete usa `$7FFD` intensivamente (bancos
-   residentes). Hay que confirmar que la ROM Beta no interfiere con el banking en
-   memoria alta, o restringir TR-DOS a un modelo de máquina concreto (Pentagon 128, o
-   48K residente puro).
-2. **Atomicidad ROM Beta ↔ ROM 48K.** Durante `#3D13`, la ROM Spectrum no está; el
-   teclado (KEY_SCAN) no puede ejecutar a la vez. Igual que ESXDOS, pero por otro
-   mecanismo.
-3. **Variables DOS.** La carga por nombre (`#0A`/`#0E`) escribe en el área de sistema
-   `#5CDD…`; hay que asegurar que no pisa datos del intérprete (el intérprete arranca
-   en $8000, sysvars intactas por debajo).
-4. **Modelo de máquina.** Beta 128 se asocia normalmente a Pentagon. Decidir el/los
-   modelos objetivo (Pentagon 128, Spectrum 128 + Beta, 48K + Beta).
-
-### 6.4 Verificación en emulador
-
-ZEsarUX: `--enable-betadisk`, `--enable-trd`, `--trd-file <f>`, ROM `trdos.rom`;
-máquinas `Pentagon`/`P340`/`P341`/`P3S` en `--machinelist`. Empaquetar el `.TRD` en
-Python (formato de disco TR-DOS: pista/sector/catálogo — Python puro, sin binarios
-externos, coherente con [[feedback-minimize-external-tooling]]).
-
----
-
-## 7. Comparativa de complejidad y plan por fases
-
-| Eje | ESXDOS | TR-DOS |
-|---|---|---|
-| API | POSIX limpia (F_OPEN/READ/WRITE/CLOSE) | `#3D13` + variables DOS, o track/sector |
-| Automap/paginación | solo $0000–$3FFF, atómico, auto-desmapea | ROM Beta por fetch $3Dxx; coexistencia 128K delicada |
-| Arranque | `.TAP` bootstrap (reusa `loadertape`) | `boot.B` auto (TR-DOS lo lanza) |
-| Empaquetado Python | fichero `.DAT` (SAVEBIN concat) + `.TAP` | escritor de `.TRD` (catálogo/pista/sector) nuevo |
-| Emulación ZEsarUX | handler trampeado + divMMC real | Betadisk + `.TRD` + máquina Pentagon |
-| **Coste relativo** | **bajo–medio** (espejo de `plus3`) | **medio–alto** (ROM Beta + `.TRD` writer) |
+## 7. Plan por fases (ESXDOS)
 
 **Plan por fases (cada fase: verde en la suite completa + verificada en ZEsarUX):**
 
@@ -472,13 +420,9 @@ externos, coherente con [[feedback-minimize-external-tooling]]).
      DISK_ERROR o SYS_ERROR 5 de `OP_PLAY`) y `VTR_STAT=0xDD` en ambos. Nota: WyzTracker
      en esxdos queda como en 128k (residente); solo Vortex streamea.
    - **Savegame:** ya hecho en F1 (`savegame_esxdos.asm`, por fichero).
-3. **F3 — TR-DOS bring-up.** Escritor `.TRD` en Python, `boot.B`, `loadertrdos.asm`,
-   `trdos.asm` (`#3D13`), plantilla `cyd_trdos`. Fijar modelo de máquina (§6.3).
-   Texto/bytecode residente. Test runtime en ZEsarUX Pentagon+TRD.
-4. **F4 — TR-DOS medios + savegame.** Espejo de F2 con `#3D13`.
 
-**Empezar por ESXDOS** (F1) porque es el espejo más directo de `plus3` y el automap no
-toca la zona del intérprete.
+ESXDOS es el espejo más directo de `plus3` y el automap no toca la zona del intérprete.
+Pendiente para ser distribuible: autoarranque y `-scr` (§5.3), luego regenerar `dist/`.
 
 ---
 
@@ -502,12 +446,12 @@ toca la zona del intérprete.
 ## 9. Decisiones (CERRADAS con Sergio) y sub-decisiones pendientes
 
 **Cerradas:**
-- **Alcance:** ESXDOS primero (completo y verificado); **TR-DOS diferido** a otra sesión.
+- **Alcance:** ESXDOS (completo y verificado). **TR-DOS/BetaDisk DESCARTADO** (ver banner
+  del encabezado): colisión estructural de las variables de sistema TR-DOS con `FLAGS`.
 - **ESXDOS banking:** `[0,1,3,4,6,7]` (presupuesto 128k, staging de imagen en buffer
   residente; no replicar las limitaciones de plus3). §5.2.
 - **ESXDOS arranque:** núcleo = loader BASIC (`RST $08`) que reusa `loadertape`;
   **autoarranque OPCIONAL** vía flag; por defecto manual (`.TAP`+`.DAT`). §5.3.
-- **TR-DOS máquina objetivo:** decidir al llegar a TR-DOS.
 
 **Sub-decisiones pendientes (no bloquean el bring-up F1; cerrar durante F1/F2):**
 1. **Autoarranque — mecanismo:** (A1) `AUTOBOOT.BAS` nativo 0.8.6+ [recomendado] vs
@@ -517,9 +461,6 @@ toca la zona del intérprete.
    ¿Se genera también una carpeta/imagen de SD lista para copiar?
 3. **Nombre del flag** de autoarranque (`-autoboot`?) y su UX en las herramientas GUI.
 
-**TR-DOS (cuando se aborde):** modelo de máquina; carga por nombre (`#0A`/`#0E`) vs
-track/sector directo; escritor `.TRD` en Python.
-
 ---
 
 ## 10. Fuentes (investigación web)
@@ -528,11 +469,9 @@ track/sector directo; escritor `.TRD` en Python.
   (nail down esxdos api); ESXDOS manual.
 - Automap divMMC: DivMMC docs (mprato/DivMMC `Divmmc_allram_manual.txt`); SpecNext Wiki
   "DIVMMC"; utoboot (Utodev) para el modelo de arranque SD.
-- TR-DOS / `#3D13`: spectrumcomputing.co.uk `TR-DOS_Programming.txt`; "Loading TR-DOS
-  files through $3D13"; TR-DOS Wikipedia; Beta Disk Interface.
 - ZEsarUX: chernandezba/zesarux README y `--experthelp` (flags ESXDOS/Betadisk/TRD);
   ROMs en `tools/ZEsarUX_windows-13.0/`.
 
-> **Advertencia de rigor:** todo lo de este documento marcado como "investigado" (§5.1,
-> §6.1) procede de fuentes web y **debe confirmarse en ZEsarUX** antes de darlo por
-> bueno. Lo marcado con `file:line` está verificado de primera mano en el repo.
+> **Advertencia de rigor:** todo lo de este documento marcado como "investigado" (§5.1)
+> procede de fuentes web y **debe confirmarse en ZEsarUX** antes de darlo por bueno. Lo
+> marcado con `file:line` está verificado de primera mano en el repo.
