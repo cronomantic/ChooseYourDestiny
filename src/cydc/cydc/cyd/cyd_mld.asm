@@ -70,6 +70,12 @@ INT_STACK_ADDR EQU $8000
     ENDIF
     ei
 
+    ; The Dandanator boot leaves IY at $FFFF, not the standard sysvar base $5C3A the
+    ; Spectrum ROM sets. IY+$30 is FLAGS2 (caps-lock, bit 3), read by the keyboard
+    ; decode too, so without this the CAPS_LOCK disable below targets the wrong address
+    ; and INKEY returns uppercase. Set it like the other (ROM-booted) targets.
+    ld iy, $5C3A
+
     ;Disable CAPS_LOCK
     res 3,(IY+$30)
 
