@@ -79,27 +79,5 @@ SET_DAN_BANK:
     pop af
     ret
 
-;====================================================
-; RESTORE_DAN_ROM
-;   Return the Dandanator to pass-through (ROM) mode.
-;   33 write-pulses selects the "no-cartridge" / 48K ROM state.
-;   Registers: all preserved.
-;====================================================
-RESTORE_DAN_ROM:
-    push af
-    push bc
-    di
-    ld a, 33            ; command 33 = switch to internal ROM
-    ld b, a             ; B = pulse count = 33
-.loop:
-    nop
-    nop
-    ld (DAN_CMD_ADDR), a
-    djnz .loop
-    ld b, 64
-.wait:
-    djnz .wait
-    ei
-    pop bc
-    pop af
-    ret
+; (RESTORE_DAN_ROM removed: the Dandanator INKEY no longer pages the Spectrum ROM
+; back in -- it uses RAM copies of the keyboard routines/tables, see inkey.asm.)
