@@ -30,6 +30,11 @@
 ; ==============================================================================
 
 
+; Single source of the runtime/engine release identifier, used by SIGNATURE
+; ("CYD v" + RELEASE) in every target's main template. sysvars.asm is included
+; before the main template on all targets, so this one DEFINE reaches them all.
+    DEFINE RELEASE "1.3"
+
 CHARS	            EQU 23606  ; Pointer to ROM/RAM Charset
 TVFLAGS             EQU 23612  ; TV Flags
 UDG	                EQU 23675  ; Pointer to UDG Charset
