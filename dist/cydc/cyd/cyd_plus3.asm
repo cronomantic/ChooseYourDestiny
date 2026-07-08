@@ -30,7 +30,6 @@
 ; ==============================================================================
 
 
-    DEFINE RELEASE "1.3"
 
     DEFINE IS_PLUS3 1
     DEFINE IS_DISK 1          ; ISDISK() -> media streamed from a filesystem
