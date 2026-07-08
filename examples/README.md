@@ -46,6 +46,13 @@ make_adv 48k examples/test/test.cyd
 | [`SCUMM_16`](SCUMM_16/) | A SCUMM/LucasArts-style point-and-click interface. |
 | [`Delerict`](Delerict/) | A full adventure built on its own engine on top of CYD. |
 
+## Native code (Z80)
+
+| Example | What it demonstrates |
+|---------|----------------------|
+| [`import_demo`](import_demo/) | Calling an external native Z80 routine from CYD with `IMPORT` / `CALL` — see its [README](import_demo/README.md). |
+| [`inline_asm`](inline_asm/) | Inline `ASM ... ENDASM` native routines invoked with `CYD_CALL` — see its [README](inline_asm/README.md). |
+
 ---
 
 New to CYD? Start with [`test`](test/), then [`guess_the_number`](guess_the_number/)
