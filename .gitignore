@@ -39,3 +39,6 @@ parsetab.py
 
 # Excepción: recurso Dandanator vendorizado (el *.rom global lo ignoraría)
 !external/dandanator-mini/extra.rom
+
+# Embedded Python download cache (setup_embedded_python.py)
+.python_cache/
