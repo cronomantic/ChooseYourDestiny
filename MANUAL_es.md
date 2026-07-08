@@ -237,7 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
               [-wyz] [-il NUM_IMAGE_LINES] [-720]
-              {48k,128k,plus3,mld,mld128} input.cyd SJASMPLUS_PATH OUTPUT_PATH
+              {48k,128k,plus3,mld,mld128,esxdos} input.cyd SJASMPLUS_PATH OUTPUT_PATH
 ```
 
 - **\-h**: Muestra la ayuda
@@ -1977,7 +1977,7 @@ Este programa necesita los directorios `dist` y `tools` con su contenido para re
 `make_adventure.py` es un wrapper de ayuda sobre `cydc_cli.py` que estandariza rutas del proyecto y automatiza el manejo de tokens.
 
 ```batch
-make_adventure.py [opciones] {48k,128k,plus3,mld,mld128} [SJASMPLUS_PATH]
+make_adventure.py [opciones] {48k,128k,plus3,mld,mld128,esxdos} [SJASMPLUS_PATH]
 ```
 
 Opciones principales:
