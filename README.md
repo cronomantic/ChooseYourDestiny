@@ -12,6 +12,8 @@ Thanks to its image and text compression systems, the Spectrum's limited memory 
 
 The system consists of a compiler that transforms the source code and associated resources into a TAP or DSK file, where the interpretable code and compressed text and graphics data are stored, as well as an efficient interpreter to execute them.
 
+Besides tape (48K/128K) and +3 disk, the compiler can also target divMMC/esxDOS SD cards, and — experimentally — the Dandanator cartridge.
+
 More information is available in the [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en) and a [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_en) to learn step by step. All information can be found in the [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). To make writing code easier, there is also a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
 
 The [credits](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en#acknowledgements) and [license](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en#license) are detailed in the corresponding sections of the [manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en).
@@ -27,6 +29,8 @@ Mediante un lenguaje sencillo de marcas, inspirado en BASIC, se puede añadir in
 Gracias a sus sistemas de compresión de imágenes y texto, la relativa escasa memoria del Spectrum se puede aprovechar a máximo para dar más durabilidad y contenido a tus creaciones.
 
 El sistema consiste en un compilador que transforma el código fuente y los recursos asociados en un fichero TAP o DSK, donde se almacenan el código intepretable y los datos de texto y gráficos comprimidos, además de un eficiente intérprete para ejecutar los mismos.
+
+Además de cinta (48K/128K) y disco +3, el compilador también puede generar para tarjetas SD divMMC/esxDOS y —de forma experimental— el cartucho Dandanator.
 
 Más información en el [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es) para aprender paso a paso. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones también de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
 

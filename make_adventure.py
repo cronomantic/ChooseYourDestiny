@@ -349,10 +349,17 @@ def main():
         default=False,
         help=_("Use 720 Kb disk images"),
     )
+    arg_parser.add_argument(
+        "-autoboot",
+        "--autoboot",
+        action="store_true",
+        default=False,
+        help=_("[esxdos, EXPERIMENTAL] also emit AUTOBOOT.BAS + ESXDOS.CFG for SD autoboot"),
+    )
     ##
     arg_parser.add_argument(
         "model",
-        choices=["48k", "128k", "plus3", "mld", "mld128"],
+        choices=["48k", "128k", "plus3", "esxdos", "mld", "mld128"],
         help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
         type=str.lower,
         default="plus3",
@@ -430,6 +437,9 @@ def main():
 
     if args.disk_720:
         cydc_params = ["-720"] + cydc_params
+
+    if args.autoboot:
+        cydc_params = ["-autoboot"] + cydc_params
 
     if args.use_wyz_tracker:
         cydc_params = ["-wyz"] + cydc_params
