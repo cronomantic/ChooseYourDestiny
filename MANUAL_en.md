@@ -273,7 +273,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **plus3**: This version will generate a DSK file to run on Spectrum+3. Resources are loaded dynamically as needed and depends on the size on disk.
   -- **mld**: Generates an `.MLD` file for the **Dandanator Mini** cartridge in 48K mode. Text, images and bytecode are read directly from the cartridge slots (no RAM banking and no music playback), spanning several Dandanator slots (up to ~256 KB of content). It uses the cartridge save system.
   -- **mld128**: Generates an `.MLD` file for **Dandanator Mini** targeting Spectrum 128K. Because everything else (text/images/bytecode) is read from the cartridge slots, the RAM banks are reserved for what must live in RAM: **music** (PT3/WyzTracker, which plays from RAM) and the **`DIM` arrays** (which must be writable; they are placed in dedicated RAM banks that never collide with the music). Spans many Dandanator slots (up to ~480 KB of content). Known limitation: if music, arrays and content together force all RAM banks to be used, compilation aborts with a clear error.
-  -- **esxdos**: Version for **divMMC/divIDE interfaces with an SD card** (esxDOS), targeting Spectrum 128K. It works like `plus3` (resources loaded dynamically on demand from files), but accessing the SD through the esxDOS API (`RST $08`) instead of the +3 disk. Unlike the other targets it **does not produce a single file**, but a set of files to copy onto the SD (see the note below). It includes the experimental `-autoboot` option.
+  -- **esxdos**: Version for **divMMC/divIDE interfaces with an SD card** (esxDOS), targeting Spectrum 128K. It works like `plus3` (resources loaded dynamically on demand from files), but accessing the SD through the esxDOS API (`RST $08`) instead of the +3 disk. Unlike the other targets it **does not produce a single file**, but a set of files to copy onto the SD (see the note below). It includes the `-autoboot` option.
 
 - **input.txt**: Input file with the adventure script.
 - **SJASMPLUS_PATH**: Path to the SjASMPlus executable.
@@ -316,12 +316,13 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > browser (which sets the current directory to that folder). Savegame files (`NN.SAV`)
 > are also created in that folder.
 >
-> **With `-autoboot` (EXPERIMENTAL, requires esxDOS 0.8.7+).** Two extra files are
+> **With `-autoboot` (requires esxDOS 0.8.7+).** Two extra files are
 > produced: **`AUTOBOOT.BAS`** and **`ESXDOS.CFG`**. To make the game boot on power-on:
 > copy `AUTOBOOT.BAS` to **`/SYS/`** on the SD, set **`AutoBoot=1`** in
 > **`/SYS/CONFIG/ESXDOS.CFG`** (use the generated `ESXDOS.CFG`, or edit your own), and
-> place `NAME.DAT` and the media in the SD root. **This feature can only be verified on
-> real hardware** (the esxDOS cold-boot is not emulable), hence it is experimental.
+> place `NAME.DAT` and the media in the SD root. Verified on real hardware (divMMC,
+> esxDOS 0.8.9); the esxDOS cold-boot is not emulable, so it cannot be tested in the
+> emulator.
 
 The compiler is a program written in Python, so it requires the Python environment installed. For convenience, the distribution includes an embedded Python package and a batch script called `cydc.cmd` to launch it from the command line.
 

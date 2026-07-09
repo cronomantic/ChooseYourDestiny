@@ -272,7 +272,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
   -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
   -- **mld**: Genera un fichero `.MLD` para cartucho **Dandanator Mini** en modo 48K. El texto, las imágenes y el bytecode se leen directamente desde los slots del cartucho (no usa bancos de RAM ni reproduce música), y aprovecha varios slots Dandanator (hasta ~256 KB de contenido). Usa el sistema de guardado del cartucho.
   -- **mld128**: Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM se reservan para lo que debe estar en RAM: la **música** (PT3/WyzTracker, que se reproduce desde RAM) y los **arrays `DIM`** (que deben ser escribibles; se reparten en bancos RAM dedicados que nunca colisionan con la música). Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: si la música, los arrays y el contenido fuerzan a usar todos los bancos de RAM, la compilación aborta con un error claro.
-  -- **esxdos**: Versión para interfaces **divMMC/divIDE con tarjeta SD** (esxDOS), orientada a Spectrum 128K. Funciona como el `plus3` (recursos cargados dinámicamente por demanda desde ficheros), pero accediendo a la SD mediante la API de esxDOS (`RST $08`) en lugar del disco +3. A diferencia del resto de targets, **no produce un único fichero**, sino varios ficheros que hay que copiar a la SD (ver la nota más abajo). Incluye la opción experimental `-autoboot`.
+  -- **esxdos**: Versión para interfaces **divMMC/divIDE con tarjeta SD** (esxDOS), orientada a Spectrum 128K. Funciona como el `plus3` (recursos cargados dinámicamente por demanda desde ficheros), pero accediendo a la SD mediante la API de esxDOS (`RST $08`) en lugar del disco +3. A diferencia del resto de targets, **no produce un único fichero**, sino varios ficheros que hay que copiar a la SD (ver la nota más abajo). Incluye la opción `-autoboot`.
 
 - **input.txt**: Fichero de entrada con el guion de la aventura.
 - **SJASMPLUS_PATH**: Ruta al ejecutable de SjASMPlus.
@@ -316,13 +316,13 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > navegador de esxDOS (que sitúa el directorio actual en esa carpeta). Los ficheros de
 > partida guardada (`NN.SAV`) se crean también en esa carpeta.
 >
-> **Con `-autoboot` (EXPERIMENTAL, requiere esxDOS 0.8.7+).** Se generan además
+> **Con `-autoboot` (requiere esxDOS 0.8.7+).** Se generan además
 > **`AUTOBOOT.BAS`** y **`ESXDOS.CFG`**. Para que el juego arranque solo al encender:
 > copia `AUTOBOOT.BAS` a **`/SYS/`** de la SD, pon **`AutoBoot=1`** en
 > **`/SYS/CONFIG/ESXDOS.CFG`** (puedes usar el `ESXDOS.CFG` generado, o editar el tuyo),
-> y coloca `NOMBRE.DAT` y los medios en la raíz de la SD. **Esta función solo se puede
-> verificar en hardware real** (el arranque en frío de esxDOS no es emulable), por eso
-> es experimental.
+> y coloca `NOMBRE.DAT` y los medios en la raíz de la SD. Verificado en hardware real
+> (divMMC, esxDOS 0.8.9); el arranque en frío de esxDOS no es emulable, así que no se
+> puede probar en emulador.
 
 El compilador es un programa escrito en Python, por lo que se requiere tener el entorno de Python instalado. Para mayor comodidad, se incluye en la distribución un Python embebido y un guion batch llamado `cydc.cmd` para lanzarlo desde la línea de comandos.
 

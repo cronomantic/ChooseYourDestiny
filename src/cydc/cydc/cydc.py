@@ -249,8 +249,8 @@ def main():
         action="store_true",
         default=False,
         help=_(
-            "[esxdos, EXPERIMENTAL] Also emit AUTOBOOT.BAS + ESXDOS.CFG so the game "
-            "cold-boots from the SD card (verify on real hardware)."
+            "[esxdos] Also emit AUTOBOOT.BAS + ESXDOS.CFG so the game "
+            "cold-boots from the SD card."
         ),
     )
     arg_parser.add_argument(
@@ -420,14 +420,6 @@ def main():
                     flag=flag, models="/".join(allowed)
                 )
             )
-
-    if args.autoboot:
-        print(
-            _(
-                "WARNING: --autoboot is EXPERIMENTAL and cannot be verified in the "
-                "emulator; check the cold-boot from the SD card on real hardware."
-            )
-        )
 
     if not os.path.isfile(args.input):
         sys.exit(_("ERROR: Path to input file does not exist."))
