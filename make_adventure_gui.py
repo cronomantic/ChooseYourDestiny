@@ -475,7 +475,7 @@ class SettingsDialog(tk.Toplevel):
         # target is selected, and cleared otherwise.
         autoboot_chk = ttk.Checkbutton(
             flags,
-            text=_("Autoboot from SD (esxdos only, EXPERIMENTAL)"),
+            text=_("Autoboot from SD (esxdos only)"),
             variable=self.app.var_autoboot,
         )
         autoboot_chk.grid(

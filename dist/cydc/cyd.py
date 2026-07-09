@@ -1777,7 +1777,7 @@ def do_asm_esxdos(
 
 
 def _esxdos_autoboot_files(tap_path, output_path, verbose):
-    """EXPERIMENTAL: emit AUTOBOOT.BAS + ESXDOS.CFG so the game cold-boots from the SD.
+    """Emit AUTOBOOT.BAS + ESXDOS.CFG so the game cold-boots from the SD.
 
     AUTOBOOT.BAS = a +3DOS 128-byte header (BASIC program, autostart at the loader's
     line, no variables) followed by the loader's tokenised BASIC program, which is
@@ -1785,10 +1785,9 @@ def _esxdos_autoboot_files(tap_path, output_path, verbose):
     /SYS/AUTOBOOT.BAS on the SD, with AutoBoot=1 in /SYS/CONFIG/ESXDOS.CFG (ESXDOS 0.8.7+),
     ESXDOS auto-loads and runs it -> the loader streams the .DAT and starts the game.
 
-    NOTE: the ESXDOS AutoBoot cold-boot is NOT verifiable in ZEsarUX headless (it runs
-    the ESXDOS ROM but not the AutoBoot logic), so this is validated only against the
-    +3DOS spec and MUST be checked on real hardware. Hence --autoboot is experimental
-    (the esxdos target itself is verified: loading/streaming/savegame)."""
+    NOTE: the ESXDOS AutoBoot cold-boot cannot be exercised in ZEsarUX headless (it runs
+    the ESXDOS ROM but not the AutoBoot logic), so it is validated against the +3DOS spec;
+    it has been verified on real hardware (divMMC, ESXDOS 0.8.9)."""
     d = open(tap_path, "rb").read()
     blocks = []
     i = 0
@@ -1821,9 +1820,8 @@ def _esxdos_autoboot_files(tap_path, output_path, verbose):
         f.write(b"#esxDOS cfg\n#AutoBoot: 0=off 1=cold 2=warm 3=always\nAutoBoot=1\n")
     if verbose:
         print(
-            "AUTOBOOT.BAS + ESXDOS.CFG generated (EXPERIMENTAL). Copy AUTOBOOT.BAS to "
-            "/SYS/ and set AutoBoot=1 in /SYS/CONFIG/ESXDOS.CFG on the SD card. Verify "
-            "on real hardware (not emulable in ZEsarUX)."
+            "AUTOBOOT.BAS + ESXDOS.CFG generated. Copy AUTOBOOT.BAS to /SYS/ and set "
+            "AutoBoot=1 in /SYS/CONFIG/ESXDOS.CFG on the SD card."
         )
 
 

@@ -354,7 +354,7 @@ def main():
         "--autoboot",
         action="store_true",
         default=False,
-        help=_("[esxdos, EXPERIMENTAL] also emit AUTOBOOT.BAS + ESXDOS.CFG for SD autoboot"),
+        help=_("[esxdos] also emit AUTOBOOT.BAS + ESXDOS.CFG for SD autoboot"),
     )
     ##
     arg_parser.add_argument(
