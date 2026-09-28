@@ -21,6 +21,7 @@ from __future__ import print_function
 from operator import itemgetter, attrgetter
 
 import sys, os, argparse, json, re, copy, math, gettext, traceback
+import multiprocessing
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -96,6 +97,10 @@ def emit_error(stage, message):
     print(f"ERROR [{stage}]: {message}")
 
 
+def emit_warning(stage, message):
+    print(f"WARNING [{stage}]: {message}")
+
+
 def plan_mld128_array_banks(array_lengths, ram_banks_full):
     """Assign each mld128 DIM array to a dedicated RAM bank at $C000+offset.
 
@@ -120,7 +125,7 @@ def plan_mld128_array_banks(array_lengths, ram_banks_full):
     for name, length in items:
         nbytes = length + 1  # [len-1] byte + data bytes
         if nbytes > BANK:
-            sys.exit(_(f"ERROR: Array {name} too big for an MLD RAM bank."))
+            sys.exit(_("ERROR: Array {name} too big for an MLD RAM bank.").format(name=name))
         placed = False
         for b in order:  # first-fit into an already-opened bank
             if bank_used[b] + nbytes <= BANK:
@@ -336,6 +341,29 @@ def main():
         help=_("maximum number of parser errors to report before stopping (default: %(default)d)"),
     )
     arg_parser.add_argument(
+        "--token-format",
+        choices=["auto", "flat", "nested"],
+        default="auto",
+        help=_(
+            "abbreviation format: nested ones can contain other abbreviations (the "
+            "interpreter is then built with their decoder); auto uses whichever "
+            "takes less memory (default: %(default)s)"
+        ),
+    )
+    arg_parser.add_argument(
+        "--check",
+        action="store_true",
+        help=_(
+            "only check the script for errors, without assembling it "
+            "(SJASMPLUS_PATH and OUTPUT_PATH are not needed)"
+        ),
+    )
+    arg_parser.add_argument(
+        "--no-warn-unused",
+        action="store_true",
+        help=_("don't warn about labels, variables and data arrays that are never used"),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -366,7 +394,8 @@ def main():
     )
     arg_parser.add_argument(
         "sjasmplus_path",
-        default="sjasmplus",
+        nargs="?",
+        default=None,
         metavar=_("SJASMPLUS_PATH"),
         type=file_path,
         help=_("path to sjasmplus executable"),
@@ -380,7 +409,8 @@ def main():
     # )
     arg_parser.add_argument(
         "output_path",
-        default=".",
+        nargs="?",
+        default=None,
         type=dir_path,
         metavar=_("OUTPUT_PATH"),
         help=_("Output path to files"),
@@ -392,6 +422,10 @@ def main():
         sys.exit(_("ERROR: File not found:") + f"{f1}")
     except NotADirectoryError as f2:
         sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
+    if not args.check and (args.sjasmplus_path is None or args.output_path is None):
+        arg_parser.error(
+            _("SJASMPLUS_PATH and OUTPUT_PATH are required (only --check can do without them).")
+        )
 
     verbose = 3 if args.verbose > 3 else args.verbose
     model = args.model
@@ -435,20 +469,21 @@ def main():
             base_path=os.path.dirname(os.path.abspath(args.input)),
             max_errors=args.max_errors,
         )
-        text, line_map = preprocessor.preprocess(args.input)
+        # Absolute: a relative path would be joined onto base_path a second time.
+        text, line_map = preprocessor.preprocess(os.path.abspath(args.input))
         
         if verbose >= 1:
             included_count = len(preprocessor.included_files) - 1  # -1 for main file
             if included_count > 0:
-                print(_(f"Preprocessed {included_count} include file(s) in {tmp_timer}"))
+                print(_("Preprocessed {included_count} include file(s) in {tmp_timer}").format(included_count=included_count, tmp_timer=tmp_timer))
             else:
-                print(_(f"Preprocessing completed in {tmp_timer}"))
+                print(_("Preprocessing completed in {tmp_timer}").format(tmp_timer=tmp_timer))
     except PreprocessorError as e:
         if len(preprocessor.errors) > 0:
             for prep_error in preprocessor.errors:
                 emit_error("PREPROCESSOR", str(prep_error))
             if preprocessor.max_errors_reached:
-                emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
+                emit_error("COMPILER", _("Maximum error limit reached ({args.max_errors}).").format(args=args))
         else:
             emit_error("PREPROCESSOR", str(e))
         sys.exit(1)
@@ -458,7 +493,7 @@ def main():
         output_name = output_name[0]
 
     if verbose >= 1:
-        print(_(f"Parameters parsed in {tmp_timer}"))
+        print(_("Parameters parsed in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -479,15 +514,15 @@ def main():
                 sys.exit(
                     _(
                         "ERROR: Number of tokens must be equal o less to %(NUM_TOKENS)d."
-                        % {"NUM_TOKENS": NUM_TOKENS}
                     )
+                    % {"NUM_TOKENS": NUM_TOKENS}
                 )
             for t in jsonToken:
                 if not isinstance(t, str):
                     sys.exit(_("ERROR: The token import file has not a valid format."))
             tokens = jsonToken
         if verbose >= 1:
-            print(_(f"Tokens imported in {tmp_timer}"))
+            print(_("Tokens imported in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
     # Importing Font
@@ -550,7 +585,7 @@ def main():
                     )
         font.loadCharset(jsonCharset)
         if verbose >= 1:
-            print(_(f"Character set loaded in {tmp_timer}"))
+            print(_("Character set loaded in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -573,9 +608,31 @@ def main():
         for e in parser.errors:
             emit_error("PARSER", e)
         if parser.max_errors_reached:
-            emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
+            emit_error("COMPILER", _("Maximum error limit reached ({args.max_errors}).").format(args=args))
         sys.exit(1)
-    print(_(f"Code parsing completed ({tmp_timer})"))
+    print(_("Code parsing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
+
+    if not args.no_warn_unused:
+        project_dir = os.path.dirname(os.path.abspath(args.input))
+        for w in parser.unused_symbol_warnings(project_dir):
+            emit_warning("PARSER", w)
+
+    if args.check:
+        # Everything the code generator can reject, without the assembler. Texts
+        # go in uncompressed (the token search is the slow part and doesn't
+        # change what compiles) and sliced, so a long one can't overflow a bank
+        # only because it isn't compressed. Memory layout isn't checked: it
+        # needs the assembled interpreter.
+        checked = [
+            ("TEXT", [ord(c) ^ 255 for c in s[1]] + [0x0A ^ 255]) if s[0] == "TEXT" else s
+            for s in code
+        ]
+        codegen = CydcCodegen(gettext)
+        codegen.set_bank_offset_list([0xC000])
+        codegen.set_bank_size_list([16 * 1024])
+        codegen.generate_code(code=checked, slice_text=True)
+        print(_("No errors found in {input}.").format(input=args.input))
+        sys.exit(0)
 
     ######################################################################
 
@@ -596,10 +653,16 @@ def main():
     if args.min_length > args.max_length:
         sys.exit(_("ERROR: min-length can't be greather than max-length."))
 
-    txtComp = CydcTextCompressor(gettext, args.superset_limit, verbose=(verbose >= 1))
-    (textBytes, tokenBytes, tokens) = txtComp.compress(
-        strings, args.min_length, args.max_length, tokens
+    txtComp = CydcTextCompressor(
+        gettext, args.superset_limit, verbose=(verbose >= 1), token_format=args.token_format
     )
+    try:
+        (textBytes, tokenBytes, tokens) = txtComp.compress(
+            strings, args.min_length, args.max_length, tokens
+        )
+    except ValueError:  # an imported nested table with bad references or too deep
+        sys.exit(_("ERROR: The token import file has not a valid format."))
+    nested_tokens = txtComp.nested
 
     # Exporting tokens
     if args.export_tokens_file is not None:
@@ -617,7 +680,7 @@ def main():
 
     del txtComp
 
-    print(_(f"Text compression completed ({tmp_timer})"))
+    print(_("Text compression completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -632,7 +695,7 @@ def main():
         print(_("Reading external files..."))
 
     if args.image_lines not in range(1, 193):
-        sys.exit(_(f"ERROR: Invalid number of image lines {args.image_lines}."))
+        sys.exit(_("ERROR: Invalid number of image lines {args.image_lines}.").format(args=args))
 
     sfx = None
     if args.sfx_asm_file is not None:
@@ -659,9 +722,9 @@ def main():
                             scr_num_lines = image_json["num_lines"]
                             scr_force_mirror = image_json["force_mirror"]
                             if verbose >= 1:
-                                print(_(f"{fpath} is set with {scr_num_lines} lines."))
+                                print(_("{fpath} is set with {scr_num_lines} lines.").format(fpath=fpath, scr_num_lines=scr_num_lines))
                                 if scr_force_mirror:
-                                    print(_(f"{fpath} has forced simmetry."))
+                                    print(_("{fpath} has forced simmetry.").format(fpath=fpath))
                 b = compress_screen_file(
                     fpath,
                     num_lines=scr_num_lines,
@@ -681,7 +744,7 @@ def main():
                     blocks.append(t)
                     if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
-        print(_(f"Images processing completed ({tmp_timer})"))
+        print(_("Images processing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     has_tracks = False
     wyz_instruments = ""
@@ -713,14 +776,14 @@ def main():
                         if verbose >= 1:
                             print(
                                 _(
-                                    f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
-                                )
+                                    "Track {i:03d} compressed: {size} bytes to {compressed_size} bytes (delta={delta})."
+                                ).format(i=i, size=len(b), compressed_size=len(b2), delta=delta)
                             )
                         # test
                         t = ("WYZ", i, 0, [], fpath)
                         blocks.append(t)
             if len(wyz_instruments) == 0 and len(wyz_tracks.keys()) > 0:
-                sys.exit(_(f"ERROR: File {fpath1} not found."))
+                sys.exit(_("ERROR: File {fpath1} not found.").format(fpath1=fpath1))
             has_tracks = len(wyz_instruments) > 0 and len(wyz_tracks.keys()) > 0
         else:
             # PT3 tracks
@@ -733,13 +796,13 @@ def main():
                         b = list(f.read())
                         if (model in ("plus3", "esxdos")) and (len(b) > (8 * 1024)):
                             sys.exit(
-                                _(f"ERROR: Invalid PT3 file {fpath}, it is too big")
+                                _("ERROR: Invalid PT3 file {fpath}, it is too big").format(fpath=fpath)
                             )
                         t = ("TRK", i, len(b), b, fpath)
                         blocks.append(t)
                         if not has_tracks:
                             has_tracks = True
-        print(_(f"Tracks processing completed ({tmp_timer})"))
+        print(_("Tracks processing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     loading_scr = None
     if args.load_scr_file is not None:
@@ -775,7 +838,7 @@ def main():
             for k in wyz_tracks_sizes.keys():
                 if wyz_tracks_sizes[k] > (16 * 1024 - len(wyz_player_bin)):
                     sys.exit(
-                        _(f"ERROR: Track {k} doens't fit on available space in bank 1!")
+                        _("ERROR: Track {k} doens't fit on available space in bank 1!").format(k=k)
                     )
 
     ######################################################################
@@ -816,6 +879,8 @@ def main():
         unused_opcodes |= {"UNUSED_CYD_CALL"}
     if CYD_SYSCALL_SERVICE not in used_services:
         unused_opcodes |= {"UNUSED_SYSCALL"}
+    if nested_tokens:
+        unused_opcodes |= {"NESTED_TOKENS"}  # EXPAND_TOKEN instead of the flat decoder
     # route_names / route_index / dispatch_size are computed after the first
     # generate_code below, once native-block DCE has settled which blocks (and
     # therefore which callables) survive (they get a dispatch slot each).
@@ -1211,8 +1276,8 @@ def main():
             sys.exit(
                 _(
                     "ERROR: IMPORT/CALL native routines are not supported on the "
-                    f"{model} target."
-                )
+                    "{model} target."
+                ).format(model=model)
             )
         # USES declares the cross-block callees a routine reaches via CYD_CALL:
         # each name must be a known callable (an IMPORT/ASM export). The compiler
@@ -1221,7 +1286,7 @@ def main():
             for u in d["uses"]:
                 if u not in codegen.extern_exports:
                     sys.exit(
-                        _(f"ERROR: Block {n} USES unknown native routine: {u}")
+                        _("ERROR: Block {n} USES unknown native routine: {u}").format(n=n, u=u)
                     )
 
         # Deterministic placement order over the blocks that survived DCE.
@@ -1273,10 +1338,10 @@ def main():
             if len(data) != sizes[r]:
                 sys.exit(
                     _(
-                        f"ERROR: Native routine {r} changed size between passes "
-                        f"({sizes[r]} -> {len(data)}); its size must not depend "
-                        f"on its load address."
-                    )
+                        "ERROR: Native routine {r} changed size between passes "
+                        "({old_size} -> {new_size}); its size must not depend "
+                        "on its load address."
+                    ).format(r=r, old_size=sizes[r], new_size=len(data))
                 )
             available_banks[bank_idx] += data
             available_bank_size[bank_idx] -= len(data)
@@ -1291,7 +1356,7 @@ def main():
         for r in routine_names:
             if sizes[r] > 16 * 1024:
                 sys.exit(
-                    _(f"ERROR: Native routine {r} is too big for a bank.")
+                    _("ERROR: Native routine {r} is too big for a bank.").format(r=r)
                     + f" ({sizes[r]} bytes)"
                 )
 
@@ -1341,9 +1406,9 @@ def main():
                 if len(data) != sizes[r]:
                     sys.exit(
                         _(
-                            f"ERROR: Native routine {r} changed size between passes "
-                            f"({sizes[r]} -> {len(data)})."
-                        )
+                            "ERROR: Native routine {r} changed size between passes "
+                            "({old_size} -> {new_size})."
+                        ).format(r=r, old_size=sizes[r], new_size=len(data))
                     )
                 src_off = len(available_banks[0])  # slot-relative pos in chunk 0
                 available_banks[0] += data
@@ -1558,7 +1623,7 @@ def main():
             )
         elif model == "mld" or model == "mld128":
             if verbose > 0:
-                print(_(f"Assembling Spectrum {model.upper()}..."))
+                print(_("Assembling Spectrum {model}...").format(model=model.upper()))
             output_name = output_name[:8]
             do_asm_mld(
                 data_len=codegen.data_len,
@@ -1688,10 +1753,10 @@ def main():
 
     ######################################################################
     if model == "mld" or model == "mld128":
-        print(_(f"{model.upper()} generation completed ({tmp_timer})"))
+        print(_("{model} generation completed ({tmp_timer})").format(model=model.upper(), tmp_timer=tmp_timer))
     else:
-        print(_(f"TAP/DSK generation completed ({tmp_timer})"))
-    print(_(f"Compilation successful in {timer}"))
+        print(_("TAP/DSK generation completed ({tmp_timer})").format(tmp_timer=tmp_timer))
+    print(_("Compilation successful in {timer}").format(timer=timer))
     sys.exit(0)
 
 
@@ -1702,6 +1767,9 @@ def cli():
     Intentional ``sys.exit(...)`` calls raise ``SystemExit`` (a ``BaseException``),
     so they pass through untouched; only genuine bugs are caught here.
     """
+    # The text compressor runs worker processes; in a frozen (PyInstaller)
+    # executable each worker re-runs the program unless this intercepts it.
+    multiprocessing.freeze_support()
     try:
         main()
     except Exception as e:
