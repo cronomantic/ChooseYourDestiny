@@ -22,7 +22,10 @@
 # Copyright (C) 2010, 2013, 2018-2020, 2022 José Manuel Ferrer Ortiz
 
 
+import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 
 try:
     import progressbar
@@ -33,6 +36,69 @@ except ImportError:
 
 
 NUM_TOKENS = 128
+
+# Below this many characters of text the token search is quick and starting
+# worker processes would cost more than it saves.
+PARALLEL_MIN_CHARS = 1000
+
+
+class _NoTranslation:
+    @staticmethod
+    def gettext(s):
+        return s
+
+
+def _generate_worker(job):
+    """One run of the token search for a given maximum token length. Module
+    level so worker processes can unpickle it."""
+    strings, max_len_token, num_tokens, superset_limit = job
+    compressor = CydcTextCompressor(_NoTranslation, superset_limit)
+    compressor.num_tokens = num_tokens
+    return max_len_token, compressor._generate_tokens(strings, max_len_token)
+
+
+class _Sized:
+    """Iterable with a known length, for the progress bar."""
+
+    def __init__(self, iterable, length):
+        self.iterable, self.length = iterable, length
+
+    def __iter__(self):
+        return iter(self.iterable)
+
+    def __len__(self):
+        return self.length
+
+
+def optimal_parse(text, tokens):
+    """Encode text as the fewest codes: each code is a literal character or
+    the index of a token (128 + i) covering len(token) characters. The Z80
+    decoder expands any such sequence, so this only picks the best one."""
+    by_prefix = {}
+    for i, token in enumerate(tokens):
+        if token:
+            by_prefix.setdefault(token[:2], []).append((token, i))
+    n = len(text)
+    cost = [0] * (n + 1)
+    choice = [None] * (n + 1)
+    for pos in range(n - 1, -1, -1):
+        cost[pos] = cost[pos + 1] + 1
+        for token, i in by_prefix.get(text[pos : pos + 2], ()):
+            end = pos + len(token)
+            if end <= n and cost[end] + 1 < cost[pos] and text.startswith(token, pos):
+                cost[pos] = cost[end] + 1
+                choice[pos] = i
+    codes = []
+    pos = 0
+    while pos < n:
+        i = choice[pos]
+        if i is None:
+            codes.append(ord(text[pos]))
+            pos += 1
+        else:
+            codes.append(128 + i)
+            pos += len(tokens[i])
+    return codes
 
 
 class CydcTextCompressor(object):
@@ -137,18 +203,73 @@ class CydcTextCompressor(object):
         if len(optimum_tokens) < self.num_tokens:
             # Se reemplazarï¿½n por tokens de un byte
             len_after += self.num_tokens - len(optimum_tokens)
-        if self.verbose:
-            print(
-                self._(
-                    "With maximum abbreviation length %(max_len_token)d, length of texts after compression: %(len_after)d."
-                )
-                % ({"max_len_token": max_len_token, "len_after": len_after})
-            )
-            # print (optimum_tokens)
         new_tokens = []
         for token in optimum_tokens:
             new_tokens.append(token[0])
         return (new_tokens, len_after)
+
+    def _sweep(self, texts, lengths):
+        """Run the token search once per maximum token length (in worker
+        processes when there is enough text) and return {length: (tokens,
+        len_after)}. Ctrl+C keeps the runs that already finished."""
+        jobs = [(list(texts), m, self.num_tokens, self.superset_limit) for m in lengths]
+        results = {}
+
+        def progress(iterable):
+            if self.verbose or not pbarAvailable:
+                return iterable
+            return progressbar.ProgressBar()(_Sized(iterable, len(jobs)))
+
+        workers = min(len(jobs), os.cpu_count() or 1)
+        if workers > 1 and sum(len(t) for t in texts) >= PARALLEL_MIN_CHARS:
+            try:
+                with ProcessPoolExecutor(max_workers=workers) as pool:
+                    futures = [pool.submit(_generate_worker, job) for job in jobs]
+                    try:
+                        for future in progress(as_completed(futures)):
+                            m, result = future.result()
+                            results[m] = result
+                    except KeyboardInterrupt:
+                        pool.shutdown(wait=False, cancel_futures=True)
+                        if not results:
+                            raise
+                return results
+            except (OSError, ImportError, NotImplementedError, BrokenProcessPool):
+                results = {}  # no worker processes here: fall back to one
+        try:
+            for job in progress(jobs):
+                m, result = _generate_worker(job)
+                results[m] = result
+        except KeyboardInterrupt:
+            if not results:
+                raise
+        return results
+
+    def _encode(self, texts, tokens, drop_unused):
+        """Optimal parse of every text with tokens. With drop_unused, remove the
+        tokens that don't pay for their table bytes and put the most used
+        first: the Z80 finds token k by walking the k tokens before it."""
+        while True:
+            codes = [optimal_parse(t, tokens) for t in texts]
+            if not drop_unused:
+                return codes, tokens
+            uses = [0] * len(tokens)
+            for text_codes in codes:
+                for c in text_codes:
+                    if c >= 128:
+                        uses[c - 128] += 1
+            # A token stores len(token) bytes and saves len(token) - 1 per use.
+            keep = [i for i, t in enumerate(tokens) if uses[i] * (len(t) - 1) > len(t)]
+            if len(keep) == len(tokens):
+                break
+            tokens = [tokens[i] for i in keep]
+        order = sorted(range(len(tokens)), key=lambda i: -uses[i])
+        new_index = {old: new for new, old in enumerate(order)}
+        codes = [
+            [128 + new_index[c - 128] if c >= 128 else c for c in text_codes]
+            for text_codes in codes
+        ]
+        return codes, [tokens[i] for i in order]
 
     def compress(self, strings, min_length, max_length, final_tokens=None):
         if self.verbose:
@@ -163,28 +284,26 @@ class CydcTextCompressor(object):
         if self.verbose:
             print(self._("Length of texts without compression:"), lenBefore)
 
-        if final_tokens is None:
+        generated = final_tokens is None
+        if generated:
             if self.verbose:
                 print(self._("Generating text tokens..."))
 
+            results = self._sweep(texts, range(min_length, max_length + 1))
             minLength = 999999
-            if self.verbose or not pbarAvailable:
-                l_range = range(min_length, max_length + 1)
-            else:
-                progress = progressbar.ProgressBar()
-                l_range = progress(range(min_length, max_length + 1))
-            for maxLenToken in l_range:
-                try:
-                    (posibles, len_token) = self._generate_tokens(
-                        list(texts), maxLenToken
+            for maxLenToken in sorted(results):
+                (posibles, len_token) = results[maxLenToken]
+                if self.verbose:
+                    print(
+                        self._(
+                            "With maximum abbreviation length %(max_len_token)d, length of texts after compression: %(len_after)d."
+                        )
+                        % ({"max_len_token": maxLenToken, "len_after": len_token})
                     )
-                except KeyboardInterrupt:
-                    break
                 if len_token < minLength:
                     tokens = posibles  # Token set with maximum reduction
                     minLength = len_token  # Max. reduction archieved
                     maxLen = maxLenToken  # Max. lenght tokens
-            print(lenBefore - minLength, self._("bytes saved from text compression"))
             if self.verbose:
                 print()
                 print(
@@ -195,7 +314,7 @@ class CydcTextCompressor(object):
                 )
                 print(len(tokens), self._("abbreviations in total, which are:"))
                 print(tokens)
-            print()
+                print()
 
             # Padding tokens
             for i in range(len(tokens), self.num_tokens):
@@ -217,7 +336,6 @@ class CydcTextCompressor(object):
                             else:
                                 savingTokens[posToken] = -1
 
-            ahorroTotal = 0
             final_tokens = []
             for posToken, token in enumerate(tokens):
                 if posToken > 0:
@@ -225,7 +343,6 @@ class CydcTextCompressor(object):
                         savingTokens[posToken] = 0
                     if savingTokens[posToken] > 0:
                         final_tokens.append(token)
-                        ahorroTotal += savingTokens[posToken]
                     elif self.verbose:
                         if savingTokens[posToken] == 0:
                             print(
@@ -241,17 +358,13 @@ class CydcTextCompressor(object):
                                 + str(abs(savingTokens[posToken]))
                                 + " bytes."
                             )
-        else:
-            pass  # check if the tokens are good
 
         if self.verbose:
             print(self._("Replacing tokens on texts..."))
 
-        for posToken, token in enumerate(final_tokens):
-            for posString, string in enumerate(texts):
-                parts = string.split(token)
-                string = chr(posToken + 128).join(parts)
-                texts[posString] = string
+        # Tokens given by the caller (an imported tokens file) are kept as they
+        # are, in their order; a generated set is pruned and sorted by use.
+        codes, final_tokens = self._encode(texts, final_tokens, drop_unused=generated)
 
         if self.verbose:
             print(self._("Encoding texts & tokens..."))
@@ -261,31 +374,21 @@ class CydcTextCompressor(object):
             remnant = len(token) - 1
             for char in token:
                 if remnant == 0:
-                    # byte = hex(ord(char) + 128)[2:].zfill(2)
                     byte = ord(char) + 128
                 else:
-                    # byte = hex(ord(char))[2:].zfill(2)
                     byte = ord(char)
                 tokenBytes.append(byte)
                 remnant -= 1
 
-        # currentOffset = 0
-        # arrayBytes = []
-        # offsets = []
         textBytes = []
         lenAfter = 0
-        for string in texts:
-            string = string + chr(0x0A)
-            # str_bytes = []
-            s_bytes = []
-            for char in string:
-                s_bytes.append(ord(char) ^ 255)
-                # str_bytes.append(hex(ord(char) ^ 255)[2:].zfill(2))
-                lenAfter += 1
+        for text_codes in codes:
+            s_bytes = [c ^ 255 for c in text_codes + [0x0A]]
+            lenAfter += len(s_bytes)
             textBytes.append(s_bytes)
-            # offsets.append(currentOffset)
-            # currentOffset += len(str_bytes)
-            # arrayBytes += str_bytes
+        if generated:
+            print(lenBefore - lenAfter - len(tokenBytes), self._("bytes saved from text compression"))
+            print()
         if self.verbose:
             print(self._("Length of texts with compression:"), lenAfter)
         return (textBytes, tokenBytes, final_tokens)
