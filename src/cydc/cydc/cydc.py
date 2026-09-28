@@ -21,6 +21,7 @@ from __future__ import print_function
 from operator import itemgetter, attrgetter
 
 import sys, os, argparse, json, re, copy, math, gettext, traceback
+import multiprocessing
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
@@ -1702,6 +1703,9 @@ def cli():
     Intentional ``sys.exit(...)`` calls raise ``SystemExit`` (a ``BaseException``),
     so they pass through untouched; only genuine bugs are caught here.
     """
+    # The text compressor runs worker processes; in a frozen (PyInstaller)
+    # executable each worker re-runs the program unless this intercepts it.
+    multiprocessing.freeze_support()
     try:
         main()
     except Exception as e:

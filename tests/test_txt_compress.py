@@ -114,5 +114,58 @@ class TestProvidedTokens(TxtCompressBase):
             self.assertEqual(decode(encoded, tokens2), original + "\n")
 
 
+PROSE = [
+    "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho "
+    "tiempo que vivia un hidalgo de los de lanza en astillero.",
+    "Una olla de algo mas vaca que carnero, salpicon las mas noches, duelos y "
+    "quebrantos los sabados, lentejas los viernes.",
+    "El resto della concluian sayo de velarte, calzas de velludo para las "
+    "fiestas, con sus pantuflos de lo mismo.",
+] * 4
+
+
+class TestEncoding(TxtCompressBase):
+    def _uses(self, text_bytes):
+        uses = {}
+        for encoded in text_bytes:
+            for b in encoded:
+                if b ^ 255 >= 128:
+                    uses[(b ^ 255) - 128] = uses.get((b ^ 255) - 128, 0) + 1
+        return uses
+
+    def test_tokens_sorted_by_use_and_all_used(self):
+        # The Z80 finds token k by walking the k tokens before it.
+        text_bytes, _tb, tokens = self._compress(PROSE, 3, 12)
+        uses = self._uses(text_bytes)
+        counts = [uses.get(i, 0) for i in range(len(tokens))]
+        self.assertGreater(len(tokens), 10)
+        self.assertEqual(counts, sorted(counts, reverse=True))
+        self.assertNotIn(0, counts)
+
+    def test_bytes_saved_message_is_the_real_saving(self):
+        c = CydcTextCompressor(gettext, superset_limit=100)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            text_bytes, token_bytes, _ = c.compress(list(PROSE), 3, 12)
+        before = sum(len(s) + 1 for s in PROSE)
+        after = sum(map(len, text_bytes)) + len(token_bytes)
+        self.assertIn(f"{before - after} bytes saved", out.getvalue())
+
+    def test_parallel_and_sequential_agree(self):
+        saved = cydc_txt_compress.PARALLEL_MIN_CHARS
+        try:
+            cydc_txt_compress.PARALLEL_MIN_CHARS = 0
+            parallel = self._compress(PROSE, 3, 8)
+            cydc_txt_compress.PARALLEL_MIN_CHARS = 10**9
+            sequential = self._compress(PROSE, 3, 8)
+        finally:
+            cydc_txt_compress.PARALLEL_MIN_CHARS = saved
+        self.assertEqual(parallel, sequential)
+
+    def test_optimal_parse_beats_replacing_in_order(self):
+        # Replacing "ab" first leaves "ab|c|d" (3 codes); "a|bcd" is 2.
+        codes = cydc_txt_compress.optimal_parse("abcd", ["ab", "bcd"])
+        self.assertEqual(codes, [ord("a"), 129])
+
+
 if __name__ == "__main__":
     unittest.main()
