@@ -91,7 +91,7 @@ def _parse_flags_addr(lst_path):
     return _parse_label_addr(lst_path, "FLAGS")
 
 
-def compile_cyd(source, model, workdir, images=None, tracks=None):
+def compile_cyd(source, model, workdir, images=None, tracks=None, extra_args=()):
     """Compile ``source`` under ``workdir``; return (image_path, flags_addr).
 
     The image is a TAP for tape targets and a DSK for the +3 (disk) target;
@@ -102,6 +102,9 @@ def compile_cyd(source, model, workdir, images=None, tracks=None):
     compiler via ``-img`` / ``-trk``. On esxdos the compiled media (``NNN.CSC`` /
     ``NNN.BIN``) is emitted into the output dir, which the caller uses as the SD
     root, so the streaming disk path can serve them.
+
+    ``extra_args`` are passed to the compiler before the positional arguments;
+    relative paths in them resolve against ``workdir``.
     """
     sj = find_sjasmplus()
     if not sj:
@@ -123,6 +126,7 @@ def compile_cyd(source, model, workdir, images=None, tracks=None):
             # the compiler globs NNN.PT3 uppercase (cydc.py:738)
             shutil.copy(f, tdir / (Path(f).stem + ".PT3"))
         cmd += ["-trk", str(tdir)]
+    cmd += list(extra_args)
     cmd += [model, "test.cyd", sj, "."]
     proc = subprocess.run(
         cmd, cwd=workdir, capture_output=True, text=True, timeout=120,
@@ -323,17 +327,23 @@ def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
 
 
 def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
-               images=None, tracks=None, reads=()):
+               images=None, tracks=None, reads=(), extra_args=(), files=None):
     """Extended ``run_cyd`` for the disk-media tests: supply ``-img``/``-trk``
     asset dirs and sample extra memory after the run stabilises.
 
     ``reads`` is a sequence of either ``(addr, length)`` (absolute) or
     ``(label, offset, length)`` where ``label`` is resolved from the ``.lst``
     (e.g. ``("VTR_START", 10, 1)`` for VTR_STAT). Returns ``(flags, [bytes,...])``
-    with one entry per read. Tape/esxdos boot path only (no MLD)."""
+    with one entry per read. Tape/esxdos boot path only (no MLD).
+
+    ``files`` ({name: text}) are written into the work dir before compiling, so
+    ``extra_args`` can refer to them (e.g. a ``-t`` tokens file)."""
     machine = MACHINE_BY_MODEL.get(model, "48k")
     with tempfile.TemporaryDirectory(prefix="cyd_emu_") as wd:
-        tap, flags_addr = compile_cyd(source, model, wd, images=images, tracks=tracks)
+        for name, content in (files or {}).items():
+            (Path(wd) / name).write_text(content, encoding="utf-8")
+        tap, flags_addr = compile_cyd(source, model, wd, images=images, tracks=tracks,
+                                      extra_args=extra_args)
         lst = Path(wd) / "cyd.lst"
         abs_reads = []
         for r in reads:
