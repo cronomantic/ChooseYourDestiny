@@ -205,7 +205,7 @@ class CydcCodegen(object):
                         if c[0] == "C_REPL":
                             is_flattened = False
                     else:
-                        sys.exit(self._(f"ERROR: Invalid constant {k}!"))
+                        sys.exit(self._("ERROR: Invalid constant {k}!").format(k=k))
                 if is_flattened:
                     c = tmp_const.pop(k)
                     f_constants[k] = c
@@ -217,9 +217,9 @@ class CydcCodegen(object):
                 names = ", ".join(sorted(constants.keys()))
                 sys.exit(
                     self._(
-                        f"ERROR: Circular or self-referential constant definition "
-                        f"involving: {names}"
-                    )
+                        "ERROR: Circular or self-referential constant definition "
+                        "involving: {names}"
+                    ).format(names=names)
                 )
             # Replace references on non flattened constants
             for k in constants.keys():
@@ -238,7 +238,7 @@ class CydcCodegen(object):
                         else:
                             l.append(c)
                     else:
-                        sys.exit(self._(f"ERROR: Invalid constant {k}, {c}!"))
+                        sys.exit(self._("ERROR: Invalid constant {k}, {c}!").format(k=k, c=c))
                 constants[k] = l
 
         # Calculate constants
@@ -283,15 +283,15 @@ class CydcCodegen(object):
                             a = stack.pop()
                             stack.append(a >> b)
                         else:
-                            sys.exit(self._(f"ERROR: Invalid constant {k}, {op}!"))
+                            sys.exit(self._("ERROR: Invalid constant {k}, {op}!").format(k=k, op=op))
                     except IndexError:
                         sys.exit(
-                            self._(f"ERROR: Invalid constant operation {k}, {op}!")
+                            self._("ERROR: Invalid constant operation {k}, {op}!").format(k=k, op=op)
                         )
                 else:
-                    sys.exit(self._(f"ERROR: Invalid constant {k}, {c}!"))
+                    sys.exit(self._("ERROR: Invalid constant {k}, {c}!").format(k=k, c=c))
             if len(stack) != 1:
-                sys.exit(self._(f"ERROR: Invalid constant operation {k}!"))
+                sys.exit(self._("ERROR: Invalid constant operation {k}!").format(k=k))
             else:
                 c = stack.pop()
                 if isinstance(c, int):
@@ -300,11 +300,11 @@ class CydcCodegen(object):
                     else:
                         sys.exit(
                             self._(
-                                f"ERROR: Invalid constant value {k}, must not be negative!"
-                            )
+                                "ERROR: Invalid constant value {k}, must not be negative!"
+                            ).format(k=k)
                         )
                 else:
-                    sys.exit(self._(f"ERROR: Invalid constant value {k}, {c}!"))
+                    sys.exit(self._("ERROR: Invalid constant value {k}, {c}!").format(k=k, c=c))
         return f_constants
 
     def constant_expression_calculation(self, expression, constants, is_word=False):
@@ -318,7 +318,7 @@ class CydcCodegen(object):
                         if a is not None:
                             stack.append(a)
                         else:
-                            sys.exit(self._(f"ERROR: Constant {c[1]} does not exists!"))
+                            sys.exit(self._("ERROR: Constant {c[1]} does not exists!").format(c=c))
                     elif op == "C_VAL":
                         stack.append(c[1])
                     elif op == "C_+":
@@ -354,15 +354,15 @@ class CydcCodegen(object):
                         a = stack.pop()
                         stack.append(a >> b)
                     else:
-                        sys.exit(self._(f"ERROR: Invalid constant expression, {op}!"))
+                        sys.exit(self._("ERROR: Invalid constant expression, {op}!").format(op=op))
                 except IndexError:
                     sys.exit(
-                        self._(f"ERROR: Invalid constant expression operation {op}!")
+                        self._("ERROR: Invalid constant expression operation {op}!").format(op=op)
                     )
             else:
-                sys.exit(self._(f"ERROR: Invalid constant expression {c}!"))
+                sys.exit(self._("ERROR: Invalid constant expression {c}!").format(c=c))
         if len(stack) != 1:
-            sys.exit(self._(f"ERROR: Invalid constant expression operation!"))
+            sys.exit(self._("ERROR: Invalid constant expression operation!"))
         else:
             c = stack.pop()
             if isinstance(c, int):
@@ -372,8 +372,8 @@ class CydcCodegen(object):
                     else:
                         sys.exit(
                             self._(
-                                f"ERROR: Invalid constant expression value {c} is not a word!"
-                            )
+                                "ERROR: Invalid constant expression value {c} is not a word!"
+                            ).format(c=c)
                         )
                 else:
                     if c in range(0, 1 << 8):
@@ -381,11 +381,11 @@ class CydcCodegen(object):
                     else:
                         sys.exit(
                             self._(
-                                f"ERROR: Invalid constant expression value {c} is not a byte!"
-                            )
+                                "ERROR: Invalid constant expression value {c} is not a byte!"
+                            ).format(c=c)
                         )
             else:
-                sys.exit(self._(f"ERROR: Invalid constant expression value {c}!"))
+                sys.exit(self._("ERROR: Invalid constant expression value {c}!").format(c=c))
 
     def _eval_const_raw(self, expression, constants):
         """Evaluate a constant-expression postfix to its raw non-negative integer,
@@ -401,7 +401,7 @@ class CydcCodegen(object):
                     if op == "C_REPL":
                         a = constants.get(c[1])
                         if a is None:
-                            sys.exit(self._(f"ERROR: Constant {c[1]} does not exists!"))
+                            sys.exit(self._("ERROR: Constant {c[1]} does not exists!").format(c=c))
                         stack.append(a)
                     elif op == "C_VAL":
                         stack.append(c[1])
@@ -422,15 +422,15 @@ class CydcCodegen(object):
                     elif op == "C_>>":
                         b = stack.pop(); a = stack.pop(); stack.append(a >> b)
                     else:
-                        sys.exit(self._(f"ERROR: Invalid constant expression, {op}!"))
+                        sys.exit(self._("ERROR: Invalid constant expression, {op}!").format(op=op))
                 except IndexError:
-                    sys.exit(self._(f"ERROR: Invalid constant expression operation {op}!"))
+                    sys.exit(self._("ERROR: Invalid constant expression operation {op}!").format(op=op))
             else:
-                sys.exit(self._(f"ERROR: Invalid constant expression {c}!"))
+                sys.exit(self._("ERROR: Invalid constant expression {c}!").format(c=c))
         if len(stack) != 1 or not isinstance(stack[0], int):
-            sys.exit(self._(f"ERROR: Invalid constant expression operation!"))
+            sys.exit(self._("ERROR: Invalid constant expression operation!"))
         if stack[0] < 0:
-            sys.exit(self._(f"ERROR: Constant expression value {stack[0]} must not be negative!"))
+            sys.exit(self._("ERROR: Constant expression value {stack[0]} must not be negative!").format(stack=stack))
         return stack[0]
 
     def _check_wide_fits(self, val, width):
@@ -439,7 +439,7 @@ class CydcCodegen(object):
         if val >= (1 << (8 * width)):
             kw = "WORD" if width == 2 else "DWORD"
             sys.exit(
-                self._(f"ERROR: {kw} value {val} does not fit in {8 * width} bits.")
+                self._("ERROR: {kw} value {val} does not fit in {bits} bits.").format(kw=kw, val=val, bits=8 * width)
             )
 
     def _expand_data_element(self, elem, constants):
@@ -458,14 +458,14 @@ class CydcCodegen(object):
             b = self._eval_const_raw(elem[2], constants)
             for v in (a, b):
                 if v not in range(256):
-                    sys.exit(self._(f"ERROR: range bound {v} is not a byte (0..255)."))
+                    sys.exit(self._("ERROR: range bound {v} is not a byte (0..255).").format(v=v))
             return list(range(a, b + 1)) if a <= b else list(range(a, b - 1, -1))
         if tag == "CONSTANT_REPEAT":
             inner = self._expand_data_element(elem[1], constants)
             n = self._eval_const_raw(elem[2], constants)
             return inner * n
         if not (len(elem) == 2 and isinstance(elem[1], list)):
-            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+            sys.exit(self._("ERROR: Invalid data element {elem}").format(elem=elem))
         val = self._eval_const_raw(elem[1], constants)
         if tag == "CONSTANT":
             if val < (1 << 8):
@@ -475,7 +475,7 @@ class CydcCodegen(object):
             elif val < (1 << 32):
                 width = 4
             else:
-                sys.exit(self._(f"ERROR: DATA/array value {val} too big (max 2^32-1)."))
+                sys.exit(self._("ERROR: DATA/array value {val} too big (max 2^32-1).").format(val=val))
         elif tag == "CONSTANT_WORD":
             self._check_wide_fits(val, 2)
             width = 2
@@ -483,7 +483,7 @@ class CydcCodegen(object):
             self._check_wide_fits(val, 4)
             width = 4
         else:
-            sys.exit(self._(f"ERROR: Invalid data element {elem}"))
+            sys.exit(self._("ERROR: Invalid data element {elem}").format(elem=elem))
         return [(val >> (8 * k)) & 0xFF for k in range(width)]
 
     def code_extract_declarations(self, code):
@@ -497,7 +497,7 @@ class CydcCodegen(object):
         def _register_export(callable_name, block_name):
             if extern_exports.get(callable_name) is not None:
                 sys.exit(
-                    self._(f"ERROR: Native routine {callable_name} defined two times!")
+                    self._("ERROR: Native routine {callable_name} defined two times!").format(callable_name=callable_name)
                 )
             extern_exports[callable_name] = block_name
 
@@ -508,7 +508,7 @@ class CydcCodegen(object):
                 q = t[1]  # routine name
                 p = t[2]  # assembler file path
                 if externs.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Native routine {q} imported two times!"))
+                    sys.exit(self._("ERROR: Native routine {q} imported two times!").format(q=q))
                 # A file-backed block with a single callable = its own name; its
                 # entry is the block start (not a named label), so explicit=False.
                 externs[q] = {
@@ -523,7 +523,7 @@ class CydcCodegen(object):
                 # ("ASM", block, body, exports, uses, line) from the parser.
                 block, body, exports, uses, line = t[1], t[2], t[3], t[4], t[5]
                 if externs.get(block) is not None:
-                    sys.exit(self._(f"ERROR: Native routine {block} defined two times!"))
+                    sys.exit(self._("ERROR: Native routine {block} defined two times!").format(block=block))
                 # explicit EXPORTS -> callables are labels in the body; otherwise
                 # the block name itself is the single callable (entry = start).
                 explicit = bool(exports)
@@ -542,70 +542,70 @@ class CydcCodegen(object):
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Constant {q} is already declared as variable")
+                        self._("ERROR: Constant {q} is already declared as variable").format(q=q)
                     )
                 elif labels.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Variable {q} is already declared as label")
+                        self._("ERROR: Variable {q} is already declared as label").format(q=q)
                     )
                 elif arrays.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
+                    sys.exit(self._("ERROR: Label {q} is already declared as array").format(q=q))
                 elif constants.get(q) is None:
                     constants[q] = p  # Add to cosntants table
                 else:
-                    sys.exit(self._(f"ERROR: Constant {q} declared two times!"))
+                    sys.exit(self._("ERROR: Constant {q} declared two times!").format(q=q))
             elif opcode == "DECLARE":
                 p = t[1]  # get variable number
                 q = t[2]  # get symbol
                 if constants.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Variable {q} is already declared as constant")
+                        self._("ERROR: Variable {q} is already declared as constant").format(q=q)
                     )
                 elif labels.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Variable {q} is already declared as label")
+                        self._("ERROR: Variable {q} is already declared as label").format(q=q)
                     )
                 elif arrays.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
+                    sys.exit(self._("ERROR: Label {q} is already declared as array").format(q=q))
                 elif variables.get(q) is None:
                     variables[q] = p  # Add to variable table
                 else:
-                    sys.exit(self._(f"ERROR: Variable {q} declared two times!"))
+                    sys.exit(self._("ERROR: Variable {q} declared two times!").format(q=q))
             elif opcode == "ARRAY":
                 p = t[2]  # get constant list
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Array {q} is already declared as variable")
+                        self._("ERROR: Array {q} is already declared as variable").format(q=q)
                     )
                 elif labels.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Array {q} is already declared as label"))
+                    sys.exit(self._("ERROR: Array {q} is already declared as label").format(q=q))
                 elif constants.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Array {q} is already declared as constant")
+                        self._("ERROR: Array {q} is already declared as constant").format(q=q)
                     )
                 elif arrays.get(q) is None:
                     arrays[q] = 0
                     code_tmp.append(t)
                 else:
-                    sys.exit(self._(f"ERROR: Array {q} declared two times!"))
+                    sys.exit(self._("ERROR: Array {q} declared two times!").format(q=q))
             elif opcode == "LABEL":
                 q = t[1]  # get symbol
                 if variables.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Label {q} is already declared as variable")
+                        self._("ERROR: Label {q} is already declared as variable").format(q=q)
                     )
                 elif constants.get(q) is not None:
                     sys.exit(
-                        self._(f"ERROR: Label {q} is already declared as constant")
+                        self._("ERROR: Label {q} is already declared as constant").format(q=q)
                     )
                 elif arrays.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
+                    sys.exit(self._("ERROR: Label {q} is already declared as array").format(q=q))
                 elif labels.get(q) is None:
                     labels[q] = 0  # Add to symbol table
                     code_tmp.append(t)
                 else:
-                    sys.exit(self._(f"ERROR: Label {q} declared two times!"))
+                    sys.exit(self._("ERROR: Label {q} declared two times!").format(q=q))
             else:  # Append any other code
                 code_tmp.append(t)
         constants = self.constant_calculation(constants)
@@ -632,24 +632,24 @@ class CydcCodegen(object):
                     elif instruction[2] is None:
                         array_len = len(lc)  # byte count after expansion
                     else:
-                        sys.exit(self._(f"ERROR: Invalid array declaration"))
+                        sys.exit(self._("ERROR: Invalid array declaration"))
                     if array_len not in range(1, 257):
                         sys.exit(
                             self._(
-                                f"ERROR: The array {instruction[1]} has an invalid size."
-                            )
+                                "ERROR: The array {instruction[1]} has an invalid size."
+                            ).format(instruction=instruction)
                         )
                     if len(lc) > array_len:
                         sys.exit(
                             self._(
-                                f"ERROR: The array {instruction[1]} is too small for the supplied initialization data."
-                            )
+                                "ERROR: The array {instruction[1]} is too small for the supplied initialization data."
+                            ).format(instruction=instruction)
                         )
                     elif len(lc) < array_len:
                         lc += [0 for x in range(array_len - len(lc))]
                     tup = (instruction[0], instruction[1], lc)
                 else:
-                    sys.exit(self._(f"ERROR: Invalid array declaration"))
+                    sys.exit(self._("ERROR: Invalid array declaration"))
             elif len(instruction) == 2 and instruction[0] == "DATA":
                 # Immutable DATA: expand each element to its bytes now (auto-detect
                 # width / WORD / DWORD / string). code_extract_data later
@@ -673,13 +673,13 @@ class CydcCodegen(object):
                                 if t is None:
                                     # print(variables)
                                     sys.exit(
-                                        self._(f"ERROR: Variable {c} does not exists!")
+                                        self._("ERROR: Variable {c} does not exists!").format(c=c)
                                     )
                                 elif (t + disp) not in range(256):
                                     sys.exit(
                                         self._(
-                                            f"ERROR: Multiple assignation of variable {c} is out of bounds!"
-                                        )
+                                            "ERROR: Multiple assignation of variable {c} is out of bounds!"
+                                        ).format(c=c)
                                     )
                                 else:
                                     c = t + disp  # Adds displacement
@@ -691,8 +691,8 @@ class CydcCodegen(object):
                                 if (c + disp) not in range(256):
                                     sys.exit(
                                         self._(
-                                            f"ERROR: Multiple assignation of variable {c} is out of bounds!"
-                                        )
+                                            "ERROR: Multiple assignation of variable {c} is out of bounds!"
+                                        ).format(c=c)
                                     )
                                 c = c + disp
                         elif (
@@ -759,8 +759,8 @@ class CydcCodegen(object):
         if len(blob) > 16 * 1024:
             sys.exit(
                 self._(
-                    f"ERROR: DATA block too big ({len(blob)} bytes, max 16384)."
-                )
+                    "ERROR: DATA block too big ({size} bytes, max 16384)."
+                ).format(size=len(blob))
             )
         out = []
         for t in code:
@@ -772,8 +772,8 @@ class CydcCodegen(object):
                 if off is None:
                     sys.exit(
                         self._(
-                            f"ERROR: RESTORE {name}: no DATA appears after that label."
-                        )
+                            "ERROR: RESTORE {name}: no DATA appears after that label."
+                        ).format(name=name)
                     )
                 out.append(("RESTORE", off & 0xFF, (off >> 8) & 0xFF))
             else:
@@ -1256,16 +1256,16 @@ class CydcCodegen(object):
             if opcode == "LABEL":
                 q = t[1]  # get symbol
                 if arrays.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Label {q} is already declared as array"))
+                    sys.exit(self._("ERROR: Label {q} is already declared as array").format(q=q))
                 elif labels.get(q) is None:
                     labels[q] = (bank, offset)  # Add to symbol table
                 else:
-                    sys.exit(self._(f"ERROR: Label {q} declared two times!"))
+                    sys.exit(self._("ERROR: Label {q} declared two times!").format(q=q))
             elif opcode == "ARRAY":
                 p = t[2]  # get constant list
                 q = t[1]  # get symbol
                 if labels.get(q) is not None:
-                    sys.exit(self._(f"ERROR: Array {q} is already declared as label"))
+                    sys.exit(self._("ERROR: Array {q} is already declared as label").format(q=q))
                 elif arrays.get(q) is None:
                     # if we have not space on the current bank, change to the next
                     if (len(p) + 3 + offset + 4) >= self._get_bank_size(bank):
@@ -1287,12 +1287,12 @@ class CydcCodegen(object):
                     code_tmp += c
                     offset += len(c)
                 else:
-                    sys.exit(self._(f"ERROR: Array {q} declared two times!"))
+                    sys.exit(self._("ERROR: Array {q} declared two times!").format(q=q))
             else:
                 # transform to byte representation
                 q = self.opcodes.get(opcode)
                 if q is None:
-                    sys.exit(self._(f"ERROR: Invalid opcode {opcode}!"))
+                    sys.exit(self._("ERROR: Invalid opcode {opcode}!").format(opcode=opcode))
                 if opcode == "TEXT":
                     p = t[1]  # Get text
                     while len(p) > 1:  # A string of less than 1 character is not valid
@@ -1367,7 +1367,7 @@ class CydcCodegen(object):
                     c = 0  # placeholder bank byte
                     queue = [0, 0]  # placeholder address bytes (lo, hi)
                 else:
-                    sys.exit(self._(f"ERROR: Label {c} does not exists!"))
+                    sys.exit(self._("ERROR: Label {c} does not exists!").format(c=c))
             code_tmp.append(c)
         return code_tmp
 
