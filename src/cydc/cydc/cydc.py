@@ -120,7 +120,7 @@ def plan_mld128_array_banks(array_lengths, ram_banks_full):
     for name, length in items:
         nbytes = length + 1  # [len-1] byte + data bytes
         if nbytes > BANK:
-            sys.exit(_(f"ERROR: Array {name} too big for an MLD RAM bank."))
+            sys.exit(_("ERROR: Array {name} too big for an MLD RAM bank.").format(name=name))
         placed = False
         for b in order:  # first-fit into an already-opened bank
             if bank_used[b] + nbytes <= BANK:
@@ -440,15 +440,15 @@ def main():
         if verbose >= 1:
             included_count = len(preprocessor.included_files) - 1  # -1 for main file
             if included_count > 0:
-                print(_(f"Preprocessed {included_count} include file(s) in {tmp_timer}"))
+                print(_("Preprocessed {included_count} include file(s) in {tmp_timer}").format(included_count=included_count, tmp_timer=tmp_timer))
             else:
-                print(_(f"Preprocessing completed in {tmp_timer}"))
+                print(_("Preprocessing completed in {tmp_timer}").format(tmp_timer=tmp_timer))
     except PreprocessorError as e:
         if len(preprocessor.errors) > 0:
             for prep_error in preprocessor.errors:
                 emit_error("PREPROCESSOR", str(prep_error))
             if preprocessor.max_errors_reached:
-                emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
+                emit_error("COMPILER", _("Maximum error limit reached ({args.max_errors}).").format(args=args))
         else:
             emit_error("PREPROCESSOR", str(e))
         sys.exit(1)
@@ -458,7 +458,7 @@ def main():
         output_name = output_name[0]
 
     if verbose >= 1:
-        print(_(f"Parameters parsed in {tmp_timer}"))
+        print(_("Parameters parsed in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -487,7 +487,7 @@ def main():
                     sys.exit(_("ERROR: The token import file has not a valid format."))
             tokens = jsonToken
         if verbose >= 1:
-            print(_(f"Tokens imported in {tmp_timer}"))
+            print(_("Tokens imported in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
     # Importing Font
@@ -550,7 +550,7 @@ def main():
                     )
         font.loadCharset(jsonCharset)
         if verbose >= 1:
-            print(_(f"Character set loaded in {tmp_timer}"))
+            print(_("Character set loaded in {tmp_timer}").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -573,9 +573,9 @@ def main():
         for e in parser.errors:
             emit_error("PARSER", e)
         if parser.max_errors_reached:
-            emit_error("COMPILER", _(f"Maximum error limit reached ({args.max_errors})."))
+            emit_error("COMPILER", _("Maximum error limit reached ({args.max_errors}).").format(args=args))
         sys.exit(1)
-    print(_(f"Code parsing completed ({tmp_timer})"))
+    print(_("Code parsing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -617,7 +617,7 @@ def main():
 
     del txtComp
 
-    print(_(f"Text compression completed ({tmp_timer})"))
+    print(_("Text compression completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     ######################################################################
 
@@ -632,7 +632,7 @@ def main():
         print(_("Reading external files..."))
 
     if args.image_lines not in range(1, 193):
-        sys.exit(_(f"ERROR: Invalid number of image lines {args.image_lines}."))
+        sys.exit(_("ERROR: Invalid number of image lines {args.image_lines}.").format(args=args))
 
     sfx = None
     if args.sfx_asm_file is not None:
@@ -659,9 +659,9 @@ def main():
                             scr_num_lines = image_json["num_lines"]
                             scr_force_mirror = image_json["force_mirror"]
                             if verbose >= 1:
-                                print(_(f"{fpath} is set with {scr_num_lines} lines."))
+                                print(_("{fpath} is set with {scr_num_lines} lines.").format(fpath=fpath, scr_num_lines=scr_num_lines))
                                 if scr_force_mirror:
-                                    print(_(f"{fpath} has forced simmetry."))
+                                    print(_("{fpath} has forced simmetry.").format(fpath=fpath))
                 b = compress_screen_file(
                     fpath,
                     num_lines=scr_num_lines,
@@ -681,7 +681,7 @@ def main():
                     blocks.append(t)
                     if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
                         sys.exit(_("ERROR: Invalid SCR file, it is too big"))
-        print(_(f"Images processing completed ({tmp_timer})"))
+        print(_("Images processing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     has_tracks = False
     wyz_instruments = ""
@@ -713,14 +713,14 @@ def main():
                         if verbose >= 1:
                             print(
                                 _(
-                                    f"Track {i:03d} compressed: {len(b)} bytes to {len(b2)} bytes (delta={delta})."
-                                )
+                                    "Track {i:03d} compressed: {size} bytes to {compressed_size} bytes (delta={delta})."
+                                ).format(i=i, size=len(b), compressed_size=len(b2), delta=delta)
                             )
                         # test
                         t = ("WYZ", i, 0, [], fpath)
                         blocks.append(t)
             if len(wyz_instruments) == 0 and len(wyz_tracks.keys()) > 0:
-                sys.exit(_(f"ERROR: File {fpath1} not found."))
+                sys.exit(_("ERROR: File {fpath1} not found.").format(fpath1=fpath1))
             has_tracks = len(wyz_instruments) > 0 and len(wyz_tracks.keys()) > 0
         else:
             # PT3 tracks
@@ -733,13 +733,13 @@ def main():
                         b = list(f.read())
                         if (model in ("plus3", "esxdos")) and (len(b) > (8 * 1024)):
                             sys.exit(
-                                _(f"ERROR: Invalid PT3 file {fpath}, it is too big")
+                                _("ERROR: Invalid PT3 file {fpath}, it is too big").format(fpath=fpath)
                             )
                         t = ("TRK", i, len(b), b, fpath)
                         blocks.append(t)
                         if not has_tracks:
                             has_tracks = True
-        print(_(f"Tracks processing completed ({tmp_timer})"))
+        print(_("Tracks processing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     loading_scr = None
     if args.load_scr_file is not None:
@@ -775,7 +775,7 @@ def main():
             for k in wyz_tracks_sizes.keys():
                 if wyz_tracks_sizes[k] > (16 * 1024 - len(wyz_player_bin)):
                     sys.exit(
-                        _(f"ERROR: Track {k} doens't fit on available space in bank 1!")
+                        _("ERROR: Track {k} doens't fit on available space in bank 1!").format(k=k)
                     )
 
     ######################################################################
@@ -1211,8 +1211,8 @@ def main():
             sys.exit(
                 _(
                     "ERROR: IMPORT/CALL native routines are not supported on the "
-                    f"{model} target."
-                )
+                    "{model} target."
+                ).format(model=model)
             )
         # USES declares the cross-block callees a routine reaches via CYD_CALL:
         # each name must be a known callable (an IMPORT/ASM export). The compiler
@@ -1221,7 +1221,7 @@ def main():
             for u in d["uses"]:
                 if u not in codegen.extern_exports:
                     sys.exit(
-                        _(f"ERROR: Block {n} USES unknown native routine: {u}")
+                        _("ERROR: Block {n} USES unknown native routine: {u}").format(n=n, u=u)
                     )
 
         # Deterministic placement order over the blocks that survived DCE.
@@ -1273,10 +1273,10 @@ def main():
             if len(data) != sizes[r]:
                 sys.exit(
                     _(
-                        f"ERROR: Native routine {r} changed size between passes "
-                        f"({sizes[r]} -> {len(data)}); its size must not depend "
-                        f"on its load address."
-                    )
+                        "ERROR: Native routine {r} changed size between passes "
+                        "({old_size} -> {new_size}); its size must not depend "
+                        "on its load address."
+                    ).format(r=r, old_size=sizes[r], new_size=len(data))
                 )
             available_banks[bank_idx] += data
             available_bank_size[bank_idx] -= len(data)
@@ -1291,7 +1291,7 @@ def main():
         for r in routine_names:
             if sizes[r] > 16 * 1024:
                 sys.exit(
-                    _(f"ERROR: Native routine {r} is too big for a bank.")
+                    _("ERROR: Native routine {r} is too big for a bank.").format(r=r)
                     + f" ({sizes[r]} bytes)"
                 )
 
@@ -1341,9 +1341,9 @@ def main():
                 if len(data) != sizes[r]:
                     sys.exit(
                         _(
-                            f"ERROR: Native routine {r} changed size between passes "
-                            f"({sizes[r]} -> {len(data)})."
-                        )
+                            "ERROR: Native routine {r} changed size between passes "
+                            "({old_size} -> {new_size})."
+                        ).format(r=r, old_size=sizes[r], new_size=len(data))
                     )
                 src_off = len(available_banks[0])  # slot-relative pos in chunk 0
                 available_banks[0] += data
@@ -1558,7 +1558,7 @@ def main():
             )
         elif model == "mld" or model == "mld128":
             if verbose > 0:
-                print(_(f"Assembling Spectrum {model.upper()}..."))
+                print(_("Assembling Spectrum {model}...").format(model=model.upper()))
             output_name = output_name[:8]
             do_asm_mld(
                 data_len=codegen.data_len,
@@ -1688,10 +1688,10 @@ def main():
 
     ######################################################################
     if model == "mld" or model == "mld128":
-        print(_(f"{model.upper()} generation completed ({tmp_timer})"))
+        print(_("{model} generation completed ({tmp_timer})").format(model=model.upper(), tmp_timer=tmp_timer))
     else:
-        print(_(f"TAP/DSK generation completed ({tmp_timer})"))
-    print(_(f"Compilation successful in {timer}"))
+        print(_("TAP/DSK generation completed ({tmp_timer})").format(tmp_timer=tmp_timer))
+    print(_("Compilation successful in {timer}").format(timer=timer))
     sys.exit(0)
 
 
