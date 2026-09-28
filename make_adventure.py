@@ -139,12 +139,10 @@ def main():
     tools_path = os.path.join(curr_path, "tools")
     external_path = os.path.join(curr_path, "external")
     if os.name == "nt":
-        # csc_path = os.path.join(dist_path, "csc.exe")
         python_path = os.path.join(dist_path, "python", "python.exe")
         sjasmplus_path = os.path.join(tools_path, "sjasmplus.exe")
         # mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
     else:
-        # csc_path = os.path.join(dist_path, "csc")
         python_path = "/usr/bin/python"
         sjasmplus_path = os.path.join(external_path, "sjasmplus")
         sjasmplus_path = os.path.join(sjasmplus_path, "sjasmplus")
