@@ -35,6 +35,17 @@ class MaxErrorsReached(Exception):
     pass
 
 
+class SourceStatement(tuple):
+    """A statement tuple that also records its source location ("file.cyd:12"),
+    so the code generator can point its errors at the script. It compares,
+    indexes and unpacks exactly like the plain tuple."""
+
+    def __new__(cls, items, loc=None):
+        self = super().__new__(cls, items)
+        self.loc = loc
+        return self
+
+
 class CydcParser(object):
 
     def __init__(self, gettext=None, strict_colon_mode=True, max_errors=20):
@@ -90,6 +101,23 @@ class CydcParser(object):
         else:
             return self._("line {}").format(line_num)
 
+    def _tag_location(self, p, i):
+        """Turn the statement(s) in p[i] into SourceStatements located at that
+        symbol's line. Statements that already have a location (the body of an
+        IF or a loop) keep it; the ones a compound statement generates itself
+        (its jumps and labels) get the line where it starts."""
+        item = p[i]
+        if not item:
+            return
+        loc = self._format_error_location(p.lineno(i))
+
+        def tag(t):
+            if isinstance(t, tuple) and t and not isinstance(t, SourceStatement):
+                return SourceStatement(t, loc)
+            return t
+
+        p[i] = [tag(t) for t in item] if isinstance(item, list) else tag(item)
+
     precedence = (
         (
             "nonassoc",
@@ -144,6 +172,7 @@ class CydcParser(object):
         statements  : statements text_statement
                     | text_statement
         """
+        self._tag_location(p, len(p) - 1)
         if (len(p) == 2) and p[1]:
             p[0] = []
             if isinstance(p[1], list):
@@ -170,6 +199,8 @@ class CydcParser(object):
                     | text_statement statement
         """
         # Text naturally separates code blocks - no colon required
+        self._tag_location(p, 1)
+        self._tag_location(p, 2)
         p[0] = []
         if p[1]:
             if isinstance(p[1], list):
@@ -191,6 +222,7 @@ class CydcParser(object):
                     | statements loop_do_until_statement
                     | statements statement
         """
+        self._tag_location(p, 2)
         if len(p) == 3 and p[1] and p[2]:
             if self.strict_colon_mode:
                 # In strict mode, check if statements are on the same line
@@ -233,6 +265,7 @@ class CydcParser(object):
                     | select_statement
                     | statement
         """
+        self._tag_location(p, len(p) - 1)
         if (len(p) == 2) and p[1]:
             p[0] = []
             if isinstance(p[1], list):
