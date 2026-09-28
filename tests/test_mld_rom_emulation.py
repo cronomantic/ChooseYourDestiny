@@ -1,7 +1,7 @@
 """
 Tests for the MLD ROM emulation fixes:
-  1. inkey.asm wraps ROM calls with RESTORE_DAN_ROM / SET_DAN_BANK when
-     IS_MLD_DAN is defined, so KEY_SCAN/K_TEST/K_DECODE are reachable.
+  1. When IS_MLD_DAN is defined, inkey.asm uses RAM copies of
+     KEY_SCAN/K_TEST/K_DECODE instead of paging the Spectrum ROM back in.
   2. cyd_mld.asm decompresses and displays the loading/intro screen at
      startup when MLD_HAS_INTRO_SCR is defined.
   3. get_asm_mld / get_asm_mld128 accept loading_scr and forward it to
@@ -80,56 +80,49 @@ def _capture_mld_asms(mld_is_128=False, loading_scr=None):
 # ---------------------------------------------------------------------------
 
 class TestInkeyMldDanGuard(unittest.TestCase):
+    """On MLD, INKEY must not page the Spectrum ROM back in: it uses the RAM
+    copies of KEY_SCAN/K_TEST/K_DECODE from inkey.asm instead."""
+
+    ROM_CALL = re.compile(r"^\s*call\s+(KEY_SCAN|K_TEST|K_DECODE)\b", re.M)
+
     def _get_interpreter_asm(self, mld_is_128=False):
         captured = _capture_mld_asms(mld_is_128=mld_is_128)
         return captured["interpreter_asm"]
 
-    def test_restore_dan_rom_called_before_key_scan_in_mld(self):
-        asm = self._get_interpreter_asm(mld_is_128=False)
-        # RESTORE_DAN_ROM must appear before the first KEY_SCAN call inside INKEY
-        restore_pos = asm.find("call RESTORE_DAN_ROM")
-        key_scan_pos = asm.find("call KEY_SCAN")
-        self.assertGreater(restore_pos, -1, "RESTORE_DAN_ROM should be present")
-        self.assertGreater(key_scan_pos, -1, "KEY_SCAN should be present")
-        self.assertLess(
-            restore_pos,
-            key_scan_pos,
-            "RESTORE_DAN_ROM must come before KEY_SCAN in the INKEY function",
-        )
+    def _mld_inkey_block(self, asm):
+        """Body of the IS_MLD_DAN INKEY (the one after the RAM routines)."""
+        start = asm.find("\nINKEY:", asm.find("K_DECODE_RAM:"))
+        self.assertGreater(start, -1, "MLD INKEY should follow K_DECODE_RAM")
+        end = asm.find("ENDIF", start)
+        self.assertGreater(end, start)
+        return asm[start:end]
 
-    def test_set_dan_bank_called_after_key_decode(self):
-        asm = self._get_interpreter_asm(mld_is_128=False)
-        # SET_DAN_BANK must appear after K_DECODE (to re-map the script slot)
-        k_decode_pos = asm.find("call K_DECODE")
-        set_dan_pos = asm.find("call SET_DAN_BANK", k_decode_pos)
-        self.assertGreater(k_decode_pos, -1, "K_DECODE should be present")
-        self.assertGreater(
-            set_dan_pos,
-            k_decode_pos,
-            "SET_DAN_BANK must be called after K_DECODE in the success path",
-        )
+    def _assert_ram_keyboard(self, asm):
+        block = self._mld_inkey_block(asm)
+        positions = [
+            block.find(f"call {name}")
+            for name in ("KEY_SCAN_RAM", "K_TEST_RAM", "K_DECODE_RAM")
+        ]
+        self.assertNotIn(-1, positions, "INKEY should call the RAM routines")
+        self.assertEqual(positions, sorted(positions))
+        self.assertIsNone(self.ROM_CALL.search(block))
 
-    def test_set_dan_bank_on_empty_inkey(self):
-        asm = self._get_interpreter_asm(mld_is_128=False)
-        # There must be a SET_DAN_BANK call in the empty_inkey path too
-        empty_pos = asm.find(".empty_inkey:")
-        self.assertGreater(empty_pos, -1, ".empty_inkey label should be present")
-        set_dan_pos = asm.find("call SET_DAN_BANK", empty_pos)
-        self.assertGreater(
-            set_dan_pos,
-            empty_pos,
-            "SET_DAN_BANK must be called in the .empty_inkey path",
-        )
+    def test_mld_inkey_uses_ram_keyboard_routines(self):
+        self._assert_ram_keyboard(self._get_interpreter_asm(mld_is_128=False))
 
-    def test_mld128_also_has_restore_and_remap(self):
-        asm = self._get_interpreter_asm(mld_is_128=True)
-        self.assertIn("call RESTORE_DAN_ROM", asm)
-        self.assertIn("call SET_DAN_BANK", asm)
+    def test_mld128_inkey_uses_ram_keyboard_routines(self):
+        self._assert_ram_keyboard(self._get_interpreter_asm(mld_is_128=True))
 
-    def test_script_bank_used_for_remap(self):
+    def test_restore_dan_rom_is_gone(self):
+        for is_128 in (False, True):
+            asm = self._get_interpreter_asm(mld_is_128=is_128)
+            self.assertNotRegex(asm, r"(?m)^[^;]*\bRESTORE_DAN_ROM\b")
+
+    def test_mld_init_sets_standard_iy(self):
+        # Dandanator boot leaves IY=$FFFF; the keyboard decode reads FLAGS2
+        # through IY+$30, so the init must set the ROM's standard IY.
         asm = self._get_interpreter_asm(mld_is_128=False)
-        # The remap should use SCRIPT_BANK (not a hard-coded slot number)
-        self.assertIn("ld a, (SCRIPT_BANK)", asm)
+        self.assertRegex(asm, r"(?im)^\s*ld\s+iy\s*,\s*\$5C3A\b")
 
 
 # ---------------------------------------------------------------------------
