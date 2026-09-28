@@ -103,13 +103,12 @@ optional arguments:
 
 #### Windows
 - `make_adv.cmd`, `make_adventure_gui.cmd`
-- Pre-compiled tools: `sjasmplus.exe`, `csc.exe`
+- Pre-compiled `sjasmplus.exe`
 - Python runtime (embeddable Python in `dist/python/`)
 - Batch script wrappers
 
 #### Linux/macOS
 - `make_adv.sh`, `make_adventure_gui.sh` (with execute permissions)
-- Pre-compiled `csc` binary (platform-specific)
 - Users must compile `sjasmplus` from `external/sjasmplus/`
 
 ## Output Files
@@ -145,7 +144,7 @@ The version is written to `version.txt` and used in the ZIP filename.
 Users get a **fully standalone package** with:
 - All Python scripts
 - Embedded Python runtime (no installation needed)
-- Pre-compiled tools (sjasmplus, csc)
+- Pre-compiled sjasmplus
 - Complete documentation
 - Example adventures
 
@@ -154,7 +153,6 @@ Users get a **fully standalone package** with:
 ### Linux/macOS Package
 Users get:
 - All Python scripts
-- Pre-compiled csc binary
 - Complete documentation
 - Example adventures
 - Source code for sjasmplus in `external/`

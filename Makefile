@@ -12,7 +12,6 @@ BASE_ROM := ./external/dandanator-mini.rom
 BEEPFX_ASM_FILENAME = SFX.asm
 
 CYDC_PATH := ./src/cydc/cydc
-CSC_PATH := ./dist
 
 ASM := ./tools/sjasmplus.exe
 MKP3FS := ./tools/mkp3fs.exe
@@ -83,9 +82,6 @@ $(NAME).ROM: $(NAME).MLD
 rom: $(NAME).ROM
 
 all: tape disk
-
-#%.csc: %.scr
-#	$(CSC_PATH)/csc.exe -f -o=$@ $<
 
 $(NAME).DSK: $(FILELIST)
 ifeq (,$(wildcard ./tokens.json))
