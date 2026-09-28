@@ -73,6 +73,19 @@ class TestBytecodeEmission(CodegenTestBase):
             self._bytecode("[[DECLARE 0 AS x : SET x TO 5]]"), [0x08, 0x00, 0x05, 0x00]
         )
 
+    def test_randomize_literal(self):
+        # RANDOMIZE (0x43) seed 0x1234 little-endian + END
+        self.assertEqual(
+            self._bytecode("[[RANDOMIZE 4660]]"), [0x43, 0x34, 0x12, 0x00]
+        )
+
+    def test_randomize_bare_equals_randomize_zero(self):
+        # Bare RANDOMIZE used to leave an unresolved ("CONSTANT_L", 0) tuple
+        # in the bytecode instead of two zero bytes.
+        expected = [0x43, 0x00, 0x00, 0x00]
+        self.assertEqual(self._bytecode("[[RANDOMIZE]]"), expected)
+        self.assertEqual(self._bytecode("[[RANDOMIZE 0]]"), expected)
+
 
 class TestBytecodeInvariants(CodegenTestBase):
     """Structural properties that must always hold."""

@@ -875,7 +875,9 @@ class CydcParser(object):
             else:
                 p[0] = ("RANDOMIZE", ("CONSTANT_L", [p[2]]), ("CONSTANT_H", [p[2]]))
         elif len(p) == 2:
-            p[0] = ("RANDOMIZE", ("CONSTANT_L", 0), ("CONSTANT_H", 0))
+            # Same as RANDOMIZE 0. The codegen only resolves CONSTANT_L/H over a
+            # list, so a bare 0 here leaked the tuple into the bytecode.
+            p[0] = ("RANDOMIZE", 0, 0)
         else:
             p[0] = None
 
