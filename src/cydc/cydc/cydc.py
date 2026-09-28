@@ -341,6 +341,16 @@ def main():
         help=_("maximum number of parser errors to report before stopping (default: %(default)d)"),
     )
     arg_parser.add_argument(
+        "--token-format",
+        choices=["auto", "flat", "nested"],
+        default="auto",
+        help=_(
+            "abbreviation format: nested ones can contain other abbreviations (the "
+            "interpreter is then built with their decoder); auto uses whichever "
+            "takes less memory (default: %(default)s)"
+        ),
+    )
+    arg_parser.add_argument(
         "--check",
         action="store_true",
         help=_(
@@ -643,10 +653,16 @@ def main():
     if args.min_length > args.max_length:
         sys.exit(_("ERROR: min-length can't be greather than max-length."))
 
-    txtComp = CydcTextCompressor(gettext, args.superset_limit, verbose=(verbose >= 1))
-    (textBytes, tokenBytes, tokens) = txtComp.compress(
-        strings, args.min_length, args.max_length, tokens
+    txtComp = CydcTextCompressor(
+        gettext, args.superset_limit, verbose=(verbose >= 1), token_format=args.token_format
     )
+    try:
+        (textBytes, tokenBytes, tokens) = txtComp.compress(
+            strings, args.min_length, args.max_length, tokens
+        )
+    except ValueError:  # an imported nested table with bad references or too deep
+        sys.exit(_("ERROR: The token import file has not a valid format."))
+    nested_tokens = txtComp.nested
 
     # Exporting tokens
     if args.export_tokens_file is not None:
@@ -863,6 +879,8 @@ def main():
         unused_opcodes |= {"UNUSED_CYD_CALL"}
     if CYD_SYSCALL_SERVICE not in used_services:
         unused_opcodes |= {"UNUSED_SYSCALL"}
+    if nested_tokens:
+        unused_opcodes |= {"NESTED_TOKENS"}  # EXPAND_TOKEN instead of the flat decoder
     # route_names / route_index / dispatch_size are computed after the first
     # generate_code below, once native-block DCE has settled which blocks (and
     # therefore which callables) survive (they get a dispatch slot each).

@@ -1623,3 +1623,16 @@ msgstr "SJASMPLUS_PATH y OUTPUT_PATH son obligatorios (solo se pueden omitir con
 #: src/cydc/cydc/cydc.py:624
 msgid "No errors found in {input}."
 msgstr "No se han encontrado errores en {input}."
+
+#: src/cydc/cydc/cydc.py:347
+#, python-format
+msgid "abbreviation format: nested ones can contain other abbreviations (the interpreter is then built with their decoder); auto uses whichever takes less memory (default: %(default)s)"
+msgstr "formato de las abreviaturas: las anidadas pueden contener otras abreviaturas (el intérprete se genera entonces con su descompresor); auto usa el que ocupe menos memoria (por defecto: %(default)s)"
+
+#: src/cydc/cydc/cydc_txt_compress.py:549
+msgid "Size with flat abbreviations: {flat} bytes; with nested ones: {nested} bytes (decoder included)."
+msgstr "Tamaño con abreviaturas simples: {flat} bytes; con anidadas: {nested} bytes (descompresor incluido)."
+
+#: src/cydc/cydc/cydc_txt_compress.py:556
+msgid "Using nested abbreviations, {saved} bytes smaller."
+msgstr "Se usan abreviaturas anidadas, {saved} bytes menos."
