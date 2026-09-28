@@ -97,6 +97,10 @@ def emit_error(stage, message):
     print(f"ERROR [{stage}]: {message}")
 
 
+def emit_warning(stage, message):
+    print(f"WARNING [{stage}]: {message}")
+
+
 def plan_mld128_array_banks(array_lengths, ram_banks_full):
     """Assign each mld128 DIM array to a dedicated RAM bank at $C000+offset.
 
@@ -337,6 +341,19 @@ def main():
         help=_("maximum number of parser errors to report before stopping (default: %(default)d)"),
     )
     arg_parser.add_argument(
+        "--check",
+        action="store_true",
+        help=_(
+            "only check the script for errors, without assembling it "
+            "(SJASMPLUS_PATH and OUTPUT_PATH are not needed)"
+        ),
+    )
+    arg_parser.add_argument(
+        "--no-warn-unused",
+        action="store_true",
+        help=_("don't warn about labels, variables and data arrays that are never used"),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -367,7 +384,8 @@ def main():
     )
     arg_parser.add_argument(
         "sjasmplus_path",
-        default="sjasmplus",
+        nargs="?",
+        default=None,
         metavar=_("SJASMPLUS_PATH"),
         type=file_path,
         help=_("path to sjasmplus executable"),
@@ -381,7 +399,8 @@ def main():
     # )
     arg_parser.add_argument(
         "output_path",
-        default=".",
+        nargs="?",
+        default=None,
         type=dir_path,
         metavar=_("OUTPUT_PATH"),
         help=_("Output path to files"),
@@ -393,6 +412,10 @@ def main():
         sys.exit(_("ERROR: File not found:") + f"{f1}")
     except NotADirectoryError as f2:
         sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
+    if not args.check and (args.sjasmplus_path is None or args.output_path is None):
+        arg_parser.error(
+            _("SJASMPLUS_PATH and OUTPUT_PATH are required (only --check can do without them).")
+        )
 
     verbose = 3 if args.verbose > 3 else args.verbose
     model = args.model
@@ -436,7 +459,8 @@ def main():
             base_path=os.path.dirname(os.path.abspath(args.input)),
             max_errors=args.max_errors,
         )
-        text, line_map = preprocessor.preprocess(args.input)
+        # Absolute: a relative path would be joined onto base_path a second time.
+        text, line_map = preprocessor.preprocess(os.path.abspath(args.input))
         
         if verbose >= 1:
             included_count = len(preprocessor.included_files) - 1  # -1 for main file
@@ -480,8 +504,8 @@ def main():
                 sys.exit(
                     _(
                         "ERROR: Number of tokens must be equal o less to %(NUM_TOKENS)d."
-                        % {"NUM_TOKENS": NUM_TOKENS}
                     )
+                    % {"NUM_TOKENS": NUM_TOKENS}
                 )
             for t in jsonToken:
                 if not isinstance(t, str):
@@ -577,6 +601,28 @@ def main():
             emit_error("COMPILER", _("Maximum error limit reached ({args.max_errors}).").format(args=args))
         sys.exit(1)
     print(_("Code parsing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
+
+    if not args.no_warn_unused:
+        project_dir = os.path.dirname(os.path.abspath(args.input))
+        for w in parser.unused_symbol_warnings(project_dir):
+            emit_warning("PARSER", w)
+
+    if args.check:
+        # Everything the code generator can reject, without the assembler. Texts
+        # go in uncompressed (the token search is the slow part and doesn't
+        # change what compiles) and sliced, so a long one can't overflow a bank
+        # only because it isn't compressed. Memory layout isn't checked: it
+        # needs the assembled interpreter.
+        checked = [
+            ("TEXT", [ord(c) ^ 255 for c in s[1]] + [0x0A ^ 255]) if s[0] == "TEXT" else s
+            for s in code
+        ]
+        codegen = CydcCodegen(gettext)
+        codegen.set_bank_offset_list([0xC000])
+        codegen.set_bank_size_list([16 * 1024])
+        codegen.generate_code(code=checked, slice_text=True)
+        print(_("No errors found in {input}.").format(input=args.input))
+        sys.exit(0)
 
     ######################################################################
 

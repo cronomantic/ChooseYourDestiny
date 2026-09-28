@@ -235,9 +235,9 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
-              [--no-strict-colons] [--max-errors MAX_ERRORS] [-pause PAUSE_AFTER_LOAD]
-              [-wyz] [-il NUM_IMAGE_LINES] [-720]
-              {48k,128k,plus3,mld,mld128,esxdos} input.cyd SJASMPLUS_PATH OUTPUT_PATH
+              [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
+              [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
+              {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
 
 - **\-h**: Muestra la ayuda
@@ -261,6 +261,8 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-code**: Muestra el bytecode generado.
 - **\-\-no-strict-colons**: Permite sintaxis antigua sin separadores `:` entre sentencias en una misma línea.
 - **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
+- **\-\-check**: Solo comprueba si el script tiene errores (de sintaxis, de símbolos y los del generador de código, como un `RESTORE` sin `DATA` detrás), sin ensamblarlo ni generar ficheros, así que no hacen falta `SJASMPLUS_PATH` ni `OUTPUT_PATH`. Es mucho más rápido que compilar, porque no busca abreviaturas. Termina con código 0 si no hay errores y 1 si los hay. No comprueba si la aventura cabe en memoria ni si existen las imágenes o la música.
+- **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del script, así que las librerías incluidas desde fuera no avisan de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
