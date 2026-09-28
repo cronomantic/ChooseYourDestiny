@@ -1595,3 +1595,31 @@ msgstr "línea {}"
 #: src/cydc/cydc/cydc_codegen.py:196
 msgid "{msg} (at {loc})"
 msgstr "{msg} (en {loc})"
+
+#: src/cydc/cydc/cydc_parser.py:3536
+msgid "Label '{symbol}' on {loc} is never used."
+msgstr "La etiqueta '{symbol}' en {loc} no se usa nunca."
+
+#: src/cydc/cydc/cydc_parser.py:3537
+msgid "Variable '{symbol}' on {loc} is never used."
+msgstr "La variable '{symbol}' en {loc} no se usa nunca."
+
+#: src/cydc/cydc/cydc_parser.py:3538
+msgid "Data array '{symbol}' on {loc} is never used."
+msgstr "El array de datos '{symbol}' en {loc} no se usa nunca."
+
+#: src/cydc/cydc/cydc.py:346
+msgid "only check the script for errors, without assembling it (SJASMPLUS_PATH and OUTPUT_PATH are not needed)"
+msgstr "solo comprobar si el script tiene errores, sin ensamblarlo (no hacen falta SJASMPLUS_PATH ni OUTPUT_PATH)"
+
+#: src/cydc/cydc/cydc.py:354
+msgid "don't warn about labels, variables and data arrays that are never used"
+msgstr "no avisar de las etiquetas, variables y arrays de datos que no se usan nunca"
+
+#: src/cydc/cydc/cydc.py:417
+msgid "SJASMPLUS_PATH and OUTPUT_PATH are required (only --check can do without them)."
+msgstr "SJASMPLUS_PATH y OUTPUT_PATH son obligatorios (solo se pueden omitir con --check)."
+
+#: src/cydc/cydc/cydc.py:624
+msgid "No errors found in {input}."
+msgstr "No se han encontrado errores en {input}."
