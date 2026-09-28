@@ -492,6 +492,7 @@ class CydcLexer(object):
         self.texts = []
         self.errors = []
         self.lexer.input(data)
+        self.lexer.lineno = 1  # ply keeps counting across inputs otherwise
         # Always start in rawtext state (JSP/PHP style - code inside [[ ]])
         self.lexer.begin("rawtext")
 
