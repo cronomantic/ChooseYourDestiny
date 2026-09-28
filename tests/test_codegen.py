@@ -11,6 +11,7 @@ across parses, which is both correct (verified: no state leaks between parses)
 and much faster than rebuilding it per test.
 """
 
+import copy
 import gettext
 import sys
 import unittest
@@ -780,6 +781,56 @@ class TestFeature3Sugar(CodegenTestBase):
         self.assertEqual(
             [x for x in t if x == ("PUSH_I", ("VARIABLE", "v", 0))].__len__(), 3
         )
+
+
+class TestErrorLocation(CodegenTestBase):
+    """Codegen errors name the script line of the statement that caused them."""
+
+    def _error(self, src):
+        code = self.parser.parse(input=src)
+        self.assertEqual(self.parser.errors, [])
+        g = CydcCodegen(gettext)
+        with self.assertRaises(SystemExit) as cm:
+            g.generate_code(code=code)
+        return str(cm.exception.code)
+
+    def tearDown(self):
+        self.parser.set_line_map(None)
+
+    def test_statement_error_names_its_line(self):
+        msg = self._error("Hi\n[[ LABEL tail ]]\n[[ RESTORE tail ]]")
+        self.assertIn("RESTORE tail", msg)
+        self.assertTrue(msg.endswith("(at line 3)"), msg)
+
+    def test_error_inside_a_block_names_the_inner_line(self):
+        msg = self._error("[[ DECLARE 0 AS v\nIF @v = 0 THEN\nDIM a(1) = {1, 2}\nENDIF ]]")
+        self.assertTrue(msg.endswith("(at line 3)"), msg)
+
+    def test_constant_error_names_its_declaration(self):
+        msg = self._error("[[ CONST A = B\nCONST B = A ]]")
+        self.assertIn("Circular", msg)
+        self.assertTrue(msg.endswith("(at line 1)"), msg)
+
+    def test_include_location_is_used(self):
+        # cydc.py hands the preprocessor's line map to the parser; with it the
+        # location is the included file's own line, not the preprocessed one.
+        from cydc_preprocessor import SourceLocation
+        self.parser.set_line_map({1: SourceLocation("main.cyd", 1),
+                                  2: SourceLocation("inc.cyd", 7)})
+        msg = self._error("[[ LABEL tail ]]\n[[ RESTORE tail ]]")
+        self.assertTrue(msg.endswith("(at inc.cyd:7)"), msg)
+
+    def test_located_statements_still_compare_as_tuples(self):
+        code = self.parser.parse(input="[[ CLEAR ]]")
+        self.assertEqual(code, [("CLEAR",)])
+        self.assertIsInstance(code[0], tuple)
+        self.assertEqual(code[0].loc, "line 1")
+        self.assertEqual(copy.deepcopy(code[0]).loc, "line 1")
+
+    def test_line_numbers_restart_on_each_parse(self):
+        self.parser.parse(input="a\nb\nc\n[[ CLEAR ]]")
+        code = self.parser.parse(input="[[ CLEAR ]]")
+        self.assertEqual(code[0].loc, "line 1")
 
 
 if __name__ == "__main__":
