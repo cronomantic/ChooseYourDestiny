@@ -237,6 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
+              [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
@@ -247,6 +248,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-s SUPERSET_LIMIT**: Limit for the superset of the search heuristics (default 100).
 - **\-T EXPORT-TOKENS_FILE**: Export the found abbreviations to the JSON file indicated by the parameter.
 - **\-t IMPORT-TOKENS-FILE**: Import abbreviations from the indicated file and skip the search for them.
+- **\-\-token-format {auto,flat,nested}**: Abbreviation format. With `nested`, an abbreviation can contain others, which usually compresses texts 5 to 10% further in text-heavy adventures; the interpreter is then built with a different decoder, the same size as the usual one. With `auto` (the default) the compiler tries both formats and keeps whichever takes less memory, so with little text it keeps using the simple (`flat`) format and the output is identical to before. A file exported with `-T` keeps the format it was generated with, and importing it with `-t` uses that same format.
 - **\-C EXPORT-CHARSET**: Export the 6x8 character set used by default in JSON format.
 - **\-c IMPORT-CHARSET**: Import the character set to be used in JSON format.
 - **\-S**: If a compressed text fragment does not fit in a bank, it is split into two between the current bank and the next one with this option activated. Otherwise, the fragment is moved to the next bank.

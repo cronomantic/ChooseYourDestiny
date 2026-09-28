@@ -885,6 +885,12 @@ PRINT_TOKEN_STR:
 
     ld a, $7F                ; Mask for token
     and c                    ; Recovering character
+    IFDEF NESTED_TOKENS
+    push hl
+    call EXPAND_TOKEN        ; DE advances through the text buffer
+    pop hl
+    jp .loop3
+    ELSE
     push hl
     push de
 ;----------------------------------------------------------
@@ -937,6 +943,7 @@ PRINT_TOKEN_STR:
 .end_loop4:
     pop hl                  ; Restoring string pointer on HL
     jp .loop3                ; Next iteration
+    ENDIF
 ;-------------------------
 .not_token:
     ld a, c
@@ -967,6 +974,60 @@ PRINT_STR_BUFFER:
     pop hl                  ; Restore register on its original positions
     pop de
     ret
+
+    IFDEF NESTED_TOKENS
+; Expand token A (0-127) into the text buffer at DE, printing every word as it
+; completes, like the flat path above. Table entries are [length][symbols]: a
+; symbol below 128 is a character, 128+n is token n, expanded recursively (the
+; compiler caps the nesting depth, which bounds the stack used here). The length
+; byte also lets the lookup skip a whole entry at a time.
+; In: A = token, DE = text buffer position. Out: DE updated. Uses AF, BC, HL.
+EXPAND_TOKEN:
+    ld hl, (TOKENS_ADDR)
+    or a
+    jr z, .found
+    ld b, a                  ; B = entries to skip
+.skip:
+    ld a, (hl)
+    inc a                    ; entry size = symbols + length byte
+    add a, l
+    ld l, a
+    jr nc, 1f
+    inc h
+1:  djnz .skip
+.found:
+    ld b, (hl)               ; B = symbols in this entry
+    inc hl
+.next:
+    ld a, (hl)
+    inc hl
+    cp 128
+    jr c, .char
+    push bc                  ; nested token
+    push hl
+    and $7F
+    call EXPAND_TOKEN
+    pop hl
+    pop bc
+    djnz .next
+    ret
+.char:
+    ld (de), a
+    inc de
+    cp 32
+    jr z, .flush
+    cp 10
+    jr z, .flush
+    cp 13
+    jr nz, .cont
+.flush:
+    push bc
+    call PRINT_STR_BUFFER    ; keeps HL, resets DE to the buffer start
+    pop bc
+.cont:
+    djnz .next
+    ret
+    ENDIF
 
 ; Get the number in A as text in DE
 ; With C set, print leading zeroes
