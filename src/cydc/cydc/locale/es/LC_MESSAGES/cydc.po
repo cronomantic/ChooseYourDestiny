@@ -1591,3 +1591,7 @@ msgstr "símbolo"
 #: src/cydc/cydc/cydc_parser.py:91
 msgid "line {}"
 msgstr "línea {}"
+
+#: src/cydc/cydc/cydc_codegen.py:196
+msgid "{msg} (at {loc})"
+msgstr "{msg} (en {loc})"
