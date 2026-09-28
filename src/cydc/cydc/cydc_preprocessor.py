@@ -26,6 +26,7 @@ class SourceLocation(NamedTuple):
     """Tracks the original source location of a line."""
     filename: str
     line_num: int
+    path: str = None  # absolute path of the file (filename is its basename)
 
 
 class PreprocessorError(Exception):
@@ -260,20 +261,20 @@ class CydcPreprocessor:
                     )
 
                     # Close the current code block before the include
-                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num)))
+                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num, normalized_path)))
 
                     # Add a comment marker for debugging/tracing
                     marker_line = f"/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n"
-                    result_lines.append((marker_line, SourceLocation(display_name, line_num)))
+                    result_lines.append((marker_line, SourceLocation(display_name, line_num, normalized_path)))
                     
                     result_lines.extend(included_content)
                     
                     # Add end marker
                     end_marker = f"/* END INCLUDE: {include_file} */\n"
-                    result_lines.append((end_marker, SourceLocation(display_name, line_num)))
+                    result_lines.append((end_marker, SourceLocation(display_name, line_num, normalized_path)))
                     
                     # Reopen the code block after the include
-                    result_lines.append(("[[ /* Reopen block after INCLUDE */\n", SourceLocation(display_name, line_num)))
+                    result_lines.append(("[[ /* Reopen block after INCLUDE */\n", SourceLocation(display_name, line_num, normalized_path)))
                     
                 except PreprocessorError as e:
                     # Add context about where the include was found
@@ -287,7 +288,7 @@ class CydcPreprocessor:
                     continue
             else:
                 # Regular line, add it with its source location
-                result_lines.append((line, SourceLocation(display_name, line_num)))
+                result_lines.append((line, SourceLocation(display_name, line_num, normalized_path)))
         
         return result_lines
     

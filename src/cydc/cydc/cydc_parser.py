@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+
 from ply import yacc as yacc
 from ply import lex as lex
 from cydc_lexer import CydcLexer
@@ -33,6 +35,13 @@ class SymbolType(Enum):
 
 class MaxErrorsReached(Exception):
     pass
+
+
+def _is_inside(path, root):
+    try:
+        return os.path.commonpath([root, os.path.abspath(path)]) == root
+    except ValueError:  # different drives on Windows
+        return False
 
 
 class SourceStatement(tuple):
@@ -3514,6 +3523,35 @@ class CydcParser(object):
                     ))
                     res = False
         return res
+
+    def unused_symbol_warnings(self, project_dir=None):
+        """Warnings for declared labels, variables and data arrays that nothing
+        refers to. Constants are left out, like unused #defines in C: a set of
+        them (an ENUM, a palette) is rarely used in full.
+
+        With project_dir, only symbols declared in files under that directory
+        (the script's own) count, so a library INCLUDEd from elsewhere doesn't
+        warn about the routines the game doesn't call."""
+        messages = {
+            SymbolType.LABEL: self._("Label '{symbol}' on {loc} is never used."),
+            SymbolType.VARIABLE: self._("Variable '{symbol}' on {loc} is never used."),
+            SymbolType.ARRAY: self._("Data array '{symbol}' on {loc} is never used."),
+        }
+        root = os.path.abspath(project_dir) if project_dir else None
+        warnings = []
+        for symbol, (symbol_type, lineno) in sorted(
+            self.symbols.items(), key=lambda item: item[1][1]
+        ):
+            if symbol_type not in messages or symbol in self.symbols_used:
+                continue
+            source = self.line_map.get(lineno) if self.line_map else None
+            path = getattr(source, "path", None)
+            if root and path and not _is_inside(path, root):
+                continue
+            warnings.append(messages[symbol_type].format(
+                symbol=symbol, loc=self._format_error_location(lineno)
+            ))
+        return warnings
 
     def print_symbols(self):
         for symbol in self.symbols.keys():
