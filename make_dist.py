@@ -240,7 +240,6 @@ def get_platform_specific_files(target_platform):
         return [
             "make_adv.cmd",
             "tools/sjasmplus.exe",
-            "dist/csc.exe",
             "dist/cyd_chr_conv.cmd",
             "dist/cydc.cmd",
             "make_adventure_gui.cmd",
@@ -251,7 +250,6 @@ def get_platform_specific_files(target_platform):
             "make_adv.sh",
             "make_adventure_gui.sh",
             "mld2rom_gui.sh",
-            "dist/csc",
         ]
     return []
 
