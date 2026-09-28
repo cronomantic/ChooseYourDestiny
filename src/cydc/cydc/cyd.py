@@ -37,6 +37,19 @@ def mld_intro_scr_size(loading_scr):
     return len(zx7_compress_data(loading_scr)) if loading_scr is not None else 0
 
 
+# Build flags vars.asm itself tests, so they must be defined before it.
+# NESTED_TOKENS (nested text tokens) drops the flat decoder's TOKEN_BUFFER.
+EARLY_DEFINES = ("NESTED_TOKENS",)
+
+
+def get_early_defines(unused_opcodes=None):
+    asm = ""
+    for c in EARLY_DEFINES:
+        if unused_opcodes and c in unused_opcodes:
+            asm += f"    DEFINE {c}\n"
+    return asm
+
+
 def get_unused_opcodes_defines(unused_opcodes=None):
     asm = "\n"
     if unused_opcodes is None:
@@ -44,6 +57,8 @@ def get_unused_opcodes_defines(unused_opcodes=None):
     for c in unused_opcodes:
         # Entries that already name a full guard (e.g. "UNUSED_ARR_BROKER") are
         # emitted verbatim; plain opcode names get the UNUSED_OP_ prefix.
+        if c in EARLY_DEFINES:
+            continue  # emitted before vars.asm by get_early_defines
         if isinstance(c, str) and c.startswith("UNUSED_"):
             asm += f"    DEFINE {c}\n"
         else:
@@ -301,6 +316,7 @@ def get_asm_plus3(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
@@ -392,6 +408,7 @@ def get_asm_128(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
@@ -504,6 +521,7 @@ def get_asm_esxdos(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
@@ -652,6 +670,7 @@ def get_asm_mld(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     asm += get_unused_opcodes_defines(unused_opcodes)
@@ -753,6 +772,7 @@ def get_asm_mld128(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
     if has_tracks:
@@ -839,6 +859,7 @@ def get_asm_48(
     d.update(INCLUDES=includes)
     t = get_asm_template("sysvars")
     asm += t.substitute(d)
+    asm += get_early_defines(unused_opcodes)
     t = get_asm_template("vars")
     asm += t.substitute(d)
 

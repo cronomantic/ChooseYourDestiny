@@ -236,6 +236,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
+              [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
@@ -246,6 +247,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-s SUPERSET_LIMIT**: Límite para el superconjunto de la heurística de la búsqueda (por defecto, 100).
 - **\-T EXPORT-TOKENS_FILE**: Exportar al fichero JSON indicado por el parámetro las abreviaturas encontradas.
 - **\-t IMPORT-TOKENS-FILE**: Importar abreviaturas desde el fichero indicado y obviar la búsqueda de las mismas.
+- **\-\-token-format {auto,flat,nested}**: Formato de las abreviaturas. Con `nested` (anidadas) una abreviatura puede contener otras, lo que suele comprimir los textos entre un 5 y un 10 % más en aventuras con bastante texto; el intérprete se genera entonces con otro descompresor, que ocupa lo mismo que el habitual. Con `auto` (por defecto) el compilador prueba los dos formatos y se queda con el que ocupe menos, así que con poco texto sigue usando el formato simple (`flat`) y el resultado es idéntico al de antes. Un fichero exportado con `-T` conserva el formato con el que se generó, y al importarlo con `-t` se usa ese mismo formato.
 - **\-C EXPORT-CHARSET**: Exporta el juego de caracteres 6x8 usado por defecto en formato JSON.
 - **\-c IMPORT-CHARSET**: Importa en formato JSON el juego de caracteres a emplear.
 - **\-S**: Si un fragmento de texto comprimido no cabe en un banco, se divide en dos entre el banco actual y el siguiente con esta opción activada. Si no, el fragmento pasa al banco siguiente.
