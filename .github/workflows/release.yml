@@ -39,6 +39,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      # dist/csc.exe is committed; the Linux binary is not, so build it here or
+      # the Linux package ships without the screen compressor.
+      - name: Build csc (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          make -C src/csc
+          test -x dist/csc
+
       - name: Build distribution package
         run: python make_dist.py --platform ${{ matrix.platform }}
 
