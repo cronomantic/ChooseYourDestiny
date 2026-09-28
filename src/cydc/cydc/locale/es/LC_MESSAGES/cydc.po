@@ -1009,3 +1009,585 @@ msgid ""
 "Symbol '{symbol}' on lines {lines_str} was already declared with another "
 "type on {s[1]}."
 msgstr "El símbolo '{symbol}' en las líneas {lines_str} ya fue declarado con otro tipo en {s[1]}."
+
+#: src/cydc/cydc/cydc_parser.py:3044
+msgid "end of input"
+msgstr "fin de la entrada"
+
+#: src/cydc/cydc/cydc_parser.py:746
+msgid "Invalid opening code token in {loc}"
+msgstr "Token de código de apertura no válido en {loc}"
+
+#: src/cydc/cydc/cydc_parser.py:887
+msgid "Syntax error on RANDOMIZE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando RANDOMIZE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:909
+msgid "Syntax error on BACKSPACE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando BACKSPACE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:931
+msgid "Syntax error on NEWLINE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando NEWLINE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:2135
+msgid "Syntax error on SWAP at {loc}: expected two variables 'SWAP a, b' (or indirect 'SWAP [a], [b]')."
+msgstr "Error de sintaxis en SWAP en {loc}: se esperaban dos variables 'SWAP a, b' (o indirectas 'SWAP [a], [b]')."
+
+#: src/cydc/cydc/cydc_parser.py:2222
+msgid "Wide constants (WORD/DWORD/string) need a direct destination, not an indirect [..] one, at {loc}."
+msgstr "Las constantes anchas (WORD/DWORD/cadena) necesitan un destino directo, no uno indirecto [..], en {loc}."
+
+#: src/cydc/cydc/cydc_parser.py:3057
+msgid "Syntax error at {}: unexpected {}"
+msgstr "Error de sintaxis en {}: no se esperaba {}"
+
+#: src/cydc/cydc/cydc_parser.py:407
+msgid "FOR STEP cannot be 0 at {loc}."
+msgstr "El STEP de FOR no puede ser 0 en {loc}."
+
+#: src/cydc/cydc/cydc_parser.py:412
+msgid "FOR STEP {step} out of range (1..255 in magnitude) at {loc}."
+msgstr "STEP {step} de FOR fuera de rango (1..255 en valor absoluto) en {loc}."
+
+#: src/cydc/cydc/cydc_parser.py:420
+msgid "NEXT variable '{nxt}' does not match FOR variable '{var}' at {loc}."
+msgstr "La variable '{nxt}' de NEXT no coincide con la variable '{var}' de FOR en {loc}."
+
+#: src/cydc/cydc/cydc_parser.py:814
+msgid "Syntax error on GOTO at {loc}, missing identifier."
+msgstr "Error de sintaxis en GOTO en {loc}, falta identificador."
+
+#: src/cydc/cydc/cydc_parser.py:818
+msgid "Syntax error on GOTO at {loc}, invalid identifier."
+msgstr "Error de sintaxis en GOTO en {loc}, identificador no válido."
+
+#: src/cydc/cydc/cydc_parser.py:836
+msgid "Syntax error on GOSUB at {loc}, missing identifier."
+msgstr "Error de sintaxis en GOSUB en {loc}, falta identificador."
+
+#: src/cydc/cydc/cydc_parser.py:840
+msgid "Syntax error on GOSUB at {loc}, invalid identifier."
+msgstr "Error de sintaxis en GOSUB en {loc}, identificador no válido."
+
+#: src/cydc/cydc/cydc_parser.py:858
+msgid "Syntax error on LABEL at {loc}, missing identifier."
+msgstr "Error de sintaxis en LABEL en {loc}, falta identificador."
+
+#: src/cydc/cydc/cydc_parser.py:863
+msgid "Syntax error on LABEL at {loc}, invalid identifier."
+msgstr "Error de sintaxis en LABEL en {loc}, identificador no válido."
+
+#: src/cydc/cydc/cydc_parser.py:952
+msgid "Syntax error on TAB command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando TAB en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:957
+msgid "Syntax error on TAB command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando TAB en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:978
+msgid "Syntax error on PAGEPAUSE command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PAGEPAUSE en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:983
+msgid "Syntax error on PAGEPAUSE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PAGEPAUSE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1002
+msgid "Syntax error on CHAR command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando CHAR en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1007
+msgid "Syntax error on CHAR command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando CHAR en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1026
+msgid "Syntax error on PRINT command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PRINT en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1031
+msgid "Syntax error on PRINT command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PRINT en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1050
+msgid "Syntax error on INK command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando INK en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1055
+msgid "Syntax error on INK command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando INK en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1074
+msgid "Syntax error on PAPER command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PAPER en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1079
+msgid "Syntax error on PAPER command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PAPER en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1098
+msgid "Syntax error on BORDER command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando BORDER en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1103
+msgid "Syntax error on BORDER command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando BORDER en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1122
+msgid "Syntax error on BRIGHT command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando BRIGHT en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1127
+msgid "Syntax error on BRIGHT command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando BRIGHT en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1146
+msgid "Syntax error on FLASH command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando FLASH en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1151
+msgid "Syntax error on FLASH command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando FLASH en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1170
+msgid "Syntax error on SFX command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando SFX en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1175
+msgid "Syntax error on SFX command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando SFX en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1194
+msgid "Syntax error on DISPLAY command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando DISPLAY en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1199
+msgid "Syntax error on DISPLAY command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando DISPLAY en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1218
+msgid "Syntax error on PICTURE command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PICTURE en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1223
+msgid "Syntax error on PICTURE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PICTURE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1242
+msgid "Syntax error on TRACK command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando TRACK en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1247
+msgid "Syntax error on TRACK command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando TRACK en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1266
+msgid "Syntax error on PLAY command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PLAY en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1271
+msgid "Syntax error on PLAY command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PLAY en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1290
+msgid "Syntax error on LOOP command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando LOOP en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1295
+msgid "Syntax error on LOOP command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando LOOP en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1317
+msgid "Syntax error on LOAD command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando LOAD en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1322
+msgid "Syntax error on LOAD command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando LOAD en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1343
+msgid "Syntax error on WAIT command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando WAIT en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1348
+msgid "Syntax error on WAIT command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando WAIT en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1369
+msgid "Syntax error on PAUSE command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando PAUSE en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1374
+msgid "Syntax error on PAUSE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando PAUSE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1395
+msgid "Syntax error on TYPERATE command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando TYPERATE en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1400
+msgid "Syntax error on TYPERATE command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando TYPERATE en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1421
+msgid "Syntax error on WINDOW command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando WINDOW en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1426
+msgid "Syntax error on WINDOW command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando WINDOW en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:1447
+msgid "Syntax error on CHARSET command at {loc}, it has no argument."
+msgstr "Error de sintaxis en el comando CHARSET en {loc}, no tiene argumento."
+
+#: src/cydc/cydc/cydc_parser.py:1452
+msgid "Syntax error on CHARSET command at {loc}, invalid expression."
+msgstr "Error de sintaxis en el comando CHARSET en {loc}, expresión no válida."
+
+#: src/cydc/cydc/cydc_parser.py:3062
+msgid "Syntax error at {}"
+msgstr "Error de sintaxis en {}"
+
+#: src/cydc/cydc/cydc_parser.py:3179
+msgid "Invalid array size on {loc}"
+msgstr "Tamaño de array no válido en {loc}"
+
+#: src/cydc/cydc/cydc_parser.py:3186
+msgid "Invalid byte value {val} on {loc}"
+msgstr "Valor de byte no válido {val} en {loc}"
+
+#: src/cydc/cydc/cydc_parser.py:3193
+msgid "Invalid word value {val} on {loc}"
+msgstr "Valor de word no válido {val} en {loc}"
+
+#: src/cydc/cydc/cydc_parser.py:3070
+msgid "Syntax error at {}: Missing ENDIF for IF"
+msgstr "Error de sintaxis en {}: falta ENDIF para IF"
+
+#: src/cydc/cydc/cydc_parser.py:3392
+msgid "Label '{symbol}' on {loc} was already declared before."
+msgstr "La etiqueta '{symbol}' en {loc} ya se había declarado antes."
+
+#: src/cydc/cydc/cydc_parser.py:3425
+msgid "Symbol '{symbol}' on {loc} is used as {used_type} but was already used as {previous_type}."
+msgstr "El símbolo '{symbol}' en {loc} se usa como {used_type}, pero ya se había usado como {previous_type}."
+
+#: src/cydc/cydc/cydc_parser.py:756
+msgid "Invalid character '{err[2]}' (\\u{codepoint:04x}) in {loc} and position {err[1]}"
+msgstr "Carácter no válido '{err[2]}' (\\u{codepoint:04x}) en {loc}, posición {err[1]}"
+
+#: src/cydc/cydc/cydc_parser.py:1995
+msgid "Symbol at {loc} invalid"
+msgstr "Símbolo no válido en {loc}"
+
+#: src/cydc/cydc/cydc_parser.py:3074
+msgid "Syntax error at {}: Missing WEND for WHILE"
+msgstr "Error de sintaxis en {}: falta WEND para WHILE"
+
+#: src/cydc/cydc/cydc_parser.py:3396
+msgid "Variable '{symbol}' on {loc} was already declared before."
+msgstr "La variable '{symbol}' en {loc} ya se había declarado antes."
+
+#: src/cydc/cydc/cydc_parser.py:3442
+msgid "Label '{symbol}' on {lines_str} is not declared."
+msgstr "La etiqueta '{symbol}' en {lines_str} no está declarada."
+
+#: src/cydc/cydc/cydc_parser.py:3466
+msgid "Symbol '{symbol}' on {lines_str} is used as {used_type} but was already declared as {previous_type} on {decl_loc}."
+msgstr "El símbolo '{symbol}' en {lines_str} se usa como {used_type}, pero ya estaba declarado como {previous_type} en {decl_loc}."
+
+#: src/cydc/cydc/cydc_parser.py:204
+msgid "Colon required between statements on same line ({loc})"
+msgstr "Se necesitan dos puntos entre instrucciones en la misma línea ({loc})"
+
+#: src/cydc/cydc/cydc_parser.py:1962
+msgid "Data array '{p[2]}' at {loc} must have defined a size or have initialization data."
+msgstr "El array de datos '{p[2]}' en {loc} debe tener un tamaño definido o datos de inicialización."
+
+#: src/cydc/cydc/cydc_parser.py:3078
+msgid "Syntax error at {}: Missing UNTIL for DO"
+msgstr "Error de sintaxis en {}: falta UNTIL para DO"
+
+#: src/cydc/cydc/cydc_parser.py:3144
+msgid "Lexer error: {} '{}' at {}."
+msgstr "Error léxico: {} '{}' en {}."
+
+#: src/cydc/cydc/cydc_parser.py:3152
+msgid "Lexer error: {} at {}."
+msgstr "Error léxico: {} en {}."
+
+#: src/cydc/cydc/cydc_parser.py:3400
+msgid "Constant '{symbol}' on {loc} was already declared before."
+msgstr "La constante '{symbol}' en {loc} ya se había declarado antes."
+
+#: src/cydc/cydc/cydc_parser.py:3446
+msgid "Variable '{symbol}' on {lines_str} is not declared."
+msgstr "La variable '{symbol}' en {lines_str} no está declarada."
+
+#: src/cydc/cydc/cydc_parser.py:3404
+msgid "Data array '{symbol}' on {loc} was already declared before."
+msgstr "El array de datos '{symbol}' en {loc} ya se había declarado antes."
+
+#: src/cydc/cydc/cydc_parser.py:3408
+msgid "Symbol '{symbol}' on {loc} was already declared before."
+msgstr "El símbolo '{symbol}' en {loc} ya se había declarado antes."
+
+#: src/cydc/cydc/cydc_parser.py:3450
+msgid "Constant '{symbol}' on {lines_str} is not declared."
+msgstr "La constante '{symbol}' en {lines_str} no está declarada."
+
+#: src/cydc/cydc/cydc_parser.py:3454
+msgid "Data array '{symbol}' on {lines_str} is not declared."
+msgstr "El array de datos '{symbol}' en {lines_str} no está declarado."
+
+#: src/cydc/cydc/cydc_parser.py:3458
+msgid "Symbol '{symbol}' on {lines_str} is not declared."
+msgstr "El símbolo '{symbol}' en {lines_str} no está declarado."
+
+#: src/cydc/cydc/cydc_codegen.py:433
+msgid "ERROR: Constant expression value {stack[0]} must not be negative!"
+msgstr "ERROR: ¡El valor {stack[0]} de la expresión constante no puede ser negativo!"
+
+#: src/cydc/cydc/cydc_codegen.py:442
+msgid "ERROR: {kw} value {val} does not fit in {bits} bits."
+msgstr "ERROR: El valor {kw} {val} no cabe en {bits} bits."
+
+#: src/cydc/cydc/cydc_codegen.py:468
+msgid "ERROR: Invalid data element {elem}"
+msgstr "ERROR: Elemento de datos no válido {elem}"
+
+#: src/cydc/cydc/cydc_codegen.py:761
+msgid "ERROR: DATA block too big ({size} bytes, max 16384)."
+msgstr "ERROR: Bloque DATA demasiado grande ({size} bytes, máximo 16384)."
+
+#: src/cydc/cydc/cydc_codegen.py:219
+msgid "ERROR: Circular or self-referential constant definition involving: {names}"
+msgstr "ERROR: Definición de constante circular o autorreferente en la que intervienen: {names}"
+
+#: src/cydc/cydc/cydc_codegen.py:500
+msgid "ERROR: Native routine {callable_name} defined two times!"
+msgstr "ERROR: ¡La rutina nativa {callable_name} está definida dos veces!"
+
+#: src/cydc/cydc/cydc_codegen.py:461
+msgid "ERROR: range bound {v} is not a byte (0..255)."
+msgstr "ERROR: El límite de rango {v} no es un byte (0..255)."
+
+#: src/cydc/cydc/cydc_codegen.py:511
+msgid "ERROR: Native routine {q} imported two times!"
+msgstr "ERROR: ¡La rutina nativa {q} está importada dos veces!"
+
+#: src/cydc/cydc/cydc_codegen.py:478
+msgid "ERROR: DATA/array value {val} too big (max 2^32-1)."
+msgstr "ERROR: Valor de DATA/array {val} demasiado grande (máximo 2^32-1)."
+
+#: src/cydc/cydc/cydc_codegen.py:526
+msgid "ERROR: Native routine {block} defined two times!"
+msgstr "ERROR: ¡La rutina nativa {block} está definida dos veces!"
+
+#: src/cydc/cydc/cydc_codegen.py:774
+msgid "ERROR: RESTORE {name}: no DATA appears after that label."
+msgstr "ERROR: RESTORE {name}: no hay ningún DATA después de esa etiqueta."
+
+#: src/cydc/cydc/cydc.py:233
+msgid "Target-specific options"
+msgstr "Opciones específicas de cada plataforma"
+
+#: src/cydc/cydc/cydc.py:234
+msgid "Each option below is only valid with the target shown in [brackets]; using it with any other target is an error."
+msgstr "Cada opción de esta sección solo es válida con la plataforma indicada entre [corchetes]; usarla con cualquier otra es un error."
+
+#: src/cydc/cydc/cydc.py:244
+msgid "[plus3] Use 720 Kb disk images"
+msgstr "[plus3] Usar imágenes de disco de 720 Kb"
+
+#: src/cydc/cydc/cydc.py:251
+msgid "[esxdos] Also emit AUTOBOOT.BAS + ESXDOS.CFG so the game cold-boots from the SD card."
+msgstr "[esxdos] Generar también AUTOBOOT.BAS + ESXDOS.CFG para que el juego arranque directamente desde la tarjeta SD."
+
+#: src/cydc/cydc/cydc.py:314
+msgid "remove bytecode that can never be reached (e.g. unused library routines), following jumps and sequential fall-through"
+msgstr "eliminar el bytecode que nunca se puede alcanzar (p. ej. rutinas de librería sin usar), siguiendo los saltos y la ejecución secuencial"
+
+#: src/cydc/cydc/cydc.py:329
+msgid "allow statements without colon separator (backwards compatibility mode)"
+msgstr "permitir instrucciones sin el separador de dos puntos (modo de compatibilidad con versiones anteriores)"
+
+#: src/cydc/cydc/cydc.py:333
+msgid "MAX_ERRORS"
+msgstr "MAX_ERRORES"
+
+#: src/cydc/cydc/cydc.py:336
+#, python-format
+msgid "maximum number of parser errors to report before stopping (default: %(default)d)"
+msgstr "número máximo de errores del analizador que se muestran antes de parar (por defecto: %(default)d)"
+
+#: src/cydc/cydc/cydc.py:358
+msgid "Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"
+msgstr "Modelo de Spectrum de destino (mld/mld128 son EXPERIMENTALES)"
+
+#: src/cydc/cydc/cydc.py:402
+msgid "WARNING: the MLD/Dandanator target is EXPERIMENTAL. It boots and runs in emulator but is not yet verified on real hardware."
+msgstr "AVISO: la plataforma MLD/Dandanator es EXPERIMENTAL. Arranca y funciona en emulador, pero todavía no se ha comprobado en hardware real."
+
+#: src/cydc/cydc/cydc.py:429
+msgid "Preprocessing includes..."
+msgstr "Preprocesando los includes..."
+
+#: src/cydc/cydc/cydc.py:692
+msgid "Ignoring tracks for strict MLD 48K target."
+msgstr "Se ignoran las pistas de música en la plataforma MLD 48K estricta."
+
+#: src/cydc/cydc/cydc.py:931
+msgid "Memory organization for MLD version..."
+msgstr "Organización de memoria para la versión MLD..."
+
+#: src/cydc/cydc/cydc.py:1673
+msgid "Copying ESXDOS media files..."
+msgstr "Copiando los archivos multimedia para ESXDOS..."
+
+#: src/cydc/cydc/cydc.py:134
+msgid "ERROR: Not enough RAM banks for writable arrays (mld128)."
+msgstr "ERROR: No hay suficientes bancos de RAM para los arrays modificables (mld128)."
+
+#: src/cydc/cydc/cydc.py:1691
+msgid "{model} generation completed ({tmp_timer})"
+msgstr "Generación de {model} completada ({tmp_timer})"
+
+#: src/cydc/cydc/cydc.py:123
+msgid "ERROR: Array {name} too big for an MLD RAM bank."
+msgstr "ERROR: El array {name} es demasiado grande para un banco de RAM de MLD."
+
+#: src/cydc/cydc/cydc.py:419
+msgid "ERROR: {flag} is only valid for the {models} target."
+msgstr "ERROR: {flag} solo es válido para la plataforma {models}."
+
+#: src/cydc/cydc/cydc.py:576
+msgid "Maximum error limit reached ({args.max_errors})."
+msgstr "Se ha alcanzado el límite máximo de errores ({args.max_errors})."
+
+#: src/cydc/cydc/cydc.py:1212
+msgid "ERROR: IMPORT/CALL native routines are not supported on the {model} target."
+msgstr "ERROR: Las rutinas nativas IMPORT/CALL no están soportadas en la plataforma {model}."
+
+#: src/cydc/cydc/cydc.py:1302
+msgid "ERROR: Not enough memory for native routines."
+msgstr "ERROR: No hay suficiente memoria para las rutinas nativas."
+
+#: src/cydc/cydc/cydc.py:1506
+msgid "Assembling ESXDOS data file and loader..."
+msgstr "Ensamblando el archivo de datos y el cargador para ESXDOS..."
+
+#: src/cydc/cydc/cydc.py:443
+msgid "Preprocessed {included_count} include file(s) in {tmp_timer}"
+msgstr "Preprocesados {included_count} archivo(s) incluido(s) en {tmp_timer}"
+
+#: src/cydc/cydc/cydc.py:445
+msgid "Preprocessing completed in {tmp_timer}"
+msgstr "Preprocesado completado en {tmp_timer}"
+
+#: src/cydc/cydc/cydc.py:1275
+msgid "ERROR: Native routine {r} changed size between passes ({old_size} -> {new_size}); its size must not depend on its load address."
+msgstr "ERROR: La rutina nativa {r} ha cambiado de tamaño entre pasadas ({old_size} -> {new_size}); su tamaño no puede depender de su dirección de carga."
+
+#: src/cydc/cydc/cydc.py:1334
+msgid "ERROR: Not enough resident RAM for native routines on mld."
+msgstr "ERROR: No hay suficiente RAM residente para las rutinas nativas en mld."
+
+#: src/cydc/cydc/cydc.py:1224
+msgid "ERROR: Block {n} USES unknown native routine: {u}"
+msgstr "ERROR: El bloque {n} usa (USES) una rutina nativa desconocida: {u}"
+
+#: src/cydc/cydc/cydc.py:1260
+msgid "ERROR: Error assembling native routine."
+msgstr "ERROR: Error al ensamblar la rutina nativa."
+
+#: src/cydc/cydc/cydc.py:1294
+msgid "ERROR: Native routine {r} is too big for a bank."
+msgstr "ERROR: La rutina nativa {r} es demasiado grande para un banco."
+
+#: src/cydc/cydc/cydc.py:1343
+msgid "ERROR: Native routine {r} changed size between passes ({old_size} -> {new_size})."
+msgstr "ERROR: La rutina nativa {r} ha cambiado de tamaño entre pasadas ({old_size} -> {new_size})."
+
+#: src/cydc/cydc/cydc.py:1561
+msgid "Assembling Spectrum {model}..."
+msgstr "Ensamblando para Spectrum {model}..."
+
+#: src/cydc/cydc/cydc.py:715
+msgid "Track {i:03d} compressed: {size} bytes to {compressed_size} bytes (delta={delta})."
+msgstr "Pista {i:03d} comprimida: de {size} bytes a {compressed_size} bytes (delta={delta})."
+
+#: src/cydc/cydc/cydc_txt_compress.py:155
+msgid "Replacing special characters..."
+msgstr "Reemplazando los caracteres especiales..."
+
+#: src/cydc/cydc/cydc_txt_compress.py:164
+msgid "Length of texts without compression:"
+msgstr "Longitud de los textos sin comprimir:"
+
+#: src/cydc/cydc/cydc_txt_compress.py:187
+msgid "bytes saved from text compression"
+msgstr "bytes ahorrados con la compresión de textos"
+
+#: src/cydc/cydc/cydc_txt_compress.py:248
+msgid "Replacing tokens on texts..."
+msgstr "Reemplazando los tokens en los textos..."
+
+#: src/cydc/cydc/cydc_txt_compress.py:257
+msgid "Encoding texts & tokens..."
+msgstr "Codificando textos y tokens..."
+
+#: src/cydc/cydc/cydc_txt_compress.py:290
+msgid "Length of texts with compression:"
+msgstr "Longitud de los textos comprimidos:"
+
+#: src/cydc/cydc/cydc_txt_compress.py:142
+#, python-format
+msgid "With maximum abbreviation length %(max_len_token)d, length of texts after compression: %(len_after)d."
+msgstr "Con longitud máxima de abreviatura %(max_len_token)d, longitud de los textos tras la compresión: %(len_after)d."
+
+#: src/cydc/cydc/cydc_txt_compress.py:168
+msgid "Generating text tokens..."
+msgstr "Generando los tokens de texto..."
+
+#: src/cydc/cydc/cydc_txt_compress.py:191
+msgid "The best combination of abbreviations was found with maximum abbreviation length"
+msgstr "La mejor combinación de abreviaturas se ha encontrado con una longitud máxima de abreviatura de"
+
+#: src/cydc/cydc/cydc_txt_compress.py:196
+msgid "abbreviations in total, which are:"
+msgstr "abreviaturas en total, que son:"
+
+#: src/cydc/cydc/cydc_txt_compress.py:207
+msgid "Calculating savings..."
+msgstr "Calculando el ahorro..."
+
+#: src/cydc/cydc/cydc_parser.py:3283
+msgid "label"
+msgstr "etiqueta"
+
+#: src/cydc/cydc/cydc_parser.py:3284
+msgid "variable"
+msgstr "variable"
+
+#: src/cydc/cydc/cydc_parser.py:3285
+msgid "constant"
+msgstr "constante"
+
+#: src/cydc/cydc/cydc_parser.py:3286
+msgid "data array"
+msgstr "array de datos"
+
+#: src/cydc/cydc/cydc_parser.py:3287
+msgid "native routine"
+msgstr "rutina nativa"
+
+#: src/cydc/cydc/cydc_parser.py:3288
+msgid "symbol"
+msgstr "símbolo"
+
+#: src/cydc/cydc/cydc_parser.py:91
+msgid "line {}"
+msgstr "línea {}"
