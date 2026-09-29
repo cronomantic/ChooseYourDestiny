@@ -182,6 +182,8 @@ _SETTINGS_KEYS = [
     ("max_errors",         "var_max_errors",         "int"),
     ("token_format",       "var_token_format",       "str"),
     ("warn_unused",        "var_warn_unused",        "bool"),
+    ("warn_gosub",         "var_warn_gosub",         "bool"),
+    ("debug_stack",        "var_debug_stack",        "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
     ("run_emulator",       "var_run_emulator",       "str"),
@@ -484,6 +486,8 @@ class SettingsDialog(tk.Toplevel):
             ("Use WYZ Tracker (instead of Vortex)", self.app.var_use_wyz),
             ("Use 720 KB disk images (+3 only)", self.app.var_disk_720),
             ("Warn about unused symbols", self.app.var_warn_unused),
+            ("Warn about GOSUB/RETURN problems", self.app.var_warn_gosub),
+            ("Check the GOSUB stack at runtime (debug)", self.app.var_debug_stack),
         ]
         for i, (text, var) in enumerate(checks):
             ttk.Checkbutton(flags, text=_(text), variable=var).grid(
@@ -763,6 +767,8 @@ class MakeAdventureGUI:
         self.var_max_errors = tk.IntVar()
         self.var_token_format = tk.StringVar()
         self.var_warn_unused = tk.BooleanVar()
+        self.var_warn_gosub = tk.BooleanVar()
+        self.var_debug_stack = tk.BooleanVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
         self.var_backup_cyd = tk.BooleanVar()
@@ -818,6 +824,8 @@ class MakeAdventureGUI:
         self.var_max_errors.set(20)
         self.var_token_format.set("auto")
         self.var_warn_unused.set(True)
+        self.var_warn_gosub.set(True)
+        self.var_debug_stack.set(False)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
         self.var_backup_cyd.set(False)
@@ -1213,6 +1221,10 @@ class MakeAdventureGUI:
             cydc_params = ["--token-format", token_format] + cydc_params
         if not self.var_warn_unused.get():
             cydc_params = ["--no-warn-unused"] + cydc_params
+        if not self.var_warn_gosub.get():
+            cydc_params = ["--no-warn-gosub"] + cydc_params
+        if self.var_debug_stack.get():
+            cydc_params = ["--debug-stack"] + cydc_params
         if check:
             cydc_params = ["--check"] + cydc_params
 

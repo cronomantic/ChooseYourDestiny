@@ -19,7 +19,7 @@ include_demo/
 ### main.cyd
 The main file is the entry point. It contains all `INCLUDE` directives inside a single `[[]]` code block and defines the main flow:
 - Includes `variables.cyd` for variable declarations
-- Includes `common.cyd` for shared subroutines
+- Jumps over them with `GOTO Start` and includes `common.cyd` for shared subroutines (they must only run when called with `GOSUB`: falling into one would reach its `RETURN` with no GOSUB pending)
 - Uses `INCLUDE` to load each chapter at the appropriate labels
 
 ### variables.cyd

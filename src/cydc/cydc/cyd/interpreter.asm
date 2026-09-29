@@ -53,20 +53,48 @@ OP_GOTO:
 .same_CHUNK:
     jp EXEC_LOOP
 
+    ; With --debug-stack (STACK_CHECK), a GOSUB that would run the call stack into
+    ; the variables below it, or a RETURN with nothing to return to, stop with a
+    ; system error instead of corrupting memory. Without it, no code is added.
+    MACRO CHECK_GOSUB_DEPTH
+    IFDEF STACK_CHECK
+    ld a, ixh
+    cp HIGH (END_VARS + 64) + 1
+    jp c, GOSUB_STACK_FULL
+    ENDIF
+    ENDM
+
 OP_GOSUB:
     push hl
     ld de, 3
     add hl, de
+; HL = return address (in the current CHUNK), destination pointer on the stack.
+GOSUB_RET_HL:
     ld a, (CHUNK)
     ld (ix-1), l
     ld (ix-2), h
     ld (ix-3), a
     ld de, 65536-3    ; ix-3
     add ix, de
+    CHECK_GOSUB_DEPTH
     pop hl
     jp OP_GOTO
 
+    IFDEF STACK_CHECK
+RETURN_WITHOUT_GOSUB:
+    ld a, 9
+    jp SYS_ERROR
+GOSUB_STACK_FULL:
+    ld a, 10
+    jp SYS_ERROR
+    ENDIF
+
 OP_RETURN:
+    IFDEF STACK_CHECK
+    ld a, ixh
+    cp HIGH INT_STACK_ADDR
+    jr nc, RETURN_WITHOUT_GOSUB   ; IX back at the top: no GOSUB pending
+    ENDIF
     ld c, (ix+0)
     ld h, (ix+1)
     ld l, (ix+2)
@@ -1179,14 +1207,7 @@ OP_CHOOSE:
     push hl
 .self_a+1:
     ld hl, 0-0
-    ld a, (CHUNK)
-    ld (ix-1), l
-    ld (ix-2), h
-    ld (ix-3), a
-    ld de, 65536-3    ; ix-3
-    add ix, de
-    pop hl
-    jp OP_GOTO
+    jp GOSUB_RET_HL
     ENDIF
 
 ;----------------------------------------------
@@ -1208,7 +1229,8 @@ OP_CHOOSE_W:
     ldi
  
     pop de           ;Restore timeout
-    
+    ld (.self_a), hl ;Return address of a GOSUB option: after this instruction
+
     ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
@@ -1355,7 +1377,10 @@ OP_CHOOSE_W:
     ld a, c
     or a
     jp z, OP_GOTO
-    jp OP_GOSUB
+    push hl
+.self_a+1:
+    ld hl, 0-0
+    jp GOSUB_RET_HL
     ENDIF
 
 ;----------------------------------------------
@@ -1523,14 +1548,7 @@ OP_CHOOSE_CH:
     push hl
 .self_a+1:
     ld hl, 0-0
-    ld a, (CHUNK)
-    ld (ix-1), l
-    ld (ix-2), h
-    ld (ix-3), a
-    ld de, 65536-3    ; ix-3
-    add ix, de
-    pop hl
-    jp OP_GOTO
+    jp GOSUB_RET_HL
 .on_change_gosub:
     ld hl, CHOOSE_CH_RET_ADDRESS
     ld a, (hl)
@@ -1544,6 +1562,7 @@ OP_CHOOSE_CH:
     ld (ix-3), a
     ld de, 65536-3    ; ix-3
     add ix, de
+    CHECK_GOSUB_DEPTH
     jp OP_GOTO
     ENDIF
 
