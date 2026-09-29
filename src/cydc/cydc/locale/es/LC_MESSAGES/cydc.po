@@ -1657,6 +1657,22 @@ msgstr "La subrutina '{label}' puede terminar sin RETURN en {at} y seguir por c�
 msgid "don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"
 msgstr "no avisar de los RETURN a los que se llega sin GOSUB ni de las subrutinas que se abandonan sin RETURN"
 
+#: src/cydc/cydc/cydc.py
+msgid "don't warn when a variable declared in one file (such as a library's) is used from another file under another name or by its number"
+msgstr "no avisar cuando una variable declarada en un fichero (como las de una librería) se usa desde otro fichero con otro nombre o por su número"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "Variable {num} is '{name}' in {file}, and at {loc} it is declared again as '{other}': both share it"
+msgstr "La variable {num} es '{name}' en {file}, y en {loc} se declara otra vez como '{other}': las dos la comparten"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "Variable {num} is '{name}' in {file}, and at {loc} it is used by its number"
+msgstr "La variable {num} es '{name}' en {file}, y en {loc} se usa por su número"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "Variable {num} is '{name}' in {file}, and at {loc} it is reached from '{via}'"
+msgstr "La variable {num} es '{name}' en {file}, y en {loc} se llega a ella desde '{via}'"
+
 #: src/cydc/cydc/cydc_codegen.py
 msgid "make GOSUB and RETURN check the call stack at runtime and stop with a system error when it overflows or is empty (for debugging, adds a few bytes)"
 msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse y paren con un error de sistema si se desborda o está vacía (para depurar, añade unos bytes)"

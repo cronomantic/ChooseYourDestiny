@@ -183,6 +183,7 @@ _SETTINGS_KEYS = [
     ("token_format",       "var_token_format",       "str"),
     ("warn_unused",        "var_warn_unused",        "bool"),
     ("warn_gosub",         "var_warn_gosub",         "bool"),
+    ("warn_shared_vars",   "var_warn_shared_vars",   "bool"),
     ("debug_stack",        "var_debug_stack",        "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
@@ -487,6 +488,7 @@ class SettingsDialog(tk.Toplevel):
             ("Use 720 KB disk images (+3 only)", self.app.var_disk_720),
             ("Warn about unused symbols", self.app.var_warn_unused),
             ("Warn about GOSUB/RETURN problems", self.app.var_warn_gosub),
+            ("Warn about variables shared between files", self.app.var_warn_shared_vars),
             ("Check the GOSUB stack at runtime (debug)", self.app.var_debug_stack),
         ]
         for i, (text, var) in enumerate(checks):
@@ -768,6 +770,7 @@ class MakeAdventureGUI:
         self.var_token_format = tk.StringVar()
         self.var_warn_unused = tk.BooleanVar()
         self.var_warn_gosub = tk.BooleanVar()
+        self.var_warn_shared_vars = tk.BooleanVar()
         self.var_debug_stack = tk.BooleanVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
@@ -825,6 +828,7 @@ class MakeAdventureGUI:
         self.var_token_format.set("auto")
         self.var_warn_unused.set(True)
         self.var_warn_gosub.set(True)
+        self.var_warn_shared_vars.set(True)
         self.var_debug_stack.set(False)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
@@ -1223,6 +1227,8 @@ class MakeAdventureGUI:
             cydc_params = ["--no-warn-unused"] + cydc_params
         if not self.var_warn_gosub.get():
             cydc_params = ["--no-warn-gosub"] + cydc_params
+        if not self.var_warn_shared_vars.get():
+            cydc_params = ["--no-warn-shared-vars"] + cydc_params
         if self.var_debug_stack.get():
             cydc_params = ["--debug-stack"] + cydc_params
         if check:

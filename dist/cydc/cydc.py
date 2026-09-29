@@ -101,9 +101,12 @@ def emit_warning(stage, message):
     print(f"WARNING [{stage}]: {message}")
 
 
-def emit_call_stack_warnings(codegen, args):
+def emit_codegen_warnings(codegen, args):
     if not args.no_warn_gosub:
         for w in codegen.call_stack_warnings or ():
+            emit_warning("CODEGEN", w)
+    if not args.no_warn_shared_vars:
+        for w in codegen.shared_var_warnings or ():
             emit_warning("CODEGEN", w)
 
 
@@ -373,6 +376,14 @@ def main():
         "--no-warn-gosub",
         action="store_true",
         help=_("don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"),
+    )
+    arg_parser.add_argument(
+        "--no-warn-shared-vars",
+        action="store_true",
+        help=_(
+            "don't warn when a variable declared in one file (such as a library's) "
+            "is used from another file under another name or by its number"
+        ),
     )
     arg_parser.add_argument(
         "--debug-stack",
@@ -652,7 +663,7 @@ def main():
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
         codegen.generate_code(code=checked, slice_text=True)
-        emit_call_stack_warnings(codegen, args)
+        emit_codegen_warnings(codegen, args)
         print(_("No errors found in {input}.").format(input=args.input))
         sys.exit(0)
 
@@ -1027,7 +1038,7 @@ def main():
     chunks = codegen.generate_code(
         code=code, slice_text=force_slice_texts, show_debug=False
     )
-    emit_call_stack_warnings(codegen, args)
+    emit_codegen_warnings(codegen, args)
 
     # Native-block DCE: now that codegen.extern_calls lists the reachable CALLs,
     # drop IMPORT/ASM blocks that nothing calls (see extern_live_blocks). Only the
