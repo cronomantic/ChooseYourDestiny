@@ -77,29 +77,15 @@ COMMON_PANDOC_ARGS=(
 # Ensure output directories exist
 mkdir -p "$SCRIPT_DIR/documentation/es" "$SCRIPT_DIR/documentation/en"
 
-# The MANUAL is canonical in this repo; the TUTORIAL lives in the wiki submodule.
-# Each is built from its own directory so that its relative image paths (assets/)
-# resolve correctly.
-WIKI_DIR="$SCRIPT_DIR/external/ChooseYourDestiny.wiki"
-if [ ! -d "$WIKI_DIR" ]; then
-    echo "Error: wiki submodule not found at $WIKI_DIR"
-    echo "Initialize it with: git submodule update --init external/ChooseYourDestiny.wiki"
-    exit 1
-fi
-
-# Generate the MANUALs (from the repo root)
-echo "Generating MANUAL_es.pdf..."
-( cd "$SCRIPT_DIR" && pandoc MANUAL_es.md -o "$SCRIPT_DIR/documentation/es/MANUAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}" )
-
-echo "Generating MANUAL_en.pdf..."
-( cd "$SCRIPT_DIR" && pandoc MANUAL_en.md -o "$SCRIPT_DIR/documentation/en/MANUAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}" )
-
-# Generate the TUTORIALs (from the wiki submodule, where their images live)
-echo "Generating TUTORIAL_es.pdf..."
-( cd "$WIKI_DIR" && pandoc TUTORIAL_es.md -o "$SCRIPT_DIR/documentation/es/TUTORIAL_es.pdf" "${COMMON_PANDOC_ARGS[@]}" )
-
-echo "Generating TUTORIAL_en.pdf..."
-( cd "$WIKI_DIR" && pandoc TUTORIAL_en.md -o "$SCRIPT_DIR/documentation/en/TUTORIAL_en.pdf" "${COMMON_PANDOC_ARGS[@]}" )
+# The manuals and tutorials are canonical in this repo (the wiki is a mirror).
+# They are built from the repo root so their image paths (assets/) resolve.
+cd "$SCRIPT_DIR"
+for doc in MANUAL TUTORIAL; do
+    for lang in es en; do
+        echo "Generating ${doc}_${lang}.pdf..."
+        pandoc "${doc}_${lang}.md" -o "$SCRIPT_DIR/documentation/${lang}/${doc}_${lang}.pdf" "${COMMON_PANDOC_ARGS[@]}"
+    done
+done
 
 echo ""
 echo "✓ PDF documentation generated successfully!"

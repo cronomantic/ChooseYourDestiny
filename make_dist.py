@@ -8,8 +8,10 @@ MIT License - Copyright (c) 2024-2026 Sergio Chico
 """
 
 import argparse
+import fnmatch
 import os
 import platform
+import re
 import shutil
 import struct
 import sys
@@ -288,30 +290,48 @@ def compile_translations(current_path, src_path):
             compile_locale_dir(locale_dir)
 
 
-def sync_docs_to_wiki(current_path):
-    """Replicate the canonical MANUAL to the wiki submodule (external/ChooseYourDestiny.wiki).
+# Documentation that is canonical in this repo and mirrored to the wiki. The
+# images each one references (assets/...) are mirrored with it.
+WIKI_DOCS = ["MANUAL_es.md", "MANUAL_en.md", "TUTORIAL_es.md", "TUTORIAL_en.md"]
 
-    The MANUAL is canonical in this repo and is replicated to the wiki. The
-    TUTORIAL, by contrast, lives ONLY in the wiki (edit it in the submodule), so it
-    is not overwritten here. See also update_wiki.py, which additionally commits
-    and pushes the wiki submodule."""
+
+def sync_docs_to_wiki(current_path):
+    """Replicate the canonical docs (WIKI_DOCS) and the images they reference to
+    the wiki submodule (external/ChooseYourDestiny.wiki). The repo is the source
+    of truth, the wiki a mirror: edit the docs here, never in the wiki. Returns
+    the relative paths copied, or None if the wiki submodule isn't there. See
+    also update_wiki.py, which additionally commits and pushes the wiki."""
     wiki_path = os.path.join(current_path, "external", "ChooseYourDestiny.wiki")
-    manual_files = ["MANUAL_es.md", "MANUAL_en.md"]
 
     if not os.path.exists(wiki_path):
         print(f"Wiki submodule not found, skipping doc sync: {wiki_path}")
         print("  (run: git submodule update --init external/ChooseYourDestiny.wiki)")
-        return
+        return None
 
-    print("Replicating MANUAL to wiki submodule (repo -> wiki)...")
-    for name in manual_files:
+    print("Replicating docs to wiki submodule (repo -> wiki)...")
+    copied = []
+    for name in WIKI_DOCS:
         src_file = os.path.join(current_path, name)
-        dst_file = os.path.join(wiki_path, name)
         if not os.path.exists(src_file):
             print(f"  Warning: repo doc not found: {src_file}")
             continue
-        shutil.copy2(src_file, dst_file)
-        print(f"  Synced {name}")
+        shutil.copy2(src_file, os.path.join(wiki_path, name))
+        copied.append(name)
+        with open(src_file, encoding="utf-8") as f:
+            images = sorted(set(re.findall(r"assets/[A-Za-z0-9_.-]+", f.read())))
+        for ref in images:
+            if ref in copied:
+                continue
+            img = os.path.join(current_path, ref)
+            if not os.path.exists(img):
+                print(f"  Warning: {name} references a missing image: {ref}")
+                continue
+            os.makedirs(os.path.join(wiki_path, "assets"), exist_ok=True)
+            shutil.copy2(img, os.path.join(wiki_path, ref))
+            copied.append(ref)
+    docs = sum(1 for c in copied if not c.startswith("assets/"))
+    print(f"  Synced {docs} docs and {len(copied) - docs} images")
+    return copied
 
 
 def copy_translations(current_path, src_path, dst_path):
@@ -338,8 +358,14 @@ def copy_translations(current_path, src_path, dst_path):
             compile_locale_dir(locale_dir)
 
 
+# Files under the packaged directories that stay out of the package: the
+# tutorial's screenshots (the tutorial ships as a PDF, with them inside).
+PACKAGE_EXCLUDE = ["assets/tut*.png"]
+
+
 def collect_files(current_path, dirs_list, files_list):
-    """Collect all files from directories, excluding __pycache__."""
+    """Collect all files from directories, excluding __pycache__ and
+    PACKAGE_EXCLUDE."""
     all_files = list(files_list)
     for d in dirs_list:
         dir_path = os.path.join(current_path, d)
@@ -350,6 +376,10 @@ def collect_files(current_path, dirs_list, files_list):
         result = [x for x in result if "__pycache__" not in x]
         # Make paths relative
         result = [os.path.relpath(x, current_path) for x in result]
+        result = [
+            x for x in result
+            if not any(fnmatch.fnmatch(x.replace(os.sep, "/"), p) for p in PACKAGE_EXCLUDE)
+        ]
         all_files.extend(result)
     return all_files
 
