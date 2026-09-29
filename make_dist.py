@@ -124,7 +124,15 @@ def compile_po_to_mo(po_path, mo_path):
         fh.write(tran_table)
         fh.write(orig_blob)
         fh.write(tran_blob)
-    print(f"  Compiled {os.path.relpath(po_path)} -> {os.path.relpath(mo_path)}")
+    print(f"  Compiled {_shown(po_path)} -> {_shown(mo_path)}")
+
+
+def _shown(path):
+    """The path relative to the current directory when it can be, for messages."""
+    try:
+        return os.path.relpath(path)
+    except ValueError:  # Windows: on another drive than the current directory
+        return path
 
 
 def compile_locale_dir(locale_dir):
