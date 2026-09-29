@@ -2134,9 +2134,12 @@ SET CYDC_EXTRA_PARAMS=
 
 REM Run emulator after compilation (none/internal/default)
 REM     -None: Do nothing
-REM     -internal: run the compiled file with Zesarux (must be on the directory .\tools\zesarux\)
+REM     -internal: run the compiled file with ZEsarUX (see ZESARUX_PATH)
 REM     -default: run the compiled file with the program set on Windows to run its extension
 SET RUN_EMULATOR=none
+
+REM Path to zesarux.exe (internal). Empty: .\tools\zesarux\, the newest .\tools\ZEsarUX*\ or the PATH
+SET ZESARUX_PATH=
 
 REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
 SET BACKUP_CYD=no
@@ -2153,17 +2156,19 @@ REM --------------------------------------
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
 -- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
+-- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
 - The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
 -- none: If we do not want it to do this.
--- internal: Executes the compiled file under ZEsarUX in `.\tools\ZEsarUX_win-11.0\`.
+-- internal: Executes the compiled file under ZEsarUX (see `ZESARUX_PATH`). The +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
 -- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
+- The variable `ZESARUX_PATH` is the path to `zesarux.exe` for `internal`. If left empty, it is looked for in `.\tools\zesarux\`, then in the `.\tools\ZEsarUX*\` folder with the highest version (for example `.\tools\ZEsarUX_win-13.0\`) and last on the `PATH`.
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
 - The variable `BACKUP_MAX_FILES` limits how many backups are kept per game (`0` means unlimited).
 
-The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\ZEsarUX_win-11.0` folder, after compilation it will run automatically with the appropriate options.
+The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_win-<version>\`), with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
 
 ### GUI Compiler (make_adventure_gui v1.0.0)
 
@@ -2256,8 +2261,9 @@ RUN_EMULATOR="none"
 # Custom emulator command (used when RUN_EMULATOR=custom)
 CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
 
-# Path to ZEsarUX (used when RUN_EMULATOR=internal)
-ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+# Path to ZEsarUX (used when RUN_EMULATOR=internal). Empty: ./tools/zesarux/,
+# the newest ./tools/ZEsarUX-<version>/ or the PATH
+ZESARUX_PATH=""
 
 # Backup CYD file after compilation (yes/no)
 BACKUP_CYD="no"
@@ -2273,11 +2279,12 @@ BACKUP_MAX_FILES=0
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
 -- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
+-- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.
 - `CUSTOM_EMULATOR_CMD` is used when `RUN_EMULATOR=custom`.
-- `ZESARUX_PATH` defines the emulator executable path for `internal` mode.
+- `ZESARUX_PATH` defines the emulator executable path for `internal` mode. If left empty, it is looked for in `./tools/zesarux/`, then in the highest `./tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it) and last on the `PATH`. As on Windows, the +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
 - `BACKUP_CYD` and `BACKUP_MAX_FILES` control automatic backup generation and retention.
 
 ## Examples

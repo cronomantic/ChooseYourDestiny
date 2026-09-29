@@ -89,7 +89,10 @@ Launches TAP/DSK files with your default program.
 ```cmd
 SET RUN_EMULATOR=internal
 ```
-Requires ZEsarUX at `.\tools\ZEsarUX_win-11.0\zesarux.exe`
+Looks for `zesarux.exe` in `ZESARUX_PATH` if set, else in `.\tools\zesarux\`, else in
+the `.\tools\ZEsarUX*\` folder with the highest version (`ZEsarUX_win-13.0` before
+`ZEsarUX_win-11.0`), else on the `PATH`. The +3 runs as `P341`, and esxdos as a 128K
+with divMMC and the script's folder as the SD card.
 
 #### Linux/macOS
 
@@ -106,8 +109,10 @@ Popular emulators:
 **Option 2: Internal ZEsarUX**
 ```bash
 RUN_EMULATOR="internal"
-ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+ZESARUX_PATH=""   # empty: ./tools/zesarux/, the newest ./tools/ZEsarUX-*/ or the PATH
 ```
+Same search and machines as on Windows; `tools/build_emu_tools.sh` builds it into
+`./tools/ZEsarUX-<version>/`. `tests/test_make_adv.py` checks both scripts.
 
 ### Backup Feature
 

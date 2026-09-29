@@ -4,7 +4,7 @@
 #  ChooseYourDestiny - Adventure Builder Script (Linux/macOS/BSD/Unix)
 # ===============================================================================
 #  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
-#  for the ZX Spectrum 48k, 128k, +3, or Dandanator MLD target.
+#  for the ZX Spectrum 48k, 128k, +3, esxDOS (divMMC) or Dandanator MLD target.
 #
 #  Usage: ./make_adv.sh [options]
 #  
@@ -21,9 +21,11 @@ set -e  # Exit on error
 GAME="test"
 # This name will be used for:
 #   - The source file to compile: ${GAME}.cyd
-#   - The output file: ${GAME}.TAP, ${GAME}.DSK, or ${GAME}.MLD
+#   - The output file: ${GAME}.tap, ${GAME}.DSK, or ${GAME}.MLD (the compiler
+#     cuts the name to 10 characters on tape and to 8 on the other targets)
 
-# Target platform: 48k, 128k (for TAP), plus3 (for DSK), mld, or mld128 (for MLD)
+# Target platform: 48k, 128k (for TAP), plus3 (for DSK), esxdos (TAP + DAT for
+# the SD card), mld, or mld128 (for MLD)
 TARGET="128k"
 
 # Number of screen lines to use when compressing SCR files (default: 192)
@@ -40,7 +42,7 @@ CYDC_EXTRA_PARAMS=""
 # Run emulator after successful compilation
 # Options:
 #   none     - Do not run emulator
-#   internal - Run with ZEsarUX (must be configured below)
+#   internal - Run with ZEsarUX (see ZESARUX_PATH below)
 #   custom   - Run with custom command (edit CUSTOM_EMULATOR_CMD below)
 RUN_EMULATOR="none"
 
@@ -51,8 +53,10 @@ RUN_EMULATOR="none"
 #   CUSTOM_EMULATOR_CMD="spectemu ${OUTPUT_FILE}"
 CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
 
-# Path to ZEsarUX (used when RUN_EMULATOR=internal)
-ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+# Path to ZEsarUX (used when RUN_EMULATOR=internal). Empty: look for it in
+# ./tools/zesarux/, then in the newest ./tools/ZEsarUX-<version>/ (where
+# tools/build_emu_tools.sh leaves it), then on the PATH.
+ZESARUX_PATH=""
 
 # Backup the .cyd source file after compilation (yes/no)
 BACKUP_CYD="no"
@@ -119,8 +123,8 @@ echo "Compiling ${GAME}.cyd..."
 echo ""
 
 cd "${SCRIPT_DIR}"
-$PYTHON "${SCRIPT_DIR}/make_adventure.py" -n "${GAME}" ${CYDC_EXTRA_PARAMS} -il "${IMGLINES}" -scr "${LOAD_SCR}" "${TARGET}"
-RETVAL=$?
+RETVAL=0  # set -e would leave before the message below
+$PYTHON "${SCRIPT_DIR}/make_adventure.py" -n "${GAME}" ${CYDC_EXTRA_PARAMS} -il "${IMGLINES}" -scr "${LOAD_SCR}" "${TARGET}" || RETVAL=$?
 
 if [ $RETVAL -ne 0 ]; then
     echo ""
@@ -137,14 +141,21 @@ echo "==========================================================================
 echo " SUCCESS! Adventure compiled successfully."
 echo "==============================================================================="
 
-# Determine output file
-if [ "${TARGET}" == "plus3" ]; then
-    OUTPUT_FILE="${GAME}.DSK"
-elif [ "${TARGET}" == "mld" ] || [ "${TARGET}" == "mld128" ]; then
-    OUTPUT_FILE="${GAME}.MLD"
-else
-    OUTPUT_FILE="${GAME}.TAP"
-fi
+# Determine output file: the compiler cuts the name (10 characters on tape,
+# 8 on the other targets) and writes .tap in lowercase.
+case "${TARGET}" in
+    plus3)      EXT_GLOB="[dD][sS][kK]" ;;
+    mld|mld128) EXT_GLOB="[mM][lL][dD]" ;;
+    *)          EXT_GLOB="[tT][aA][pP]" ;;
+esac
+OUTPUT_FILE=""
+for NAME in "${GAME}" "${GAME:0:10}" "${GAME:0:8}"; do
+    for FILE in "${SCRIPT_DIR}/${NAME}".${EXT_GLOB}; do
+        if [ -z "${OUTPUT_FILE}" ] && [ -f "${FILE}" ]; then
+            OUTPUT_FILE="${FILE}"
+        fi
+    done
+done
 
 # Create backup if enabled
 if [ "${BACKUP_CYD}" == "yes" ]; then
@@ -180,28 +191,65 @@ if [ "${BACKUP_CYD}" == "yes" ]; then
     fi
 fi
 
+# The ZEsarUX to use: ZESARUX_PATH, else tools/zesarux/, else the highest
+# version in tools/ZEsarUX*/ (by its numbers: 13.0 before 9.0), else the PATH.
+find_zesarux() {
+    if [ -n "${ZESARUX_PATH}" ]; then
+        case "${ZESARUX_PATH}" in
+            /*) echo "${ZESARUX_PATH}" ;;
+            *)  echo "${SCRIPT_DIR}/${ZESARUX_PATH}" ;;
+        esac
+        return
+    fi
+    if [ -f "${SCRIPT_DIR}/tools/zesarux/zesarux" ]; then
+        echo "${SCRIPT_DIR}/tools/zesarux/zesarux"
+        return
+    fi
+    local dir best=""
+    best=$(for dir in "${SCRIPT_DIR}"/tools/[zZ][eE][sS][aA][rR][uU][xX]*/; do
+               if [ -f "${dir}zesarux" ]; then
+                   printf '%s\t%s\n' "$(basename "${dir}" | sed 's/[^0-9][^0-9]*/ /g')" "${dir}zesarux"
+               fi
+           done | sort -t "$(printf '\t')" -k1,1V | tail -n 1 | cut -f 2)
+    if [ -n "${best}" ]; then
+        echo "${best}"
+    else
+        command -v zesarux || true
+    fi
+}
+
 # Run emulator if configured
 if [ "${RUN_EMULATOR}" == "internal" ]; then
     echo ""
     echo "Launching with ZEsarUX emulator..."
-    
-    if [ ! -f "${SCRIPT_DIR}/${ZESARUX_PATH}" ]; then
-        echo "Warning: ZEsarUX not found at ${ZESARUX_PATH}"
-        echo "Please download ZEsarUX from https://github.com/chernandezba/zesarux/releases"
-        echo "or edit ZESARUX_PATH in this script."
+    ZESARUX="$(find_zesarux)"
+
+    if [ "${TARGET}" == "mld" ] || [ "${TARGET}" == "mld128" ]; then
+        echo "Warning: internal emulator launch is not configured for MLD cartridges."
+        echo "         Use RUN_EMULATOR=custom or load ${OUTPUT_FILE} manually."
+    elif [ -z "${ZESARUX}" ] || [ ! -f "${ZESARUX}" ]; then
+        echo "Warning: ZEsarUX not found (${ZESARUX_PATH:-tools/zesarux/, tools/ZEsarUX-*/ or the PATH})"
+        echo "Please download ZEsarUX from https://github.com/chernandezba/zesarux/releases,"
+        echo "build it with tools/build_emu_tools.sh or set ZESARUX_PATH in this script."
+    elif [ -z "${OUTPUT_FILE}" ]; then
+        echo "Warning: compiled file not found for ${GAME} (${TARGET})."
     else
-        ZESARUX_PARAMS="--noconfigfile --quickexit --zoom 2 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage --cpuspeed 100"
-        
-        if [ "${TARGET}" == "plus3" ]; then
-            "${SCRIPT_DIR}/${ZESARUX_PATH}" ${ZESARUX_PARAMS} --machine P3SP41 "${SCRIPT_DIR}/${OUTPUT_FILE}" &
-        elif [ "${TARGET}" == "mld" ] || [ "${TARGET}" == "mld128" ]; then
-            echo "Warning: internal emulator launch is not configured for MLD cartridges."
-            echo "         Use RUN_EMULATOR=custom or load ${OUTPUT_FILE} manually."
-        elif [ "${TARGET}" == "128k" ]; then
-            "${SCRIPT_DIR}/${ZESARUX_PATH}" ${ZESARUX_PARAMS} --machine 128k "${SCRIPT_DIR}/${OUTPUT_FILE}" &
-        else
-            "${SCRIPT_DIR}/${ZESARUX_PATH}" ${ZESARUX_PARAMS} --machine 48k "${SCRIPT_DIR}/${OUTPUT_FILE}" &
+        case "${TARGET}" in
+            plus3)       MACHINE="P341" ;;
+            128k|esxdos) MACHINE="128k" ;;
+            *)           MACHINE="48k" ;;
+        esac
+        ZESARUX_PARAMS=(--noconfigfile --quickexit --zoom 2 --realvideo --nosplash
+                        --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage
+                        --cpuspeed 100 --machine "${MACHINE}")
+        if [ "${TARGET}" == "esxdos" ]; then
+            # The .tap bootstrap loads the .DAT from the SD card: this folder.
+            ZESARUX_PARAMS+=(--enable-divmmc --enable-esxdos-handler
+                             --esxdos-root-dir "${SCRIPT_DIR}")
         fi
+        echo "Launching ZEsarUX: ${ZESARUX} ${ZESARUX_PARAMS[*]} ${OUTPUT_FILE}"
+        # From its own folder, where its ROMs are.
+        (cd "$(dirname "${ZESARUX}")" && exec "${ZESARUX}" "${ZESARUX_PARAMS[@]}" "${OUTPUT_FILE}") &
     fi
 elif [ "${RUN_EMULATOR}" == "custom" ]; then
     echo ""
