@@ -197,9 +197,8 @@ For these systems, the requirements are:
 - Autotools (autoconf, automake, aclocals...).
 - wget
 - git
-- libdsk
 
-These requirements are needed to compile `SjAsmPlus` and `TAPTOOLS`. There is no binary distribution of these tools for UNIX-compatible systems, so you need to compile them directly.
+These requirements are needed to compile `SjAsmPlus`. There is no binary distribution of this tool for UNIX-compatible systems, so you need to compile it directly.
 
 Due to the heterodox nature of the different distributions, it is impossible for me to give detailed instructions for installing the requirements in each particular case, so knowledge is required on the part of the user to do so.
 

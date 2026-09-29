@@ -10,6 +10,9 @@ parsetab.py
 /log.txt
 /code.txt
 /setup_output.txt
+# Imágenes comprimidas: caché que regenera el compilador
+*.csc
+*.CSC
 
 # --- Distribución / paquetes (se publican como Release assets) ---
 /ChooseYourDestiny_*_x64_*.zip

@@ -124,7 +124,15 @@ def compile_po_to_mo(po_path, mo_path):
         fh.write(tran_table)
         fh.write(orig_blob)
         fh.write(tran_blob)
-    print(f"  Compiled {os.path.relpath(po_path)} -> {os.path.relpath(mo_path)}")
+    print(f"  Compiled {_shown(po_path)} -> {_shown(mo_path)}")
+
+
+def _shown(path):
+    """The path relative to the current directory when it can be, for messages."""
+    try:
+        return os.path.relpath(path)
+    except ValueError:  # Windows: on another drive than the current directory
+        return path
 
 
 def compile_locale_dir(locale_dir):
@@ -137,72 +145,26 @@ def compile_locale_dir(locale_dir):
                 compile_po_to_mo(po, mo)
 
 
-def get_source_files():
-    """Return list of source files to include in distribution."""
-    return [
-        "cydc_cli.py",
-        "cyd_chr_conv.py",
-        "cydc/cyd_i18n.py",
-        "cydc/cydc.py",
-        "cydc/cydc_codegen.py",
-        "cydc/cydc_font.py",
-        "cydc/cydc_lexer.py",
-        "cydc/cydc_parser.py",
-        "cydc/cydc_preprocessor.py",  # NEW: Added preprocessor
-        "cydc/cydc_txt_compress.py",
-        "cydc/cyd.py",
-        "cydc/cydc_utils.py",
-        "cydc/cydc_music.py",
-        "cydc/cydc_csc.py",
-        "cydc/plus3fs.py",
-        "cydc/mkp3fs.py",
-        "cydc/ply/__init__.py",
-        "cydc/ply/lex.py",
-        "cydc/ply/yacc.py",
-        "cydc/pyZX0/__init__.py",
-        "cydc/pyZX0/compress.py",
-        "cydc/pyZX0/optimize.py",
-        "cydc/pyZX0/pyzx0.py",
-        "cydc/pyZX0/README.md",
-        "cydc/pyZX0/LICENSE",
-        "cydc/pyZX7/__init__.py",
-        "cydc/pyZX7/compress.py",
-        "cydc/pyZX7/optimize.py",
-        "cydc/pyZX7/pyzx7.py",
-        "cydc/pyZX7/README.md",
-        "cydc/pyZX7/LICENSE",
-        "cydc/cyd/bank_dan.asm",
-        "cydc/cyd/bank_zx128.asm",
-        "cydc/cyd/cyd_esxdos.asm",
-        "cydc/cyd/cyd_mld.asm",
-        "cydc/cyd/cyd_plus3.asm",
-        "cydc/cyd/cyd_tape.asm",
-        "cydc/cyd/dzx0_turbo.asm",
-        "cydc/cyd/dzx0_turbo_plus3.asm",
-        "cydc/cyd/esxdos.asm",
-        "cydc/cyd/interpreter.asm",
-        "cydc/cyd/loaderesxdos.asm",
-        "cydc/cyd/loadermld.asm",
-        "cydc/cyd/loaderplus3.asm",
-        "cydc/cyd/loadertape.asm",
-        "cydc/cyd/music_manager.asm",
-        "cydc/cyd/music_manager_esxdos.asm",
-        "cydc/cyd/music_manager_tape.asm",
-        "cydc/cyd/plus3dos.asm",
-        "cydc/cyd/savegame_esxdos.asm",
-        "cydc/cyd/savegame_mld.asm",
-        "cydc/cyd/screen_manager.asm",
-        "cydc/cyd/screen_manager_tape.asm",
-        "cydc/cyd/sysvars.asm",
-        "cydc/cyd/text_manager.asm",
-        "cydc/cyd/inkey.asm",
-        "cydc/cyd/vars.asm",
-        "cydc/cyd/VTII10bG.asm",
-        "cydc/cyd/VTII10bG_vars.asm",
-        "cydc/cyd/savegame_plus3.asm",
-        "cydc/cyd/savegame_tape.asm",
-        "cydc/cyd/wyz_player.asm",
-    ]
+# The compiler as it ships: everything under src/cydc/cydc plus the two entry
+# scripts, except the translations (copied and compiled apart), generated files
+# and development tools.
+SOURCE_ENTRY_FILES = ["cydc_cli.py", "cyd_chr_conv.py"]
+SOURCE_EXCLUDE = [
+    "cydc/locale/*",
+    "*/__pycache__/*",
+    "*.pyc",
+    "*/parser.out",
+    "*/parsetab.py",
+    "cydc/gen_default_font.py",  # regenerates assets/default_charset.chr
+]
+
+
+def get_source_files(current_path=None, src_path="src/cydc"):
+    """Return the compiler's files, relative to src_path, to copy into dist/."""
+    root = Path(current_path or Path(__file__).parent) / src_path
+    files = [f.relative_to(root).as_posix() for f in (root / "cydc").rglob("*") if f.is_file()]
+    files = [f for f in files if not any(fnmatch.fnmatch(f, pat) for pat in SOURCE_EXCLUDE)]
+    return SOURCE_ENTRY_FILES + sorted(files)
 
 
 def get_common_files():
@@ -265,16 +227,28 @@ def get_platform_specific_dirs(target_platform):
 
 
 def copy_source_files(current_path, src_path, dst_path):
-    """Copy source files to dist directory."""
+    """Copy the compiler to dist/, and delete from dist/cydc what src no longer has."""
     print("Copying source files...")
-    for file in get_source_files():
+    files = get_source_files(current_path, src_path)
+    for file in files:
         src_file = os.path.join(current_path, src_path, file)
         dst_file = os.path.join(current_path, dst_path, file)
         os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-        if os.path.exists(src_file):
-            shutil.copy(src_file, dst_file)
-        else:
-            print(f"  Warning: Source file not found: {src_file}")
+        shutil.copy(src_file, dst_file)
+    dst_cydc = Path(current_path) / dst_path / "cydc"
+    for f in sorted(dst_cydc.rglob("*")):
+        rel = f.relative_to(Path(current_path) / dst_path).as_posix()
+        if f.is_file() and rel not in files and not any(
+                fnmatch.fnmatch(rel, pat) for pat in SOURCE_EXCLUDE):
+            print(f"  Removing {rel} (no longer in {src_path})")
+            f.unlink()
+
+
+def sync_dist(current_path, src_path="src/cydc", dst_path="dist/"):
+    """Bring dist/ up to date with src: the compiler and its translations."""
+    copy_source_files(current_path, src_path, dst_path)
+    compile_translations(current_path, src_path)
+    copy_translations(current_path, src_path, dst_path)
 
 
 def compile_translations(current_path, src_path):
@@ -493,6 +467,12 @@ Examples:
     )
 
     parser.add_argument(
+        "--sync-only",
+        action="store_true",
+        help="Only bring dist/ up to date with src (compiler and translations), without packaging",
+    )
+
+    parser.add_argument(
         "--do-doc-sync",
         action="store_true",
         help="Replicates the canonical docs (manuals and tutorials) from this repo to the sibling wiki",
@@ -525,10 +505,12 @@ Examples:
         print()
     
     # Prepare source files and translations (once for all platforms)
+    if args.sync_only:
+        sync_dist(current_path, src_path, dst_path)
+        print("\n[OK] dist/ is up to date with src")
+        return 0
     if not args.skip_compile:
-        copy_source_files(current_path, src_path, dst_path)
-        compile_translations(current_path, src_path)
-        copy_translations(current_path, src_path, dst_path)
+        sync_dist(current_path, src_path, dst_path)
     else:
         print("Skipping source file compilation (--skip-compile)")
     

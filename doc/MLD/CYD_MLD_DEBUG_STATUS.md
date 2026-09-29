@@ -5,7 +5,7 @@
 > verificados**, están **expuestos en el CLI** (`{48k,128k,plus3,mld,mld128}`) y los
 > **arrays `DIM` son escribibles** en ambos. Algunas afirmaciones de abajo (p.ej.
 > "mld128 ejecuta residente / vía B", "aparcado y oculto del CLI") quedaron obsoletas
-> o refutadas. Estado real y arquitectura en `ARCHITECTURE.md §8.4/§10`,
+> o refutadas. Estado real y arquitectura en `doc/dev/ARCHITECTURE.md §8.4/§10`,
 > `doc/dev/MLD_WRITABLE_ARRAYS.md` y `doc/dev/EXPANSION_ABI.md`. Se conserva por el
 > valor de las notas del harness.
 

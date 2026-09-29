@@ -9,8 +9,8 @@
 > Este documento es la **referencia canónica para el desarrollo del motor** (nivel
 > de implementación). La documentación **de cara al autor** está en el manual,
 > sección *"Rutinas nativas"* (`MANUAL_es/en.md`). El estudio de diseño y su
-> razonamiento están en [`INLINE_ASM_DESIGN.md`](../../INLINE_ASM_DESIGN.md) y
-> [`EXTERN_DESIGN.md`](../../EXTERN_DESIGN.md) (documentos históricos de diseño).
+> razonamiento están en [`INLINE_ASM_DESIGN.md`](INLINE_ASM_DESIGN.md) y
+> [`EXTERN_DESIGN.md`](EXTERN_DESIGN.md) (documentos históricos de diseño).
 
 Punteros de código: `src/cydc/cydc/cyd/interpreter.asm` (runtime), `src/cydc/cydc/cyd.py`
 (inyección/ensamblado), `src/cydc/cydc/cydc.py` (orquestación del build).
