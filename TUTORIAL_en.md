@@ -1535,6 +1535,7 @@ do not overlap, so you can use several at once:
 - `lib/math16_32.cyd` (variables 224..254): 16- and 32-bit arithmetic.
 - `lib/strings.cyd` (variables 216..223): text-string input and handling.
 - `lib/sprites.cyd` (variables 200..211): masked sprites, covered in their own section below.
+- `lib/sprites_px.cyd` (variables 200..212): the same sprites with the X to the pixel too; it is used instead of `lib/sprites.cyd`.
 
 The manual has the full reference for every routine; here we will look at a couple
 of practical cases.
@@ -1878,7 +1879,7 @@ To animate it while it walks, just point `sprX` at the next frame of the sheet e
 
 Two more details:
 
-- The horizontal position always goes by characters, but the vertical one can be set to the pixel with `sprPY`, which is added to `sprDY`. To make something go up and down smoothly, leave `sprDY` at 0 and use `sprPY` as the height in pixels (0 to 191).
+- The horizontal position goes by characters, but the vertical one can be set to the pixel with `sprPY`, which is added to `sprDY`. To make something go up and down smoothly, leave `sprDY` at 0 and use `sprPY` as the height in pixels (0 to 191). If you need the horizontal one to the pixel too, include `lib/sprites_px.cyd` instead of `lib/sprites.cyd`: it has the same routines plus `sprPX`, which is added to `sprDX`. In exchange it takes about 490 bytes more and draws sprites that don't fall on a character boundary more slowly. The `examples/sprites_px` example is the one below with the character walking pixel by pixel.
 - If several sprites move at once, each one needs its own slot to save its background: it is chosen with `sprSlot` (0 to 3). And they must be restored **in the reverse order they were saved**; otherwise, when two sprites cross, one would put back a background that already includes the other.
 
 In `examples/sprites` there is a complete example with both: a character walking by characters and a ball bouncing pixel by pixel, each in its own slot:
