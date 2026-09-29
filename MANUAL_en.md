@@ -505,6 +505,7 @@ overlap**, so you can use several at once:
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
 | `sprites.cyd`   | 200..211 |
+| `sprites_px.cyd` | 200..212 (instead of `sprites.cyd`) |
 
 ### `math16_32.cyd` — 16- and 32-bit arithmetic
 
@@ -641,6 +642,38 @@ cells); the `SPR_SLOTS` and `SPR_SLOT_CHARS` constants in the file change them, 
 bytes per character. In all it takes about 1030 bytes (730 of code and 300 of
 slots), only when used; on 128K and +3 it goes in a paged bank, outside the main
 memory.
+
+### `sprites_px.cyd` — masked sprites with pixel X
+
+The sprite and its horizontal position are measured in characters;
+`sprites_px.cyd` is the same library with one more variable, `sprPX` (212): the
+pixels added to `sprDX`. Everything else (routines, parameters and slots) works the
+same. To move a sprite pixel by pixel horizontally, leave `sprDX` at 0 and use
+`sprPX` as the X in pixels (0..255). With `sprAttr` at 1, the colours go to the
+column where most of each cell falls.
+
+It is a separate library because pixel X has a cost. When it doesn't fall on a
+character boundary, each row of the sprite and of its mask is shifted as it is
+drawn, and a 2x3 sprite takes almost half a frame instead of 0.2. It also takes
+about 490 bytes more: the code, two row buffers and slots of 12 characters instead
+of 8 (a 2x3 sprite aligned neither in X nor in Y touches 3x4 cells). Include only
+one of the two: they share variables and labels.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites_px.cyd"
+    PICTURE 1 : DISPLAY 1
+    PICTURE 2
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0
+    SET sprDX TO 0 : SET sprPX TO 117    /* X = 117 pixels */
+    SET sprDY TO 0 : SET sprPY TO 80     /* Y = 80 pixels */
+    GOSUB sprDraw
+]]
+```
+
+There is an example in `examples/sprites_px`: the `examples/sprites` one with the
+character walking pixel by pixel.
 
 ---
 

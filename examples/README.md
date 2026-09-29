@@ -25,6 +25,7 @@ every example with the current compiler.
 | [`math_library`](math_library/) | Using `lib/math16_32.cyd`: 16/32-bit arithmetic (`mul1632`, `add32`, `print32`) to compute a score. |
 | [`strings_library`](strings_library/) | Using `lib/strings.cyd`: read a name from the keyboard (`strInput`) and print it (`strPrint`, `strLen`). |
 | [`sprites`](sprites/) | Using `lib/sprites.cyd`: a walking character and a bouncing ball drawn with masks over a scene, moved by characters and by pixels, each saving its background in its own slot. |
+| [`sprites_px`](sprites_px/) | Using `lib/sprites_px.cyd`: the same scene with the character walking pixel by pixel (`sprPX`). |
 | [`windows`](windows/) | Splitting the screen into independent areas with `WINDOW` and `MARGINS`. |
 
 ## Intermediate
