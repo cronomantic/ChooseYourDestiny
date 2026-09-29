@@ -99,7 +99,15 @@ class TestParserBasicStatements(unittest.TestCase):
         # No EXPORTS clause -> raw exports is empty.
         self.assertEqual(result[0][:5], ("ASM", "peek", "  ld a,(de)\n  ret\n", [], []))
         self.assertIsInstance(result[0][5], int)  # body line number
-        self.assertIn(("EXTERN", "peek", 0, 0), result)
+        self.assertIn(("EXTERN", "peek", 0, 0, 0), result)
+
+    def test_parse_call_as_value(self):
+        """CALL in an expression pushes the routine's A (last operand 1)."""
+        code = "[[ASM peek\n  ld a,(de)\n  ret\nENDASM\nSET 1 TO CALL peek + 1]]"
+        result = self.parser.parse(input=code)
+        self.assertEqual(self.parser.errors, [])
+        flat = [t for s in result for t in (s if isinstance(s, list) else [s])]
+        self.assertIn(("EXTERN", "peek", 0, 0, 1), flat)
 
     def test_parse_asm_body_is_verbatim(self):
         """The block body is captured verbatim (comments, colons, quotes intact)."""
