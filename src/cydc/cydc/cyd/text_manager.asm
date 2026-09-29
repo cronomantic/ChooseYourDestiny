@@ -823,7 +823,9 @@ PRINT_STR:
     call GET_CHARACTER_WIDTH
     pop bc
     add a, c
-    ld c, a
+    jr nc, 1f
+    ld a, 255     ; Wider than any line: don't let the 8-bit sum wrap around
+1:  ld c, a
     inc de        ; Increment counter 
     jp .loop2
 .end_loop2:
