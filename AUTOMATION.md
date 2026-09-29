@@ -306,8 +306,11 @@ make_pdf.bat
 ./make_pdf.sh
 ```
 
+Genera los PDF de los manuales y los tutoriales desde el Markdown del propio
+repositorio (`MANUAL_*.md`, `TUTORIAL_*.md` y las imágenes de `assets/`); no
+necesita la wiki.
+
 **Requisitos:**
-- Repositorio wiki clonado como directorio hermano: `../ChooseYourDestiny.wiki/`
 - Windows: Pandoc incluido en `tools/pandoc/`
 - Linux/macOS: Pandoc y LaTeX instalados en el sistema
 
@@ -326,12 +329,6 @@ make_pdf.bat
 - Motor LaTeX: Tectonic (Windows) o auto-detectado (Linux/macOS)
 - Cabecera común de estilo: `documentation/pdf/pandoc-header.tex`
 
-**Clonar repositorio wiki:**
-```bash
-cd ..
-git clone https://github.com/cronomantic/ChooseYourDestiny.wiki.git
-```
-
 ---
 
 ### update_wiki.py
@@ -346,24 +343,26 @@ python update_wiki.py
 ```
 
 **Qué hace:**
-1. Verifica que el repositorio wiki esté clonado
-2. Detecta cambios en archivos de documentación
-3. Muestra un diff de los cambios
+1. Verifica que el submódulo de la wiki esté inicializado
+2. Copia a la wiki la documentación del repositorio y las imágenes que cita
+3. Muestra los cambios
 4. Solicita confirmación del usuario
 5. Hace commit y push al repositorio wiki
 
 **Requisitos:**
-- Repositorio wiki clonado en `../ChooseYourDestiny.wiki/`
+- Submódulo de la wiki inicializado: `git submodule update --init external/ChooseYourDestiny.wiki`
 - Permisos de escritura en el repositorio wiki de GitHub
 - Git configurado con credenciales
 
-**Archivos sincronizados:**
-- `MANUAL_es.md`
-- `MANUAL_en.md`
-- `TUTORIAL_es.md`
-- `TUTORIAL_en.md`
+**Archivos sincronizados** (del repositorio a la wiki):
+- `MANUAL_es.md`, `MANUAL_en.md`
+- `TUTORIAL_es.md`, `TUTORIAL_en.md`
+- Las imágenes de `assets/` que citan
 
-**Nota:** Este script **NO** copia archivos desde el repositorio principal. Los archivos ya deben estar en el repositorio wiki. El script solo detecta cambios y los publica.
+**Nota:** el repositorio es la fuente de la documentación y la wiki una copia:
+los manuales y los tutoriales se editan aquí (por PR, como el código), nunca en
+la wiki, porque la siguiente sincronización sobrescribiría los cambios.
+`make_dist.py --do-doc-sync` hace la misma copia, sin commit ni push.
 
 ---
 
