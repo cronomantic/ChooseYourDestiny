@@ -192,7 +192,7 @@ def _pc(s):
 
 def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
                    machine="48k", dandanator_rom=None, esxdos_root=None,
-                   extra_reads=()):
+                   extra_reads=(), keys=()):
     """Load+run headless, return FLAGS[0:n_bytes] once the run is stable.
 
     ``machine`` picks the ZEsarUX model ("48k", "128k", "p3", ...); use it to
@@ -208,6 +208,10 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     .tap bootstrap (whose BASIC does RANDOMIZE USR into the RST $08 loader, which
     F_READs the .DAT sitting in ``esxdos_root``). ``--enable-esxdos-handler``
     requires divmmc paging, so both flags are emitted.
+
+    ``keys`` is a sequence of ``(delay_seconds, ascii_code)``: after loading, wait
+    each delay and press that key (e.g. ``(4, 13)`` to pick a menu option with
+    ENTER), before FLAGS starts being polled.
     """
     zes = find_zesarux()
     if not zes:
@@ -235,6 +239,9 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
         time.sleep(2.5)  # let the ROM / Dandanator autoboot reach the interpreter
         if dandanator_rom is None:
             _cmd(s, f"smartload {os.path.abspath(tap_path)}", timeout=12.0)
+        for delay, key in keys:
+            time.sleep(delay)
+            _cmd(s, f"send-keys-ascii 300 {key}")
 
         # Poll until the interpreter is running (PC in $8000+) and FLAGS is stable.
         prev = None
@@ -327,7 +334,8 @@ def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
 
 
 def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
-               images=None, tracks=None, reads=(), extra_args=(), files=None):
+               images=None, tracks=None, reads=(), extra_args=(), files=None,
+               keys=()):
     """Extended ``run_cyd`` for the disk-media tests: supply ``-img``/``-trk``
     asset dirs and sample extra memory after the run stabilises.
 
@@ -337,7 +345,8 @@ def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
     with one entry per read. Tape/esxdos boot path only (no MLD).
 
     ``files`` ({name: text}) are written into the work dir before compiling, so
-    ``extra_args`` can refer to them (e.g. a ``-t`` tokens file)."""
+    ``extra_args`` can refer to them (e.g. a ``-t`` tokens file). ``keys`` are
+    pressed after loading (see ``run_in_zesarux``)."""
     machine = MACHINE_BY_MODEL.get(model, "48k")
     with tempfile.TemporaryDirectory(prefix="cyd_emu_") as wd:
         for name, content in (files or {}).items():
@@ -358,4 +367,5 @@ def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
         esxdos_root = wd if model == "esxdos" else None
         return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
                               max_wait=max_wait or 30.0, machine=machine,
-                              esxdos_root=esxdos_root, extra_reads=tuple(abs_reads))
+                              esxdos_root=esxdos_root, extra_reads=tuple(abs_reads),
+                              keys=keys)

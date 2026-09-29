@@ -412,3 +412,11 @@ msgstr "Usar imágenes de disco de 720 KB (solo +3)"
 #: make_adventure_gui.py
 msgid "Warn about unused symbols"
 msgstr "Avisar de símbolos sin usar"
+
+#: make_adventure_gui.py
+msgid "Warn about GOSUB/RETURN problems"
+msgstr "Avisar de problemas con GOSUB/RETURN"
+
+#: make_adventure_gui.py
+msgid "Check the GOSUB stack at runtime (debug)"
+msgstr "Comprobar la pila de GOSUB al ejecutar (depuración)"

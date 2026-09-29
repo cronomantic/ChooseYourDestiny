@@ -8,6 +8,8 @@ IF @HasSword <> 1 THEN
     OPTION GOSUB TakeSword]]Take the sword
 [[  ENDIF
 OPTION GOTO LeaveRoom]]Leave it and continue[[CHOOSE
+/* After taking the sword (its RETURN comes back here), show the room again */
+GOTO Chapter2
 #TakeSword
 INK 6
 ]]You pick up the sword. It might be useful!
