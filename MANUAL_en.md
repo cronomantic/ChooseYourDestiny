@@ -1981,6 +1981,8 @@ Main options:
 - `-tok, --tokens-file`: Token file path. If it does not exist, `-T` is used automatically; if it exists, `-t` is used.
 - `-chr, --charset-file`: Character set JSON path (used if found).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`: passed straight to the compiler.
+- `--check`: only checks the script for errors, without building it; `SJASMPLUS_PATH` is not needed in this mode.
 
 Note: after successful `plus3` builds, temporary files `SCRIPT.DAT`, `DISK`, and `CYD.BIN` are cleaned automatically.
 
@@ -2051,7 +2053,8 @@ For those who prefer a graphical interface instead of editing scripts or command
 **Features:**
 - Cross-platform support (Windows, Linux, macOS with Python 3.11+)
 - Embedded Python on Windows (no separate Python installation needed)
-- 26 configurable options including compilation targets, paths, and post-build actions
+- 28 configurable options including compilation targets, paths, abbreviation format, unused-symbol warnings and post-build actions
+- A **Check** button that looks for errors in the script without assembling it (`--check`), in about a second and without SjASMPlus
 - Settings persistence (remembered between sessions)
 - Full internationalization support (English and Spanish) with runtime language switching via dropdown
 - Real-time compilation output display

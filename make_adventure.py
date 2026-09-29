@@ -333,6 +333,27 @@ def main():
         help=_("maximum number of parser errors to report before stopping"),
     )
     arg_parser.add_argument(
+        "--token-format",
+        choices=["auto", "flat", "nested"],
+        default="auto",
+        help=_(
+            "abbreviation format: nested ones can contain other abbreviations; "
+            "auto uses whichever takes less memory (default: %(default)s)"
+        ),
+    )
+    arg_parser.add_argument(
+        "--check",
+        action="store_true",
+        default=False,
+        help=_("only check the script for errors, without building it"),
+    )
+    arg_parser.add_argument(
+        "--no-warn-unused",
+        action="store_true",
+        default=False,
+        help=_("don't warn about labels, variables and data arrays that are never used"),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -369,7 +390,7 @@ def main():
         metavar=_("SJASMPLUS_PATH"),
         type=file_path,
         help=_("path to sjasmplus executable"),
-        default=sjasmplus_path,
+        default=None,  # the bundled one; checked below, --check doesn't need it
     )
 
     try:
@@ -378,6 +399,12 @@ def main():
         sys.exit(_("ERROR: File not found:") + f"{f1}")
     except NotADirectoryError as f2:
         sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
+
+    if args.sjasmplus_path is None and not args.check:
+        try:
+            args.sjasmplus_path = file_path(sjasmplus_path)
+        except FileNotFoundError as f1:
+            sys.exit(_("ERROR: File not found:") + f"{f1}")
 
     input_file = os.path.join(curr_path, f"{args.name}.cyd")
     if not os.path.isfile(input_file):
@@ -445,14 +472,23 @@ def main():
     if args.image_lines:
         cydc_params = ["-il", f"{args.image_lines}"] + cydc_params
 
+    if args.token_format != "auto":
+        cydc_params = ["--token-format", args.token_format] + cydc_params
+
+    if args.no_warn_unused:
+        cydc_params = ["--no-warn-unused"] + cydc_params
+
+    if args.check:
+        cydc_params = ["--check"] + cydc_params
+
     cydc_params = [cydc_path] + cydc_params
-    cydc_params += [
-        args.model,
-        input_file,
-        args.sjasmplus_path,
-        # args.mkp3fs_path,
-        args.output_path,
-    ]
+    cydc_params += [args.model, input_file]
+    if not args.check:  # --check assembles nothing and writes no files
+        cydc_params += [
+            args.sjasmplus_path,
+            # args.mkp3fs_path,
+            args.output_path,
+        ]
 
     try:
         print(_("Compiling the script..."))
@@ -462,7 +498,7 @@ def main():
         err = _("ERROR: Error running CYDC.") + str(os1)
         sys.exit(err)
 
-    if args.model == "plus3":
+    if args.model == "plus3" and not args.check:
         print(_("Cleaning..."))
         files_to_clean = ["SCRIPT.DAT", "DISK", "CYD.BIN"]
         for f in files_to_clean:
