@@ -341,6 +341,44 @@ def find_source(name, root):
     return None
 
 
+def find_zesarux(tools_path):
+    """The ZEsarUX to run the game with, or None: tools/zesarux/, else the
+    newest tools/ZEsarUX*/ (tools/build_emu_tools.sh leaves it in
+    tools/ZEsarUX-<version>/), else the one on the PATH."""
+    exe = "zesarux.exe" if os.name == "nt" else "zesarux"
+    try:
+        dirs = [d for d in os.listdir(tools_path) if d.lower().startswith("zesarux")]
+    except OSError:
+        dirs = []
+    plain = [d for d in dirs if d.lower() == "zesarux"]
+    versions = sorted(  # the highest version first, 13.0 before 9.0
+        (d for d in dirs if d.lower() != "zesarux"), reverse=True,
+        key=lambda d: [int(n) for n in re.findall(r"\d+", d)])
+    for d in plain + versions:
+        path = os.path.join(tools_path, d, exe)
+        if os.path.isfile(path):
+            return os.path.abspath(path)  # it runs from its own folder
+    return shutil.which("zesarux")
+
+
+# ZEsarUX machine per target (esxdos: divMMC on a 128K).
+ZESARUX_MACHINES = {"plus3": "P341", "128k": "128k", "48k": "48k", "esxdos": "128k"}
+
+
+def zesarux_arguments(model, compiled_file, output_path):
+    """ZEsarUX's arguments to run compiled_file for model (not mld/mld128)."""
+    args = [
+        "--noconfigfile", "--quickexit", "--zoom", "2", "--realvideo", "--nosplash",
+        "--forcevisiblehotkeys", "--forceconfirmyes", "--nowelcomemessage",
+        "--cpuspeed", "100", "--machine", ZESARUX_MACHINES[model],
+    ]
+    if model == "esxdos":
+        # The .TAP bootstrap loads the .DAT from the SD: the output folder.
+        args += ["--enable-divmmc", "--enable-esxdos-handler",
+                 "--esxdos-root-dir", os.path.abspath(output_path)]
+    return args + [os.path.abspath(compiled_file)]
+
+
 def open_with_system(path):
     """Open a file or a folder with the system's default application."""
     if os.name == "nt":
@@ -1404,7 +1442,7 @@ class MakeAdventureGUI:
     def _on_run(self):
         mode = self.var_run_emulator.get()
         if mode == "none":  # nothing chosen: the internal one if it is there
-            mode = "internal" if os.path.isfile(self._zesarux_path()) else "default"
+            mode = "internal" if find_zesarux(self.paths["tools_path"]) else "default"
         self._run_emulator(self.var_target.get(), self.var_game_name.get().strip(),
                            self.var_output_path.get().strip(), mode)
 
@@ -1446,10 +1484,6 @@ class MakeAdventureGUI:
         if match:
             self._open_source(match.group(1), int(match.group(2)))
 
-    def _zesarux_path(self):
-        zesarux_dir = os.path.join(self.paths["tools_path"], "zesarux")
-        name = "zesarux.exe" if os.name == "nt" else "zesarux"
-        return os.path.join(zesarux_dir, name)
 
     def _clear_log(self):
         self.log.configure(state=tk.NORMAL)
@@ -1719,10 +1753,10 @@ class MakeAdventureGUI:
                 self._log(_("Failed to open file: {}").format(exc))
 
         elif run_mode == "internal":
-            zesarux = self._zesarux_path()
-            zesarux_dir = os.path.dirname(zesarux)
-            if not os.path.isfile(zesarux):
-                self._log(_("Zesarux not found at {}").format(zesarux))
+            zesarux = find_zesarux(self.paths["tools_path"])
+            if zesarux is None:
+                self._log(_("ZEsarUX not found in {} (a zesarux or ZEsarUX-* folder) "
+                            "or on the PATH.").format(self.paths["tools_path"]))
                 return
 
             if model == "mld" or model == "mld128":
@@ -1735,30 +1769,11 @@ class MakeAdventureGUI:
                 )
                 return
 
-            machine_map = {"plus3": "P341", "128k": "128k", "48k": "48k", "esxdos": "128k"}
-            zparams = [
-                "--noconfigfile",
-                "--quickexit",
-                "--zoom",
-                "2",
-                "--realvideo",
-                "--nosplash",
-                "--forcevisiblehotkeys",
-                "--forceconfirmyes",
-                "--nowelcomemessage",
-                "--cpuspeed",
-                "100",
-                "--machine",
-                machine_map[model],
-            ]
-            if model == "esxdos":
-                # The .TAP bootstrap loads the .DAT from the SD: the output folder.
-                zparams += ["--enable-divmmc", "--enable-esxdos-handler",
-                            "--esxdos-root-dir", output_path]
-            zparams.append(compiled_file)
+            zparams = zesarux_arguments(model, compiled_file, output_path)
             self._log(_("Launching Zesarux: {} {}").format(zesarux, ' '.join(zparams)))
             try:
-                subprocess.Popen([zesarux] + zparams, cwd=zesarux_dir)
+                # Its ROMs are next to it.
+                subprocess.Popen([zesarux] + zparams, cwd=os.path.dirname(zesarux))
             except Exception as exc:
                 self._log(_("Failed to launch Zesarux: {}").format(exc))
 
