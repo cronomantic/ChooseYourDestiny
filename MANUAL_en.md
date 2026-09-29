@@ -2420,6 +2420,23 @@ More sophisticated example of `BLIT` usage:
 - **Optimization:** Demonstrates techniques for efficient drawing.
 - **Multiple sprites:** Management of several graphic elements on screen.
 
+#### `examples\sprites` - Masked Sprites
+**Level:** Intermediate | **Requires:** Images in `IMAGES`
+
+Shows how to use the `lib/sprites.cyd` library: a walking character and a
+bouncing ball over a night scene, without erasing it:
+- **Masks:** Each sprite covers only its silhouette (`sprDraw`); the sky and the stars show around it.
+- **Animation:** The character has 4 frames in the sprite sheet; each step `sprX` points at the next one.
+- **Moving by characters and by pixels:** The character moves character by character and the ball goes up and down pixel by pixel (`sprPY`).
+- **Several save slots:** Each one saves its background in its own slot (`sprSlot`) and they are restored in reverse order, so the background stays right when they cross.
+
+#### `examples\sprites_px` - Sprites with Pixel X
+**Level:** Intermediate | **Requires:** Images in `IMAGES`
+
+The same scene with the `lib/sprites_px.cyd` library:
+- **Pixel X:** The character walks 2 pixels per step with `sprPX`, instead of character by character.
+- **Cost:** Shows the alternative that takes more memory and draws sprites that don't fall on a character boundary more slowly; if pixel X isn't needed, `lib/sprites.cyd` is enough.
+
 #### `examples\Rocky_Horror_Show` - Character Animation
 **Level:** Advanced
 
