@@ -530,3 +530,54 @@ msgstr "▷  Ejecutar"
 
 msgid "ZEsarUX not found in {} (a zesarux or ZEsarUX-* folder) or on the PATH."
 msgstr "No se encontró ZEsarUX en {} (una carpeta zesarux o ZEsarUX-*) ni en el PATH."
+
+msgid "A character of the character set is more than 8 pixels wide."
+msgstr "Un carácter del juego de caracteres mide más de 8 píxeles de ancho."
+
+msgid "A position outside an array (DIM) was read or written: the position is bigger than the array."
+msgstr "Se ha leído o escrito fuera de un array (DIM): la posición es mayor que el array."
+
+msgid "An option scrolled off the top of the window before it could be chosen."
+msgstr "Una opción se ha salido por arriba de la ventana antes de poder elegirla."
+
+msgid "CHOOSE with no OPTION to choose from."
+msgstr "CHOOSE sin ninguna OPTION entre la que elegir."
+
+msgid "Error {number}: {meaning}"
+msgstr "Error {number}: {meaning}"
+
+msgid "It happened when the program ended, after its last line."
+msgstr "Ocurrió al terminar el programa, después de su última línea."
+
+msgid "PLAY or LOOP with no music loaded."
+msgstr "PLAY o LOOP sin ninguna música cargada."
+
+msgid "Paste the error message shown on the Spectrum screen (for example «SYSTEM ERROR No:7 at 0:42582») to see the line of the script where it happened. The game must be compiled with 'Show where system errors happen'."
+msgstr "Pega el mensaje de error que salió en la pantalla del Spectrum (por ejemplo «SYSTEM ERROR No:7 at 0:42582») para ver la línea del guion donde ocurrió. El juego debe estar compilado con 'Mostrar dónde ocurren los errores de sistema'."
+
+msgid "Paste the error message shown on the Spectrum screen, for example «SYSTEM ERROR No:7 at 0:42582»."
+msgstr "Pega el mensaje de error que salió en la pantalla del Spectrum, por ejemplo «SYSTEM ERROR No:7 at 0:42582»."
+
+msgid "RETURN with no GOSUB to go back to."
+msgstr "RETURN sin ningún GOSUB al que volver."
+
+msgid "That error doesn't belong to the last compilation of {game}. If you have compiled it again since, run it until the error appears and paste the new message."
+msgstr "Ese error no corresponde a la última compilación de {game}. Si lo has vuelto a compilar desde entonces, ejecútalo hasta que salga el error y pega el mensaje nuevo."
+
+msgid "The game asked for a picture or a music track that it doesn't have (PICTURE or TRACK with a number that wasn't included when compiling). It can also be a RETURN with no GOSUB."
+msgstr "El juego ha pedido una imagen o una música que no tiene (PICTURE o TRACK con un número que no se incluyó al compilar). También puede ser un RETURN sin GOSUB."
+
+msgid "The game is damaged: compile it again."
+msgstr "El juego está dañado: vuelve a compilarlo."
+
+msgid "To find where errors happen, compile the game with 'Show where system errors happen (debug)' (Configure, Compiler tab), run it until the error appears and paste its message here."
+msgstr "Para saber dónde ocurren los errores, compila el juego con 'Mostrar dónde ocurren los errores de sistema (depuración)' (Configurar, pestaña Compilador), ejecútalo hasta que salga el error y pega aquí su mensaje."
+
+msgid "Too many GOSUB one inside another: a subroutine probably leaves with GOTO instead of RETURN."
+msgstr "Demasiados GOSUB uno dentro de otro: probablemente una subrutina sale con GOTO en vez de RETURN."
+
+msgid "Too many options (OPTION) at the same time."
+msgstr "Demasiadas opciones (OPTION) a la vez."
+
+msgid "{file}, line {line}:"
+msgstr "{file}, línea {line}:"

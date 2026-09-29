@@ -292,6 +292,8 @@ class CydcLexer(object):
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos - 2]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
+            t.lexpos = self.txt_pos  # where the text starts (its column in the map)
+            t.lineno = t.lexer.lineno - string.count("\n")  # and its line
             t.lexer.begin("INITIAL")  # Enter code state
             return t
         else:
@@ -466,6 +468,8 @@ class CydcLexer(object):
         string = t.lexer.lexdata[self.txt_pos : t.lexer.lexpos]
         if len(string) > 0:
             t.type, t.value = self._parse_string(string, t.lexer.lineno)
+            t.lexpos = self.txt_pos  # where the text starts
+            t.lineno = t.lexer.lineno - string.count("\n")  # and its line
             self.txt_pos = t.lexer.lexpos
             return t
         else:
