@@ -16,7 +16,9 @@ las llamas con `GOSUB`.
 ```
 
 Cada librería reserva un bloque de variables como *workspace*. Los bloques **no
-se solapan**, así que puedes usar ambas a la vez:
+se solapan**, así que puedes usar varias a la vez. Si el programa usa alguno de esos
+números con otro nombre o directamente por su número, el compilador avisa
+(`--no-warn-shared-vars` lo desactiva):
 
 | Librería | Variables reservadas |
 |----------|----------------------|

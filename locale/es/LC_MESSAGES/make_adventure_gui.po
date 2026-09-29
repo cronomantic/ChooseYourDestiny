@@ -418,5 +418,9 @@ msgid "Warn about GOSUB/RETURN problems"
 msgstr "Avisar de problemas con GOSUB/RETURN"
 
 #: make_adventure_gui.py
+msgid "Warn about variables shared between files"
+msgstr "Avisar de variables compartidas entre ficheros"
+
+#: make_adventure_gui.py
 msgid "Check the GOSUB stack at runtime (debug)"
 msgstr "Comprobar la pila de GOSUB al ejecutar (depuración)"

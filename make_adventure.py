@@ -360,6 +360,15 @@ def main():
         help=_("don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"),
     )
     arg_parser.add_argument(
+        "--no-warn-shared-vars",
+        action="store_true",
+        default=False,
+        help=_(
+            "don't warn when a variable declared in one file (such as a library's) "
+            "is used from another file under another name or by its number"
+        ),
+    )
+    arg_parser.add_argument(
         "--debug-stack",
         action="store_true",
         default=False,
@@ -492,6 +501,9 @@ def main():
 
     if args.no_warn_gosub:
         cydc_params = ["--no-warn-gosub"] + cydc_params
+
+    if args.no_warn_shared_vars:
+        cydc_params = ["--no-warn-shared-vars"] + cydc_params
 
     if args.debug_stack:
         cydc_params = ["--debug-stack"] + cydc_params
