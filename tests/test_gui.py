@@ -8,12 +8,17 @@
 - Run finds the compiled game under the name the compiler gives it (cut to
   10 characters on tape, lowercase extension).
 - "Game error" turns a system error's chunk:address into a line with the .map.
+- The internal emulator is found where tools/build_emu_tools.sh leaves it
+  (tools/ZEsarUX-<version>/), and the command the GUI runs it with boots the
+  game on every target it supports. This one needs sjasmplus and ZEsarUX.
 - Changing the language rebuilds the window (it used to raise AttributeError)
   and keeps the log. The window tests need a display; they are skipped without
   one.
 """
 
 import os
+import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -22,6 +27,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "tests"))
+from emu_harness import (  # noqa: E402
+    _read_mem, _recv_until_prompt, compile_cyd, emulator_available,
+)
 
 try:
     import tkinter as tk
@@ -124,6 +133,57 @@ class TestHelpers(unittest.TestCase):
             self.assertEqual(gui.find_source("lib/sprites.cyd", wd),
                              os.path.join(wd, "lib", "sprites.cyd"))
             self.assertIsNone(gui.find_source("nada.cyd", wd))
+
+    def test_zesarux_is_found_under_tools(self):
+        exe = "zesarux.exe" if os.name == "nt" else "zesarux"
+        with tempfile.TemporaryDirectory() as wd:
+            def make(folder):
+                os.makedirs(os.path.join(wd, folder))
+                open(os.path.join(wd, folder, exe), "w").close()
+                return os.path.join(wd, folder, exe)
+
+            make("ZEsarUX-9.0")
+            newest = make("ZEsarUX-13.0")
+            make("ZEsarUX_win-11.0")
+            self.assertEqual(gui.find_zesarux(wd), newest)  # 13 > 11 > 9
+            plain = make("zesarux")
+            self.assertEqual(gui.find_zesarux(wd), plain)  # the old place first
+
+
+@unittest.skipIf(gui is None, "tkinter not available")
+@unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not available under tools/")
+class TestRunInZesarux(unittest.TestCase):
+    def test_the_game_boots(self):
+        zesarux = gui.find_zesarux(str(REPO / "tools"))
+        for port, model in enumerate(("48k", "128k", "plus3", "esxdos"), 10240):
+            with self.subTest(model), tempfile.TemporaryDirectory() as wd:
+                _, flags = compile_cyd("[[ SET 0 TO 42 ]]Hola.[[ WAITKEY ]]", model, wd)
+                game = gui.find_compiled_file(model, "test", wd)
+                args = gui.zesarux_arguments(model, game, wd)
+                # Headless, and listening, so the test can look at the game.
+                args[-1:-1] = ["--vo", "null", "--ao", "null", "--enable-remoteprotocol",
+                               "--remoteprotocol-port", str(port)]
+                proc = subprocess.Popen([zesarux] + args, cwd=os.path.dirname(zesarux),
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                try:
+                    for _ in range(40):
+                        try:
+                            s = socket.create_connection(("127.0.0.1", port), timeout=1)
+                            break
+                        except OSError:
+                            time.sleep(0.25)
+                    else:
+                        self.fail("ZEsarUX did not start")
+                    with s:
+                        _recv_until_prompt(s, 5)
+                        deadline, value = time.time() + 40, None
+                        while time.time() < deadline and value != 42:
+                            time.sleep(1)
+                            value = (_read_mem(s, flags, 1) or b"\0")[0]
+                    self.assertEqual(value, 42)
+                finally:
+                    proc.kill()
+                    proc.wait()
 
 
 def _display():

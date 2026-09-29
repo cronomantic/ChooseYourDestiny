@@ -2188,7 +2188,7 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 - Persistencia de configuración (recordada entre sesiones)
 - Soporte completo de internacionalización (Inglés y Español) con cambio de idioma en tiempo real mediante lista desplegable
 - Visualización en tiempo real del resultado de la compilación, con los errores en rojo, los avisos en naranja y un resumen al final. Un doble clic sobre un `fichero.cyd:12` del registro abre el fichero en esa línea
-- Botón **Ejecutar**, que abre en el emulador el último juego compilado sin volver a compilarlo, y botón **Abrir carpeta**, que abre la carpeta de salida
+- Botón **Ejecutar**, que abre en el emulador el último juego compilado sin volver a compilarlo, y botón **Abrir carpeta**, que abre la carpeta de salida. El emulador interno es ZEsarUX: la GUI lo busca en `tools/zesarux/`, en la carpeta `tools/ZEsarUX-<versión>/` más reciente (donde lo deja `tools/build_emu_tools.sh` en Linux) o en el `PATH`
 - Campo **Error del juego**: con un juego compilado con «Mostrar dónde ocurren los errores de sistema» (`--debug-errors`), pega el mensaje de `SYSTEM ERROR` y te dice en qué línea del guion ocurrió (ver [Códigos de error](#códigos-de-error))
 - Las opciones del compilador van agrupadas (Optimización, Avisos, Depuración y Compatibilidad) y cada una explica qué hace al dejar el ratón encima
 - Ocultar ventana de consola en Windows para un inicio limpio

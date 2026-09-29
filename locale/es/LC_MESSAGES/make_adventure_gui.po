@@ -527,3 +527,6 @@ msgstr "{text} no está en {path}. ¿Se volvió a compilar el juego después del
 
 msgid "▷  Run"
 msgstr "▷  Ejecutar"
+
+msgid "ZEsarUX not found in {} (a zesarux or ZEsarUX-* folder) or on the PATH."
+msgstr "No se encontró ZEsarUX en {} (una carpeta zesarux o ZEsarUX-*) ni en el PATH."

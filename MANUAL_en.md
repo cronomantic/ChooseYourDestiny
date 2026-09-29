@@ -2177,7 +2177,7 @@ For those who prefer a graphical interface instead of editing scripts or command
 - Settings persistence (remembered between sessions)
 - Full internationalization support (English and Spanish) with runtime language switching via dropdown
 - Real-time compilation output display, with errors in red, warnings in orange and a summary at the end. Double-clicking a `file.cyd:12` in the log opens the file at that line
-- A **Run** button, which opens the last compiled game in the emulator without compiling it again, and an **Open folder** button, which opens the output folder
+- A **Run** button, which opens the last compiled game in the emulator without compiling it again, and an **Open folder** button, which opens the output folder. The internal emulator is ZEsarUX: the GUI looks for it in `tools/zesarux/`, in the newest `tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it on Linux) or on the `PATH`
 - A **Game error** field: with a game compiled with "Show where system errors happen" (`--debug-errors`), paste the `SYSTEM ERROR` message and it tells you the line of the script where it happened (see [Error codes](#error-codes))
 - The compiler options are grouped (Optimization, Warnings, Debugging and Compatibility) and each one explains what it does when you hover over it
 - Auto-hide console window on Windows for clean startup
