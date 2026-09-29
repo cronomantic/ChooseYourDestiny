@@ -207,6 +207,12 @@ class CydcCodegen(object):
             return new
         return type(old)(new, loc)
 
+    def _opcode_byte(self, name):
+        """The byte stored in the bytecode for an opcode: its number times 2,
+        the offset of its entry in the interpreter's OPCODES table, so
+        EXEC_LOOP indexes the table without shifting it."""
+        return self.opcodes[name] * 2
+
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
             self.bank_offset_list = offset_list
@@ -1490,7 +1496,7 @@ class CydcCodegen(object):
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
-                            self.opcodes["GOTO"],
+                            self._opcode_byte("GOTO"),
                             bank,
                         ] + self._convert_address(offset, bank)
                         # Jump to next bank
@@ -1501,16 +1507,16 @@ class CydcCodegen(object):
                         offset + 1,
                     )  # Add to symbol table (skipping the SKIP_ARRAY opcode)
                     self.array_lengths[q] = len(p)  # element count for the ABI
-                    c = [self.opcodes.get("SKIP_ARRAY"), len(p) - 1] + p
+                    c = [self._opcode_byte("SKIP_ARRAY"), len(p) - 1] + p
                     code_tmp += c
                     offset += len(c)
                 else:
                     self._fail(self._("ERROR: Array {q} declared two times!").format(q=q))
             else:
                 # transform to byte representation
-                q = self.opcodes.get(opcode)
-                if q is None:
+                if opcode not in self.opcodes:
                     self._fail(self._("ERROR: Invalid opcode {opcode}!").format(opcode=opcode))
+                q = self._opcode_byte(opcode)
                 if opcode == "TEXT":
                     p = t[1]  # Get text
                     while len(p) > 1:  # A string of less than 1 character is not valid
@@ -1528,7 +1534,7 @@ class CydcCodegen(object):
                                 ]  # Adding end of string character
                                 p = p[l - 1 :]
                             code_tmp += [
-                                self.opcodes["GOTO"],
+                                self._opcode_byte("GOTO"),
                                 bank,
                             ] + self._convert_address(
                                 offset, bank
@@ -1548,7 +1554,7 @@ class CydcCodegen(object):
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
-                            self.opcodes["GOTO"],
+                            self._opcode_byte("GOTO"),
                             bank,
                         ] + self._convert_address(offset, bank)
                         # Jump to next bank

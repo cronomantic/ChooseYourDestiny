@@ -2767,10 +2767,13 @@ OP_EXTERN:
     ld e, (hl)
     inc hl
     ld d, (hl)
+    inc hl
+    ld c, (hl)          ; 1 = CALL used as a value: push the A it returns
     inc hl              ; A = bank, DE = routine address, HL = next bytecode PC
     push hl             ; save interpreter PC
     push ix             ; save VM data-stack pointer
     push iy             ; save ROM sysvars pointer
+    push bc             ; save the mode (C)
     IFDEF OP_EXTERN_BANKED
     or ROM48KBASIC
     call SET_RAM_BANK   ; page the routine's bank at $C000; A = previous port
@@ -2781,8 +2784,11 @@ OP_EXTERN:
     ld de, FLAGS
     ret                 ; jump into the routine with DE=FLAGS
 .cont:
+    ld (.result+1), a   ; the value it returns, across the paging below
     pop af              ; previous port value (the script's bank)
     call SET_RAM_BANK   ; page the script bank back at $C000
+.result:
+    ld a, 0-0           ; self-modified
     ELSE
     ld hl, .cont        ; 48k: routine is resident, call it directly
     push hl             ; return address for the routine's RET
@@ -2791,9 +2797,13 @@ OP_EXTERN:
     ret                 ; jump into the routine with DE=FLAGS
 .cont:
     ENDIF
+    pop bc              ; C = mode
     pop iy
     pop ix
     pop hl              ; restore interpreter PC
+    dec c
+    jp nz, EXEC_LOOP    ; a plain CALL statement
+    PUSH_INT_STACK      ; CALL as a value: A on the expression stack
     jp EXEC_LOOP
 
     IFNDEF UNUSED_ARR_BROKER
@@ -3768,16 +3778,10 @@ OPCODES:
     DW ERROR_NOP
     ENDIF
 
-    IFDEF USE_256_OPCODES
-    REPT 256-(($-OPCODES)/2)
-    DW ERROR_NOP
-    ENDR
-    ENDIF
-    IFNDEF USE_256_OPCODES
+    ; 128 entries: the bytecode stores each opcode x2, its offset in this page.
     REPT 128-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
-    ENDIF
 
     
 

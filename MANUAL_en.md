@@ -505,6 +505,7 @@ overlap**, so you can use several at once:
 |---------|--------------------|
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
+| `sprites.cyd`   | 200..211 |
 
 ### `math16_32.cyd` — 16- and 32-bit arithmetic
 
@@ -579,6 +580,69 @@ buffer).
 
 There is a full example in `examples/strings_library`.
 
+
+### `sprites.cyd` — masked sprites
+
+Draws parts of the picture loaded in the buffer (`PICTURE`) over the screen
+**without erasing the background**. Each sprite has its mask: the silhouette of
+what it covers, drawn in ink in the same picture. The core is native Z80; if you
+call none of its routines, nothing is included.
+
+The sprite and its horizontal position are measured in characters (8x8), as in
+`BLIT`. The vertical position is `sprDY` characters plus `sprPY` pixels: with
+`sprPY` at 0 everything goes by characters; to move a sprite pixel by pixel, leave
+`sprDY` at 0 and use `sprPY` as the Y in pixels (0..191). Whatever goes off the
+right or bottom of the screen is clipped. Parameters (variables 200..211):
+
+| Variables | Meaning |
+|-----------|---------|
+| `sprX`, `sprY` | sprite's corner in the buffer |
+| `sprW`, `sprH` | width and height |
+| `sprMX`, `sprMY` | its mask's corner in the buffer |
+| `sprDX`, `sprDY` | position on screen, in characters |
+| `sprPY` | pixels added to `sprDY` |
+| `sprAttr` | 0: the screen's colours don't change; 1: the sprite puts its colours in the cells where its mask isn't empty (with `sprPY`, in the cell where most of it falls) |
+| `sprSlot` | `sprSave` / `sprRestore` slot (0..3) |
+| `sprErr` | 1: what `sprSave` had to save doesn't fit in the slot; 2: no such slot |
+
+| Routine | Effect |
+|---------|--------|
+| `sprDraw` | screen = (screen AND NOT mask) OR sprite |
+| `sprXor` | screen = screen XOR sprite (no mask; doing it again erases it) |
+| `sprSave` | saves, in slot `sprSlot`, what is on screen where the sprite would go |
+| `sprRestore` | puts what slot `sprSlot` saved back where it was |
+
+**Example:** a 2x3-character character over a scene.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites.cyd"
+    PICTURE 1 : DISPLAY 1        /* the scene, on screen */
+    PICTURE 2                    /* the sprite sheet, into the buffer (not shown) */
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0      /* the mask, to its right */
+    SET sprDX TO 14 : SET sprDY TO 10
+    GOSUB sprDraw
+]]
+```
+
+**Moving sprites.** Each step: `sprSave` saves the background where the sprite is
+going, `sprDraw` draws it and, before moving it, `sprRestore` puts the background
+back (where it was, even if you have already changed `sprDX`/`sprDY`). With several
+sprites, each uses its own slot (`sprSlot`) and they are restored **in the reverse
+order they were saved** (the last saved, first): that way the background stays
+right even when they cross. To animate them, point `sprX`/`sprY` at the next frame
+of the sheet each step.
+
+There is a complete example in `examples/sprites`: a character walking by
+characters and a ball bouncing pixel by pixel, each in its own slot.
+
+There are 4 slots of 8 characters (a 2x3 sprite that isn't aligned touches 2x4
+cells); the `SPR_SLOTS` and `SPR_SLOT_CHARS` constants in the file change them, at 9
+bytes per character. In all it takes about 1030 bytes (730 of code and 300 of
+slots), only when used; on 128K and +3 it goes in a paged bank, outside the main
+memory.
+
 ---
 
 ## Native routines (IMPORT / CALL)
@@ -610,6 +674,9 @@ Two keywords are involved:
 - **`CALL name`** runs the routine. Think of it as the native counterpart of
   `GOSUB`: `GOSUB label` calls a subroutine written in CYD, `CALL name` calls one
   written in Z80.
+- **`CALL name` as a value**: inside an expression (`SET x TO CALL name`,
+  `IF CALL name = 1 THEN ...`, `PRINT CALL name + 1`), the routine runs and its
+  result is the byte it leaves in register **`A`** when it returns.
 
 ### Writing the routine
 
@@ -625,8 +692,9 @@ The contract (ABI) is deliberately small:
   variable array. Every CYD variable `n` is the byte at `FLAGS + n`.
 - **Inputs and outputs travel through variables.** The script puts arguments in
   variables with `SET`, calls the routine, and reads results back with `@var`. The
-  routine reads and writes them at `FLAGS + n`. There is no other calling
-  convention to remember.
+  routine reads and writes them at `FLAGS + n`. A routine that returns a single
+  byte can leave it in `A` and be used as a value (`SET x TO CALL name`); with a
+  plain `CALL`, `A` is ignored.
 - It must end with **`RET`** and must not jump into the engine's internals on its
   own. It may freely use `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (the engine saves and
   restores `IX`/`IY`, which it relies on internally). For what you _do_ need —
