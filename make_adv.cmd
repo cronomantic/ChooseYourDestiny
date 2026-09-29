@@ -71,7 +71,7 @@ ECHO.
 
 REM Check if Python distribution exists
 IF NOT EXIST "%~dp0dist\python\python.exe" (
-    ECHO ERROR: Python distribution not found!
+    ECHO ERROR: Python distribution not found^^!
     ECHO Expected location: %~dp0dist\python\python.exe
     ECHO.
     ECHO Please ensure you have the complete ChooseYourDestiny distribution.
@@ -96,7 +96,7 @@ IF ERRORLEVEL 1 GOTO ERROR
 
 ECHO.
 ECHO ===============================================================================
-ECHO  SUCCESS! Adventure compiled successfully.
+ECHO  SUCCESS^^! Adventure compiled successfully.
 ECHO ===============================================================================
 
 REM Create backup if enabled
@@ -127,7 +127,7 @@ IF "%BACKUP_CYD%"=="yes" (
         )
         
         IF !count! GTR %BACKUP_MAX_FILES% (
-            ECHO Rotating backups (keeping %BACKUP_MAX_FILES% most recent)...
+            ECHO Rotating backups ^(keeping %BACKUP_MAX_FILES% most recent^)...
             SET /A to_delete=!count!-%BACKUP_MAX_FILES%
             SET deleted=0
             FOR /F "delims=" %%F IN ('DIR "%~dp0BACKUP\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
@@ -136,7 +136,7 @@ IF "%BACKUP_CYD%"=="yes" (
                     SET /A deleted+=1
                 )
             )
-            ECHO Deleted !deleted! old backup(s).
+            ECHO Deleted !deleted! old backup^(s^).
         )
     )
 )

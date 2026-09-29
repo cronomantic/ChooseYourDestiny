@@ -14,6 +14,9 @@ RUN_EMULATOR=internal:
   doesn't know), and esxdos as a 128K with divMMC and this folder as the SD.
 - On Linux, with ZEsarUX and sjasmplus under tools/, the real emulator boots
   the game the way make_adv.sh runs it.
+- Running the script at all: make_adv.cmd used to stop after compiling with
+  "... was unexpected at this time", because of a ")" in an ECHO inside the
+  backup block, which cmd parses even when BACKUP_CYD=no.
 
 make_adv.sh runs where bash is (not Windows); make_adv.cmd only on Windows.
 """
@@ -208,6 +211,9 @@ class TestInternalEmulator(unittest.TestCase):
         make_project(wd, "48k", zesarux_path=str(wd / "nowhere" / EXE))
         code, output = run_script(wd)
         self.assertEqual(code, 0, output)
+        # The whole message: make_adv.cmd runs with delayed expansion, which
+        # drops a lone "!".
+        self.assertIn("SUCCESS! Adventure compiled successfully.", output)
         self.assertIn("Warning: ZEsarUX not found", output)
         self.assertIsNone(launch_line(output))
 
