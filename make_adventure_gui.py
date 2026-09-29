@@ -180,6 +180,8 @@ _SETTINGS_KEYS = [
     ("disk_720",           "var_disk_720",           "bool"),
     ("autoboot",           "var_autoboot",           "bool"),
     ("max_errors",         "var_max_errors",         "int"),
+    ("token_format",       "var_token_format",       "str"),
+    ("warn_unused",        "var_warn_unused",        "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
     ("run_emulator",       "var_run_emulator",       "str"),
@@ -452,6 +454,22 @@ class SettingsDialog(tk.Toplevel):
             abbr, textvariable=self.app.var_max_errors, from_=1, to=1000, width=6
         ).grid(row=1, column=3, sticky=tk.W, **pad)
 
+        ttk.Label(abbr, text=_("Abbreviation format:")).grid(
+            row=2, column=0, sticky=tk.W, **pad
+        )
+        ttk.Combobox(
+            abbr,
+            textvariable=self.app.var_token_format,
+            values=("auto", "flat", "nested"),
+            state="readonly",
+            width=8,
+        ).grid(row=2, column=1, sticky=tk.W, **pad)
+        ttk.Label(
+            abbr,
+            text=_("auto: nested or flat, whichever takes less memory"),
+            foreground="gray",
+        ).grid(row=2, column=2, columnspan=2, sticky=tk.W, **pad)
+
         # Flags
         flags = ttk.LabelFrame(parent, text=_("Flags"))
         flags.pack(fill=tk.X, **pad)
@@ -465,9 +483,10 @@ class SettingsDialog(tk.Toplevel):
             ("Allow statements without colons", self.app.var_no_strict_colons),
             ("Use WYZ Tracker (instead of Vortex)", self.app.var_use_wyz),
             ("Use 720 KB disk images (+3 only)", self.app.var_disk_720),
+            ("Warn about unused symbols", self.app.var_warn_unused),
         ]
         for i, (text, var) in enumerate(checks):
-            ttk.Checkbutton(flags, text=text, variable=var).grid(
+            ttk.Checkbutton(flags, text=_(text), variable=var).grid(
                 row=i // 2, column=i % 2, sticky=tk.W, **pad
             )
 
@@ -742,6 +761,8 @@ class MakeAdventureGUI:
         self.var_disk_720 = tk.BooleanVar()
         self.var_autoboot = tk.BooleanVar()
         self.var_max_errors = tk.IntVar()
+        self.var_token_format = tk.StringVar()
+        self.var_warn_unused = tk.BooleanVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
         self.var_backup_cyd = tk.BooleanVar()
@@ -795,6 +816,8 @@ class MakeAdventureGUI:
         self.var_disk_720.set(False)
         self.var_autoboot.set(False)
         self.var_max_errors.set(20)
+        self.var_token_format.set("auto")
+        self.var_warn_unused.set(True)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
         self.var_backup_cyd.set(False)
@@ -983,6 +1006,12 @@ class MakeAdventureGUI:
         )
         self.btn_compile.pack(side=tk.LEFT, padx=(0, 4))
 
+        # --check: parser + code generator only, no assembler, no files.
+        self.btn_check = ttk.Button(
+            btn_area, text=_("✔  Check"), command=lambda: self._on_compile(check=True)
+        )
+        self.btn_check.pack(side=tk.LEFT, padx=(0, 4))
+
         self.btn_clear_log = ttk.Button(
             btn_area, text=_("Clear Log"), command=self._clear_log
         )
@@ -1072,8 +1101,9 @@ class MakeAdventureGUI:
 
     # ── Compile logic ──────────────────────────────────────────────────────
 
-    def _on_compile(self):
-        """Validate inputs and start compilation in a background thread."""
+    def _on_compile(self, check=False):
+        """Validate inputs and start compilation in a background thread. With
+        check, only look for errors (cydc --check): no assembler, no output."""
         if self.compiling:
             return
 
@@ -1095,14 +1125,14 @@ class MakeAdventureGUI:
             return
 
         sjasmplus = self.var_sjasmplus.get().strip()
-        if not os.path.isfile(sjasmplus):
+        if not check and not os.path.isfile(sjasmplus):
             messagebox.showerror(
                 _("Error"), _("SjASMPlus executable not found:\n") + sjasmplus
             )
             return
 
         output_path = self.var_output_path.get().strip()
-        if not os.path.isdir(output_path):
+        if not check and not os.path.isdir(output_path):
             messagebox.showerror(
                 _("Error"), _("Output path does not exist:\n") + output_path
             )
@@ -1178,20 +1208,33 @@ class MakeAdventureGUI:
             cydc_params = ["-wyz"] + cydc_params
         if self.var_image_lines.get():
             cydc_params = ["-il", str(self.var_image_lines.get())] + cydc_params
+        token_format = self.var_token_format.get()
+        if token_format in ("flat", "nested"):
+            cydc_params = ["--token-format", token_format] + cydc_params
+        if not self.var_warn_unused.get():
+            cydc_params = ["--no-warn-unused"] + cydc_params
+        if check:
+            cydc_params = ["--check"] + cydc_params
 
         cydc_path = self.paths["cydc_path"]
         python_path = self.paths["python_path"]
         model = self.var_target.get()
 
         cydc_params = [cydc_path] + cydc_params
-        cydc_params += [model, input_file, sjasmplus, output_path]
+        cydc_params += [model, input_file]
+        if not check:
+            cydc_params += [sjasmplus, output_path]
 
         # ── Launch ─────────────────────────────────────────────────────────
         self.compiling = True
         self.btn_compile.configure(state=tk.DISABLED)
+        self.btn_check.configure(state=tk.DISABLED)
         self.progress.start(15)
         self._log(f"{'─' * 60}")
-        self._log(_("Compiling '{}' for {}…").format(game_name, model))
+        if check:
+            self._log(_("Checking '{}' for {}…").format(game_name, model))
+        else:
+            self._log(_("Compiling '{}' for {}…").format(game_name, model))
         self._log(f"Command: {python_path} {' '.join(cydc_params)}")
 
         thread = threading.Thread(
@@ -1203,13 +1246,15 @@ class MakeAdventureGUI:
                 game_name,
                 output_path,
                 input_file,
+                check,
             ),
             daemon=True,
         )
         thread.start()
 
     def _compile_thread(
-        self, python_path, cydc_params, model, game_name, output_path, input_file
+        self, python_path, cydc_params, model, game_name, output_path, input_file,
+        check=False,
     ):
         """Run the compiler in a background thread."""
         success = False
@@ -1224,9 +1269,16 @@ class MakeAdventureGUI:
             else:
                 success = True
                 self._log("─────────────────────")
-                self._log(_("Compilation finished successfully!"))
+                if check:
+                    self._log(_("No errors found."))
+                else:
+                    self._log(_("Compilation finished successfully!"))
         except OSError as exc:
             self._log(_("ERROR running CYDC: {}").format(exc))
+
+        if check:  # nothing was built: no cleanup, backup or emulator
+            self.root.after(0, self._compile_finished)
+            return
 
         # Plus3 cleanup (mirrors make_adventure.py)
         if success and model == "plus3":
@@ -1251,6 +1303,7 @@ class MakeAdventureGUI:
     def _compile_finished(self):
         self.progress.stop()
         self.btn_compile.configure(state=tk.NORMAL)
+        self.btn_check.configure(state=tk.NORMAL)
         self.compiling = False
 
     # ── Backup ─────────────────────────────────────────────────────────────
