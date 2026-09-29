@@ -23,15 +23,16 @@ if not exist "%~dp0documentation\es" mkdir "%~dp0documentation\es"
 if not exist "%~dp0documentation\en" mkdir "%~dp0documentation\en"
 
 REM Generate the MANUALs and TUTORIALs (from the repo root)
+REM lang: captions, table of contents and hyphenation in the document's language
 pushd "%~dp0"
 echo Generating MANUAL_es.pdf...
-"%PANDOC%" MANUAL_es.md -o "%~dp0documentation\es\MANUAL_es.pdf" %COMMON_ARGS%
+"%PANDOC%" MANUAL_es.md -o "%~dp0documentation\es\MANUAL_es.pdf" %COMMON_ARGS% -V lang=es
 echo Generating MANUAL_en.pdf...
-"%PANDOC%" MANUAL_en.md -o "%~dp0documentation\en\MANUAL_en.pdf" %COMMON_ARGS%
+"%PANDOC%" MANUAL_en.md -o "%~dp0documentation\en\MANUAL_en.pdf" %COMMON_ARGS% -V lang=en
 echo Generating TUTORIAL_es.pdf...
-"%PANDOC%" TUTORIAL_es.md -o "%~dp0documentation\es\TUTORIAL_es.pdf" %COMMON_ARGS%
+"%PANDOC%" TUTORIAL_es.md -o "%~dp0documentation\es\TUTORIAL_es.pdf" %COMMON_ARGS% -V lang=es
 echo Generating TUTORIAL_en.pdf...
-"%PANDOC%" TUTORIAL_en.md -o "%~dp0documentation\en\TUTORIAL_en.pdf" %COMMON_ARGS%
+"%PANDOC%" TUTORIAL_en.md -o "%~dp0documentation\en\TUTORIAL_en.pdf" %COMMON_ARGS% -V lang=en
 popd
 
 echo.

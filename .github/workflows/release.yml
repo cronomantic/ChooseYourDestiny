@@ -3,8 +3,10 @@ name: Release packages
 # Build the redistributable packages (the make_dist.py output) on GitHub's
 # runners instead of building them locally and uploading by hand.
 #
+# - First the four PDFs (manuals and tutorials) are generated from the repo's
+#   Markdown with Pandoc; both packages include them.
 # - On a version tag (v*): build the Windows and Linux packages and publish
-#   them as assets of a GitHub Release for that tag.
+#   them, and the PDFs, as assets of a GitHub Release for that tag.
 # - Manually (workflow_dispatch): build the same packages and expose them as
 #   downloadable artifacts, without creating a Release (handy for testing).
 #
@@ -18,8 +20,36 @@ on:
   workflow_dispatch:
 
 jobs:
+  pdfs:
+    name: PDF documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pandoc and XeLaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pandoc texlive-xetex \
+            texlive-latex-extra texlive-fonts-recommended texlive-lang-spanish lmodern \
+            fonts-dejavu-core
+
+      # The manuals and tutorials are canonical in the repo; the PDFs are built
+      # from them here so the packages never ship stale ones.
+      - name: Build the PDFs
+        run: bash make_pdf.sh
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-pdf
+          path: documentation/*/*.pdf
+          if-no-files-found: error
+
   package:
     name: Package (${{ matrix.platform }})
+    needs: pdfs
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -38,6 +68,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Download the PDFs
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-pdf
+          path: documentation
 
       - name: Build distribution package
         run: python make_dist.py --platform ${{ matrix.platform }}
@@ -66,6 +102,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.pdf
           fail_on_unmatched_files: true
           generate_release_notes: true

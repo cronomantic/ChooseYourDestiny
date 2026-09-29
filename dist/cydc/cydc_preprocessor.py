@@ -336,22 +336,25 @@ class CydcPreprocessor:
 
         # Build the output and line map
         output_lines = []
+        # A piece that doesn't end in a newline (the last line of an included
+        # file) shares its output line with the next piece, which must not
+        # count as a line of its own or everything after it maps one line early.
+        at_line_start = True
         for line_content, source_loc in processed_lines_with_locs:
-            # Record the mapping for this line
-            self.line_map[self._output_line_num] = source_loc
+            if at_line_start:
+                self.line_map[self._output_line_num] = source_loc
             output_lines.append(line_content)
 
-            # Count newlines in this content to track output line number
-            # (some content might have multiple lines)
+            # Lines inside multi-line content map to the same source.
             newline_count = line_content.count('\n')
-            if newline_count > 0:
-                # For multi-line content, map all lines to same source
-                for i in range(1, newline_count):
-                    self._output_line_num += 1
+            for i in range(newline_count):
+                self._output_line_num += 1
+                if i < newline_count - 1:
                     self.line_map[self._output_line_num] = source_loc
-                self._output_line_num += 1
-            elif line_content:  # Non-empty content without newline
-                self._output_line_num += 1
+            if newline_count:
+                at_line_start = line_content.endswith('\n')
+            elif line_content:
+                at_line_start = False
 
         # Join all lines into a single string
         result = ''.join(output_lines)

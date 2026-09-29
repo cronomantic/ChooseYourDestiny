@@ -10,6 +10,7 @@ Este documento describe el sistema de automatización que simplifica las tareas 
   - [setup_embedded_python.py](#setup_embedded_pythonpy)
   - [update_locales.py](#update_localespy)
   - [make_pdf.bat / make_pdf.sh](#make_pdfbat--make_pdfsh)
+  - [build_example_taps.py](#build_example_tapspy)
   - [update_wiki.py](#update_wikipy)
   - [tests/run_tests.py](#testsrun_testspy)
   - [make_dist.py](#make_distpy)
@@ -328,6 +329,35 @@ necesita la wiki.
 - Cabecera/pie de página con numeración
 - Motor LaTeX: Tectonic (Windows) o auto-detectado (Linux/macOS)
 - Cabecera común de estilo: `documentation/pdf/pandoc-header.tex`
+- Idioma de cada documento (`-V lang=es` / `-V lang=en`): pies de figura, índice y
+  guionado en su idioma (en Linux necesita `texlive-lang-spanish`)
+
+**En la release:** el workflow `.github/workflows/release.yml` ejecuta
+`make_pdf.sh` en Ubuntu (Pandoc y XeLaTeX) antes de empaquetar, así que los dos
+paquetes llevan siempre los PDF al día y la Release los publica también sueltos.
+Los PDF de `documentation/` en el repositorio solo sirven para empaquetar a mano.
+
+---
+
+### build_example_taps.py
+
+Regenera el `.tap` de todos los ejemplos (`examples/*/`) con el compilador de
+`src/`. Cada ejemplo lleva su `.tap` para poder cargarlo directamente en un
+emulador como demostración, y `tests/test_example_taps.py` comprueba que ninguno
+falte y que todos arrancan.
+
+**Ubicación:** `tools/`
+
+**Uso:**
+```bash
+python tools/build_example_taps.py            # todos los ejemplos
+python tools/build_example_taps.py sprites    # solo los indicados
+```
+
+La fuente es el `test.cyd` de cada ejemplo, y el modelo 48K, salvo los que
+indican `SOURCES` y `MODELS` en el script. Usa `IMAGES/`, `TRACKS/`, `SFX.asm` y
+`tokens.json` cuando el ejemplo los tiene. Hay que ejecutarlo tras cambiar el
+intérprete o un ejemplo, y subir los `.tap` nuevos.
 
 ---
 
@@ -431,12 +461,23 @@ python make_dist.py --platform macos
 # Crear para todas las plataformas
 python make_dist.py --all
 
-# Solo compilar, sin crear ZIP
+# Solo poner dist/ al día con src/, sin crear ZIP
+python make_dist.py --sync-only
+
+# Crear el ZIP con dist/ tal como está, sin copiar desde src/
 python make_dist.py --skip-compile
 ```
 
+**`dist/` debe estar siempre al día con `src/`:** los scripts (`make_adv.*`,
+`make_adventure*.py`) ejecutan el compilador de `dist/cydc`. Tras cambiar algo en
+`src/cydc`, ejecuta `python make_dist.py --sync-only` y sube también los cambios
+de `dist/`. Si falta, `tests/test_dist_sync.py` falla en la CI. La lista de
+ficheros sale de `src/cydc/cydc` (salvo traducciones, cachés y
+`gen_default_font.py`, ver `SOURCE_EXCLUDE`), y la sincronización borra de
+`dist/cydc` lo que ya no existe en `src/`.
+
 **Proceso:**
-1. Copia archivos fuente de `src/cydc/` a `dist/`
+1. Copia archivos fuente de `src/cydc/` a `dist/` y borra los que sobran
 2. Compila traducciones (.po → .mo)
 3. Recopila archivos específicos de plataforma
 4. Obtiene versión desde git tags
@@ -462,7 +503,7 @@ ChooseYourDestiny_Win_x64_v1_2_1_2026_02_21.zip
 
 **Ver documentación completa:**
 ```bash
-cat DISTRIBUTION.md
+cat doc/dev/DISTRIBUTION.md
 ```
 
 ---

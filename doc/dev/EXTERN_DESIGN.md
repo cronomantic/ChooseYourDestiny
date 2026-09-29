@@ -24,7 +24,7 @@
 ## 1. Qué resuelve y por qué estaba parado
 
 `OP_EXTERN` existía **diseñado pero nunca cableado**: bloque comentado en
-[interpreter.asm:2758-2790](src/cydc/cydc/cyd/interpreter.asm#L2758), sin entrada
+[interpreter.asm:2758-2790](../../src/cydc/cydc/cyd/interpreter.asm#L2758), sin entrada
 en la jump table, sin keyword en el front-end, sin mención en el manual, y con el
 handler a medio hacer (el `call` automodificado usa sintaxis de label malformada
 `.jump_addr+1:` + `call 0-0`, nunca ensamblado).
@@ -43,13 +43,13 @@ CYD** (§5).
 
 ## 2. Precedente ya existente: el reproductor WYZ
 
-`create_wyz_player_bank` ([cydc_music.py:46-85](src/cydc/cydc/cydc_music.py#L46))
+`create_wyz_player_bank` ([cydc_music.py:46-85](../../src/cydc/cydc/cydc_music.py#L46))
 hace exactamente lo que necesita `IMPORT`:
-- `wyz_player.asm` declara `ORG $C000` ([wyz_player.asm:2](src/cydc/cydc/cyd/wyz_player.asm#L2)).
+- `wyz_player.asm` declara `ORG $C000` ([wyz_player.asm:2](../../src/cydc/cydc/cyd/wyz_player.asm#L2)).
 - Se ensambla en una **pasada aislada** de sjasmplus (`run_assembler` propio) a un
-  `.bin` ([cydc_music.py:79](src/cydc/cydc/cydc_music.py#L79)).
+  `.bin` ([cydc_music.py:79](../../src/cydc/cydc/cydc_music.py#L79)).
 - Comprobación de tamaño en ensamblado: `ASSERT WYZ_LEN < $4000, Player file is too big!`
-  ([cydc_music.py:75](src/cydc/cydc/cydc_music.py#L75)).
+  ([cydc_music.py:75](../../src/cydc/cydc/cydc_music.py#L75)).
 - El binario se coloca en un banco y el motor lo llama en `$C000` (`WYZ_TRACKER EQU $C000`).
 
 Conclusión: **el ensamblado aislado con `ORG` controlado por CYD ya es un patrón
@@ -86,7 +86,7 @@ Impacto en el front-end (patrón ya existente de añadir opcodes/keywords):
 - **Parser**: reglas para ambas sentencias; `IMPORT` alimenta una tabla de
   rutinas; `CALL` referencia un `nombre` (validar declarado, como labels/const).
 - **Codegen**: nuevo byte de opcode para `OP_EXTERN` (elegir uno libre en el dict
-  `opcodes` de [cydc_codegen.py](src/cydc/cydc/cydc_codegen.py)); emisión de los
+  `opcodes` de [cydc_codegen.py](../../src/cydc/cydc/cydc_codegen.py)); emisión de los
   3 bytes de operando. El mapa `nombre → (chunk, dirección)` se resuelve tarde
   (tras la asignación de memoria, §6), así que el codegen emite un **placeholder**
   que la fase de layout parchea (como ya se hace con direcciones de labels).
@@ -178,13 +178,13 @@ coloca por best-fit (como TXT/SCR/TRK). Puntos de integración (a verificar en
 implementación):
 
 - **Tipo de recurso**: hoy el índice usa `TYPE_TXT/SCR/TRK/WYZ`
-  ([cyd_tape.asm:416-419](src/cydc/cydc/cyd/cyd_tape.asm#L416)). Añadir `TYPE_CODE`
+  ([cyd_tape.asm:416-419](../../src/cydc/cydc/cyd/cyd_tape.asm#L416)). Añadir `TYPE_CODE`
   (o reutilizar el mecanismo de bloques) para que `LOAD_CHUNK`/`FIND_IN_INDEX`
   puedan paginar el banco de la rutina. `LOAD_CHUNK` hoy busca `TYPE_TXT` fijo
-  ([cyd_tape.asm:423-432](src/cydc/cydc/cyd/cyd_tape.asm#L423)); necesitará poder
+  ([cyd_tape.asm:423-432](../../src/cydc/cydc/cyd/cyd_tape.asm#L423)); necesitará poder
   localizar el chunk de código.
 - **Allocator**: `spectrum_banks` y el reparto best-fit en
-  [cydc.py:796-915](src/cydc/cydc/cydc.py#L796). La rutina entra en el conjunto de
+  [cydc.py:796-915](../../src/cydc/cydc/cydc.py#L796). La rutina entra en el conjunto de
   bloques a colocar; debe **caber contigua en un banco** (no se puede trocear,
   a diferencia del texto).
 - **Resolución tardía**: tras la colocación se conoce (banco, offset) → se calcula
@@ -192,7 +192,7 @@ implementación):
   rutina a ese `ORG` → se parchea el operando del `OP_EXTERN` correspondiente y el
   índice de recursos (mismo estilo que el remapeo de índices ya existente).
 - **Pasada de ensamblado aislada**: reutilizar `run_assembler`
-  ([cydc_utils.py:76](src/cydc/cydc/cydc_utils.py#L76)) con una plantilla que
+  ([cydc_utils.py:76](../../src/cydc/cydc/cydc_utils.py#L76)) con una plantilla que
   enmarque el fichero del autor: `ORG @ADDR` + cuerpo + `ASSERT tamaño` + `SAVEBIN`.
   Errores de ensamblado → mensaje limpio `IMPORT '<nombre>': fallo al ensamblar
   <fichero>` (encaja con la mejora de robustez de `run_assembler`, que ahora
@@ -202,7 +202,7 @@ implementación):
 
 ## 7. Runtime: handler y jump table
 
-- **Arreglar el handler** [interpreter.asm:2758-2790](src/cydc/cydc/cyd/interpreter.asm#L2758):
+- **Arreglar el handler** [interpreter.asm:2758-2790](../../src/cydc/cydc/cyd/interpreter.asm#L2758):
   el `call` automodificado tiene el label malformado. Rehacerlo limpio (p.ej.
   cargar la dirección en `HL`/una var y `ld (self+1),...` con el label del operando
   bien definido, o un salto indirecto). Descomentar.
@@ -212,7 +212,7 @@ implementación):
   etc.) — mismo mecanismo que el resto de divergencias por target.
 - **Jump table**: añadir la entrada con la guarda `UNUSED_OP_EXTERN`
   (`DW OP_EXTERN` / `DW ERROR_NOP`) en la posición del nuevo opcode, como el resto
-  ([interpreter.asm:2798+](src/cydc/cydc/cyd/interpreter.asm#L2798)).
+  ([interpreter.asm:2798+](../../src/cydc/cydc/cyd/interpreter.asm#L2798)).
 - **`DE = FLAGS`** antes del `call` (ya está en el diseño del handler).
 
 ---

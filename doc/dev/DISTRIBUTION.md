@@ -76,7 +76,7 @@ python make_dist.py --platform macos
 ## Command-Line Options
 
 ```
-usage: make_dist.py [-h] [--platform {windows,linux,macos,all}] [--all] [--skip-compile]
+usage: make_dist.py [-h] [--platform {windows,linux,macos,all}] [--all] [--skip-compile] [--sync-only]
 
 Create redistributable packages for ChooseYourDestiny
 
@@ -86,6 +86,7 @@ optional arguments:
                         Target platform (default: current platform)
   --all, -a             Create packages for all platforms
   --skip-compile        Skip source file copying and translation compilation
+  --sync-only           Only bring dist/ up to date with src (compiler and translations), without packaging
 ```
 
 ## What Gets Packaged
@@ -306,9 +307,8 @@ Potential improvements for future versions:
 1. **Code signing**: Sign executables and packages
 2. **Checksums**: Generate SHA256 checksums for integrity verification
 3. **ARM support**: Add ARM64 builds for Raspberry Pi and Apple Silicon
-4. **Auto-upload**: Upload to GitHub releases automatically
-5. **Delta patches**: Create update patches for minor version changes
-6. **Installer**: Create installers (MSI for Windows, DEB/RPM for Linux)
+4. **Delta patches**: Create update patches for minor version changes
+5. **Installer**: Create installers (MSI for Windows, DEB/RPM for Linux)
 
 ## License
 

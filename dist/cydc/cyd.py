@@ -37,9 +37,10 @@ def mld_intro_scr_size(loading_scr):
     return len(zx7_compress_data(loading_scr)) if loading_scr is not None else 0
 
 
-# Build flags vars.asm itself tests, so they must be defined before it.
+# Build flags (not opcode guards), defined before vars.asm, which tests some.
 # NESTED_TOKENS (nested text tokens) drops the flat decoder's TOKEN_BUFFER.
-EARLY_DEFINES = ("NESTED_TOKENS",)
+# STACK_CHECK (--debug-stack) makes GOSUB/RETURN check the call stack.
+EARLY_DEFINES = ("NESTED_TOKENS", "STACK_CHECK")
 
 
 def get_early_defines(unused_opcodes=None):

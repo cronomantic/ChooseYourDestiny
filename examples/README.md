@@ -3,12 +3,16 @@
 This directory contains sample adventures and technical demos for the CYD engine.
 Each example is a folder with a `test.cyd` source (plus any assets it needs).
 
-To build one, point the compiler at its `test.cyd` (see the manual, section
-*Workflow* / *Flujo de trabajo*), for example:
+Every example also ships its compiled `.tap`, so you can load it straight into
+an emulator to see it running. To build one yourself, point the compiler at its
+`test.cyd` (see the manual, section *Workflow* / *Flujo de trabajo*), for example:
 
 ```
 make_adv 48k examples/test/test.cyd
 ```
+
+In the repository, `python tools/build_example_taps.py` regenerates the tapes of
+every example with the current compiler.
 
 ## Basic
 
