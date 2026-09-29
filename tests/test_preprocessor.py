@@ -476,6 +476,19 @@ INCLUDE "lib.cyd"
         result, _ = self.preprocessor.preprocess(filepath)
         self.assertIn('// Lib', result)
 
+    def test_line_map_after_include_without_final_newline(self):
+        """An included file that doesn't end in a newline shares its last output
+        line with the END INCLUDE marker; the lines after it must still map to
+        their own source lines."""
+        self._write_file("a.cyd", "[[\nINK 1\n]]")
+        self._write_file("b.cyd", "[[\nINK 2\nMARK\n]]")
+        filepath = self._write_file("main.cyd", '[[\nINCLUDE "a.cyd"\nINCLUDE "b.cyd"\n]]')
+
+        result, line_map = self.preprocessor.preprocess(filepath)
+        out_line = result.splitlines().index("MARK") + 1
+        self.assertEqual(line_map[out_line].filename, "b.cyd")
+        self.assertEqual(line_map[out_line].line_num, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

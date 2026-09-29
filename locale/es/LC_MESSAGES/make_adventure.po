@@ -233,3 +233,11 @@ msgstr "[esxdos] generar tambi√©n AUTOBOOT.BAS + ESXDOS.CFG para arrancar autom√
 #: make_adventure.py:382
 msgid "Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"
 msgstr "Modelo de Spectrum de destino (mld/mld128 son EXPERIMENTALES)"
+
+#: make_adventure.py
+msgid "don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"
+msgstr "no avisar de los RETURN a los que se llega sin GOSUB ni de las subrutinas que se abandonan sin RETURN"
+
+#: make_adventure.py
+msgid "make GOSUB and RETURN check the call stack at runtime (for debugging)"
+msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse (para depurar)"

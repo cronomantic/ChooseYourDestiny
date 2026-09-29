@@ -65,6 +65,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [OPTION VALUE(varexpression) GOSUB ID](#option-valuevarexpression-gosub-id)
     - [CHOOSE](#choose)
     - [CHOOSE IF WAIT expression THEN GOTO ID](#choose-if-wait-expression-then-goto-id)
+    - [CHOOSE IF WAIT expression THEN GOSUB ID](#choose-if-wait-expression-then-gosub-id)
     - [CHOOSE IF CHANGED THEN GOSUB ID](#choose-if-changed-then-gosub-id)
     - [OPTIONSEL()](#optionsel)
     - [NUMOPTIONS()](#numoptions)
@@ -236,7 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--token-format {auto,flat,nested}]
+              [--no-warn-gosub] [--debug-stack] [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
@@ -265,6 +266,8 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
 - **\-\-check**: Solo comprueba si el script tiene errores (de sintaxis, de símbolos y los del generador de código, como un `RESTORE` sin `DATA` detrás), sin ensamblarlo ni generar ficheros, así que no hacen falta `SJASMPLUS_PATH` ni `OUTPUT_PATH`. Es mucho más rápido que compilar, porque no busca abreviaturas. Termina con código 0 si no hay errores y 1 si los hay. No comprueba si la aventura cabe en memoria ni si existen las imágenes o la música.
 - **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del script, así que las librerías incluidas desde fuera no avisan de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
+- **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
+- **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
@@ -1351,9 +1354,16 @@ Salta a la etiqueta _ID_.
 
 Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.
 
+El intérprete guarda la dirección de vuelta en una pila con sitio para unos 250 `GOSUB` anidados, y no la comprueba. Por eso:
+
+- Una subrutina debe terminar siempre con `RETURN`. Si sale con `GOTO` (por ejemplo, volviendo a la localidad), su dirección de vuelta se queda en la pila; al repetirlo unos cientos de veces, la pila invade la memoria de las variables y el juego se cuelga o se reinicia.
+- A una subrutina solo se debe llegar con `GOSUB`, `OPTION GOSUB` o los `THEN GOSUB` de `CHOOSE`. Si se entra con `GOTO`, o cayendo desde el código que tiene encima (por ejemplo, al incluir un fichero de subrutinas al principio sin un `GOTO` que las salte), su `RETURN` no tiene adónde volver.
+
+El compilador analiza el flujo del programa y avisa de los dos casos (`WARNING [CODEGEN]`) con la línea donde ocurren; se desactiva con `--no-warn-gosub`. Para comprobarlo también al ejecutar, compila con `--debug-stack` (ver [Códigos de error](#códigos-de-error)).
+
 ### RETURN
 
-Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
+Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`. Si no hay ningún `GOSUB` pendiente, el resultado es imprevisible.
 
 ### IF condexpression THEN ... ENDIF
 
@@ -1496,6 +1506,10 @@ Recuerda que si se borra la pantalla antes de este comando, perderás las opcion
 
 Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.
 El timeout tiene como máximo 65535 (16 bits).
+
+### CHOOSE IF WAIT expression THEN GOSUB ID
+
+Igual que el anterior, pero al agotarse el tiempo hace un salto de subrutina a la etiqueta _ID_. Su `RETURN`, como el de una opción `OPTION GOSUB`, vuelve al comando siguiente al `CHOOSE`. Es útil, por ejemplo, para que los enemigos ataquen si el jugador se queda quieto.
 
 ### CHOOSE IF CHANGED THEN GOSUB ID
 
@@ -1992,7 +2006,7 @@ Opciones principales:
 - `-tok, --tokens-file`: Ruta de tokens. Si no existe, usa `-T` automáticamente; si existe, usa `-t`.
 - `-chr, --charset-file`: Ruta del JSON de caracteres (se usa si existe).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`: se pasan tal cual al compilador.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--debug-stack`: se pasan tal cual al compilador.
 - `--check`: solo comprueba si el script tiene errores, sin generarlo; en este modo no hace falta `SJASMPLUS_PATH`.
 
 Nota: tras una compilación `plus3` correcta, limpia automáticamente los ficheros temporales `SCRIPT.DAT`, `DISK` y `CYD.BIN`.
@@ -2065,7 +2079,7 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 **Características:**
 - Soporte multiplataforma (Windows, Linux, macOS con Python 3.11+)
 - Python integrado en Windows (sin necesidad de instalar Python por separado)
-- 28 opciones configurables incluyendo objetivos de compilación, rutas, formato de las abreviaturas, avisos de símbolos sin usar y acciones posteriores a la compilación
+- 30 opciones configurables incluyendo objetivos de compilación, rutas, formato de las abreviaturas, avisos de símbolos sin usar y de problemas con `GOSUB`/`RETURN`, comprobación de la pila de `GOSUB` al ejecutar (`--debug-stack`) y acciones posteriores a la compilación
 - Botón **Comprobar**, que busca errores en el guion sin ensamblarlo (`--check`), en un segundo y sin necesidad de SjASMPlus
 - Persistencia de configuración (recordada entre sesiones)
 - Soporte completo de internacionalización (Inglés y Español) con cambio de idioma en tiempo real mediante lista desplegable
@@ -2475,7 +2489,7 @@ La aplicación puede generar errores en tiempo de ejecución. Los errores son de
 
 Los errores de motor son, como su nombre indica, los errores propios del motor cuando detecta una situación anómala. Son los siguientes:
 
-- System Error 1: El recurso accedido no existe. Es debido a que se ejecuta PICTURE o TRACK con un índice que no existe en la aventura, debido a que no se ha cargado la imagen o pista correspondiente al compilar. También sucede cuando se hace un RETURN sin hacer un GOSUB previo.
+- System Error 1: El recurso accedido no existe. Es debido a que se ejecuta PICTURE o TRACK con un índice que no existe en la aventura, debido a que no se ha cargado la imagen o pista correspondiente al compilar. Sin `--debug-stack`, un `RETURN` sin `GOSUB` previo también suele acabar en este error.
 - System Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
 - System Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION` declarada.
 - System Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
@@ -2483,6 +2497,8 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - System Error 6: Código de instrucción inválido.
 - System Error 7: Acceso a posición del array fuera del rango.
 - System Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
+- System Error 9: `RETURN` sin ningún `GOSUB` pendiente. Solo se comprueba al compilar con `--debug-stack`.
+- System Error 10: Demasiados `GOSUB` anidados: se ha llenado la pila de llamadas, normalmente porque una subrutina sale con `GOTO` en lugar de `RETURN` y se repite. Solo se comprueba al compilar con `--debug-stack`.
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco o a la tarjeta de almacenamiento. Se muestran en pantalla como `DISK ERROR No:` seguido del código, y detienen la ejecución del juego (a diferencia de los errores recuperables de `SAVE`/`LOAD`, que se consultan con `SAVERESULT()`).
 

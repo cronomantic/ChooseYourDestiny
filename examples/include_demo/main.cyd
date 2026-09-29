@@ -4,6 +4,8 @@
 
 /* Load variable declarations */
 INCLUDE "variables.cyd"
+/* Jump over the subroutines: they only run when called with GOSUB */
+GOTO Start
 /* Load common subroutines */
 INCLUDE "common.cyd"
 #Start

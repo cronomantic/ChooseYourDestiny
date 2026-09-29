@@ -1636,3 +1636,27 @@ msgstr "Tamaño con abreviaturas simples: {flat} bytes; con anidadas: {nested} b
 #: src/cydc/cydc/cydc_txt_compress.py:556
 msgid "Using nested abbreviations, {saved} bytes smaller."
 msgstr "Se usan abreviaturas anidadas, {saved} bytes menos."
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "the jump at {at} goes into subroutine '{label}' instead of calling it with GOSUB"
+msgstr "el salto de {at} entra en la subrutina '{label}' en vez de llamarla con GOSUB"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "execution runs into subroutine '{label}' from the code above it (put a GOTO or END before it)"
+msgstr "la ejecución entra en la subrutina '{label}' desde el código que tiene encima (pon un GOTO o un END antes)"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "RETURN at {at} can run with no GOSUB pending"
+msgstr "El RETURN de {at} puede ejecutarse sin ningún GOSUB pendiente"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "Subroutine '{label}' can end without RETURN at {at}, going on to code that runs outside any subroutine; each time a GOSUB level is left on the stack, and after a few hundred the game crashes"
+msgstr "La subrutina '{label}' puede terminar sin RETURN en {at} y seguir por código que se ejecuta fuera de cualquier subrutina; cada vez queda un nivel de GOSUB en la pila y, tras unos cientos, el juego se cuelga"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"
+msgstr "no avisar de los RETURN a los que se llega sin GOSUB ni de las subrutinas que se abandonan sin RETURN"
+
+#: src/cydc/cydc/cydc_codegen.py
+msgid "make GOSUB and RETURN check the call stack at runtime and stop with a system error when it overflows or is empty (for debugging, adds a few bytes)"
+msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse y paren con un error de sistema si se desborda o está vacía (para depurar, añade unos bytes)"
