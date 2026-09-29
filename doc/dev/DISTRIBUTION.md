@@ -306,9 +306,8 @@ Potential improvements for future versions:
 1. **Code signing**: Sign executables and packages
 2. **Checksums**: Generate SHA256 checksums for integrity verification
 3. **ARM support**: Add ARM64 builds for Raspberry Pi and Apple Silicon
-4. **Auto-upload**: Upload to GitHub releases automatically
-5. **Delta patches**: Create update patches for minor version changes
-6. **Installer**: Create installers (MSI for Windows, DEB/RPM for Linux)
+4. **Delta patches**: Create update patches for minor version changes
+5. **Installer**: Create installers (MSI for Windows, DEB/RPM for Linux)
 
 ## License
 
