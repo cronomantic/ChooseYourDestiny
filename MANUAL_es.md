@@ -237,7 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors]
               [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
@@ -270,6 +270,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-no-warn-shared-vars**: No avisa de las variables que un fichero declara y otro fichero usa con otro nombre, por su número (`SET 205 TO ...`) o desde otra variable (`SET v TO {...}` pasándose de `v`). Es la forma de pisar sin darse cuenta las variables de una librería, como las 200..211 de `sprites.cyd`. Reutilizar una variable con varios nombres dentro de un mismo fichero no avisa, ni usarla por su nombre desde cualquier fichero. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
+- **\-\-debug-errors**: Para depurar. Cuando se produce un error de sistema, el mensaje dice también en qué instrucción, y el compilador escribe junto al juego un fichero `.map` que lo traduce a fichero y línea (ver [Códigos de error](#códigos-de-error)). Sin esta opción el intérprete no cambia; con ella, las instrucciones que no pueden fallar van igual de rápido, así que conviene quitarla solo por los bytes.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
@@ -2109,7 +2110,7 @@ Opciones principales:
 - `-tok, --tokens-file`: Ruta de tokens. Si no existe, usa `-T` automáticamente; si existe, usa `-t`.
 - `-chr, --charset-file`: Ruta del JSON de caracteres (se usa si existe).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`: se pasan tal cual al compilador.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`: se pasan tal cual al compilador.
 - `--check`: solo comprueba si el script tiene errores, sin generarlo; en este modo no hace falta `SJASMPLUS_PATH`.
 
 Nota: tras una compilación `plus3` correcta, limpia automáticamente los ficheros temporales `SCRIPT.DAT`, `DISK` y `CYD.BIN`.
@@ -2612,13 +2613,26 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - System Error 1: El recurso accedido no existe. Es debido a que se ejecuta PICTURE o TRACK con un índice que no existe en la aventura, debido a que no se ha cargado la imagen o pista correspondiente al compilar. Sin `--debug-stack`, un `RETURN` sin `GOSUB` previo también suele acabar en este error.
 - System Error 2: Se han creado demasiadas opciones, se ha superado el límite de opciones posibles.
 - System Error 3: No hay opciones disponibles, se ha lanzado un comando `CHOOSE` sin tener antes ninguna `OPTION` declarada.
-- System Error 4: El fichero con el módulo de música a cargar es demasiado grande, tiene que ser menor que 16Kib.
+- System Error 4: Un carácter del juego de caracteres mide más de 8 píxeles de ancho.
 - System Error 5: No hay un módulo de música cargado para reproducir.
 - System Error 6: Código de instrucción inválido.
 - System Error 7: Acceso a posición del array fuera del rango.
 - System Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
 - System Error 9: `RETURN` sin ningún `GOSUB` pendiente. Solo se comprueba al compilar con `--debug-stack`.
 - System Error 10: Demasiados `GOSUB` anidados: se ha llenado la pila de llamadas, normalmente porque una subrutina sale con `GOTO` en lugar de `RETURN` y se repite. Solo se comprueba al compilar con `--debug-stack`.
+
+Para saber dónde se produjo un error de sistema, compila con `--debug-errors`. El mensaje añade la posición de la instrucción que lo produjo, por ejemplo `SYSTEM ERROR No:7 at 0:42582` (bloque 0, dirección 42582), y el compilador escribe junto al juego un fichero `.map` con la posición de cada sentencia del guion:
+
+```
+0:42577	aventura.cyd:12	SET_D
+0:42580	aventura.cyd:13	PUSH_I
+0:42582	aventura.cyd:13	PUSH_VAL_ARRAY
+0:42586	aventura.cyd:13	POP_SET
+```
+
+La sentencia que buscas es la última de ese bloque cuya dirección no es mayor que la del mensaje. Los errores 9 y 10 solo existen con `--debug-stack`, así que para ellos hay que usar las dos opciones.
+
+Sin `--debug-errors` el intérprete no cambia. Con ella, cada instrucción que puede dar un error de sistema y que usa el juego (las que imprimen texto, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` y los arrays) apunta dónde está, lo que le añade 3 bytes, y el mensaje de error ocupa unos 43 más; el resto de instrucciones no se hace más lento. Como la tabla de instrucciones del intérprete va alineada, esos bytes a veces caben en el hueco de alineación y otras hacen crecer el intérprete 256 bytes.
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco o a la tarjeta de almacenamiento. Se muestran en pantalla como `DISK ERROR No:` seguido del código, y detienen la ejecución del juego (a diferencia de los errores recuperables de `SAVE`/`LOAD`, que se consultan con `SAVERESULT()`).
 

@@ -424,3 +424,7 @@ msgstr "Avisar de variables compartidas entre ficheros"
 #: make_adventure_gui.py
 msgid "Check the GOSUB stack at runtime (debug)"
 msgstr "Comprobar la pila de GOSUB al ejecutar (depuración)"
+
+#: make_adventure_gui.py
+msgid "Show where system errors happen (debug)"
+msgstr "Mostrar dónde ocurren los errores de sistema (depuración)"

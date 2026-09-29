@@ -911,6 +911,8 @@ class CydcCodegen(object):
         code_tmp = []
         skip = False
         for i, c in enumerate(code):
+            # A fused statement keeps the location of the first one it replaces.
+            orig = c
             if skip:
                 skip = False
             elif (i + 1) < len(code):
@@ -940,7 +942,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_DI":
                         c = ("SET_DI", next[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_PUSH_I":
                     if c[0] == "PUSH_I":
                         c = ("PUSH_DI", c[1])
@@ -948,7 +950,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_D":
                         c = ("PUSH_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_INK":
                     if c[0] == "PUSH_D":
                         c = ("INK_D", c[1])
@@ -956,7 +958,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("INK_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_PAPER":
                     if c[0] == "PUSH_D":
                         c = ("PAPER_D", c[1])
@@ -964,7 +966,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("PAPER_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_BORDER":
                     # Only the immediate form is fused; the _I (from-variable) form
                     # was dropped to free opcode 0x23 for READ (BORDER @v is rare and
@@ -972,19 +974,19 @@ class CydcCodegen(object):
                     if c[0] == "PUSH_D":
                         c = ("BORDER_D", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_BRIGHT":
                     # _I form dropped to free opcode 0x27 for RESTORE (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("BRIGHT_D", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_FLASH":
                     # _I form dropped to free opcode 0x28 for DATAEND (see BORDER).
                     if c[0] == "PUSH_D":
                         c = ("FLASH_D", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_PRINT":
                     if c[0] == "PUSH_D":
                         c = ("PRINT_D", c[1])
@@ -992,7 +994,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("PRINT_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_CHAR":
                     if c[0] == "PUSH_D":
                         c = ("CHAR_D", c[1])
@@ -1000,7 +1002,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("CHAR_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_PICTURE":
                     if c[0] == "PUSH_D":
                         c = ("PICTURE_D", c[1])
@@ -1008,7 +1010,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("PICTURE_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_DISPLAY":
                     if c[0] == "PUSH_D":
                         c = ("DISPLAY_D", c[1])
@@ -1016,7 +1018,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("DISPLAY_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_SFX":
                     if c[0] == "PUSH_D":
                         c = ("SFX_D", c[1])
@@ -1024,7 +1026,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("SFX_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_TRACK":
                     if c[0] == "PUSH_D":
                         c = ("TRACK_D", c[1])
@@ -1032,7 +1034,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("TRACK_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_PLAY":
                     if c[0] == "PUSH_D":
                         c = ("PLAY_D", c[1])
@@ -1040,7 +1042,7 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("PLAY_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "POP_LOOP":
                     if c[0] == "PUSH_D":
                         c = ("LOOP_D", c[1])
@@ -1048,16 +1050,16 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_I":
                         c = ("LOOP_I", c[1])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 elif next[0] == "IF_N_GOTO":
                     if c[0] == "NOT":
                         c = ("IF_GOTO", next[1], next[3])
                         skip = True
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
                 else:
-                    code_tmp.append(c)
+                    code_tmp.append(self._keep_loc(c, orig))
             else:
-                code_tmp.append(c)
+                code_tmp.append(self._keep_loc(c, orig))
         # MENUCONFIG
         run = True
         while run:
@@ -1556,6 +1558,8 @@ class CydcCodegen(object):
         labels = {}
         arrays = {}
         self.array_lengths = {}  # array name -> element count (for the injected ABI)
+        # (chunk, offset, location, opcode) of each statement, for debug_map().
+        self.statement_positions = []
         offset = 0
         bank = 0
         for t in code:
@@ -1603,6 +1607,7 @@ class CydcCodegen(object):
                 q = self._opcode_byte(opcode)
                 if opcode == "TEXT":
                     p = t[1]  # Get text
+                    placed = False
                     while len(p) > 1:  # A string of less than 1 character is not valid
                         l = self._get_bank_size(bank) - offset - 5  # remaining size
                         if len(p) >= l:  # Too big!, we slice it...
@@ -1612,6 +1617,9 @@ class CydcCodegen(object):
                             offset = 0  # reset offset counter
                             if slice_text and l > 0:
                                 # print(f"DEBUG: Slice! {l-1}")
+                                if not placed:
+                                    self._note_position(bank - 1, len(code_tmp), t, opcode)
+                                    placed = True
                                 code_tmp.append(q)
                                 code_tmp += p[0 : l - 1] + [
                                     245
@@ -1626,6 +1634,9 @@ class CydcCodegen(object):
                             code_banks.append(code_tmp)  # add new bank
                             code_tmp = []
                         else:
+                            if not placed:
+                                self._note_position(bank, offset, t, opcode)
+                                placed = True
                             code_tmp.append(q)  # Add opcode
                             code_tmp += p  # add list of the text
                             offset += len(p) + 1
@@ -1644,6 +1655,7 @@ class CydcCodegen(object):
                         # Jump to next bank
                         code_banks.append(code_tmp)  # add new bank
                         code_tmp = []
+                    self._note_position(bank, offset, t, opcode)
                     code_tmp.append(q)  # append opcode byte
                     q = list(t)  # transform tuple on list
                     code_tmp += q[1:]  # add the rest of parameters
@@ -1652,6 +1664,22 @@ class CydcCodegen(object):
             code_banks.append(code_tmp)
         self._cur_loc = None
         return (code_banks, labels | arrays)
+
+    def _note_position(self, bank, offset, statement, opcode):
+        self.statement_positions.append(
+            (bank, offset, getattr(statement, "loc", None), opcode))
+
+    def debug_map(self):
+        """The lines of the --debug-errors map: "chunk:address  location  OPCODE"
+        for each statement, in memory order. A system error shows the chunk and
+        address of the opcode that stopped; its statement is the last line of that
+        chunk whose address is not greater."""
+        lines = []
+        for bank, offset, loc, opcode in sorted(
+                self.statement_positions, key=lambda e: (e[0], e[1])):
+            lo, hi = self._convert_address(offset, bank)
+            lines.append(f"{bank}:{lo | hi << 8}\t{loc or '-'}\t{opcode}")
+        return lines
 
     def symbol_replacement(self, code, symbols, chunk_index=0):
         code_tmp = []
