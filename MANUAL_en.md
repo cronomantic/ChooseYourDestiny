@@ -505,6 +505,7 @@ overlap**, so you can use several at once:
 |---------|--------------------|
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
+| `sprites.cyd`   | 200..209 |
 
 ### `math16_32.cyd` — 16- and 32-bit arithmetic
 
@@ -578,6 +579,53 @@ buffer).
 ```
 
 There is a full example in `examples/strings_library`.
+
+
+### `sprites.cyd` — masked sprites
+
+Draws parts of the picture loaded in the buffer (`PICTURE`) over the screen
+**without erasing the background**. Each sprite has its mask: the silhouette of
+what it covers, drawn in ink in the same picture, usually next to the sprite. The
+core is native Z80; if you call none of its routines, nothing is included.
+
+Everything is measured in characters (8x8), as in `BLIT`, and whatever goes off
+the right or bottom of the screen is clipped. Parameters (variables 200..209):
+
+| Variables | Meaning |
+|-----------|---------|
+| `sprX`, `sprY` | sprite's corner in the buffer |
+| `sprW`, `sprH` | width and height |
+| `sprMX`, `sprMY` | its mask's corner in the buffer |
+| `sprDX`, `sprDY` | position on screen |
+| `sprAttr` | 0: the screen's colours don't change; 1: the sprite puts its colours in the cells where its mask isn't empty |
+| `sprErr` | 1 if `sprSave` couldn't save (more than 32 characters) |
+
+| Routine | Effect |
+|---------|--------|
+| `sprDraw` | screen = (screen AND NOT mask) OR sprite |
+| `sprXor` | screen = screen XOR sprite (no mask; doing it again erases it) |
+| `sprSave` | saves what is on screen in the rectangle `sprDX`, `sprDY`, `sprW`, `sprH` |
+| `sprRestore` | puts the saved area back where it was |
+
+To move a sprite: `sprSave`, `sprDraw` and, before the next step, `sprRestore`.
+
+**Example:** a 2x3-character character over a scene.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites.cyd"
+    PICTURE 1 : DISPLAY 1        /* the scene, on screen */
+    PICTURE 2                    /* the sprite sheet, into the buffer (not shown) */
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0      /* the mask, to its right */
+    SET sprDX TO 14 : SET sprDY TO 10
+    GOSUB sprDraw
+]]
+```
+
+It takes about 550 bytes of code plus 288 for the `sprSave` store (32 characters;
+the `SPR_STORE_CHARS` constant in the file changes it). On 128K and +3 it goes in
+a paged bank, outside the main memory.
 
 ---
 
