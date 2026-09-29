@@ -237,7 +237,8 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--debug-stack] [--token-format {auto,flat,nested}]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack]
+              [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
@@ -267,6 +268,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-check**: Solo comprueba si el script tiene errores (de sintaxis, de símbolos y los del generador de código, como un `RESTORE` sin `DATA` detrás), sin ensamblarlo ni generar ficheros, así que no hacen falta `SJASMPLUS_PATH` ni `OUTPUT_PATH`. Es mucho más rápido que compilar, porque no busca abreviaturas. Termina con código 0 si no hay errores y 1 si los hay. No comprueba si la aventura cabe en memoria ni si existen las imágenes o la música.
 - **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del script, así que las librerías incluidas desde fuera no avisan de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
 - **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
+- **\-\-no-warn-shared-vars**: No avisa de las variables que un fichero declara y otro fichero usa con otro nombre, por su número (`SET 205 TO ...`) o desde otra variable (`SET v TO {...}` pasándose de `v`). Es la forma de pisar sin darse cuenta las variables de una librería, como las 200..211 de `sprites.cyd`. Reutilizar una variable con varios nombres dentro de un mismo fichero no avisa, ni usarla por su nombre desde cualquier fichero. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
@@ -502,7 +504,9 @@ llamas con `GOSUB`.
 ```
 
 Cada librería reserva un bloque de variables como espacio de trabajo. Los bloques
-**no se solapan**, de modo que puedes usar varias a la vez:
+**no se solapan**, de modo que puedes usar varias a la vez. Si tu programa usa
+alguno de esos números con otro nombre o directamente por su número, el compilador
+avisa (ver `--no-warn-shared-vars`):
 
 | Librería | Variables reservadas |
 |----------|----------------------|
@@ -2105,7 +2109,7 @@ Opciones principales:
 - `-tok, --tokens-file`: Ruta de tokens. Si no existe, usa `-T` automáticamente; si existe, usa `-t`.
 - `-chr, --charset-file`: Ruta del JSON de caracteres (se usa si existe).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--debug-stack`: se pasan tal cual al compilador.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`: se pasan tal cual al compilador.
 - `--check`: solo comprueba si el script tiene errores, sin generarlo; en este modo no hace falta `SJASMPLUS_PATH`.
 
 Nota: tras una compilación `plus3` correcta, limpia automáticamente los ficheros temporales `SCRIPT.DAT`, `DISK` y `CYD.BIN`.

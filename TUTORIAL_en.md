@@ -1530,7 +1530,9 @@ program; execution continues with your code and the routines only run when you
 call them.
 
 Each library reserves a small block of variables as its workspace, and the blocks
-do not overlap, so you can use several at once:
+do not overlap, so you can use several at once. Don't use those numbers for
+anything else in your program; if you do, the compiler warns you with a
+`WARNING`:
 
 - `lib/math16_32.cyd` (variables 224..254): 16- and 32-bit arithmetic.
 - `lib/strings.cyd` (variables 216..223): text-string input and handling.
