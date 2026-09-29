@@ -20,6 +20,7 @@ make_adv 48k examples/test/test.cyd
 | [`input_test`](input_test/) | Keyboard input with `INKEY()` and character arrays via `[@ptr]` indirection (`inputStr`/`printStr`). |
 | [`math_library`](math_library/) | Using `lib/math16_32.cyd`: 16/32-bit arithmetic (`mul1632`, `add32`, `print32`) to compute a score. |
 | [`strings_library`](strings_library/) | Using `lib/strings.cyd`: read a name from the keyboard (`strInput`) and print it (`strPrint`, `strLen`). |
+| [`sprites`](sprites/) | Using `lib/sprites.cyd`: a walking character and a bouncing ball drawn with masks over a scene, moved by characters and by pixels, each saving its background in its own slot. |
 | [`windows`](windows/) | Splitting the screen into independent areas with `WINDOW` and `MARGINS`. |
 
 ## Intermediate

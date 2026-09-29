@@ -8,8 +8,8 @@
    publicas son GOSUB-ables. Si no las llamas, el compilador no incluye nada.
 
    USO: incluye este fichero al PRINCIPIO de tu programa (se auto-salta sus
-   rutinas con un GOTO interno) y dibuja en la misma imagen el sprite y, al
-   lado, su mascara: en tinta los pixeles que el sprite tapa. Por ejemplo:
+   rutinas con un GOTO interno) y dibuja en la misma imagen el sprite y su
+   mascara: en tinta los pixeles que el sprite tapa. Por ejemplo:
 
      PICTURE 1 : DISPLAY 1      <- el fondo, en pantalla
      PICTURE 2                  <- la hoja de sprites, al buffer (no se ve)
@@ -18,33 +18,46 @@
      SET sprDX TO 14 : SET sprDY TO 10
      GOSUB sprDraw
 
-   Todo se mide en caracteres (8x8), como en BLIT. Lo que sale de la pantalla
-   por la derecha o por abajo se recorta.
+   El sprite y su posicion horizontal se miden en caracteres (8x8), como en
+   BLIT. La posicion vertical es sprDY caracteres mas sprPY pixeles: con sprPY
+   a 0 todo va por caracteres; para moverlo pixel a pixel, deja sprDY a 0 y usa
+   sprPY como la Y en pixeles (0..191). Lo que sale de la pantalla por la
+   derecha o por abajo se recorta.
 
-   PARAMETROS. Reserva las variables 200..209:
+   PARAMETROS. Reserva las variables 200..211:
      sprX, sprY   (200, 201)  esquina del sprite en el buffer
      sprW, sprH   (202, 203)  ancho y alto
      sprMX, sprMY (204, 205)  esquina de su mascara en el buffer
-     sprDX, sprDY (206, 207)  posicion en pantalla
+     sprDX, sprDY (206, 207)  posicion en pantalla (caracteres)
      sprAttr      (208)       0: los colores de la pantalla no cambian
                               1: el sprite pone sus colores en las celdas
-                                 donde su mascara no esta vacia
-     sprErr       (209)       1 si sprSave no ha podido guardar (demasiado grande)
+                                 donde su mascara no esta vacia (con sprPY,
+                                 en la celda donde cae la mayor parte)
+     sprErr       (209)       1: lo que sprSave tenia que guardar no cabe
+                              2: no hay hueco sprSlot
+     sprPY        (210)       pixeles que se suman a sprDY
+     sprSlot      (211)       hueco de sprSave / sprRestore (0..3)
 
    API:
      sprDraw    : pantalla = (pantalla AND NOT mascara) OR sprite
      sprXor     : pantalla = pantalla XOR sprite (sin mascara; repetirlo lo borra)
-     sprSave    : guarda lo que hay en pantalla en el rectangulo sprDX, sprDY,
-                  sprW, sprH (hasta 32 caracteres; si no cabe, sprErr = 1)
-     sprRestore : vuelve a poner lo guardado, donde estaba
+     sprSave    : guarda en el hueco sprSlot lo que hay en pantalla donde iria
+                  el sprite (sprDX, sprDY, sprPY, sprW, sprH)
+     sprRestore : vuelve a poner lo guardado en el hueco sprSlot, donde estaba
 
-   Para mover un sprite: sprSave, sprDraw, y antes del siguiente paso sprRestore.
+   Para mover un sprite: sprSave, sprDraw y, antes del siguiente paso,
+   sprRestore. Con varios, cada uno en su hueco, y se restauran en el orden
+   contrario al que se guardaron (el ultimo guardado, el primero).
+
+   Hay SPR_SLOTS huecos de SPR_SLOT_CHARS caracteres cada uno (4 de 8: un
+   sprite de 2x3 que no esta alineado toca 2x4 celdas). Se pueden cambiar mas
+   abajo; cada caracter ocupa 9 bytes.
    ========================================================================== */
 
 DECLARE 200 AS sprX : DECLARE 201 AS sprY : DECLARE 202 AS sprW
 DECLARE 203 AS sprH : DECLARE 204 AS sprMX : DECLARE 205 AS sprMY
 DECLARE 206 AS sprDX : DECLARE 207 AS sprDY : DECLARE 208 AS sprAttr
-DECLARE 209 AS sprErr
+DECLARE 209 AS sprErr : DECLARE 210 AS sprPY : DECLARE 211 AS sprSlot
 
 GOTO sprSkip
 
@@ -59,7 +72,9 @@ LABEL sprRestore : CALL nat_sprrestore : RETURN
 ASM sprcore EXPORTS nat_sprdraw, nat_sprxor, nat_sprsave, nat_sprrestore
 
 SPR_P           EQU FLAGS+200   ; sprX
-SPR_STORE_CHARS EQU 32          ; capacidad de sprSave (9 bytes por caracter)
+SPR_SLOTS       EQU 4           ; huecos de sprSave / sprRestore
+SPR_SLOT_CHARS  EQU 8           ; caracteres por hueco
+SPR_SLOT_BYTES  EQU SPR_SLOT_CHARS * 9
 
 nat_sprdraw:
     call spr_clip
@@ -69,12 +84,7 @@ nat_sprdraw:
     or a
     sbc hl, de
     ld (spr_delta), hl          ; mascara - sprite, dentro del buffer
-    call spr_start              ; HL = buffer, DE = pantalla, B = filas
-.row:
-    push bc
-    push hl
-    push de
-    ld c, 8
+    call spr_start              ; DE = pantalla, HL = buffer, B = lineas
 .line:
     push bc
     push de
@@ -102,31 +112,18 @@ nat_sprdraw:
     pop hl
     pop de
     pop bc
-    ld a, l
-    add a, 32                   ; siguiente linea del buffer
-    ld l, a
-    inc d                       ; siguiente linea de la pantalla
-    dec c
-    jr nz, .line
-    pop de
-    pop hl
-    pop bc
-    call spr_next_row
-    djnz .row
+    call spr_next_line
+    djnz .line
     jp spr_attrs
 
 nat_sprxor:
     call spr_clip
     ret z
     call spr_start
-.row:
-    push bc
-    push hl
-    push de
-    ld c, 8
 .line:
-    push hl
+    push bc
     push de
+    push hl
     ld a, (spr_cols)
     ld b, a
 .byte:
@@ -136,37 +133,35 @@ nat_sprxor:
     inc hl
     inc de
     djnz .byte
-    pop de
     pop hl
-    ld a, l
-    add a, 32
-    ld l, a
-    inc d
-    dec c
-    jr nz, .line
     pop de
-    pop hl
     pop bc
-    call spr_next_row
-    djnz .row
+    call spr_next_line
+    djnz .line
     ret
 
 nat_sprsave:
     xor a
-    ld (spr_saved_rows), a      ; nada guardado
     ld (SPR_P+9), a             ; sprErr = 0
+    call spr_slot
+    ret c
+    xor a
+    inc hl
+    inc hl
+    inc hl
+    ld (hl), a                  ; hueco vacio hasta que se guarde
     call spr_clip
     ret z
     ld a, (spr_cols)
     ld e, a
     ld d, 0
-    ld a, (spr_rows)
+    ld a, (spr_srows)
     ld b, a
     ld hl, 0
 .mul:
     add hl, de
     djnz .mul                   ; HL = caracteres a guardar
-    ld de, SPR_STORE_CHARS+1
+    ld de, SPR_SLOT_CHARS+1
     or a
     sbc hl, de
     jr c, .fits
@@ -174,33 +169,53 @@ nat_sprsave:
     ld (SPR_P+9), a             ; sprErr = 1: no cabe
     ret
 .fits:
-    ld hl, (SPR_P+6)            ; L = DX, H = DY
-    ld (spr_saved_x), hl
+    ld hl, (spr_hdr_ptr)        ; cabecera: columna, fila, ancho, alto
+    ld a, (SPR_P+6)
+    ld (hl), a
+    inc hl
+    ld a, (spr_row0)
+    ld (hl), a
+    inc hl
     ld a, (spr_cols)
-    ld (spr_saved_cols), a
-    ld a, (spr_rows)
-    ld (spr_saved_rows), a
-    xor a                       ; pantalla -> almacen
+    ld (hl), a
+    inc hl
+    ld a, (spr_srows)
+    ld (hl), a
+    xor a                       ; pantalla -> hueco
     jr spr_copy
 
 nat_sprrestore:
-    ld a, (spr_saved_rows)
+    xor a
+    ld (SPR_P+9), a
+    call spr_slot
+    ret c
+    inc hl
+    inc hl
+    inc hl
+    ld a, (hl)                  ; alto 0: no hay nada guardado
     or a
     ret z
-    ld (spr_rows), a
-    ld a, (spr_saved_cols)
-    ld (spr_cols), a
-    ld a, 1                     ; almacen -> pantalla
+    ld a, 1                     ; hueco -> pantalla
 
-; Copia entre la pantalla en spr_saved_x/y (spr_cols x spr_rows) y spr_store,
-; en el sentido de A (0: pantalla -> almacen).
+; Copia entre la pantalla y el hueco elegido, en el sentido de A (0: pantalla
+; -> hueco), las celdas que dice su cabecera.
 spr_copy:
     ld (spr_dir), a
-    ld de, (spr_saved_x)        ; E = x, D = y
+    ld hl, (spr_hdr_ptr)
+    ld e, (hl)                  ; E = columna
+    inc hl
+    ld d, (hl)                  ; D = fila
+    inc hl
+    ld a, (hl)
+    ld (spr_cols), a
+    inc hl
+    ld a, (hl)
+    ld (spr_srows), a
+    ld (spr_cx), de
     call spr_scr
     ex de, hl                   ; HL = pantalla
-    ld de, spr_store
-    ld a, (spr_rows)
+    ld de, (spr_data_ptr)
+    ld a, (spr_srows)
     ld b, a
 .row:
     push bc
@@ -226,12 +241,12 @@ spr_copy:
 1:  pop bc
     djnz .row
     push de
-    ld de, (spr_saved_x)
+    ld de, (spr_cx)
     call spr_att_off
     ld bc, $5800
     add hl, bc                  ; HL = atributos en pantalla
     pop de
-    ld a, (spr_rows)
+    ld a, (spr_srows)
     ld b, a
 .arow:
     push bc
@@ -243,7 +258,7 @@ spr_copy:
     pop bc
     djnz .arow
     ret
-; spr_cols bytes entre HL (pantalla) y DE (almacen); DE avanza.
+; spr_cols bytes entre HL (pantalla) y DE (hueco); DE avanza.
 .move:
     ld a, (spr_cols)
     ld c, a
@@ -259,7 +274,37 @@ spr_copy:
     ex de, hl
     ret
 
-; Recorta el rectangulo a la pantalla: spr_cols, spr_rows. Z si no queda nada.
+; Hueco sprSlot: spr_hdr_ptr y HL = su cabecera, spr_data_ptr = sus datos.
+; Carry (y sprErr = 2) si no existe.
+spr_slot:
+    ld a, (SPR_P+11)
+    cp SPR_SLOTS
+    jr c, 1f
+    ld a, 2
+    ld (SPR_P+9), a
+    scf
+    ret
+1:  ld b, a
+    ld hl, spr_hdr
+    ld de, spr_store
+    or a
+    jr z, 3f
+2:  push bc
+    ld bc, 4
+    add hl, bc
+    ex de, hl
+    ld bc, SPR_SLOT_BYTES
+    add hl, bc
+    ex de, hl
+    pop bc
+    djnz 2b
+3:  ld (spr_hdr_ptr), hl
+    ld (spr_data_ptr), de
+    or a                        ; sin carry
+    ret
+
+; Recorta a la pantalla. Deja spr_cols, spr_y (Y en pixeles), spr_lines y las
+; filas de caracteres que toca: spr_row0 y spr_srows. Z si no queda nada.
 spr_clip:
     ld a, (SPR_P+6)             ; DX
     cp 32
@@ -278,35 +323,96 @@ spr_clip:
     ld a, (SPR_P+7)             ; DY
     cp 24
     jr nc, .none
+    add a, a
+    add a, a
+    add a, a
     ld c, a
-    ld a, 24
+    ld a, (SPR_P+10)            ; + PY
+    add a, c
+    jr c, .none
+    cp 192
+    jr nc, .none
+    ld (spr_y), a
+    ld c, a
+    ld a, 192
     sub c
-    ld c, a
+    ld c, a                     ; lineas hasta el borde inferior
     ld a, (SPR_P+3)             ; H
-    cp c
+    cp 24
     jr c, 2f
+    ld a, 24
+2:  add a, a
+    add a, a
+    add a, a                    ; H * 8
+    cp c
+    jr c, 3f
     ld a, c
-2:  ld (spr_rows), a
+3:  ld (spr_lines), a
     or a
+    ret z
+    ld c, a
+    ld a, (spr_y)
+    ld b, a
+    add a, c
+    dec a                       ; ultima linea
+    rrca
+    rrca
+    rrca
+    and $1F
+    ld c, a                     ; su fila de caracteres
+    ld a, b
+    rrca
+    rrca
+    rrca
+    and $1F
+    ld (spr_row0), a            ; fila de la primera linea
+    ld b, a
+    ld a, c
+    sub b
+    inc a
+    ld (spr_srows), a           ; no es 0
     ret
 .none:
     xor a
     ret
 
-; HL = buffer en (SX, SY), DE = pantalla en (DX, DY), B = filas.
+; DE = pantalla en (DX, spr_y), HL = buffer en (SX, SY), B = lineas.
 spr_start:
+    ld a, (SPR_P+6)
+    ld e, a
+    ld a, (spr_y)
+    call spr_scr_y
     ld a, (SPR_P+1)             ; SY
     add a, HIGH SCREEN_BUFFER_PXL
     ld h, a
     ld a, (SPR_P+0)             ; SX
     ld l, a
-    ld de, (SPR_P+6)            ; E = DX, D = DY
-    call spr_scr
-    ld a, (spr_rows)
+    ld a, (spr_lines)
     ld b, a
     ret
 
-; Columna E, fila D -> DE = direccion en pantalla (linea 0 del caracter).
+; Linea de pixeles A, columna E -> DE = direccion en pantalla. Destruye C.
+spr_scr_y:
+    ld d, a
+    and $38
+    rlca
+    rlca
+    or e
+    ld e, a
+    ld a, d
+    and $C0
+    rrca
+    rrca
+    rrca
+    ld c, a
+    ld a, d
+    and 7
+    or c
+    or $40
+    ld d, a
+    ret
+
+; Columna E, fila de caracteres D -> DE = direccion en pantalla (linea 0).
 spr_scr:
     ld a, d
     and 7
@@ -321,15 +427,23 @@ spr_scr:
     ld d, a
     ret
 
-; HL (buffer) y DE (pantalla) a la siguiente fila de caracteres.
-spr_next_row:
-    inc h
+; HL (buffer) y DE (pantalla) una linea de pixeles mas abajo.
+spr_next_line:
+    ld a, l
+    add a, 32
+    ld l, a
+    jr nc, 1f
+    inc h                       ; siguiente fila de caracteres del buffer
+1:  inc d
+    ld a, d
+    and 7
+    ret nz
     ld a, e
     add a, 32
     ld e, a
-    ret nc
+    ret c
     ld a, d
-    add a, 8
+    sub 8
     ld d, a
     ret
 
@@ -347,18 +461,41 @@ spr_att_off:
     ld l, a
     ret
 
-; sprAttr = 1: copia los atributos del sprite en las celdas cuya mascara no
-; esta vacia.
+; sprAttr = 1: copia los atributos de cada celda del sprite cuya mascara no
+; esta vacia a la celda de pantalla donde cae la mayor parte de ella, la fila
+; (spr_y + 4) / 8 para la primera.
 spr_attrs:
     ld a, (SPR_P+8)
     or a
     ret z
+    ld a, (spr_y)
+    add a, 4
+    rrca
+    rrca
+    rrca
+    and $1F
+    ld (spr_arow), a
+    ld c, a
+    ld a, 24
+    sub c
+    ret z
+    ld c, a                     ; filas hasta el borde inferior
+    ld a, (SPR_P+3)             ; H
+    cp c
+    jr c, 1f
+    ld a, c
+1:  or a
+    ret z
+    ld (spr_ccount), a          ; filas de atributos
     ld de, (SPR_P+0)            ; E = SX, D = SY
     call spr_att_off
     ld bc, SCREEN_BUFFER_ATT
     add hl, bc
     ld (spr_asrc), hl
-    ld de, (SPR_P+6)            ; E = DX, D = DY
+    ld a, (spr_arow)
+    ld d, a
+    ld a, (SPR_P+6)
+    ld e, a
     call spr_att_off
     ld bc, $5800
     add hl, bc
@@ -368,7 +505,7 @@ spr_attrs:
     add a, HIGH SCREEN_BUFFER_PXL
     ld h, a
     ld (spr_amask), hl
-    ld a, (spr_rows)
+    ld a, (spr_ccount)
     ld b, a
 .row:
     push bc
@@ -417,17 +554,22 @@ spr_attrs:
     ret
 
 spr_cols:       DEFB 0
-spr_rows:       DEFB 0
+spr_lines:      DEFB 0
+spr_srows:      DEFB 0
+spr_row0:       DEFB 0
+spr_y:          DEFB 0
+spr_arow:       DEFB 0
 spr_ccount:     DEFB 0
 spr_dir:        DEFB 0
 spr_delta:      DEFW 0
 spr_asrc:       DEFW 0
 spr_adst:       DEFW 0
 spr_amask:      DEFW 0
-spr_saved_x:    DEFW 0          ; x, y
-spr_saved_cols: DEFB 0
-spr_saved_rows: DEFB 0
-spr_store:      DEFS SPR_STORE_CHARS * 9
+spr_cx:         DEFW 0          ; columna, fila
+spr_hdr_ptr:    DEFW 0
+spr_data_ptr:   DEFW 0
+spr_hdr:        DEFS SPR_SLOTS * 4   ; por hueco: columna, fila, ancho, alto
+spr_store:      DEFS SPR_SLOTS * SPR_SLOT_BYTES
 ENDASM
 
 LABEL sprSkip

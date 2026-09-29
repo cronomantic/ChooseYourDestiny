@@ -22,7 +22,7 @@ se solapan**, así que puedes usar ambas a la vez:
 |----------|----------------------|
 | `math16_32.cyd` | 224..247 y 253 |
 | `strings.cyd`   | 216..223 |
-| `sprites.cyd`   | 200..209 |
+| `sprites.cyd`   | 200..211 |
 
 Todas las rutinas están verificadas automáticamente en el emulador (ZEsarUX vía
 el harness, ver [doc/dev/EMULATOR_TESTING.md](../doc/dev/EMULATOR_TESTING.md)).
@@ -103,29 +103,32 @@ idéntico al del ejemplo `input_test` ya probado.
 
 Pinta trozos de la imagen cargada en el buffer (`PICTURE`) sobre la pantalla **sin
 borrar el fondo**. Cada sprite lleva su máscara: la silueta de lo que tapa, dibujada
-en tinta en la misma imagen, normalmente al lado del sprite. El núcleo es
-ensamblador Z80 nativo; si no llamas a ninguna rutina, no se incluye nada.
+en tinta en la misma imagen. El núcleo es ensamblador Z80 nativo; si no llamas a
+ninguna rutina, no se incluye nada.
 
-Todo se mide en caracteres (8x8), como en `BLIT`, y lo que sale de la pantalla por
-la derecha o por abajo se recorta. Parámetros (variables 200..209):
+El sprite y su posición horizontal se miden en caracteres (8x8), como en `BLIT`. La
+posición vertical es `sprDY` caracteres más `sprPY` píxeles: con `sprPY` a 0 todo va
+por caracteres; para mover un sprite píxel a píxel, deja `sprDY` a 0 y usa `sprPY`
+como la Y en píxeles (0..191). Lo que sale de la pantalla por la derecha o por abajo
+se recorta. Parámetros (variables 200..211):
 
 | Variables | Significado |
 |-----------|-------------|
 | `sprX`, `sprY` | esquina del sprite en el buffer |
 | `sprW`, `sprH` | ancho y alto |
 | `sprMX`, `sprMY` | esquina de su máscara en el buffer |
-| `sprDX`, `sprDY` | posición en pantalla |
-| `sprAttr` | 0: los colores de la pantalla no cambian; 1: el sprite pone sus colores en las celdas donde su máscara no está vacía |
-| `sprErr` | 1 si `sprSave` no ha podido guardar (más de 32 caracteres) |
+| `sprDX`, `sprDY` | posición en pantalla, en caracteres |
+| `sprPY` | píxeles que se suman a `sprDY` |
+| `sprAttr` | 0: los colores de la pantalla no cambian; 1: el sprite pone sus colores en las celdas donde su máscara no está vacía (con `sprPY`, en la celda donde cae la mayor parte) |
+| `sprSlot` | hueco de `sprSave` / `sprRestore` (0..3) |
+| `sprErr` | 1: lo que `sprSave` tenía que guardar no cabe en el hueco; 2: no existe ese hueco |
 
 | Rutina | Efecto |
 |--------|--------|
 | `sprDraw` | pantalla = (pantalla AND NOT máscara) OR sprite |
 | `sprXor` | pantalla = pantalla XOR sprite (sin máscara; repetirlo lo borra) |
-| `sprSave` | guarda lo que hay en pantalla en el rectángulo `sprDX`, `sprDY`, `sprW`, `sprH` |
-| `sprRestore` | vuelve a poner lo guardado, donde estaba |
-
-Para mover un sprite: `sprSave`, `sprDraw` y, antes del siguiente paso, `sprRestore`.
+| `sprSave` | guarda en el hueco `sprSlot` lo que hay en pantalla donde iría el sprite |
+| `sprRestore` | vuelve a poner lo guardado en el hueco `sprSlot`, donde estaba |
 
 **Ejemplo:** un personaje de 2x3 caracteres sobre un escenario.
 
@@ -141,10 +144,23 @@ Para mover un sprite: `sprSave`, `sprDraw` y, antes del siguiente paso, `sprRest
 ]]
 ```
 
-Ocupa unos 550 bytes de código más 288 del almacén de `sprSave` (32 caracteres; la
-constante `SPR_STORE_CHARS` del fichero lo cambia). En 128K y +3 va en un banco
-paginado, fuera de la memoria principal.
+**Sprites que se mueven.** En cada paso: `sprSave` guarda el fondo donde va a ir el
+sprite, `sprDraw` lo pinta y, antes de moverlo, `sprRestore` repone el fondo (en su
+sitio, aunque ya hayas cambiado `sprDX`/`sprDY`). Si se mueven varios, cada uno usa
+su hueco (`sprSlot`) y se restauran **en el orden contrario al que se guardaron**
+(el último guardado, el primero): así el fondo queda bien aunque se crucen. Para
+animarlos, cambia en cada paso `sprX`/`sprY` al siguiente fotograma de la hoja.
 
-**Estado de verificación:** las cuatro rutinas, el recorte en los bordes, los
-atributos y `sprErr` se comprueban en emulador (48K y 128K) comparando la pantalla
+Hay un ejemplo completo en `examples/sprites`: un personaje que camina por
+caracteres y una pelota que bota píxel a píxel, cada uno en su hueco.
+
+Hay 4 huecos de 8 caracteres (un sprite de 2x3 que no está alineado toca 2x4
+celdas); las constantes `SPR_SLOTS` y `SPR_SLOT_CHARS` del fichero los cambian, a 9
+bytes por carácter. En total ocupa unos 1030 bytes (730 de código y 300 de huecos),
+solo si se usa; en 128K y +3 van en un banco paginado, fuera de la memoria
+principal.
+
+**Estado de verificación:** las cuatro rutinas, la Y al píxel, varios huecos
+restaurados en orden inverso, el recorte en los bordes, los atributos y los dos
+códigos de `sprErr` se comprueban en emulador (48K y 128K) comparando la pantalla
 entera con un modelo en Python (`tests/test_sprites_lib.py`).
