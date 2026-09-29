@@ -5,17 +5,18 @@ Wiki updater for ChooseYourDestiny
 Synchronizes documentation files to the GitHub Wiki repository.
 
 This script:
-1. Copies Markdown files from the main repository to the wiki
+1. Copies the docs (manuals, tutorials and their images) from the main
+   repository to the wiki
 2. Commits and pushes changes to the wiki repository
 
 MIT License - Copyright (c) 2024-2026 Sergio Chico
 """
 
-import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from make_dist import sync_docs_to_wiki
 
 
 def run_command(cmd, cwd=None, check=True):
@@ -58,33 +59,13 @@ def main():
 
     print(f"\nWiki submodule: {wiki_path}")
 
-    # Only the MANUAL is canonical in this repo and replicated to the wiki.
-    # The TUTORIAL lives ONLY in the wiki (it is edited directly in the submodule),
-    # so it is not copied here; git add -A below will still commit its changes.
-    files_to_sync = [
-        "MANUAL_es.md",
-        "MANUAL_en.md",
-    ]
-    
-    print(f"\nReplicating documentation files to wiki (repo -> wiki)...")
-
-    # The repository is the single source of truth; the wiki is a mirror.
-    copied_files = []
-    for filename in files_to_sync:
-        src = base_path / filename
-        dst = wiki_path / filename
-
-        if src.exists():
-            shutil.copy2(src, dst)
-            print(f"  ✓ {filename} (copied from repo)")
-            copied_files.append(filename)
-        else:
-            print(f"  ✗ {filename} not found in repo: {src}")
-    
+    # The repository is the single source of truth (manuals, tutorials and the
+    # images they reference); the wiki is a mirror.
+    copied_files = sync_docs_to_wiki(str(base_path))
     if not copied_files:
         print("\n✗ No files to sync")
         return 1
-    
+
     # Check if there are changes
     print(f"\nChecking for changes...")
     if not check_git_status(wiki_path):
