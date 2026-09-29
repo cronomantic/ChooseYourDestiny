@@ -37,3 +37,6 @@ make_adv 48k examples/sprites/test.cyd
 ```
 
 Funciona igual en 128K y +3; ahí la librería va en un banco paginado.
+
+En [`examples/sprites_px`](../sprites_px/README.md) está el mismo ejemplo con el
+personaje caminando píxel a píxel, con `lib/sprites_px.cyd`.

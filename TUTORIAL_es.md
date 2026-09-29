@@ -1555,6 +1555,7 @@ los bloques no se solapan, así que puedes usar varias a la vez:
 - `lib/math16_32.cyd` (variables 224..254): aritmética de 16 y 32 bits.
 - `lib/strings.cyd` (variables 216..223): entrada y manejo de cadenas de texto.
 - `lib/sprites.cyd` (variables 200..211): sprites con máscara, que se ven en su propia sección más abajo.
+- `lib/sprites_px.cyd` (variables 200..212): los mismos sprites con la X también al píxel; se usa en lugar de `lib/sprites.cyd`.
 
 En el manual tienes la referencia completa de cada rutina; aquí vamos a ver un par
 de casos prácticos.
@@ -1898,7 +1899,7 @@ Para animarlo mientras anda, basta con cambiar en cada paso `sprX` para que apun
 
 Dos detalles más:
 
-- La posición horizontal va siempre por caracteres, pero la vertical se puede afinar al píxel con `sprPY`, que se suma a `sprDY`. Para que algo suba y baje con suavidad, deja `sprDY` a 0 y usa `sprPY` como la altura en píxeles (de 0 a 191).
+- La posición horizontal va por caracteres, pero la vertical se puede afinar al píxel con `sprPY`, que se suma a `sprDY`. Para que algo suba y baje con suavidad, deja `sprDY` a 0 y usa `sprPY` como la altura en píxeles (de 0 a 191). Si también necesitas la horizontal al píxel, incluye `lib/sprites_px.cyd` en vez de `lib/sprites.cyd`: tiene las mismas rutinas y además `sprPX`, que se suma a `sprDX`. A cambio ocupa unos 490 bytes más y pinta más despacio los sprites que no caen en un borde de carácter. El ejemplo `examples/sprites_px` es el mismo de abajo con el personaje caminando píxel a píxel.
 - Si se mueven varios sprites a la vez, cada uno necesita su propio hueco para guardar el fondo: se elige con `sprSlot` (de 0 a 3). Y hay que restaurarlos **en el orden contrario al que se guardaron**; si no, cuando dos sprites se crucen, uno repondría un fondo que ya incluye al otro.
 
 En `examples/sprites` tienes un ejemplo completo con las dos cosas: un personaje que camina por caracteres y una pelota que bota píxel a píxel, cada uno en su hueco:

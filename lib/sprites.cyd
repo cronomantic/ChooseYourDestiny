@@ -22,7 +22,8 @@
    BLIT. La posicion vertical es sprDY caracteres mas sprPY pixeles: con sprPY
    a 0 todo va por caracteres; para moverlo pixel a pixel, deja sprDY a 0 y usa
    sprPY como la Y en pixeles (0..191). Lo que sale de la pantalla por la
-   derecha o por abajo se recorta.
+   derecha o por abajo se recorta. Para afinar tambien la X al pixel esta
+   sprites_px.cyd, con la misma API mas sprPX (ocupa mas y es mas lenta).
 
    PARAMETROS. Reserva las variables 200..211:
      sprX, sprY   (200, 201)  esquina del sprite en el buffer
