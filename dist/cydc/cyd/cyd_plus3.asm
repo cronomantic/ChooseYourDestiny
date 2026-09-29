@@ -536,6 +536,9 @@ SYS_ERROR:
     call PRINT_STR
     pop af
     call PRINT_A_BYTE
+    IFDEF DEBUG_ERRORS
+    call SYS_ERROR_POS
+    ENDIF
 .endless:
     jr .endless
 

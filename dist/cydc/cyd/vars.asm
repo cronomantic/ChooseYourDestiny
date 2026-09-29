@@ -191,6 +191,10 @@ MAXWINDOWS EQU 8
 WINDOWS:
     DEFS MAXWINDOWS*8,0
 WINDOWS_END:
+    IFDEF DEBUG_ERRORS
+DBG_PC:                         ; --debug-errors: see DEBUG_POS
+    DEFW 0
+    ENDIF
 ;--------------------------------------------------
     ;INCLUDE "VTII10bG_vars.asm"
 

@@ -31,7 +31,19 @@
 
 OP_END EQU END_PROGRAM
 
+    ; With --debug-errors (DEBUG_ERRORS), the opcodes that can end in a system
+    ; error note where they are (HL = the opcode's address + 1), so SYS_ERROR can
+    ; show it and the compiler's map can turn it into a file and a line. Only
+    ; these opcodes pay for it: GOTO, SET and the like don't. Without it, no code
+    ; is added.
+    MACRO DEBUG_POS
+    IFDEF DEBUG_ERRORS
+    ld (DBG_PC), hl
+    ENDIF
+    ENDM
+
 OP_TEXT:
+    DEBUG_POS
     ld de, EXEC_LOOP
     push de
     jp PRINT_TOKEN_STR
@@ -65,6 +77,7 @@ OP_GOTO:
     ENDM
 
 OP_GOSUB:
+    DEBUG_POS
     push hl
     ld de, 3
     add hl, de
@@ -90,6 +103,7 @@ GOSUB_STACK_FULL:
     ENDIF
 
 OP_RETURN:
+    DEBUG_POS
     IFDEF STACK_CHECK
     ld a, ixh
     cp HIGH INT_STACK_ADDR
@@ -578,6 +592,7 @@ OP_BORDER_D:
 
     IFNDEF UNUSED_OP_PRINT_D
 OP_PRINT_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     push hl
@@ -693,6 +708,7 @@ OP_DATAEND:
 
     IFNDEF UNUSED_OP_PRINT_I
 OP_PRINT_I:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -747,6 +763,7 @@ OP_POP_BORDER:
 
     IFNDEF UNUSED_OP_POP_PRINT
 OP_POP_PRINT:
+    DEBUG_POS
     POP_INT_STACK
     push hl
     call PRINT_A_BYTE
@@ -795,6 +812,7 @@ OP_CENTER:
 
     IFNDEF UNUSED_OP_PICTURE_D
 OP_PICTURE_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     push hl
@@ -817,6 +835,7 @@ OP_DISPLAY_D:
 
     IFNDEF UNUSED_OP_PICTURE_I
 OP_PICTURE_I:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -843,6 +862,7 @@ OP_DISPLAY_I:
 
     IFNDEF UNUSED_OP_POP_PICTURE
 OP_POP_PICTURE:
+    DEBUG_POS
     POP_INT_STACK
     push hl
     call IMG_LOAD
@@ -878,6 +898,7 @@ OP_WAIT:
 
     IFNDEF UNUSED_OP_OPTION
 OP_OPTION:
+    DEBUG_POS
     ld a, (NUM_OPTIONS)
     cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
     jr c,.option_ok
@@ -922,6 +943,7 @@ OP_OPTION:
 
     IFNDEF UNUSED_OP_POP_VAL_OPTION
 OP_POP_VAL_OPTION:
+    DEBUG_POS
     ld a, (NUM_OPTIONS)
     cp MAXIMUM_OPTIONS    ;test if number of options is MAX4
     jr c,.option_ok
@@ -968,6 +990,7 @@ OP_POP_VAL_OPTION:
 
     IFNDEF UNUSED_OP_WAITKEY
 OP_WAITKEY:
+    DEBUG_POS
     push hl                          ;Save pointer
     call ADJUST_CHAR_POS_NO_ADVANCE  ;Advance to the best position for printing the choice
     push hl 
@@ -1011,6 +1034,7 @@ OP_WAITKEY:
 
     IFNDEF UNUSED_OP_PAUSE
 OP_PAUSE:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, (hl)
@@ -1137,6 +1161,7 @@ MENU_MOVE:
 
     IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
+    DEBUG_POS
     ld (.self_a), hl
     ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
@@ -1184,6 +1209,7 @@ OP_CHOOSE:
 
     IFNDEF UNUSED_OP_CHOOSE_W
 OP_CHOOSE_W:
+    DEBUG_POS
 
     ld e, (hl)
     inc hl
@@ -1261,6 +1287,7 @@ OP_CHOOSE_W:
 
     IFNDEF UNUSED_OP_CHOOSE_CH
 OP_CHOOSE_CH:
+    DEBUG_POS
     ld a, (RETURN_FROM_CHOOSE_CH)
     or a
     jr nz, .no_store_ret_addr
@@ -1400,6 +1427,7 @@ OP_PAGEPAUSE:
 
     IFNDEF UNUSED_OP_CHAR_D
 OP_CHAR_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     push hl
@@ -1410,6 +1438,7 @@ OP_CHAR_D:
 
     IFNDEF UNUSED_OP_CHAR_I
 OP_CHAR_I:
+    DEBUG_POS
     ld d, HIGH FLAGS
     ld e, (hl)
     inc hl
@@ -1422,6 +1451,7 @@ OP_CHAR_I:
 
     IFNDEF UNUSED_OP_POP_CHAR
 OP_POP_CHAR:
+    DEBUG_POS
     POP_INT_STACK
     push hl
     call PUT_VAR_CHAR
@@ -1434,6 +1464,7 @@ OP_POP_CHAR:
     UNDEFINE UNUSED_OP_REPCHAR
     ENDIF
 OP_TAB:
+    DEBUG_POS
     ld a, (CHARSET_OFFSET)
     add a, $20
     jr OP_TAB2
@@ -1441,6 +1472,7 @@ OP_TAB:
 
     IFNDEF UNUSED_OP_REPCHAR
 OP_REPCHAR:
+    DEBUG_POS
     ld a, (hl)
     inc hl
 OP_TAB2:
@@ -1459,6 +1491,7 @@ OP_TAB2:
 
     IFNDEF UNUSED_OP_NEWLINE
 OP_NEWLINE:
+    DEBUG_POS
     ld b, (hl)
     inc hl
     push hl
@@ -1472,6 +1505,7 @@ OP_NEWLINE:
 
     IFNDEF UNUSED_OP_BACKSPACE
 OP_BACKSPACE:
+    DEBUG_POS
     ld b, (hl)
     inc hl
     push hl
@@ -1552,6 +1586,7 @@ FIND_WYZ_INDEX:
 
     IFNDEF UNUSED_OP_TRACK_D
 OP_TRACK_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     IFDEF USE_VORTEX
@@ -1572,6 +1607,7 @@ OP_TRACK_D:
 
     IFNDEF UNUSED_OP_TRACK_I
 OP_TRACK_I:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -1594,6 +1630,7 @@ OP_TRACK_I:
 
     IFNDEF UNUSED_OP_POP_TRACK
 OP_POP_TRACK:
+    DEBUG_POS
     POP_INT_STACK
     IFDEF USE_VORTEX
     push hl
@@ -1613,6 +1650,7 @@ OP_POP_TRACK:
 
     IFNDEF UNUSED_OP_PLAY_D
 OP_PLAY_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     IFDEF USE_VORTEX
@@ -1639,6 +1677,7 @@ OP_PLAY_D:
 
     IFNDEF UNUSED_OP_PLAY_I
 OP_PLAY_I:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -1667,6 +1706,7 @@ OP_PLAY_I:
 
     IFNDEF UNUSED_OP_POP_PLAY
 OP_POP_PLAY:
+    DEBUG_POS
     POP_INT_STACK
     IFDEF USE_VORTEX
     push hl
@@ -1692,6 +1732,7 @@ OP_POP_PLAY:
 
     IFNDEF UNUSED_OP_LOOP_D
 OP_LOOP_D:
+    DEBUG_POS
     ld a, (hl)
     inc hl
     IFDEF USE_VORTEX
@@ -1718,6 +1759,7 @@ OP_LOOP_D:
 
     IFNDEF UNUSED_OP_LOOP_I
 OP_LOOP_I:
+    DEBUG_POS
     ld e, (hl)
     inc hl
     ld d, HIGH FLAGS
@@ -1746,6 +1788,7 @@ OP_LOOP_I:
 
     IFNDEF UNUSED_OP_POP_LOOP
 OP_POP_LOOP:
+    DEBUG_POS
     POP_INT_STACK
     IFDEF USE_VORTEX
     push hl
@@ -2471,6 +2514,7 @@ ARR_RESIDENT_BANK EQU $FE
 
     IFNDEF UNUSED_OP_PUSH_VAL_ARRAY
 OP_PUSH_VAL_ARRAY:
+    DEBUG_POS
     ld c, (hl)
     inc hl
     ld e, (hl)
@@ -2537,6 +2581,7 @@ OP_PUSH_VAL_ARRAY:
 
     IFNDEF UNUSED_OP_POP_VAL_ARRAY
 OP_POP_VAL_ARRAY:
+    DEBUG_POS
     ld c, (hl)
     inc hl
     ld e, (hl)
@@ -3038,8 +3083,34 @@ _SVC_INKEY:
     ENDIF                   ; UNUSED_OP_EXTERN
 ;------------------------
 ERROR_NOP:
+    DEBUG_POS
     ld a, 6
     jp SYS_ERROR
+
+    IFDEF DEBUG_ERRORS
+; --debug-errors: after the error number SYS_ERROR shows " at chunk:address" of
+; the opcode that stopped, which the compiler's .map turns into a file and a
+; line. Nothing if no opcode that can fail has run yet.
+SYS_ERROR_POS:
+    ld hl, (DBG_PC)
+    ld a, h
+    or l
+    ret z
+    ld hl, SYS_ERROR_AT
+    call PRINT_STR
+    ld a, (CHUNK)
+    call PRINT_A_BYTE
+    ld hl, SYS_ERROR_SEP
+    call PRINT_STR
+    ld hl, (DBG_PC)
+    dec hl                      ; DEBUG_POS keeps the opcode's address + 1
+    jp PRINT_HL_WORD
+
+SYS_ERROR_AT:
+    DB " at ",0
+SYS_ERROR_SEP:
+    DB ":",0
+    ENDIF
 
 
     ALIGN 256
