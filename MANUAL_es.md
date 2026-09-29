@@ -508,6 +508,7 @@ Cada librería reserva un bloque de variables como espacio de trabajo. Los bloqu
 |----------|----------------------|
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
+| `sprites.cyd`   | 200..209 |
 
 ### `math16_32.cyd` — aritmética de 16 y 32 bits
 
@@ -581,6 +582,52 @@ buffer), `stLen` (capacidad en caracteres) y, para copiar o comparar, `stB2`
 ```
 
 Hay un ejemplo completo en `examples/strings_library`.
+
+### `sprites.cyd` — sprites con máscara
+
+Pinta trozos de la imagen cargada en el buffer (`PICTURE`) sobre la pantalla **sin
+borrar el fondo**. Cada sprite lleva su máscara: la silueta de lo que tapa, dibujada
+en tinta en la misma imagen, normalmente al lado del sprite. El núcleo es
+ensamblador Z80 nativo; si no llamas a ninguna rutina, no se incluye nada.
+
+Todo se mide en caracteres (8x8), como en `BLIT`, y lo que sale de la pantalla por
+la derecha o por abajo se recorta. Parámetros (variables 200..209):
+
+| Variables | Significado |
+|-----------|-------------|
+| `sprX`, `sprY` | esquina del sprite en el buffer |
+| `sprW`, `sprH` | ancho y alto |
+| `sprMX`, `sprMY` | esquina de su máscara en el buffer |
+| `sprDX`, `sprDY` | posición en pantalla |
+| `sprAttr` | 0: los colores de la pantalla no cambian; 1: el sprite pone sus colores en las celdas donde su máscara no está vacía |
+| `sprErr` | 1 si `sprSave` no ha podido guardar (más de 32 caracteres) |
+
+| Rutina | Efecto |
+|--------|--------|
+| `sprDraw` | pantalla = (pantalla AND NOT máscara) OR sprite |
+| `sprXor` | pantalla = pantalla XOR sprite (sin máscara; repetirlo lo borra) |
+| `sprSave` | guarda lo que hay en pantalla en el rectángulo `sprDX`, `sprDY`, `sprW`, `sprH` |
+| `sprRestore` | vuelve a poner lo guardado, donde estaba |
+
+Para mover un sprite: `sprSave`, `sprDraw` y, antes del siguiente paso, `sprRestore`.
+
+**Ejemplo:** un personaje de 2x3 caracteres sobre un escenario.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites.cyd"
+    PICTURE 1 : DISPLAY 1        /* el escenario, en pantalla */
+    PICTURE 2                    /* la hoja de sprites, al buffer (no se ve) */
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0      /* la máscara, a su derecha */
+    SET sprDX TO 14 : SET sprDY TO 10
+    GOSUB sprDraw
+]]
+```
+
+Ocupa unos 550 bytes de código más 288 del almacén de `sprSave` (32 caracteres; la
+constante `SPR_STORE_CHARS` del fichero lo cambia). En 128K y +3 va en un banco
+paginado, fuera de la memoria principal.
 
 ---
 
