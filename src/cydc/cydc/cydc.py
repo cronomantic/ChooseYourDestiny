@@ -101,6 +101,12 @@ def emit_warning(stage, message):
     print(f"WARNING [{stage}]: {message}")
 
 
+def emit_call_stack_warnings(codegen, args):
+    if not args.no_warn_gosub:
+        for w in codegen.call_stack_warnings or ():
+            emit_warning("CODEGEN", w)
+
+
 def plan_mld128_array_banks(array_lengths, ram_banks_full):
     """Assign each mld128 DIM array to a dedicated RAM bank at $C000+offset.
 
@@ -364,6 +370,19 @@ def main():
         help=_("don't warn about labels, variables and data arrays that are never used"),
     )
     arg_parser.add_argument(
+        "--no-warn-gosub",
+        action="store_true",
+        help=_("don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"),
+    )
+    arg_parser.add_argument(
+        "--debug-stack",
+        action="store_true",
+        help=_(
+            "make GOSUB and RETURN check the call stack at runtime and stop with a "
+            "system error when it overflows or is empty (for debugging, adds a few bytes)"
+        ),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -624,13 +643,16 @@ def main():
         # only because it isn't compressed. Memory layout isn't checked: it
         # needs the assembled interpreter.
         checked = [
-            ("TEXT", [ord(c) ^ 255 for c in s[1]] + [0x0A ^ 255]) if s[0] == "TEXT" else s
+            CydcCodegen._keep_loc(("TEXT", [ord(c) ^ 255 for c in s[1]] + [0x0A ^ 255]), s)
+            if s[0] == "TEXT"
+            else s
             for s in code
         ]
         codegen = CydcCodegen(gettext)
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
         codegen.generate_code(code=checked, slice_text=True)
+        emit_call_stack_warnings(codegen, args)
         print(_("No errors found in {input}.").format(input=args.input))
         sys.exit(0)
 
@@ -881,6 +903,8 @@ def main():
         unused_opcodes |= {"UNUSED_SYSCALL"}
     if nested_tokens:
         unused_opcodes |= {"NESTED_TOKENS"}  # EXPAND_TOKEN instead of the flat decoder
+    if args.debug_stack:
+        unused_opcodes |= {"STACK_CHECK"}
     # route_names / route_index / dispatch_size are computed after the first
     # generate_code below, once native-block DCE has settled which blocks (and
     # therefore which callables) survive (they get a dispatch slot each).
@@ -1003,6 +1027,7 @@ def main():
     chunks = codegen.generate_code(
         code=code, slice_text=force_slice_texts, show_debug=False
     )
+    emit_call_stack_warnings(codegen, args)
 
     # Native-block DCE: now that codegen.extern_calls lists the reachable CALLs,
     # drop IMPORT/ASM blocks that nothing calls (see extern_live_blocks). Only the

@@ -354,6 +354,18 @@ def main():
         help=_("don't warn about labels, variables and data arrays that are never used"),
     )
     arg_parser.add_argument(
+        "--no-warn-gosub",
+        action="store_true",
+        default=False,
+        help=_("don't warn about RETURNs reached without a GOSUB and subroutines left without RETURN"),
+    )
+    arg_parser.add_argument(
+        "--debug-stack",
+        action="store_true",
+        default=False,
+        help=_("make GOSUB and RETURN check the call stack at runtime (for debugging)"),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -477,6 +489,12 @@ def main():
 
     if args.no_warn_unused:
         cydc_params = ["--no-warn-unused"] + cydc_params
+
+    if args.no_warn_gosub:
+        cydc_params = ["--no-warn-gosub"] + cydc_params
+
+    if args.debug_stack:
+        cydc_params = ["--debug-stack"] + cydc_params
 
     if args.check:
         cydc_params = ["--check"] + cydc_params
