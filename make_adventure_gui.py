@@ -286,10 +286,11 @@ def classify_log_line(line):
 
 def lookup_debug_map(map_path, text):
     """The statement a system error belongs to, from the .map that
-    --debug-errors writes: (location, opcode), or None if the chunk is not in
-    the map. text is "0:42582" or the whole message ("SYSTEM ERROR No:7 at
-    0:42582"). Raises FileNotFoundError if there is no map and ValueError if
-    text has no chunk:address."""
+    --debug-errors writes: (location, opcode, column), or None if the chunk is
+    not in the map. The column is where the statement starts on its line (1 =
+    first character), or None in maps without it. text is "0:42582" or the whole
+    message ("SYSTEM ERROR No:7 at 0:42582"). Raises FileNotFoundError if there
+    is no map and ValueError if text has no chunk:address."""
     found = re.findall(r"(\d+)\s*:\s*(\d+)", text)
     if not found:
         raise ValueError(text)
@@ -299,11 +300,63 @@ def lookup_debug_map(map_path, text):
         for line in f:
             if line.startswith("#") or not line.strip():
                 continue
-            where, loc, opcode = line.rstrip("\n").split("\t")
+            where, loc, opcode, *rest = line.rstrip("\n").split("\t")
             c, a = (int(v) for v in where.split(":"))
-            if c == chunk and a <= address:
-                best = (loc, opcode)  # the map is in memory order
+            if c == chunk and a <= address:  # the map is in memory order
+                col = rest[0] if rest else ""
+                best = (loc, opcode, int(col) if col.isdigit() else None)
     return best
+
+
+def system_error_number(text):
+    """The number in a pasted "SYSTEM ERROR No:7 ..." message, or None."""
+    match = re.search(r"ERROR\D{0,6}?(\d+)", text, re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def system_error_meaning(number):
+    """What a system error means, in the author's terms (MANUAL: Error codes)."""
+    return {
+        1: _("The game asked for a picture or a music track that it doesn't "
+             "have (PICTURE or TRACK with a number that wasn't included when "
+             "compiling). It can also be a RETURN with no GOSUB."),
+        2: _("Too many options (OPTION) at the same time."),
+        3: _("CHOOSE with no OPTION to choose from."),
+        4: _("A character of the character set is more than 8 pixels wide."),
+        5: _("PLAY or LOOP with no music loaded."),
+        6: _("The game is damaged: compile it again."),
+        7: _("A position outside an array (DIM) was read or written: the "
+             "position is bigger than the array."),
+        8: _("An option scrolled off the top of the window before it could be "
+             "chosen."),
+        9: _("RETURN with no GOSUB to go back to."),
+        10: _("Too many GOSUB one inside another: a subroutine probably leaves "
+              "with GOTO instead of RETURN."),
+    }.get(number)
+
+
+def statement_span(line, col, is_text=False):
+    """(start, end) of the statement that starts at col (1-based) on line, as
+    0-based indices, or None if col isn't on the line. A statement ends at the
+    next ':' outside quotes, at ']]' or at the end of the line; a text, at
+    '[['."""
+    if not col or col > len(line.rstrip()):
+        return None
+    start = end = col - 1
+    quoted = False
+    while end < len(line):
+        rest = line[end:]
+        if is_text:
+            if rest.startswith("[["):
+                break
+        elif rest[0] == '"':
+            quoted = not quoted
+        elif not quoted and (rest[0] == ":" or rest.startswith("]]")):
+            break
+        end += 1
+    while end > start and line[end - 1].isspace():
+        end -= 1
+    return (start, end) if end > start else None
 
 
 def find_compiled_file(model, game_name, output_path):
@@ -510,7 +563,7 @@ class SourceViewer(tk.Toplevel):
     """A script opened at a line, from the log: read-only, the line
     highlighted, and a button to open it in the system's editor."""
 
-    def __init__(self, parent, path, line):
+    def __init__(self, parent, path, line, span=None):
         super().__init__(parent)
         self.title(f"{os.path.basename(path)}:{line}")
         self.geometry("760x520")
@@ -530,6 +583,10 @@ class SourceViewer(tk.Toplevel):
         text.insert("1.0", "\n".join(f"{n:>{width}}  {l}" for n, l in enumerate(lines, 1)))
         text.tag_configure("current", background="#ffe08a")
         text.tag_add("current", f"{line}.0", f"{line}.end")
+        if span:  # the statement itself, within the line
+            text.tag_configure("statement", background="#ff9f40")
+            text.tag_add("statement", f"{line}.{width + 2 + span[0]}",
+                         f"{line}.{width + 2 + span[1]}")
         text.see(f"{max(line - 5, 1)}.0")
         text.see(f"{line}.0")
         text.configure(state=tk.DISABLED)
@@ -1321,10 +1378,11 @@ class MakeAdventureGUI:
         find_entry = ttk.Entry(find_area, textvariable=self.var_find_error, width=34)
         find_entry.pack(side=tk.LEFT, padx=(0, 4))
         find_entry.bind("<Return>", lambda _e: self._on_find_error())
-        Tooltip(find_entry, _("Paste the SYSTEM ERROR message, or its 'chunk:address' "
-                              "(for example 0:42582), to see the line of the script "
-                              "where it happened. Needs a build with 'Show where "
-                              "system errors happen'."))
+        Tooltip(find_entry, _("Paste the error message shown on the Spectrum screen "
+                              "(for example «SYSTEM ERROR No:7 at 0:42582») to see "
+                              "the line of the script where it happened. The game "
+                              "must be compiled with 'Show where system errors "
+                              "happen'."))
         ttk.Button(find_area, text=_("Find"), command=self._on_find_error).pack(side=tk.LEFT)
 
         # ── Build output log ───────────────────────────────────────────────
@@ -1421,13 +1479,13 @@ class MakeAdventureGUI:
         self._open_source(match.group(1), int(match.group(2)))
         return "break"  # don't select the word
 
-    def _open_source(self, name, line):
+    def _open_source(self, name, line, span=None):
         path = find_source(name, self.paths["curr_path"])
         if path is None:
             self._log(_("Can't find {name} in {root}.").format(
                 name=name, root=self.paths["curr_path"]), "warning")
             return
-        SourceViewer(self.root, path, line)
+        SourceViewer(self.root, path, line, span)
 
     # ── Run, output folder and system errors ───────────────────────────────
 
@@ -1455,8 +1513,9 @@ class MakeAdventureGUI:
                       "error")
 
     def _on_find_error(self):
-        """Turn the chunk:address of a system error into the line of the script,
-        with the .map a --debug-errors build writes."""
+        """Show where in the script a system error happened: what the error
+        means, the line of the script with the statement marked, and the file
+        opened at it. Uses the .map a --debug-errors build writes."""
         text = self.var_find_error.get().strip()
         if not text:
             return
@@ -1465,25 +1524,49 @@ class MakeAdventureGUI:
         try:
             found = lookup_debug_map(map_path, text)
         except FileNotFoundError:
-            self._log(_("There is no {path}: compile first with 'Show where system "
-                        "errors happen (debug)' (Configure, Compiler tab).").format(
-                path=map_path), "warning")
+            self._log(_("To find where errors happen, compile the game with 'Show "
+                        "where system errors happen (debug)' (Configure, Compiler "
+                        "tab), run it until the error appears and paste its "
+                        "message here."), "warning")
             return
         except ValueError:
-            self._log(_("'{text}' has no chunk:address (for example 0:42582).").format(
-                text=text), "warning")
+            self._log(_("Paste the error message shown on the Spectrum screen, for "
+                        "example «SYSTEM ERROR No:7 at 0:42582»."), "warning")
             return
         if found is None:
-            self._log(_("{text} is not in {path}. Was the game compiled again after "
-                        "the error?").format(text=text, path=map_path), "warning")
+            self._log(_("That error doesn't belong to the last compilation of {game}. "
+                        "If you have compiled it again since, run it until the error "
+                        "appears and paste the new message.").format(game=game),
+                      "warning")
             return
-        loc, opcode = found
-        self._log(_("The error happened at {loc} ({opcode}).").format(
-            loc=loc, opcode=opcode), "summary")
+        loc, opcode, col = found
+        number = system_error_number(text)
+        meaning = system_error_meaning(number)
+        if meaning:
+            self._log(_("Error {number}: {meaning}").format(number=number, meaning=meaning),
+                      "summary")
         match = SOURCE_LOCATION_RE.search(loc)
-        if match:
-            self._open_source(match.group(1), int(match.group(2)))
-
+        if not match:  # past the last statement
+            self._log(_("It happened when the program ended, after its last line."))
+            return
+        name, line_no = match.group(1), int(match.group(2))
+        path = find_source(name, self.paths["curr_path"])
+        line, span = "", None
+        if path:
+            try:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    lines = f.read().split("\n")
+                line = lines[line_no - 1] if 0 < line_no <= len(lines) else ""
+            except OSError:
+                pass
+            span = statement_span(line, col, opcode == "TEXT")
+        self._log(_("{file}, line {line}:").format(file=name, line=line_no), "summary")
+        if line.strip():
+            self._log("    " + line)
+            if span:  # ^^^ under the statement (tabs kept so it lines up)
+                pad = "".join(c if c == "\t" else " " for c in line[:span[0]])
+                self._log("    " + pad + "^" * (span[1] - span[0]), "error")
+        self._open_source(name, line_no, span)
 
     def _clear_log(self):
         self.log.configure(state=tk.NORMAL)

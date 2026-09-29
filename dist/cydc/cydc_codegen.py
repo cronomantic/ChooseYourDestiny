@@ -207,7 +207,7 @@ class CydcCodegen(object):
         loc = getattr(old, "loc", None)
         if loc is None:
             return new
-        return type(old)(new, loc)
+        return type(old)(new, loc, getattr(old, "col", None))
 
     def _opcode_byte(self, name):
         """The byte stored in the bytecode for an opcode: its number times 2,
@@ -1667,18 +1667,20 @@ class CydcCodegen(object):
 
     def _note_position(self, bank, offset, statement, opcode):
         self.statement_positions.append(
-            (bank, offset, getattr(statement, "loc", None), opcode))
+            (bank, offset, getattr(statement, "loc", None), opcode,
+             getattr(statement, "col", None)))
 
     def debug_map(self):
-        """The lines of the --debug-errors map: "chunk:address  location  OPCODE"
-        for each statement, in memory order. A system error shows the chunk and
+        """The lines of the --debug-errors map: "chunk:address  location  OPCODE
+        column" for each statement, in memory order (column: where the statement
+        starts on its line, "-" if unknown). A system error shows the chunk and
         address of the opcode that stopped; its statement is the last line of that
         chunk whose address is not greater."""
         lines = []
-        for bank, offset, loc, opcode in sorted(
+        for bank, offset, loc, opcode, col in sorted(
                 self.statement_positions, key=lambda e: (e[0], e[1])):
             lo, hi = self._convert_address(offset, bank)
-            lines.append(f"{bank}:{lo | hi << 8}\t{loc or '-'}\t{opcode}")
+            lines.append(f"{bank}:{lo | hi << 8}\t{loc or '-'}\t{opcode}\t{col or '-'}")
         return lines
 
     def symbol_replacement(self, code, symbols, chunk_index=0):
