@@ -2176,7 +2176,10 @@ For those who prefer a graphical interface instead of editing scripts or command
 - A **Check** button that looks for errors in the script without assembling it (`--check`), in about a second and without SjASMPlus
 - Settings persistence (remembered between sessions)
 - Full internationalization support (English and Spanish) with runtime language switching via dropdown
-- Real-time compilation output display
+- Real-time compilation output display, with errors in red, warnings in orange and a summary at the end. Double-clicking a `file.cyd:12` in the log opens the file at that line
+- A **Run** button, which opens the last compiled game in the emulator without compiling it again, and an **Open folder** button, which opens the output folder
+- A **Game error** field: with a game compiled with "Show where system errors happen" (`--debug-errors`), paste the `SYSTEM ERROR` message and it tells you the line of the script where it happened (see [Error codes](#error-codes))
+- The compiler options are grouped (Optimization, Warnings, Debugging and Compatibility) and each one explains what it does when you hover over it
 - Auto-hide console window on Windows for clean startup
 
 **Launching the GUI:**
@@ -2618,7 +2621,7 @@ To find where a system error happened, compile with `--debug-errors`. The messag
 0:42586	adventure.cyd:13	POP_SET
 ```
 
-The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
+The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. In the GUI you don't need to look for it: paste the message, or just `0:42582`, in the **Game error** field and it tells you the line and opens the file at it. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
 
 Without `--debug-errors` the interpreter doesn't change. With it, each instruction that can give a system error and that the game uses (those that print text, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` and the arrays) notes where it is, which adds 3 bytes to it, and the error message takes about 43 more; the other instructions don't get slower. Since the interpreter's instruction table is aligned, those bytes sometimes fit in the alignment gap and sometimes make the interpreter grow by 256 bytes.
 

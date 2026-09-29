@@ -2187,7 +2187,10 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 - Botón **Comprobar**, que busca errores en el guion sin ensamblarlo (`--check`), en un segundo y sin necesidad de SjASMPlus
 - Persistencia de configuración (recordada entre sesiones)
 - Soporte completo de internacionalización (Inglés y Español) con cambio de idioma en tiempo real mediante lista desplegable
-- Visualización en tiempo real del resultado de la compilación
+- Visualización en tiempo real del resultado de la compilación, con los errores en rojo, los avisos en naranja y un resumen al final. Un doble clic sobre un `fichero.cyd:12` del registro abre el fichero en esa línea
+- Botón **Ejecutar**, que abre en el emulador el último juego compilado sin volver a compilarlo, y botón **Abrir carpeta**, que abre la carpeta de salida
+- Campo **Error del juego**: con un juego compilado con «Mostrar dónde ocurren los errores de sistema» (`--debug-errors`), pega el mensaje de `SYSTEM ERROR` y te dice en qué línea del guion ocurrió (ver [Códigos de error](#códigos-de-error))
+- Las opciones del compilador van agrupadas (Optimización, Avisos, Depuración y Compatibilidad) y cada una explica qué hace al dejar el ratón encima
 - Ocultar ventana de consola en Windows para un inicio limpio
 
 **Lanzando la GUI:**
@@ -2630,7 +2633,7 @@ Para saber dónde se produjo un error de sistema, compila con `--debug-errors`. 
 0:42586	aventura.cyd:13	POP_SET
 ```
 
-La sentencia que buscas es la última de ese bloque cuya dirección no es mayor que la del mensaje. Los errores 9 y 10 solo existen con `--debug-stack`, así que para ellos hay que usar las dos opciones.
+La sentencia que buscas es la última de ese bloque cuya dirección no es mayor que la del mensaje. En la GUI no hace falta buscarla: pega el mensaje, o solo `0:42582`, en el campo **Error del juego** y te dice la línea y abre el fichero en ella. Los errores 9 y 10 solo existen con `--debug-stack`, así que para ellos hay que usar las dos opciones.
 
 Sin `--debug-errors` el intérprete no cambia. Con ella, cada instrucción que puede dar un error de sistema y que usa el juego (las que imprimen texto, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` y los arrays) apunta dónde está, lo que le añade 3 bytes, y el mensaje de error ocupa unos 43 más; el resto de instrucciones no se hace más lento. Como la tabla de instrucciones del intérprete va alineada, esos bytes a veces caben en el hueco de alineación y otras hacen crecer el intérprete 256 bytes.
 
