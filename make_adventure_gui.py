@@ -37,6 +37,7 @@ from __future__ import print_function
 import sys
 import os
 import json
+import re
 import shutil
 import subprocess
 import threading
@@ -270,6 +271,124 @@ def stream_exec(exec_path, parameter_list, on_line, language=None):
     return proc.returncode
 
 
+# "game.cyd:12" in a compiler message: a place in the script.
+SOURCE_LOCATION_RE = re.compile(r"([^\s:()'\"]+\.cyd):(\d+)", re.IGNORECASE)
+
+
+def classify_log_line(line):
+    """'error', 'warning' or None, for colouring a line of the log."""
+    if re.search(r"\bERROR\b", line):
+        return "error"
+    if re.search(r"\bWARNING\b", line):
+        return "warning"
+    return None
+
+
+def lookup_debug_map(map_path, text):
+    """The statement a system error belongs to, from the .map that
+    --debug-errors writes: (location, opcode), or None if the chunk is not in
+    the map. text is "0:42582" or the whole message ("SYSTEM ERROR No:7 at
+    0:42582"). Raises FileNotFoundError if there is no map and ValueError if
+    text has no chunk:address."""
+    found = re.findall(r"(\d+)\s*:\s*(\d+)", text)
+    if not found:
+        raise ValueError(text)
+    chunk, address = (int(v) for v in found[-1])
+    best = None
+    with open(map_path, encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("#") or not line.strip():
+                continue
+            where, loc, opcode = line.rstrip("\n").split("\t")
+            c, a = (int(v) for v in where.split(":"))
+            if c == chunk and a <= address:
+                best = (loc, opcode)  # the map is in memory order
+    return best
+
+
+def find_compiled_file(model, game_name, output_path):
+    """The file the compiler wrote for game_name, or None. Its name may be cut
+    (10 characters on tape, 8 on disk) and its extension lower- or uppercase."""
+    if model == "plus3":
+        ext = ".dsk"
+    elif model in ("mld", "mld128"):
+        ext = ".mld"
+    else:
+        ext = ".tap"
+    wanted = {n.lower() + ext for n in (game_name, game_name[:10], game_name[:8])}
+    try:
+        names = os.listdir(output_path)
+    except OSError:
+        return None
+    for name in sorted(names):
+        if name.lower() in wanted:
+            return os.path.join(output_path, name)
+    return None
+
+
+def find_source(name, root):
+    """A script file named in a compiler message: name as given (from root) or
+    else the first file with that name under root. None if there is none."""
+    direct = os.path.join(root, name)
+    if os.path.isfile(direct):
+        return direct
+    base = os.path.basename(name).lower()
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames if d not in ("dist", "external", ".git"))
+        for f in sorted(filenames):
+            if f.lower() == base:
+                return os.path.join(dirpath, f)
+    return None
+
+
+def find_zesarux(tools_path):
+    """The ZEsarUX to run the game with, or None: tools/zesarux/, else the
+    newest tools/ZEsarUX*/ (tools/build_emu_tools.sh leaves it in
+    tools/ZEsarUX-<version>/), else the one on the PATH."""
+    exe = "zesarux.exe" if os.name == "nt" else "zesarux"
+    try:
+        dirs = [d for d in os.listdir(tools_path) if d.lower().startswith("zesarux")]
+    except OSError:
+        dirs = []
+    plain = [d for d in dirs if d.lower() == "zesarux"]
+    versions = sorted(  # the highest version first, 13.0 before 9.0
+        (d for d in dirs if d.lower() != "zesarux"), reverse=True,
+        key=lambda d: [int(n) for n in re.findall(r"\d+", d)])
+    for d in plain + versions:
+        path = os.path.join(tools_path, d, exe)
+        if os.path.isfile(path):
+            return os.path.abspath(path)  # it runs from its own folder
+    return shutil.which("zesarux")
+
+
+# ZEsarUX machine per target (esxdos: divMMC on a 128K).
+ZESARUX_MACHINES = {"plus3": "P341", "128k": "128k", "48k": "48k", "esxdos": "128k"}
+
+
+def zesarux_arguments(model, compiled_file, output_path):
+    """ZEsarUX's arguments to run compiled_file for model (not mld/mld128)."""
+    args = [
+        "--noconfigfile", "--quickexit", "--zoom", "2", "--realvideo", "--nosplash",
+        "--forcevisiblehotkeys", "--forceconfirmyes", "--nowelcomemessage",
+        "--cpuspeed", "100", "--machine", ZESARUX_MACHINES[model],
+    ]
+    if model == "esxdos":
+        # The .TAP bootstrap loads the .DAT from the SD: the output folder.
+        args += ["--enable-divmmc", "--enable-esxdos-handler",
+                 "--esxdos-root-dir", os.path.abspath(output_path)]
+    return args + [os.path.abspath(compiled_file)]
+
+
+def open_with_system(path):
+    """Open a file or a folder with the system's default application."""
+    if os.name == "nt":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
+
 def run_exec(exec_path, parameter_list=None, capture_output=False):
     """Run an external executable and return the result."""
     if parameter_list is None:
@@ -345,6 +464,81 @@ def load_logo_image(curr_path, max_height=LOGO_MAX_HEIGHT):
         except Exception:
             continue
     return None
+
+
+# ── Tooltips and source viewer ─────────────────────────────────────────────────
+
+class Tooltip:
+    """A help text shown while the pointer rests on a widget."""
+
+    def __init__(self, widget, text, delay=500):
+        self.widget, self.text, self.delay = widget, text, delay
+        self._after = None
+        self._tip = None
+        widget.bind("<Enter>", self._schedule, add="+")
+        widget.bind("<Leave>", self._hide, add="+")
+        widget.bind("<ButtonPress>", self._hide, add="+")
+
+    def _schedule(self, _event=None):
+        self._hide()
+        self._after = self.widget.after(self.delay, self._show)
+
+    def _show(self):
+        self._after = None
+        if self._tip is not None:
+            return
+        x = self.widget.winfo_rootx() + 16
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        self._tip = tk.Toplevel(self.widget)
+        self._tip.wm_overrideredirect(True)
+        self._tip.wm_geometry(f"+{x}+{y}")
+        tk.Label(
+            self._tip, text=self.text, justify=tk.LEFT, wraplength=380,
+            background="#ffffe0", relief=tk.SOLID, borderwidth=1, padx=6, pady=4,
+        ).pack()
+
+    def _hide(self, _event=None):
+        if self._after is not None:
+            self.widget.after_cancel(self._after)
+            self._after = None
+        if self._tip is not None:
+            self._tip.destroy()
+            self._tip = None
+
+
+class SourceViewer(tk.Toplevel):
+    """A script opened at a line, from the log: read-only, the line
+    highlighted, and a button to open it in the system's editor."""
+
+    def __init__(self, parent, path, line):
+        super().__init__(parent)
+        self.title(f"{os.path.basename(path)}:{line}")
+        self.geometry("760x520")
+        self.path = path
+
+        bar = ttk.Frame(self)
+        bar.pack(fill=tk.X, padx=6, pady=(6, 0))
+        # The button first: a long path is cut, not the button.
+        ttk.Button(bar, text=_("Open in editor"), command=self._open).pack(side=tk.RIGHT)
+        ttk.Label(bar, text=path, foreground="gray").pack(side=tk.LEFT)
+
+        text = scrolledtext.ScrolledText(self, wrap=tk.NONE, font=("Courier", 10))
+        text.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
+        with open(path, encoding="utf-8", errors="replace") as f:
+            lines = f.read().split("\n")
+        width = len(str(len(lines)))
+        text.insert("1.0", "\n".join(f"{n:>{width}}  {l}" for n, l in enumerate(lines, 1)))
+        text.tag_configure("current", background="#ffe08a")
+        text.tag_add("current", f"{line}.0", f"{line}.end")
+        text.see(f"{max(line - 5, 1)}.0")
+        text.see(f"{line}.0")
+        text.configure(state=tk.DISABLED)
+
+    def _open(self):
+        try:
+            open_with_system(self.path)
+        except Exception as exc:
+            messagebox.showerror(_("Error"), str(exc), parent=self)
 
 
 # ── Settings Dialog ────────────────────────────────────────────────────────────
@@ -507,41 +701,79 @@ class SettingsDialog(tk.Toplevel):
             foreground="gray",
         ).grid(row=2, column=2, columnspan=2, sticky=tk.W, **pad)
 
-        # Flags
-        flags = ttk.LabelFrame(parent, text=_("Flags"))
-        flags.pack(fill=tk.X, **pad)
-
-        checks = [
-            ("Verbose output", self.app.var_verbose),
-            ("Slice texts between banks", self.app.var_slice_texts),
-            ("Trim unused interpreter code", self.app.var_trim_interpreter),
-            ("Dead code elimination", self.app.var_dead_code_elimination),
-            ("Show generated bytecode", self.app.var_show_bytecode),
-            ("Allow statements without colons", self.app.var_no_strict_colons),
-            ("Use WYZ Tracker (instead of Vortex)", self.app.var_use_wyz),
-            ("Use 720 KB disk images (+3 only)", self.app.var_disk_720),
-            ("Warn about unused symbols", self.app.var_warn_unused),
-            ("Warn about GOSUB/RETURN problems", self.app.var_warn_gosub),
-            ("Warn about variables shared between files", self.app.var_warn_shared_vars),
-            ("Check the GOSUB stack at runtime (debug)", self.app.var_debug_stack),
-            ("Show where system errors happen (debug)", self.app.var_debug_errors),
+        # Options, in groups, each with its help text on hover.
+        groups_frame = ttk.Frame(parent)
+        groups_frame.pack(fill=tk.X, **pad)
+        groups_frame.columnconfigure(0, weight=1)
+        groups_frame.columnconfigure(1, weight=1)
+        app = self.app
+        groups = [
+            (_("Optimization"), [
+                ("Trim unused interpreter code", app.var_trim_interpreter,
+                 _("Leave out of the interpreter the code of the commands the "
+                   "game doesn't use. Saves memory.")),
+                ("Dead code elimination", app.var_dead_code_elimination,
+                 _("Remove the code that can never be reached, such as the "
+                   "routines of an included library that the game doesn't call.")),
+                ("Slice texts between banks", app.var_slice_texts,
+                 _("If a compressed text doesn't fit in a bank, split it between "
+                   "that bank and the next one instead of moving it whole.")),
+            ]),
+            (_("Warnings"), [
+                ("Warn about unused symbols", app.var_warn_unused,
+                 _("Warn about labels, variables and data arrays that are "
+                   "declared but never used.")),
+                ("Warn about GOSUB/RETURN problems", app.var_warn_gosub,
+                 _("Warn about RETURNs that can run with no GOSUB pending and "
+                   "subroutines that can end without RETURN.")),
+                ("Warn about variables shared between files", app.var_warn_shared_vars,
+                 _("Warn when a variable declared in one file, such as a "
+                   "library's, is used from another file under another name or "
+                   "by its number.")),
+            ]),
+            (_("Debugging"), [
+                ("Check the GOSUB stack at runtime (debug)", app.var_debug_stack,
+                 _("The interpreter checks the GOSUB stack while the game runs "
+                   "and stops with system error 9 or 10 instead of hanging. Adds "
+                   "about 30 bytes: leave it out of the final version.")),
+                ("Show where system errors happen (debug)", app.var_debug_errors,
+                 _("System errors also say where they happened, and a .map file "
+                   "next to the game turns that into a file and a line: use "
+                   "'Game error' in the main window. Leave it out of the final "
+                   "version.")),
+                ("Show generated bytecode", app.var_show_bytecode,
+                 _("Show the generated bytecode in the log.")),
+                ("Verbose output", app.var_verbose,
+                 _("Show more detail about each step of the compilation.")),
+            ]),
+            (_("Compatibility"), [
+                ("Allow statements without colons", app.var_no_strict_colons,
+                 _("Accept several statements on a line without ':' between "
+                   "them, as old scripts did.")),
+                ("Use WYZ Tracker (instead of Vortex)", app.var_use_wyz,
+                 _("Play the music with WYZ Tracker instead of Vortex Tracker.")),
+                ("Use 720 KB disk images (+3 only)", app.var_disk_720,
+                 _("Make 720 KB disk images instead of the standard 180 KB "
+                   "ones (+3 only).")),
+                ("Autoboot from SD (esxdos only)", app.var_autoboot,
+                 _("Also write AUTOBOOT.BAS and ESXDOS.CFG so the game starts on "
+                   "its own when the Spectrum is switched on (esxdos 0.8.7 or "
+                   "later).")),
+            ]),
         ]
-        for i, (text, var) in enumerate(checks):
-            ttk.Checkbutton(flags, text=_(text), variable=var).grid(
-                row=i // 2, column=i % 2, sticky=tk.W, **pad
-            )
+        autoboot_chk = None
+        for g, (title, options) in enumerate(groups):
+            frame = ttk.LabelFrame(groups_frame, text=title)
+            frame.grid(row=g // 2, column=g % 2, sticky=tk.NSEW, padx=3, pady=3)
+            for text, var, help_text in options:
+                chk = ttk.Checkbutton(frame, text=_(text), variable=var)
+                chk.pack(anchor=tk.W, padx=6, pady=2)
+                Tooltip(chk, help_text)
+                if var is app.var_autoboot:
+                    autoboot_chk = chk
 
         # Autoboot is ESXDOS-only: the checkbox is enabled only while the ESXDOS
         # target is selected, and cleared otherwise.
-        autoboot_chk = ttk.Checkbutton(
-            flags,
-            text=_("Autoboot from SD (esxdos only)"),
-            variable=self.app.var_autoboot,
-        )
-        autoboot_chk.grid(
-            row=len(checks) // 2, column=len(checks) % 2, sticky=tk.W, **pad
-        )
-
         def _sync_autoboot(*_):
             if self.app.var_target.get() == "esxdos":
                 autoboot_chk.config(state=tk.NORMAL)
@@ -549,7 +781,12 @@ class SettingsDialog(tk.Toplevel):
                 autoboot_chk.config(state=tk.DISABLED)
                 self.app.var_autoboot.set(False)
 
-        self.app.var_target.trace_add("write", _sync_autoboot)
+        trace = self.app.var_target.trace_add("write", _sync_autoboot)
+        # The dialog goes away but the variable stays: drop the trace with it,
+        # or changing the target later calls a checkbox that no longer exists.
+        autoboot_chk.bind(
+            "<Destroy>", lambda _e: self.app.var_target.trace_remove("write", trace)
+        )
         _sync_autoboot()
 
         # Pause after load
@@ -825,6 +1062,8 @@ class MakeAdventureGUI:
         self._build_ui()
         self._apply_appearance()
         self._set_window_icon()
+        for var in (self.var_target, self.var_game_name, self.var_output_path):
+            var.trace_add("write", lambda *_a: self._update_run_button())
         
         # Hide console window on Windows after successful GUI initialization
         hide_console_window()
@@ -911,12 +1150,16 @@ class MakeAdventureGUI:
         """Rebuild the window in the new language. The log is kept, and so is
         the busy state if a compilation is running."""
         log_text = self.log.get("1.0", "end-1c")
+        log_tags = {tag: self.log.tag_ranges(tag) for tag in ("error", "warning", "summary")}
         for widget in self.root.winfo_children():
             widget.destroy()  # the settings dialog too, if open
         self._build_ui()
         self._apply_appearance()
         self.log.configure(state=tk.NORMAL)
         self.log.insert(tk.END, log_text)
+        for tag, ranges in log_tags.items():  # its colours too
+            if ranges:
+                self.log.tag_add(tag, *ranges)
         self.log.see(tk.END)
         self.log.configure(state=tk.DISABLED)
         if self.compiling:
@@ -1052,6 +1295,16 @@ class MakeAdventureGUI:
         )
         self.btn_check.pack(side=tk.LEFT, padx=(0, 4))
 
+        # Run the last build in the emulator, without compiling again.
+        self.btn_run = ttk.Button(btn_area, text=_("▷  Run"), command=self._on_run)
+        self.btn_run.pack(side=tk.LEFT, padx=(0, 4))
+        Tooltip(self.btn_run, _("Load the compiled game in the emulator chosen in "
+                                "Configure (the internal one if none is chosen)."))
+
+        btn_folder = ttk.Button(btn_area, text=_("Open folder"), command=self._on_open_folder)
+        btn_folder.pack(side=tk.LEFT, padx=(0, 4))
+        Tooltip(btn_folder, _("Open the output folder."))
+
         self.btn_clear_log = ttk.Button(
             btn_area, text=_("Clear Log"), command=self._clear_log
         )
@@ -1059,6 +1312,20 @@ class MakeAdventureGUI:
 
         self.progress = ttk.Progressbar(btn_area, mode="indeterminate", length=200)
         self.progress.pack(side=tk.RIGHT, padx=(4, 6))
+
+        # ── Find a system error (--debug-errors) ───────────────────────────
+        find_area = ttk.Frame(self.root)
+        find_area.pack(fill=tk.X, padx=8, pady=(0, 4))
+        ttk.Label(find_area, text=_("Game error:")).pack(side=tk.LEFT, padx=(6, 4))
+        self.var_find_error = tk.StringVar()
+        find_entry = ttk.Entry(find_area, textvariable=self.var_find_error, width=34)
+        find_entry.pack(side=tk.LEFT, padx=(0, 4))
+        find_entry.bind("<Return>", lambda _e: self._on_find_error())
+        Tooltip(find_entry, _("Paste the SYSTEM ERROR message, or its 'chunk:address' "
+                              "(for example 0:42582), to see the line of the script "
+                              "where it happened. Needs a build with 'Show where "
+                              "system errors happen'."))
+        ttk.Button(find_area, text=_("Find"), command=self._on_find_error).pack(side=tk.LEFT)
 
         # ── Build output log ───────────────────────────────────────────────
         log_frame = ttk.LabelFrame(self.root, text=_("Build Output"))
@@ -1072,6 +1339,11 @@ class MakeAdventureGUI:
             font=("Courier", 9),
         )
         self.log.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
+        self.log.tag_configure("error", foreground="#c00000")
+        self.log.tag_configure("warning", foreground="#a05a00")
+        # Double-click on a "game.cyd:12" opens the script at that line.
+        self.log.bind("<Double-Button-1>", self._on_log_double_click)
+        self._update_run_button()
 
     # ── Window icon ────────────────────────────────────────────────────────
 
@@ -1120,19 +1392,98 @@ class MakeAdventureGUI:
             fg=log_fg,
             bg=log_bg,
         )
+        self.log.tag_configure("summary", font=(log_family, log_size, "bold"))
 
     # ── Logging ────────────────────────────────────────────────────────────
 
-    def _log(self, text):
-        """Thread‑safe log append."""
+    def _log(self, text, tag=None):
+        """Thread‑safe log append. Each line that is an error or a warning is
+        coloured as one, unless tag says otherwise."""
 
         def _append():
             self.log.configure(state=tk.NORMAL)
-            self.log.insert(tk.END, text + "\n")
+            for line in text.split("\n"):
+                self.log.insert(tk.END, line + "\n", tag or classify_log_line(line) or ())
             self.log.see(tk.END)
             self.log.configure(state=tk.DISABLED)
 
         self.root.after(0, _append)
+
+    def _on_log_double_click(self, event):
+        """Open the script at the "game.cyd:12" under the pointer."""
+        index = self.log.index(f"@{event.x},{event.y}")
+        column = int(index.split(".")[1])
+        line = self.log.get(f"{index} linestart", f"{index} lineend")
+        matches = list(SOURCE_LOCATION_RE.finditer(line))
+        if not matches:
+            return None
+        match = next((m for m in matches if m.start() <= column <= m.end()), matches[0])
+        self._open_source(match.group(1), int(match.group(2)))
+        return "break"  # don't select the word
+
+    def _open_source(self, name, line):
+        path = find_source(name, self.paths["curr_path"])
+        if path is None:
+            self._log(_("Can't find {name} in {root}.").format(
+                name=name, root=self.paths["curr_path"]), "warning")
+            return
+        SourceViewer(self.root, path, line)
+
+    # ── Run, output folder and system errors ───────────────────────────────
+
+    def _update_run_button(self):
+        """Run is available when there is a compiled game to run."""
+        built = find_compiled_file(
+            self.var_target.get(), self.var_game_name.get().strip(),
+            self.var_output_path.get().strip())
+        self.btn_run.configure(
+            state=tk.NORMAL if built and not self.compiling else tk.DISABLED)
+
+    def _on_run(self):
+        mode = self.var_run_emulator.get()
+        if mode == "none":  # nothing chosen: the internal one if it is there
+            mode = "internal" if find_zesarux(self.paths["tools_path"]) else "default"
+        self._run_emulator(self.var_target.get(), self.var_game_name.get().strip(),
+                           self.var_output_path.get().strip(), mode)
+
+    def _on_open_folder(self):
+        folder = self.var_output_path.get().strip()
+        try:
+            open_with_system(folder)
+        except Exception as exc:
+            self._log(_("Failed to open {path}: {error}").format(path=folder, error=exc),
+                      "error")
+
+    def _on_find_error(self):
+        """Turn the chunk:address of a system error into the line of the script,
+        with the .map a --debug-errors build writes."""
+        text = self.var_find_error.get().strip()
+        if not text:
+            return
+        game = self.var_game_name.get().strip()
+        map_path = os.path.join(self.var_output_path.get().strip(), f"{game}.map")
+        try:
+            found = lookup_debug_map(map_path, text)
+        except FileNotFoundError:
+            self._log(_("There is no {path}: compile first with 'Show where system "
+                        "errors happen (debug)' (Configure, Compiler tab).").format(
+                path=map_path), "warning")
+            return
+        except ValueError:
+            self._log(_("'{text}' has no chunk:address (for example 0:42582).").format(
+                text=text), "warning")
+            return
+        if found is None:
+            self._log(_("{text} is not in {path}. Was the game compiled again after "
+                        "the error?").format(text=text, path=map_path), "warning")
+            return
+        loc, opcode = found
+        self._log(_("The error happened at {loc} ({opcode}).").format(
+            loc=loc, opcode=opcode), "summary")
+        match = SOURCE_LOCATION_RE.search(loc)
+        if match:
+            self._open_source(match.group(1), int(match.group(2)))
+
 
     def _clear_log(self):
         self.log.configure(state=tk.NORMAL)
@@ -1277,6 +1628,7 @@ class MakeAdventureGUI:
         self.compiling = True
         self.btn_compile.configure(state=tk.DISABLED)
         self.btn_check.configure(state=tk.DISABLED)
+        self.btn_run.configure(state=tk.DISABLED)
         self.progress.start(15)
         self._log(f"{'─' * 60}")
         if check:
@@ -1306,10 +1658,20 @@ class MakeAdventureGUI:
     ):
         """Run the compiler in a background thread."""
         success = False
+        counts = {"error": 0, "warning": 0}
+
+        def on_line(line):
+            kind = classify_log_line(line)
+            if kind:
+                counts[kind] += 1
+            self._log(line)
+
         try:
             returncode = stream_exec(
-                python_path, cydc_params, self._log, language=self.current_language
+                python_path, cydc_params, on_line, language=self.current_language
             )
+            self._log(_("Errors: {errors}   Warnings: {warnings}").format(
+                errors=counts["error"], warnings=counts["warning"]), "summary")
             if returncode != 0:
                 self._log(_("ERROR: Compiler exited with code {}.").format(returncode))
             else:
@@ -1351,6 +1713,7 @@ class MakeAdventureGUI:
         self.btn_compile.configure(state=tk.NORMAL)
         self.btn_check.configure(state=tk.NORMAL)
         self.compiling = False
+        self._update_run_button()
 
     # ── Backup ─────────────────────────────────────────────────────────────
 
@@ -1368,44 +1731,32 @@ class MakeAdventureGUI:
 
     # ── Emulator launch ───────────────────────────────────────────────────
 
-    def _run_emulator(self, model, game_name, output_path):
-        """Launch the compiled file in an emulator, mirroring make_adv.cmd."""
-        run_mode = self.var_run_emulator.get()
+    def _run_emulator(self, model, game_name, output_path, run_mode=None):
+        """Launch the compiled file in an emulator, mirroring make_adv.cmd.
+        run_mode defaults to the one chosen in Configure."""
+        run_mode = run_mode or self.var_run_emulator.get()
         if run_mode == "none":
             return
 
-        if model == "plus3":
-            ext = ".DSK"
-        elif model == "mld" or model == "mld128":
-            ext = ".MLD"
-        else:
-            ext = ".TAP"
-        compiled_file = os.path.join(output_path, f"{game_name}{ext}")
-
-        if not os.path.isfile(compiled_file):
-            self._log(_("Cannot run emulator – file not found: {}").format(compiled_file))
+        # Its name may be cut (tape: 10 characters) and its extension lowercase.
+        compiled_file = find_compiled_file(model, game_name, output_path)
+        if compiled_file is None:
+            self._log(_("Cannot run emulator – file not found: {}").format(
+                os.path.join(output_path, game_name)))
             return
 
         if run_mode == "default":
             self._log(_("Opening {} with default application…").format(compiled_file))
             try:
-                if os.name == "nt":
-                    os.startfile(compiled_file)
-                elif sys.platform == "darwin":
-                    subprocess.Popen(["open", compiled_file])
-                else:
-                    subprocess.Popen(["xdg-open", compiled_file])
+                open_with_system(compiled_file)
             except Exception as exc:
                 self._log(_("Failed to open file: {}").format(exc))
 
         elif run_mode == "internal":
-            zesarux_dir = os.path.join(self.paths["tools_path"], "zesarux")
-            if os.name == "nt":
-                zesarux = os.path.join(zesarux_dir, "zesarux.exe")
-            else:
-                zesarux = os.path.join(zesarux_dir, "zesarux")
-            if not os.path.isfile(zesarux):
-                self._log(_("Zesarux not found at {}").format(zesarux))
+            zesarux = find_zesarux(self.paths["tools_path"])
+            if zesarux is None:
+                self._log(_("ZEsarUX not found in {} (a zesarux or ZEsarUX-* folder) "
+                            "or on the PATH.").format(self.paths["tools_path"]))
                 return
 
             if model == "mld" or model == "mld128":
@@ -1418,26 +1769,11 @@ class MakeAdventureGUI:
                 )
                 return
 
-            machine_map = {"plus3": "P341", "128k": "128k", "48k": "48k"}
-            zparams = [
-                "--noconfigfile",
-                "--quickexit",
-                "--zoom",
-                "2",
-                "--realvideo",
-                "--nosplash",
-                "--forcevisiblehotkeys",
-                "--forceconfirmyes",
-                "--nowelcomemessage",
-                "--cpuspeed",
-                "100",
-                "--machine",
-                machine_map[model],
-                compiled_file,
-            ]
+            zparams = zesarux_arguments(model, compiled_file, output_path)
             self._log(_("Launching Zesarux: {} {}").format(zesarux, ' '.join(zparams)))
             try:
-                subprocess.Popen([zesarux] + zparams, cwd=zesarux_dir)
+                # Its ROMs are next to it.
+                subprocess.Popen([zesarux] + zparams, cwd=os.path.dirname(zesarux))
             except Exception as exc:
                 self._log(_("Failed to launch Zesarux: {}").format(exc))
 

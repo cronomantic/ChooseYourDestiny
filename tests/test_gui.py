@@ -3,17 +3,34 @@
 - The compiler runs with the GUI's language (its messages were in English with
   the GUI in Spanish) and unbuffered, and its output reaches the log line by
   line while it runs, not all at the end.
+- The log tells errors and warnings apart, and "game.cyd:12" in it leads to
+  the file.
+- Run finds the compiled game under the name the compiler gives it (cut to
+  10 characters on tape, lowercase extension).
+- "Game error" turns a system error's chunk:address into a line with the .map.
+- The internal emulator is found where tools/build_emu_tools.sh leaves it
+  (tools/ZEsarUX-<version>/), and the command the GUI runs it with boots the
+  game on every target it supports. This one needs sjasmplus and ZEsarUX.
 - Changing the language rebuilds the window (it used to raise AttributeError)
-  and keeps the log. This one needs a display; it is skipped without one.
+  and keeps the log. The window tests need a display; they are skipped without
+  one.
 """
 
+import os
+import socket
+import subprocess
 import sys
+import tempfile
 import time
 import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "tests"))
+from emu_harness import (  # noqa: E402
+    _read_mem, _recv_until_prompt, compile_cyd, emulator_available,
+)
 
 try:
     import tkinter as tk
@@ -51,6 +68,124 @@ class TestCompilerProcess(unittest.TestCase):
         self.assertTrue(any("abreviatura" in line for line in lines), lines[:5])
 
 
+MAP = """# chunk:address\tlocation\topcode
+0:42500\tgame.cyd:3\tSET
+0:42510\tgame.cyd:4\tSET
+0:42580\tlib/sprites.cyd:12\tGOSUB
+1:40000\tgame.cyd:30\tPRINT
+"""
+
+
+@unittest.skipIf(gui is None, "tkinter not available")
+class TestHelpers(unittest.TestCase):
+    def test_log_lines_are_classified(self):
+        self.assertEqual(gui.classify_log_line("ERROR [PARSER]: Syntax error at g.cyd:3"),
+                         "error")
+        self.assertEqual(gui.classify_log_line("WARNING [CODEGEN]: Variable 202 is..."),
+                         "warning")
+        self.assertIsNone(gui.classify_log_line("Compiling g.cyd"))
+        self.assertIsNone(gui.classify_log_line("  Errors: 0"))
+
+    def test_source_locations_in_messages(self):
+        text = "Variable 201 is 'libB' in l.cyd, and at main.cyd:2 it is declared"
+        self.assertEqual(gui.SOURCE_LOCATION_RE.search(text).groups(), ("main.cyd", "2"))
+        text = "Label 'nada' on lib/g.cyd:14 is not declared."
+        self.assertEqual(gui.SOURCE_LOCATION_RE.search(text).groups(), ("lib/g.cyd", "14"))
+
+    def test_debug_map_lookup(self):
+        with tempfile.TemporaryDirectory() as wd:
+            path = os.path.join(wd, "game.map")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(MAP)
+            # The last statement of that chunk at or before the address.
+            self.assertEqual(gui.lookup_debug_map(path, "0:42510"), ("game.cyd:4", "SET"))
+            self.assertEqual(gui.lookup_debug_map(path, "0:42579"), ("game.cyd:4", "SET"))
+            self.assertEqual(gui.lookup_debug_map(path, "SYSTEM ERROR 7 at 0:42582"),
+                             ("lib/sprites.cyd:12", "GOSUB"))
+            self.assertEqual(gui.lookup_debug_map(path, "1 : 40001"), ("game.cyd:30", "PRINT"))
+            self.assertIsNone(gui.lookup_debug_map(path, "0:100"))
+            self.assertIsNone(gui.lookup_debug_map(path, "5:42582"))
+            with self.assertRaises(ValueError):
+                gui.lookup_debug_map(path, "SYSTEM ERROR 7")
+            with self.assertRaises(FileNotFoundError):
+                gui.lookup_debug_map(os.path.join(wd, "other.map"), "0:1")
+
+    def test_compiled_file_as_the_compiler_names_it(self):
+        with tempfile.TemporaryDirectory() as wd:
+            open(os.path.join(wd, "aventurala.tap"), "w").close()  # 10 characters
+            open(os.path.join(wd, "JUEGO.DSK"), "w").close()
+            self.assertEqual(gui.find_compiled_file("48k", "aventuralarga", wd),
+                             os.path.join(wd, "aventurala.tap"))
+            self.assertEqual(gui.find_compiled_file("plus3", "juego", wd),
+                             os.path.join(wd, "JUEGO.DSK"))
+            self.assertIsNone(gui.find_compiled_file("128k", "juego", wd))
+            self.assertIsNone(gui.find_compiled_file("48k", "juego", os.path.join(wd, "no")))
+
+    def test_source_is_found_under_the_project(self):
+        with tempfile.TemporaryDirectory() as wd:
+            os.makedirs(os.path.join(wd, "lib"))
+            os.makedirs(os.path.join(wd, "dist", "lib"))
+            open(os.path.join(wd, "dist", "lib", "sprites.cyd"), "w").close()
+            self.assertIsNone(gui.find_source("sprites.cyd", wd))  # not in dist/
+            open(os.path.join(wd, "lib", "sprites.cyd"), "w").close()
+            self.assertEqual(gui.find_source("sprites.cyd", wd),
+                             os.path.join(wd, "lib", "sprites.cyd"))
+            self.assertEqual(gui.find_source("lib/sprites.cyd", wd),
+                             os.path.join(wd, "lib", "sprites.cyd"))
+            self.assertIsNone(gui.find_source("nada.cyd", wd))
+
+    def test_zesarux_is_found_under_tools(self):
+        exe = "zesarux.exe" if os.name == "nt" else "zesarux"
+        with tempfile.TemporaryDirectory() as wd:
+            def make(folder):
+                os.makedirs(os.path.join(wd, folder))
+                open(os.path.join(wd, folder, exe), "w").close()
+                return os.path.join(wd, folder, exe)
+
+            make("ZEsarUX-9.0")
+            newest = make("ZEsarUX-13.0")
+            make("ZEsarUX_win-11.0")
+            self.assertEqual(gui.find_zesarux(wd), newest)  # 13 > 11 > 9
+            plain = make("zesarux")
+            self.assertEqual(gui.find_zesarux(wd), plain)  # the old place first
+
+
+@unittest.skipIf(gui is None, "tkinter not available")
+@unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not available under tools/")
+class TestRunInZesarux(unittest.TestCase):
+    def test_the_game_boots(self):
+        zesarux = gui.find_zesarux(str(REPO / "tools"))
+        for port, model in enumerate(("48k", "128k", "plus3", "esxdos"), 10240):
+            with self.subTest(model), tempfile.TemporaryDirectory() as wd:
+                _, flags = compile_cyd("[[ SET 0 TO 42 ]]Hola.[[ WAITKEY ]]", model, wd)
+                game = gui.find_compiled_file(model, "test", wd)
+                args = gui.zesarux_arguments(model, game, wd)
+                # Headless, and listening, so the test can look at the game.
+                args[-1:-1] = ["--vo", "null", "--ao", "null", "--enable-remoteprotocol",
+                               "--remoteprotocol-port", str(port)]
+                proc = subprocess.Popen([zesarux] + args, cwd=os.path.dirname(zesarux),
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                try:
+                    for _ in range(40):
+                        try:
+                            s = socket.create_connection(("127.0.0.1", port), timeout=1)
+                            break
+                        except OSError:
+                            time.sleep(0.25)
+                    else:
+                        self.fail("ZEsarUX did not start")
+                    with s:
+                        _recv_until_prompt(s, 5)
+                        deadline, value = time.time() + 40, None
+                        while time.time() < deadline and value != 42:
+                            time.sleep(1)
+                            value = (_read_mem(s, flags, 1) or b"\0")[0]
+                    self.assertEqual(value, 42)
+                finally:
+                    proc.kill()
+                    proc.wait()
+
+
 def _display():
     if gui is None:
         return False
@@ -67,15 +202,60 @@ class TestLanguageChange(unittest.TestCase):
         root = tk.Tk()
         try:
             app = gui.MakeAdventureGUI(root)
-            app._log("hello")
+            app._log("hello\nERROR [PARSER]: bad")
             root.update()
             app.lang_var.set("es" if app.current_language != "es" else "en")
             app._on_language_change()
             root.update()
             self.assertIn("hello", app.log.get("1.0", "end"))
+            self.assertIn("ERROR [PARSER]", app.log.get(*app.log.tag_ranges("error")))
             self.assertEqual(str(app.btn_compile["state"]), "normal")
         finally:
             root.destroy()
+
+
+@unittest.skipUnless(_display(), "no display for tkinter")
+class TestMainWindow(unittest.TestCase):
+    def setUp(self):
+        self.root = tk.Tk()
+        self.app = gui.MakeAdventureGUI(self.root)
+        self.root.update()
+
+    def tearDown(self):
+        self.root.destroy()
+
+    def test_log_colours_errors_and_warnings(self):
+        self.app._log("Compiling\nERROR [PARSER]: bad at g.cyd:3\nWARNING [CODEGEN]: hm")
+        self.root.update()
+        log = self.app.log
+        end = log.index("end-1c")
+        errors = log.tag_ranges("error")
+        warnings = log.tag_ranges("warning")
+        self.assertEqual(len(errors), 2)
+        self.assertEqual(len(warnings), 2)
+        self.assertIn("ERROR [PARSER]", log.get(*errors))
+        self.assertIn("WARNING [CODEGEN]", log.get(*warnings))
+        self.assertTrue(log.compare(errors[0], "<", end))
+
+    def test_run_follows_the_compiled_game(self):
+        with tempfile.TemporaryDirectory() as wd:
+            self.app.var_target.set("48k")
+            self.app.var_game_name.set("juego")
+            self.app.var_output_path.set(wd)
+            self.root.update()
+            self.assertEqual(str(self.app.btn_run["state"]), "disabled")
+            open(os.path.join(wd, "juego.tap"), "w").close()
+            self.app.var_output_path.set(wd)  # any change checks again
+            self.root.update()
+            self.assertEqual(str(self.app.btn_run["state"]), "normal")
+
+    def test_game_error_without_a_map(self):
+        with tempfile.TemporaryDirectory() as wd:
+            self.app.var_output_path.set(wd)
+            self.app.var_find_error.set("0:42582")
+            self.app._on_find_error()
+            self.root.update()
+            self.assertIn(".map", self.app.log.get(*self.app.log.tag_ranges("warning")))
 
 
 if __name__ == "__main__":

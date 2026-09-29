@@ -107,8 +107,13 @@ class CydcParser(object):
         if self.line_map and line_num in self.line_map:
             loc = self.line_map[line_num]
             return f"{loc.filename}:{loc.line_num}"
-        else:
-            return self._("line {}").format(line_num)
+        # Past the last mapped line (the text after the last newline of a
+        # file): the same file, counting on from its closest line.
+        before = [n for n in (self.line_map or ()) if n < line_num]
+        if before:
+            loc = self.line_map[max(before)]
+            return f"{loc.filename}:{loc.line_num + line_num - max(before)}"
+        return self._("line {}").format(line_num)
 
     def _tag_location(self, p, i):
         """Turn the statement(s) in p[i] into SourceStatements located at that

@@ -4,7 +4,7 @@ REM ============================================================================
 REM  ChooseYourDestiny - Adventure Builder Script (Windows)
 REM ===============================================================================
 REM  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
-REM  for the ZX Spectrum 48k, 128k, +3, or Dandanator MLD target.
+REM  for the ZX Spectrum 48k, 128k, +3, esxDOS (divMMC) or Dandanator MLD target.
 REM
 REM  Usage: make_adv.cmd [options]
 REM  
@@ -19,9 +19,11 @@ REM Name of the game (without .cyd extension)
 SET GAME=test
 REM This name will be used for:
 REM   - The source file to compile: %GAME%.cyd
-REM   - The output file: %GAME%.TAP, %GAME%.DSK, or %GAME%.MLD
+REM   - The output file: %GAME%.TAP, %GAME%.DSK, or %GAME%.MLD (the compiler
+REM     cuts the name to 10 characters on tape and to 8 on the other targets)
 
-REM Target platform: 48k, 128k (for TAP), plus3 (for DSK), mld, or mld128 (for MLD)
+REM Target platform: 48k, 128k (for TAP), plus3 (for DSK), esxdos (TAP + DAT for
+REM the SD card), mld, or mld128 (for MLD)
 SET TARGET=128k
 
 REM Number of screen lines to use when compressing SCR files (default: 192)
@@ -38,9 +40,14 @@ SET CYDC_EXTRA_PARAMS=
 REM Run emulator after successful compilation
 REM Options:
 REM   none     - Do not run emulator
-REM   internal - Run with ZEsarUX (must be in .\tools\ZEsarUX_win-11.0\)
+REM   internal - Run with ZEsarUX (see ZESARUX_PATH below)
 REM   default  - Run with Windows default program for .TAP/.DSK files
 SET RUN_EMULATOR=none
+
+REM Path to zesarux.exe (used when RUN_EMULATOR=internal). Empty: look for it in
+REM .\tools\zesarux\, then in the newest .\tools\ZEsarUX*\ (for example
+REM .\tools\ZEsarUX_win-13.0\), then on the PATH.
+SET ZESARUX_PATH=
 
 REM Backup the .cyd source file after compilation (yes/no)
 SET BACKUP_CYD=no
@@ -64,7 +71,7 @@ ECHO.
 
 REM Check if Python distribution exists
 IF NOT EXIST "%~dp0dist\python\python.exe" (
-    ECHO ERROR: Python distribution not found!
+    ECHO ERROR: Python distribution not found^^!
     ECHO Expected location: %~dp0dist\python\python.exe
     ECHO.
     ECHO Please ensure you have the complete ChooseYourDestiny distribution.
@@ -89,7 +96,7 @@ IF ERRORLEVEL 1 GOTO ERROR
 
 ECHO.
 ECHO ===============================================================================
-ECHO  SUCCESS! Adventure compiled successfully.
+ECHO  SUCCESS^^! Adventure compiled successfully.
 ECHO ===============================================================================
 
 REM Create backup if enabled
@@ -120,7 +127,7 @@ IF "%BACKUP_CYD%"=="yes" (
         )
         
         IF !count! GTR %BACKUP_MAX_FILES% (
-            ECHO Rotating backups (keeping %BACKUP_MAX_FILES% most recent)...
+            ECHO Rotating backups ^(keeping %BACKUP_MAX_FILES% most recent^)...
             SET /A to_delete=!count!-%BACKUP_MAX_FILES%
             SET deleted=0
             FOR /F "delims=" %%F IN ('DIR "%~dp0BACKUP\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
@@ -129,60 +136,112 @@ IF "%BACKUP_CYD%"=="yes" (
                     SET /A deleted+=1
                 )
             )
-            ECHO Deleted !deleted! old backup(s).
+            ECHO Deleted !deleted! old backup^(s^).
         )
     )
 )
 
-REM Run emulator if configured
-IF "%RUN_EMULATOR%"=="default" (
-    ECHO.
-    ECHO Launching with default program...
-    IF "%TARGET%"=="plus3" (
-        START "" "%GAME%.DSK"
-    ) ELSE IF "%TARGET%"=="mld" (
-        START "" "%GAME%.MLD"
-    ) ELSE IF "%TARGET%"=="mld128" (
-        START "" "%GAME%.MLD"
-    ) ELSE (
-        START "" "%GAME%.TAP"
-    )
-    GOTO END
-)
-
-IF "%RUN_EMULATOR%"=="internal" (
-    ECHO.
-    ECHO Launching with ZEsarUX emulator...
-    
-    IF NOT EXIST "%~dp0tools\ZEsarUX_win-11.0\zesarux.exe" (
-        ECHO Warning: ZEsarUX not found at tools\ZEsarUX_win-11.0\zesarux.exe
-        ECHO Please download ZEsarUX from https://github.com/chernandezba/zesarux/releases
-        GOTO END
-    )
-    
-    PUSHD "%~dp0tools\ZEsarUX_win-11.0"
-    
-    SET ZESARUX_PARAMS=--noconfigfile --quickexit --zoom 2 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage --cpuspeed 100
-    
-    IF "%TARGET%"=="plus3" (
-        START "ZEsarUX - %GAME%" zesarux.exe !ZESARUX_PARAMS! --machine P3SP41 "..\..\%GAME%.DSK"
-    ) ELSE IF "%TARGET%"=="mld" (
-        ECHO Warning: internal emulator launch is not configured for MLD cartridges.
-        ECHO          Use RUN_EMULATOR=default or load "%GAME%.MLD" manually.
-    ) ELSE IF "%TARGET%"=="mld128" (
-        ECHO Warning: internal emulator launch is not configured for MLD cartridges.
-        ECHO          Use RUN_EMULATOR=default or load "%GAME%.MLD" manually.
-    ) ELSE IF "%TARGET%"=="128k" (
-        START "ZEsarUX - %GAME%" zesarux.exe !ZESARUX_PARAMS! --machine 128k "..\..\%GAME%.TAP"
-    ) ELSE (
-        START "ZEsarUX - %GAME%" zesarux.exe !ZESARUX_PARAMS! --machine 48k "..\..\%GAME%.TAP"
-    )
-    
-    POPD
-    GOTO END
-)
-
+REM Run emulator if configured (the subroutines below use SCRIPT_DIR: inside a
+REM CALL, %~dp0 is not always this script's folder)
+SET "SCRIPT_DIR=%~dp0"
+IF "%RUN_EMULATOR%"=="default" GOTO RUN_DEFAULT
+IF "%RUN_EMULATOR%"=="internal" GOTO RUN_INTERNAL
 GOTO END
+
+:RUN_DEFAULT
+ECHO.
+ECHO Launching with default program...
+CALL :FIND_OUTPUT
+IF NOT DEFINED OUTPUT_FILE GOTO NO_OUTPUT
+START "" "%OUTPUT_FILE%"
+GOTO END
+
+:RUN_INTERNAL
+ECHO.
+ECHO Launching with ZEsarUX emulator...
+IF "%TARGET%"=="mld" GOTO NO_MLD
+IF "%TARGET%"=="mld128" GOTO NO_MLD
+CALL :FIND_OUTPUT
+IF NOT DEFINED OUTPUT_FILE GOTO NO_OUTPUT
+CALL :FIND_ZESARUX
+IF NOT DEFINED ZESARUX GOTO NO_ZESARUX
+IF NOT EXIST "%ZESARUX%" GOTO NO_ZESARUX
+
+SET ZESARUX_MACHINE=48k
+IF "%TARGET%"=="128k" SET ZESARUX_MACHINE=128k
+IF "%TARGET%"=="esxdos" SET ZESARUX_MACHINE=128k
+IF "%TARGET%"=="plus3" SET ZESARUX_MACHINE=P341
+SET ZESARUX_PARAMS=--noconfigfile --quickexit --zoom 2 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage --cpuspeed 100 --machine %ZESARUX_MACHINE%
+REM The .TAP bootstrap loads the .DAT from the SD card: this folder. (The "."
+REM keeps the closing quote from being read as \".)
+IF "%TARGET%"=="esxdos" SET ZESARUX_PARAMS=%ZESARUX_PARAMS% --enable-divmmc --enable-esxdos-handler --esxdos-root-dir "%SCRIPT_DIR%."
+
+ECHO Launching ZEsarUX: "%ZESARUX%" %ZESARUX_PARAMS% "%OUTPUT_FILE%"
+REM From its own folder, where its ROMs are.
+FOR %%F IN ("%ZESARUX%") DO PUSHD "%%~dpF"
+START "ZEsarUX - %GAME%" "%ZESARUX%" %ZESARUX_PARAMS% "%OUTPUT_FILE%"
+POPD
+GOTO END
+
+:NO_MLD
+ECHO Warning: internal emulator launch is not configured for MLD cartridges.
+ECHO          Use RUN_EMULATOR=default or load the .MLD file manually.
+GOTO END
+
+:NO_OUTPUT
+ECHO Warning: compiled file not found for %GAME% (%TARGET%).
+GOTO END
+
+:NO_ZESARUX
+ECHO Warning: ZEsarUX not found (ZESARUX_PATH, tools\zesarux\, tools\ZEsarUX*\ or the PATH).
+ECHO Please download ZEsarUX from https://github.com/chernandezba/zesarux/releases
+ECHO or set ZESARUX_PATH in this script.
+GOTO END
+
+REM The compiled file: the compiler cuts the name to 10 characters on tape and
+REM to 8 on the other targets.
+:FIND_OUTPUT
+SET OUTPUT_EXT=TAP
+IF "%TARGET%"=="plus3" SET OUTPUT_EXT=DSK
+IF "%TARGET%"=="mld" SET OUTPUT_EXT=MLD
+IF "%TARGET%"=="mld128" SET OUTPUT_EXT=MLD
+SET "OUTPUT_FILE="
+SET "OUTPUT_NAME=%GAME%"
+IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+SET "OUTPUT_NAME=%GAME:~0,10%"
+IF NOT DEFINED OUTPUT_FILE IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+SET "OUTPUT_NAME=%GAME:~0,8%"
+IF NOT DEFINED OUTPUT_FILE IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+GOTO :EOF
+
+REM The ZEsarUX to use: ZESARUX_PATH, else tools\zesarux\, else the highest
+REM version in tools\ZEsarUX*\ (by its number: 13.0 before 9.0), else the PATH.
+:FIND_ZESARUX
+SET "ZESARUX="
+IF NOT DEFINED ZESARUX_PATH GOTO FIND_ZESARUX_TOOLS
+REM Relative to this folder, and absolute: it runs from its own folder.
+PUSHD "%SCRIPT_DIR%"
+FOR %%F IN ("%ZESARUX_PATH%") DO SET "ZESARUX=%%~fF"
+POPD
+GOTO :EOF
+:FIND_ZESARUX_TOOLS
+IF EXIST "%SCRIPT_DIR%tools\zesarux\zesarux.exe" SET "ZESARUX=%SCRIPT_DIR%tools\zesarux\zesarux.exe"
+IF DEFINED ZESARUX GOTO :EOF
+SET ZESARUX_BEST=-1
+FOR /D %%D IN ("%SCRIPT_DIR%tools\ZEsarUX*") DO IF EXIST "%%~fD\zesarux.exe" CALL :ZESARUX_VERSION "%%~fD" "%%~nxD"
+IF DEFINED ZESARUX GOTO :EOF
+FOR /F "delims=" %%P IN ('WHERE zesarux.exe 2^>NUL') DO IF NOT DEFINED ZESARUX SET "ZESARUX=%%P"
+GOTO :EOF
+
+REM %1 the folder, %2 its name ("ZEsarUX_win-13.0"): its number is what goes
+REM between the first "-" and the next ".".
+:ZESARUX_VERSION
+SET ZESARUX_VER=0
+FOR /F "tokens=2 delims=-" %%V IN ("%~2") DO FOR /F "tokens=1 delims=." %%M IN ("%%V") DO SET ZESARUX_VER=%%M
+IF %ZESARUX_VER% LEQ %ZESARUX_BEST% GOTO :EOF
+SET ZESARUX_BEST=%ZESARUX_VER%
+SET "ZESARUX=%~1\zesarux.exe"
+GOTO :EOF
 
 :ERROR
 ECHO.
@@ -203,6 +262,7 @@ SET IMGLINES=
 SET LOAD_SCR=
 SET CYDC_EXTRA_PARAMS=
 SET RUN_EMULATOR=
+SET ZESARUX_PATH=
 SET BACKUP_CYD=
 SET BACKUP_MAX_FILES=
 SET DATESTAMP=

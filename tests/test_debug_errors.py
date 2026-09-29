@@ -114,6 +114,8 @@ class TestDebugMap(unittest.TestCase):
             # Every statement of the script has its line.
             for line in (3, 4, 6, 7, 8):
                 self.assertIn(f"game.cyd:{line}", locs)
+            # The text after the last newline too, not as "line 10".
+            self.assertIn("game.cyd:10", locs)
             addresses = [a for a, _ in entries[0]]
             self.assertEqual(addresses, sorted(addresses))
 
