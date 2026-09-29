@@ -390,11 +390,10 @@ START_LOADING:
     ; HL current pointer,
 EXEC_LOOP:
     ld d, HIGH OPCODES
-    ld e, (hl)                ; Loads instruction
-    sla e
+    ld e, (hl)                ; Loads instruction (the compiler stores it x2)
     ex de, hl
     ld c, (hl)
-    inc hl
+    inc l                     ; Entries are 2-byte aligned inside the page
     ld b, (hl)
     push bc
     ex de, hl

@@ -3768,16 +3768,10 @@ OPCODES:
     DW ERROR_NOP
     ENDIF
 
-    IFDEF USE_256_OPCODES
-    REPT 256-(($-OPCODES)/2)
-    DW ERROR_NOP
-    ENDR
-    ENDIF
-    IFNDEF USE_256_OPCODES
+    ; 128 entries: the bytecode stores each opcode x2, its offset in this page.
     REPT 128-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
-    ENDIF
 
     
 
