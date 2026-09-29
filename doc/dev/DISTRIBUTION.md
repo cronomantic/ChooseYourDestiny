@@ -76,7 +76,7 @@ python make_dist.py --platform macos
 ## Command-Line Options
 
 ```
-usage: make_dist.py [-h] [--platform {windows,linux,macos,all}] [--all] [--skip-compile]
+usage: make_dist.py [-h] [--platform {windows,linux,macos,all}] [--all] [--skip-compile] [--sync-only]
 
 Create redistributable packages for ChooseYourDestiny
 
@@ -86,6 +86,7 @@ optional arguments:
                         Target platform (default: current platform)
   --all, -a             Create packages for all platforms
   --skip-compile        Skip source file copying and translation compilation
+  --sync-only           Only bring dist/ up to date with src (compiler and translations), without packaging
 ```
 
 ## What Gets Packaged

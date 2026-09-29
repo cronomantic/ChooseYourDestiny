@@ -27,7 +27,7 @@ cd "$SCRIPT_DIR"
 if ! command -v pandoc &> /dev/null; then
     echo "Error: pandoc is not installed"
     echo "Install with:"
-    echo "  Ubuntu/Debian: sudo apt-get install pandoc texlive-latex-base texlive-latex-extra"
+    echo "  Ubuntu/Debian: sudo apt-get install pandoc texlive-xetex texlive-latex-extra texlive-lang-spanish fonts-dejavu-core"
     echo "  Fedora: sudo dnf install pandoc texlive-scheme-medium"
     echo "  macOS: brew install pandoc basictex"
     exit 1
@@ -83,7 +83,8 @@ cd "$SCRIPT_DIR"
 for doc in MANUAL TUTORIAL; do
     for lang in es en; do
         echo "Generating ${doc}_${lang}.pdf..."
-        pandoc "${doc}_${lang}.md" -o "$SCRIPT_DIR/documentation/${lang}/${doc}_${lang}.pdf" "${COMMON_PANDOC_ARGS[@]}"
+        # lang: captions, table of contents and hyphenation in the document's language
+        pandoc "${doc}_${lang}.md" -o "$SCRIPT_DIR/documentation/${lang}/${doc}_${lang}.pdf" "${COMMON_PANDOC_ARGS[@]}" -V lang="$lang"
     done
 done
 

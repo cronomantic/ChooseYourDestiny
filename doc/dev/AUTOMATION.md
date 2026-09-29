@@ -329,6 +329,8 @@ necesita la wiki.
 - Cabecera/pie de página con numeración
 - Motor LaTeX: Tectonic (Windows) o auto-detectado (Linux/macOS)
 - Cabecera común de estilo: `documentation/pdf/pandoc-header.tex`
+- Idioma de cada documento (`-V lang=es` / `-V lang=en`): pies de figura, índice y
+  guionado en su idioma (en Linux necesita `texlive-lang-spanish`)
 
 **En la release:** el workflow `.github/workflows/release.yml` ejecuta
 `make_pdf.sh` en Ubuntu (Pandoc y XeLaTeX) antes de empaquetar, así que los dos
@@ -459,12 +461,23 @@ python make_dist.py --platform macos
 # Crear para todas las plataformas
 python make_dist.py --all
 
-# Solo compilar, sin crear ZIP
+# Solo poner dist/ al día con src/, sin crear ZIP
+python make_dist.py --sync-only
+
+# Crear el ZIP con dist/ tal como está, sin copiar desde src/
 python make_dist.py --skip-compile
 ```
 
+**`dist/` debe estar siempre al día con `src/`:** los scripts (`make_adv.*`,
+`make_adventure*.py`) ejecutan el compilador de `dist/cydc`. Tras cambiar algo en
+`src/cydc`, ejecuta `python make_dist.py --sync-only` y sube también los cambios
+de `dist/`. Si falta, `tests/test_dist_sync.py` falla en la CI. La lista de
+ficheros sale de `src/cydc/cydc` (salvo traducciones, cachés y
+`gen_default_font.py`, ver `SOURCE_EXCLUDE`), y la sincronización borra de
+`dist/cydc` lo que ya no existe en `src/`.
+
 **Proceso:**
-1. Copia archivos fuente de `src/cydc/` a `dist/`
+1. Copia archivos fuente de `src/cydc/` a `dist/` y borra los que sobran
 2. Compila traducciones (.po → .mo)
 3. Recopila archivos específicos de plataforma
 4. Obtiene versión desde git tags

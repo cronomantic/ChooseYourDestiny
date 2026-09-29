@@ -53,20 +53,48 @@ OP_GOTO:
 .same_CHUNK:
     jp EXEC_LOOP
 
+    ; With --debug-stack (STACK_CHECK), a GOSUB that would run the call stack into
+    ; the variables below it, or a RETURN with nothing to return to, stop with a
+    ; system error instead of corrupting memory. Without it, no code is added.
+    MACRO CHECK_GOSUB_DEPTH
+    IFDEF STACK_CHECK
+    ld a, ixh
+    cp HIGH (END_VARS + 64) + 1
+    jp c, GOSUB_STACK_FULL
+    ENDIF
+    ENDM
+
 OP_GOSUB:
     push hl
     ld de, 3
     add hl, de
+; HL = return address (in the current CHUNK), destination pointer on the stack.
+GOSUB_RET_HL:
     ld a, (CHUNK)
     ld (ix-1), l
     ld (ix-2), h
     ld (ix-3), a
     ld de, 65536-3    ; ix-3
     add ix, de
+    CHECK_GOSUB_DEPTH
     pop hl
     jp OP_GOTO
 
+    IFDEF STACK_CHECK
+RETURN_WITHOUT_GOSUB:
+    ld a, 9
+    jp SYS_ERROR
+GOSUB_STACK_FULL:
+    ld a, 10
+    jp SYS_ERROR
+    ENDIF
+
 OP_RETURN:
+    IFDEF STACK_CHECK
+    ld a, ixh
+    cp HIGH INT_STACK_ADDR
+    jr nc, RETURN_WITHOUT_GOSUB   ; IX back at the top: no GOSUB pending
+    ENDIF
     ld c, (ix+0)
     ld h, (ix+1)
     ld l, (ix+2)
@@ -261,74 +289,66 @@ OP_OR:
     OP_2PARAM_STORE_STACK
     ENDIF
 
+    ; Comparisons leave 1 (true) or 0 (false) without branching: the result
+    ; ends up in the carry, SBC A,A turns it into $FF/$00 and AND 1 into 1/0.
     IFNDEF UNUSED_OP_CP_EQ
-OP_CP_EQ:
-    OP_2PARAM_GET_STACK
-    cp c
-    jr z, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+OP_CP_EQ:                ; p1 = p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
+    sub c                ; zero only if equal...
+    sub 1                ; ...and then it is the only value that borrows
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
     IFNDEF UNUSED_OP_CP_NE
-OP_CP_NE:
-    OP_2PARAM_GET_STACK
-    cp c
-    jr nz, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+OP_CP_NE:                ; p1 <> p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
+    sub c                ; zero only if equal
+    add a, $FF           ; carry unless zero
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
     IFNDEF UNUSED_OP_CP_LT
 OP_CP_LT:                ; p1 < p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
-    cp c                 ; p1 - p2 -> p1 < p2
-    jr c, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+    cp c                 ; carry if p1 < p2
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
     IFNDEF UNUSED_OP_CP_ME
-OP_CP_ME:               ; p1 >= p2
-    OP_2PARAM_GET_STACK ; p2 = C, p1 = A
-    cp c                ; p1 - p2
-    jr nc, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+OP_CP_ME:                ; p1 >= p2
+    OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
+    cp c                 ; carry if p1 < p2
+    ccf
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
     IFNDEF UNUSED_OP_CP_MT
 OP_CP_MT:                ; p1 > p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
-    ld b, a
-    ld a, c              ; p2 = A, p1 = B
-    cp b                 ; p2 - p1 -> p2 < p1
-    jr c, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+    scf
+    sbc a, c             ; p1 - p2 - 1: carry if p1 <= p2
+    ccf
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
     IFNDEF UNUSED_OP_CP_LE
 OP_CP_LE:                ; p1 <= p2
     OP_2PARAM_GET_STACK  ; p2 = C, p1 = A
-    ld b, a
-    ld a, c              ; p2 = A, p1 = B
-    cp b                 ; p2 - p1 -> p2 < p1
-    jr nc, 1f
-    xor a
-    jr 2f
-1:  ld a, 1
-2:  OP_2PARAM_STORE_STACK
+    scf
+    sbc a, c             ; p1 - p2 - 1: carry if p1 <= p2
+    sbc a, a
+    and 1
+    OP_2PARAM_STORE_STACK
     ENDIF
 
 ;-------------------------------------------------------
@@ -1041,6 +1061,80 @@ OP_PAUSE:
     jp EXEC_LOOP
     ENDIF
 
+    ; MENU_MOVE is shared by the CHOOSE variants; drop it if none is used.
+    IFDEF UNUSED_OP_CHOOSE
+    IFDEF UNUSED_OP_CHOOSE_W
+    IFDEF UNUSED_OP_CHOOSE_CH
+    DEFINE UNUSED_MENU_MOVE
+    ENDIF
+    ENDIF
+    ENDIF
+
+    IFNDEF UNUSED_MENU_MOVE
+; Moves the menu selection for the keys in A (as returned by INKEY_MENU).
+; Out: carry if the option was selected (fire); otherwise NZ if the selection
+; moved (the key is released on return), Z if not (no key, or no room to move).
+; Destroys A, BC.
+MENU_MOVE:
+    rrca
+    jr c, .right
+    rrca
+    jr c, .left
+    rrca
+    jr c, .down
+    rrca
+    jr c, .up
+    rrca            ; carry = fire
+    ret c
+    xor a           ; Z, NC
+    ret
+.left:
+    ld a, (INCR_X_OPTION)
+    jr .back
+.up:
+    ld a, (INCR_Y_OPTION)
+.back:
+    ld b, a
+    ld a, (SELECTED_OPTION)
+    sub b           ; before the first option?
+    jr c, .none
+    jr .move
+.right:
+    ld a, (INCR_X_OPTION)
+    jr .forward
+.down:
+    ld a, (INCR_Y_OPTION)
+.forward:
+    ld b, a
+    ld a, (NUM_OPTIONS)
+    ld c, a
+    ld a, (SELECTED_OPTION)
+    add a, b
+    cp c            ; past the last option?
+    jr nc, .none
+.move:
+    ld c, a
+    ld a, b         ; an increment of 0 (direction not in use) doesn't move
+    or a
+    jr z, .none
+    push bc
+    ld a, NO_SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+    pop bc
+    ld a, c
+    ld (SELECTED_OPTION), a
+    ld a, SELECTED_BULLET
+    call PRINT_SELECTED_OPTION_BULLET
+1:  call INKEY_MENU  ; wait until the key is released
+    or a
+    jr nz, 1b
+    inc a           ; NZ, NC
+    ret
+.none:
+    xor a           ; Z, NC
+    ret
+    ENDIF
+
     IFNDEF UNUSED_OP_CHOOSE
 OP_CHOOSE:
     ld (.self_a), hl
@@ -1056,106 +1150,10 @@ OP_CHOOSE:
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
     call INKEY_MENU
-    rrca
-    jp c, .right
-    rrca
-    jp c, .left
-    rrca
-    jp c, .down
-    rrca
-    jp c, .up
-    rrca
+    call MENU_MOVE
     jp c, .selected
-    call ANIMATE_OPTION_BULLET
+    call z, ANIMATE_OPTION_BULLET
     jr .inkey
-.left:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 3b
-.right:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 4b
-.up:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 2b
-.down:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 3b
 .selected:
     ld a, (SELECTED_OPTION)
     sla a
@@ -1179,14 +1177,7 @@ OP_CHOOSE:
     push hl
 .self_a+1:
     ld hl, 0-0
-    ld a, (CHUNK)
-    ld (ix-1), l
-    ld (ix-2), h
-    ld (ix-3), a
-    ld de, 65536-3    ; ix-3
-    add ix, de
-    pop hl
-    jp OP_GOTO
+    jp GOSUB_RET_HL
     ENDIF
 
 ;----------------------------------------------
@@ -1208,7 +1199,8 @@ OP_CHOOSE_W:
     ldi
  
     pop de           ;Restore timeout
-    
+    ld (.self_a), hl ;Return address of a GOSUB option: after this instruction
+
     ld a, (DEFAULT_OPTION)
     ld (SELECTED_OPTION), a
     ld a, (NUM_OPTIONS)
@@ -1223,111 +1215,15 @@ OP_CHOOSE_W:
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
     call INKEY_MENU
-    rrca
-    jp c, .right
-    rrca
-    jp c, .left
-    rrca
-    jp c, .down
-    rrca
-    jp c, .up
-    rrca
+    call MENU_MOVE
     jp c, .selected
+    jr nz, .inkey
     ld bc, (DOWN_COUNTER)
     ld a, c
     or b
     jp z, .count_elapsed
     call ANIMATE_OPTION_BULLET
-    ;jr 1b
     jr .inkey
-.left:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 3b
-.right:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 4b
-.up:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 2b
-.down:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .inkey
-    jr 3b
 .count_elapsed:
     ld a, $FF
     ld (SELECTED_OPTION), a 
@@ -1355,7 +1251,10 @@ OP_CHOOSE_W:
     ld a, c
     or a
     jp z, OP_GOTO
-    jp OP_GOSUB
+    push hl
+.self_a+1:
+    ld hl, 0-0
+    jp GOSUB_RET_HL
     ENDIF
 
 ;----------------------------------------------
@@ -1399,106 +1298,11 @@ OP_CHOOSE_CH:
     call PRINT_SELECTED_OPTION_BULLET
 .inkey:
     call INKEY_MENU
-    rrca
-    jp c, .right
-    rrca
-    jp c, .left
-    rrca
-    jp c, .down
-    rrca
-    jp c, .up
-    rrca
+    call MENU_MOVE
     jp c, .selected
+    jp nz, .on_change_gosub
     call ANIMATE_OPTION_BULLET
     jr .inkey
-.left:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .on_change_gosub
-    jr 3b
-.right:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_X_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-4:  call INKEY_MENU
-    or a
-    jp z, .on_change_gosub
-    jr 4b
-.up:
-    ld a, (SELECTED_OPTION)
-    or a
-    jp z, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    sub b
-    jp c, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-2:  call INKEY_MENU
-    or a
-    jp z, .on_change_gosub
-    jr 2b
-.down:
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    dec c
-    ld a, (SELECTED_OPTION)
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    push af
-    ld a, NO_SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-    ld a, (NUM_OPTIONS)
-    ld c, a
-    ld a, (INCR_Y_OPTION)
-    ld b, a
-    pop af
-    add a, b
-    cp c                        ; selected_option-numoptions
-    jp nc, .inkey
-    ld (SELECTED_OPTION), a
-    ld a, SELECTED_BULLET
-    call PRINT_SELECTED_OPTION_BULLET
-3:  call INKEY_MENU
-    or a
-    jp z, .on_change_gosub
-    jr 3b
 .selected:
     ld a, (SELECTED_OPTION)
     sla a
@@ -1523,14 +1327,7 @@ OP_CHOOSE_CH:
     push hl
 .self_a+1:
     ld hl, 0-0
-    ld a, (CHUNK)
-    ld (ix-1), l
-    ld (ix-2), h
-    ld (ix-3), a
-    ld de, 65536-3    ; ix-3
-    add ix, de
-    pop hl
-    jp OP_GOTO
+    jp GOSUB_RET_HL
 .on_change_gosub:
     ld hl, CHOOSE_CH_RET_ADDRESS
     ld a, (hl)
@@ -1544,6 +1341,7 @@ OP_CHOOSE_CH:
     ld (ix-3), a
     ld de, 65536-3    ; ix-3
     add ix, de
+    CHECK_GOSUB_DEPTH
     jp OP_GOTO
     ENDIF
 
@@ -2969,10 +2767,13 @@ OP_EXTERN:
     ld e, (hl)
     inc hl
     ld d, (hl)
+    inc hl
+    ld c, (hl)          ; 1 = CALL used as a value: push the A it returns
     inc hl              ; A = bank, DE = routine address, HL = next bytecode PC
     push hl             ; save interpreter PC
     push ix             ; save VM data-stack pointer
     push iy             ; save ROM sysvars pointer
+    push bc             ; save the mode (C)
     IFDEF OP_EXTERN_BANKED
     or ROM48KBASIC
     call SET_RAM_BANK   ; page the routine's bank at $C000; A = previous port
@@ -2983,8 +2784,11 @@ OP_EXTERN:
     ld de, FLAGS
     ret                 ; jump into the routine with DE=FLAGS
 .cont:
+    ld (.result+1), a   ; the value it returns, across the paging below
     pop af              ; previous port value (the script's bank)
     call SET_RAM_BANK   ; page the script bank back at $C000
+.result:
+    ld a, 0-0           ; self-modified
     ELSE
     ld hl, .cont        ; 48k: routine is resident, call it directly
     push hl             ; return address for the routine's RET
@@ -2993,9 +2797,13 @@ OP_EXTERN:
     ret                 ; jump into the routine with DE=FLAGS
 .cont:
     ENDIF
+    pop bc              ; C = mode
     pop iy
     pop ix
     pop hl              ; restore interpreter PC
+    dec c
+    jp nz, EXEC_LOOP    ; a plain CALL statement
+    PUSH_INT_STACK      ; CALL as a value: A on the expression stack
     jp EXEC_LOOP
 
     IFNDEF UNUSED_ARR_BROKER
@@ -3970,16 +3778,10 @@ OPCODES:
     DW ERROR_NOP
     ENDIF
 
-    IFDEF USE_256_OPCODES
-    REPT 256-(($-OPCODES)/2)
-    DW ERROR_NOP
-    ENDR
-    ENDIF
-    IFNDEF USE_256_OPCODES
+    ; 128 entries: the bytecode stores each opcode x2, its offset in this page.
     REPT 128-(($-OPCODES)/2)
     DW ERROR_NOP
     ENDR
-    ENDIF
 
     
 

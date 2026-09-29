@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import deque
 import sys
 from cydc_font import CydcFont
 
@@ -187,6 +188,8 @@ class CydcCodegen(object):
         # from the parser's SourceStatement tuples; _fail() appends it to errors.
         self._cur_loc = None
         self._const_locs = {}
+        # Warnings from check_call_stack, filled by the first generate_code.
+        self.call_stack_warnings = None
 
     def _at(self, statement):
         self._cur_loc = getattr(statement, "loc", None)
@@ -203,6 +206,12 @@ class CydcCodegen(object):
         if loc is None:
             return new
         return type(old)(new, loc)
+
+    def _opcode_byte(self, name):
+        """The byte stored in the bytecode for an opcode: its number times 2,
+        the offset of its entry in the interpreter's OPCODES table, so
+        EXEC_LOOP indexes the table without shifting it."""
+        return self.opcodes[name] * 2
 
     def set_bank_offset_list(self, offset_list):
         if offset_list is not None:
@@ -1223,6 +1232,188 @@ class CydcCodegen(object):
             result.append(("END",))
         return result
 
+    def check_call_stack(self, code):
+        """Find RETURNs that can run with no GOSUB pending and subroutines that
+        can be left without RETURN. Returns a list of warning messages.
+
+        The interpreter keeps one stack for GOSUB return addresses and does not
+        check it: a RETURN with nothing pending jumps to garbage, and a
+        subroutine left with GOTO leaves its return address behind, so repeating
+        it runs the stack into the variables and the game crashes.
+
+        Every GOSUB target (also OPTION GOSUB, CHOOSE IF WAIT ... THEN GOSUB and
+        CHOOSE IF CHANGED THEN GOSUB) is a subroutine; the entry point starts the
+        main code. From each one, control flow is followed without entering the
+        subroutines it calls: a call goes on after it only if the subroutine can
+        return (computed as a fixed point). Code reached from the main entry runs
+        with no GOSUB pending, so a RETURN there is an error, and a subroutine
+        that reaches that code never returns.
+
+        A CHOOSE goes on to the next instruction only when an OPTION GOSUB may
+        be pending (its RETURN comes back there); that is tracked along the path,
+        as options are declared before and cleared by the CHOOSE or CLEAR.
+        """
+        labels = {}
+        for i, t in enumerate(code):
+            if t and t[0] == "LABEL":
+                labels.setdefault(t[1], i)
+        n = len(code)
+
+        def called(t):
+            op = t[0]
+            if op == "GOSUB":
+                return labels.get(t[1])
+            if op in ("OPTION", "POP_VAL_OPTION") and t[1] == 0xFF:
+                return labels.get(t[2])
+            if op == "CHOOSE_W" and t[3] == 0xFF:
+                return labels.get(t[4])
+            if op == "CHOOSE_CH":
+                return labels.get(t[1])
+            return None
+
+        subs = {called(t) for t in code if t} - {None}
+        can_return = dict.fromkeys(subs, False)
+        # The subroutine may return with an OPTION GOSUB still pending.
+        returns_option = dict.fromkeys(subs, False)
+
+        def jump(name, pending):
+            j = labels.get(name)
+            return [] if j is None else [(j, pending, True)]
+
+        def after_call(i, pending, e):
+            if e is None or can_return[e]:
+                return [(i + 1, pending or (e is not None and returns_option[e]), False)]
+            return []
+
+        def successors(i, pending):
+            """(next index, OPTION GOSUB pending, is a jump) from instruction i."""
+            t = code[i]
+            op = t[0]
+            nxt = (i + 1, pending, False)
+            if op in ("END", "RETURN"):
+                return []
+            if op == "GOTO":
+                return jump(t[1], pending)
+            if op in ("IF_GOTO", "IF_N_GOTO"):
+                return jump(t[1], pending) + [nxt]
+            if op == "GOSUB":
+                return after_call(i, pending, labels.get(t[1]))
+            if op in ("OPTION", "POP_VAL_OPTION"):
+                out = [(i + 1, pending or t[1] == 0xFF, False)]
+                if t[1] == 0:
+                    out += jump(t[2], False)
+                return out
+            if op in ("CHOOSE", "CHOOSE_W", "CHOOSE_CH"):
+                out = [(i + 1, False, False)] if pending else []
+                if op == "CHOOSE_W":
+                    if t[3] == 0:
+                        out += jump(t[4], False)
+                    else:
+                        out += after_call(i, False, labels.get(t[4]))
+                return out
+            if op in ("CLEAR", "CLEAR_OPTIONS"):
+                return [(i + 1, False, False)]
+            out = [
+                (labels[o], pending, True)
+                for o in t[1:]
+                if isinstance(o, str) and o in labels
+            ]
+            return out + [nxt]
+
+        def explore(entry):
+            """States reached from entry: {(index, pending): parent state}."""
+            seen = {(entry, False): None}
+            queue = deque(seen)
+            while queue:
+                state = queue.popleft()
+                for j, g, _jump in successors(*state):
+                    if j < n and (j, g) not in seen:
+                        seen[(j, g)] = state
+                        queue.append((j, g))
+            return seen
+
+        # Least fixed point of can_return: re-explore the callers of a
+        # subroutine whenever it turns out to return.
+        callers = {e: set() for e in subs}
+        reached = {}
+        work = deque(subs)
+        queued = set(subs)
+        while work:
+            e = work.popleft()
+            queued.discard(e)
+            reached[e] = explore(e)
+            rets = [g for (i, g) in reached[e] if code[i][0] == "RETURN"]
+            for i, _ in reached[e]:
+                c = called(code[i])
+                if c is not None:
+                    callers[c].add(e)
+            state = (bool(rets), any(rets))
+            if state != (can_return[e], returns_option[e]):
+                can_return[e], returns_option[e] = state
+                for c in callers[e] - queued:
+                    work.append(c)
+                    queued.add(c)
+
+        def loc(i):
+            for k in range(i, -1, -1):
+                where = getattr(code[k], "loc", None)
+                if where:
+                    return where
+            return "?"
+
+        main = explore(0) if n else {}
+        in_main = {i for i, _ in main}
+        warnings = []
+        for state in main:
+            r = state[0]
+            if code[r][0] != "RETURN":
+                continue
+            # Walk back to the last step into a subroutine's entry.
+            reason = None
+            child, parent = state, main[state]
+            while parent is not None:
+                if child[0] in subs:
+                    label = code[child[0]][1]
+                    jump = any(
+                        j == child[0] and g == child[1] and is_jump
+                        for j, g, is_jump in successors(*parent)
+                    )
+                    if jump:
+                        reason = self._(
+                            "the jump at {at} goes into subroutine '{label}' "
+                            "instead of calling it with GOSUB"
+                        ).format(at=loc(parent[0]), label=label)
+                    else:
+                        reason = self._(
+                            "execution runs into subroutine '{label}' from the "
+                            "code above it (put a GOTO or END before it)"
+                        ).format(label=label)
+                    break
+                child, parent = parent, main[parent]
+            msg = self._("RETURN at {at} can run with no GOSUB pending").format(at=loc(r))
+            warnings.append((r, msg + (": " + reason if reason else "")))
+        for e in sorted(subs):
+            if e in in_main:
+                continue  # entered without GOSUB, reported above if it returns
+            for i, g in reached[e]:
+                if i in in_main:
+                    continue
+                if any(j in in_main for j, _g, _jump in successors(i, g)):
+                    msg = self._(
+                        "Subroutine '{label}' can end without RETURN at {at}, going "
+                        "on to code that runs outside any subroutine; each time a "
+                        "GOSUB level is left on the stack, and after a few hundred "
+                        "the game crashes"
+                    ).format(label=code[e][1], at=loc(i))
+                    warnings.append((i, msg))
+        seen_msgs = set()
+        result = []
+        for _i, msg in sorted(warnings, key=lambda w: w[0]):
+            if msg not in seen_msgs:
+                seen_msgs.add(msg)
+                result.append(msg)
+        return result
+
     def check_code_paramenters(self, code):
         code_tmp = []
         for t in code:
@@ -1305,7 +1496,7 @@ class CydcCodegen(object):
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
-                            self.opcodes["GOTO"],
+                            self._opcode_byte("GOTO"),
                             bank,
                         ] + self._convert_address(offset, bank)
                         # Jump to next bank
@@ -1316,16 +1507,16 @@ class CydcCodegen(object):
                         offset + 1,
                     )  # Add to symbol table (skipping the SKIP_ARRAY opcode)
                     self.array_lengths[q] = len(p)  # element count for the ABI
-                    c = [self.opcodes.get("SKIP_ARRAY"), len(p) - 1] + p
+                    c = [self._opcode_byte("SKIP_ARRAY"), len(p) - 1] + p
                     code_tmp += c
                     offset += len(c)
                 else:
                     self._fail(self._("ERROR: Array {q} declared two times!").format(q=q))
             else:
                 # transform to byte representation
-                q = self.opcodes.get(opcode)
-                if q is None:
+                if opcode not in self.opcodes:
                     self._fail(self._("ERROR: Invalid opcode {opcode}!").format(opcode=opcode))
+                q = self._opcode_byte(opcode)
                 if opcode == "TEXT":
                     p = t[1]  # Get text
                     while len(p) > 1:  # A string of less than 1 character is not valid
@@ -1343,7 +1534,7 @@ class CydcCodegen(object):
                                 ]  # Adding end of string character
                                 p = p[l - 1 :]
                             code_tmp += [
-                                self.opcodes["GOTO"],
+                                self._opcode_byte("GOTO"),
                                 bank,
                             ] + self._convert_address(
                                 offset, bank
@@ -1363,7 +1554,7 @@ class CydcCodegen(object):
                         bank += 1
                         offset = 0  # reset offset counter
                         code_tmp += [
-                            self.opcodes["GOTO"],
+                            self._opcode_byte("GOTO"),
                             bank,
                         ] + self._convert_address(offset, bank)
                         # Jump to next bank
@@ -1485,6 +1676,10 @@ class CydcCodegen(object):
         # Pull the immutable DATA stream out into self.data_blob and resolve
         # RESTORE labels; must run before optimize/DCE.
         code = self.code_extract_data(code)
+
+        # Checked once, on the code as written (before the optimizer rewrites it).
+        if self.call_stack_warnings is None:
+            self.call_stack_warnings = self.check_call_stack(code)
 
         if code is None or len(code) == 0:
             code = [("END",)]
