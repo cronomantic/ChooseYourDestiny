@@ -46,12 +46,15 @@ def _is_inside(path, root):
 
 class SourceStatement(tuple):
     """A statement tuple that also records its source location ("file.cyd:12"),
-    so the code generator can point its errors at the script. It compares,
-    indexes and unpacks exactly like the plain tuple."""
+    so the code generator can point its errors at the script, and the column
+    where it starts on that line (1 = first character), so --debug-errors can
+    point at the statement within the line. It compares, indexes and unpacks
+    exactly like the plain tuple."""
 
-    def __new__(cls, items, loc=None):
+    def __new__(cls, items, loc=None, col=None):
         self = super().__new__(cls, items)
         self.loc = loc
+        self.col = col
         return self
 
 
@@ -124,10 +127,14 @@ class CydcParser(object):
         if not item:
             return
         loc = self._format_error_location(p.lineno(i))
+        # The column on its line (1-based), from where the symbol starts.
+        pos = p.lexpos(i)
+        data = getattr(getattr(p.lexer, "lexer", p.lexer), "lexdata", None)
+        col = pos - data.rfind("\n", 0, pos) if data is not None and pos is not None else None
 
         def tag(t):
             if isinstance(t, tuple) and t and not isinstance(t, SourceStatement):
-                return SourceStatement(t, loc)
+                return SourceStatement(t, loc, col)
             return t
 
         p[i] = [tag(t) for t in item] if isinstance(item, list) else tag(item)
