@@ -2134,9 +2134,12 @@ SET CYDC_EXTRA_PARAMS=
 
 REM Run emulator after compilation (none/internal/default)
 REM     -None: Do nothing
-REM     -internal: run the compiled file with Zesarux (must be on the directory .\tools\zesarux\)
+REM     -internal: run the compiled file with ZEsarUX (see ZESARUX_PATH)
 REM     -default: run the compiled file with the program set on Windows to run its extension
 SET RUN_EMULATOR=none
+
+REM Path to zesarux.exe (internal). Empty: .\tools\zesarux\, the newest .\tools\ZEsarUX*\ or the PATH
+SET ZESARUX_PATH=
 
 REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
 SET BACKUP_CYD=no
@@ -2153,17 +2156,19 @@ REM --------------------------------------
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
 -- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
+-- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
 - The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
 -- none: If we do not want it to do this.
--- internal: Executes the compiled file under ZEsarUX in `.\tools\ZEsarUX_win-11.0\`.
+-- internal: Executes the compiled file under ZEsarUX (see `ZESARUX_PATH`). The +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
 -- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
+- The variable `ZESARUX_PATH` is the path to `zesarux.exe` for `internal`. If left empty, it is looked for in `.\tools\zesarux\`, then in the `.\tools\ZEsarUX*\` folder with the highest version (for example `.\tools\ZEsarUX_win-13.0\`) and last on the `PATH`.
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
 - The variable `BACKUP_MAX_FILES` limits how many backups are kept per game (`0` means unlimited).
 
-The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [Zesarux](https://github.com/chernandezba/zesarux) and install it in the `.\tools\ZEsarUX_win-11.0` folder, after compilation it will run automatically with the appropriate options.
+The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_win-<version>\`), with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
 
 ### GUI Compiler (make_adventure_gui v1.0.0)
 
@@ -2176,7 +2181,10 @@ For those who prefer a graphical interface instead of editing scripts or command
 - A **Check** button that looks for errors in the script without assembling it (`--check`), in about a second and without SjASMPlus
 - Settings persistence (remembered between sessions)
 - Full internationalization support (English and Spanish) with runtime language switching via dropdown
-- Real-time compilation output display
+- Real-time compilation output display, with errors in red, warnings in orange and a summary at the end. Double-clicking a `file.cyd:12` in the log opens the file at that line
+- A **Run** button, which opens the last compiled game in the emulator without compiling it again, and an **Open folder** button, which opens the output folder. The internal emulator is ZEsarUX: the GUI looks for it in `tools/zesarux/`, in the newest `tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it on Linux) or on the `PATH`
+- A **Game error** field: with a game compiled with "Show where system errors happen" (`--debug-errors`), paste the `SYSTEM ERROR` message and it tells you the line of the script where it happened (see [Error codes](#error-codes))
+- The compiler options are grouped (Optimization, Warnings, Debugging and Compatibility) and each one explains what it does when you hover over it
 - Auto-hide console window on Windows for clean startup
 
 **Launching the GUI:**
@@ -2253,8 +2261,9 @@ RUN_EMULATOR="none"
 # Custom emulator command (used when RUN_EMULATOR=custom)
 CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
 
-# Path to ZEsarUX (used when RUN_EMULATOR=internal)
-ZESARUX_PATH="./tools/ZEsarUX_linux/zesarux"
+# Path to ZEsarUX (used when RUN_EMULATOR=internal). Empty: ./tools/zesarux/,
+# the newest ./tools/ZEsarUX-<version>/ or the PATH
+ZESARUX_PATH=""
 
 # Backup CYD file after compilation (yes/no)
 BACKUP_CYD="no"
@@ -2270,11 +2279,12 @@ BACKUP_MAX_FILES=0
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
 -- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
+-- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
 - The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
 - The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
 - `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.
 - `CUSTOM_EMULATOR_CMD` is used when `RUN_EMULATOR=custom`.
-- `ZESARUX_PATH` defines the emulator executable path for `internal` mode.
+- `ZESARUX_PATH` defines the emulator executable path for `internal` mode. If left empty, it is looked for in `./tools/zesarux/`, then in the highest `./tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it) and last on the `PATH`. As on Windows, the +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
 - `BACKUP_CYD` and `BACKUP_MAX_FILES` control automatic backup generation and retention.
 
 ## Examples
@@ -2618,7 +2628,7 @@ To find where a system error happened, compile with `--debug-errors`. The messag
 0:42586	adventure.cyd:13	POP_SET
 ```
 
-The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
+The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. In the GUI you don't need to look for it: paste the message, or just `0:42582`, in the **Game error** field and it tells you the line and opens the file at it. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
 
 Without `--debug-errors` the interpreter doesn't change. With it, each instruction that can give a system error and that the game uses (those that print text, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` and the arrays) notes where it is, which adds 3 bytes to it, and the error message takes about 43 more; the other instructions don't get slower. Since the interpreter's instruction table is aligned, those bytes sometimes fit in the alignment gap and sometimes make the interpreter grow by 256 bytes.
 
