@@ -2432,6 +2432,23 @@ Ejemplo más sofisticado del uso de `BLIT`:
 - **Optimización:** Demuestra técnicas para dibujar eficientemente.
 - **Sprites múltiples:** Gestión de varios elementos gráficos en pantalla.
 
+#### `examples\sprites` - Sprites con máscara
+**Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
+
+Muestra el uso de la librería `lib/sprites.cyd`: un personaje que camina y una
+pelota que bota sobre un escenario nocturno, sin borrarlo:
+- **Máscaras:** Cada sprite tapa solo su silueta (`sprDraw`); el cielo y las estrellas se ven alrededor.
+- **Animación:** El personaje tiene 4 fotogramas en la hoja de sprites; en cada paso `sprX` apunta al siguiente.
+- **Movimiento por caracteres y por píxeles:** El personaje avanza de carácter en carácter y la pelota sube y baja píxel a píxel (`sprPY`).
+- **Varios huecos de guardado:** Cada uno guarda su fondo en su hueco (`sprSlot`) y se restauran en orden inverso, así el fondo queda bien cuando se cruzan.
+
+#### `examples\sprites_px` - Sprites con X al píxel
+**Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
+
+El mismo escenario con la librería `lib/sprites_px.cyd`:
+- **X al píxel:** El personaje camina 2 píxeles por paso con `sprPX`, en vez de carácter a carácter.
+- **Coste:** Muestra la alternativa que ocupa más y pinta más despacio los sprites que no caen en un borde de carácter; si no hace falta la X al píxel, basta `lib/sprites.cyd`.
+
 #### `examples\Rocky_Horror_Show` - Animación de personajes
 **Nivel:** Avanzado
 
