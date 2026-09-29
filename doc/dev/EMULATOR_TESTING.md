@@ -18,6 +18,22 @@ del motor por el **protocolo remoto ZRCP**.
 Si falta alguno, el harness lo señala y los tests que lo usan **se saltan**
 (`@unittest.skipUnless(emulator_available(), ...)`), igual que `test_e2e_build`.
 
+### En Linux (y en la CI)
+
+`tools/build_emu_tools.sh` compila las dos herramientas en `tools/` (ignoradas por
+git), en menos de un minuto:
+
+- `tools/sjasmplus`, desde el submódulo `external/sjasmplus` (la versión que fija
+  el repositorio);
+- `tools/ZEsarUX-13.0/zesarux`, un ZEsarUX sin vídeo ni audio (configurado con
+  `--disable-*`). Se conserva su directorio de compilación entero porque ZEsarUX
+  busca las ROMs junto al binario. Otra versión: `ZESARUX_VERSION=x.y`.
+
+Solo necesita `git`, `make` y un compilador de C/C++. La CI (`.github/workflows/ci.yml`)
+lo ejecuta en el job de Ubuntu antes de la suite, y comprueba que el harness encuentra
+las dos herramientas, para que los tests del emulador no se salten en silencio. En
+Windows siguen saltándose (no hay build de ZEsarUX en `tools/`).
+
 ## Cómo funciona
 
 1. **Compila** el `.cyd` a TAP con `cydc -v` (el `-v` conserva el listado

@@ -12,6 +12,7 @@ jobs:
   tests:
     name: Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -29,8 +30,24 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --upgrade pip ply
 
-      # Full suite. Tests that need sjasmplus run on Windows (tools/sjasmplus.exe);
-      # the emulator tests skip themselves unless ZEsarUX is under tools/.
+      # Linux: build sjasmplus and a headless ZEsarUX under tools/, so the
+      # emulator tests (the Z80 interpreter running every target) run as well.
+      - name: Build emulator tools
+        if: runner.os == 'Linux'
+        run: tools/build_emu_tools.sh
+
+      # Without this, a missing tool would just skip the emulator tests.
+      - name: Check the emulator tests will run
+        if: runner.os == 'Linux'
+        run: >
+          python -c "import sys; sys.path.insert(0, 'tests');
+          import emu_harness as h;
+          print('sjasmplus:', h.find_sjasmplus()); print('ZEsarUX:', h.find_zesarux());
+          sys.exit(0 if h.emulator_available() else 1)"
+
+      # Full suite. On Windows the tests that need sjasmplus use
+      # tools/sjasmplus.exe and the emulator tests skip themselves; on Linux
+      # everything runs.
       - name: Run test suite
         run: python tests/run_tests.py
 
