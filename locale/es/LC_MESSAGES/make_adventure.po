@@ -239,5 +239,9 @@ msgid "don't warn about RETURNs reached without a GOSUB and subroutines left wit
 msgstr "no avisar de los RETURN a los que se llega sin GOSUB ni de las subrutinas que se abandonan sin RETURN"
 
 #: make_adventure.py
+msgid "don't warn when a variable declared in one file (such as a library's) is used from another file under another name or by its number"
+msgstr "no avisar cuando una variable declarada en un fichero (como las de una librería) se usa desde otro fichero con otro nombre o por su número"
+
+#: make_adventure.py
 msgid "make GOSUB and RETURN check the call stack at runtime (for debugging)"
 msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse (para depurar)"

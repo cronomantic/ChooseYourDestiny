@@ -1550,7 +1550,9 @@ principio de tu programa; el flujo continúa con tu código y las rutinas solo s
 ejecutan cuando las llamas.
 
 Cada librería reserva un pequeño bloque de variables como espacio de trabajo, y
-los bloques no se solapan, así que puedes usar varias a la vez:
+los bloques no se solapan, así que puedes usar varias a la vez. No uses esos
+números para otra cosa en tu programa; si lo haces, el compilador te avisa con un
+`WARNING`:
 
 - `lib/math16_32.cyd` (variables 224..254): aritmética de 16 y 32 bits.
 - `lib/strings.cyd` (variables 216..223): entrada y manejo de cadenas de texto.

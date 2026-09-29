@@ -237,7 +237,8 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--debug-stack] [--token-format {auto,flat,nested}]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack]
+              [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
 ```
@@ -267,6 +268,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-check**: Only checks the script for errors (syntax, symbols and the code generator's own, such as a `RESTORE` with no `DATA` after it), without assembling it or writing any file, so `SJASMPLUS_PATH` and `OUTPUT_PATH` are not needed. It is much faster than compiling because it skips the abbreviation search. Exits with code 0 when there are no errors and 1 otherwise. It does not check whether the adventure fits in memory or whether the images and music exist.
 - **\-\-no-warn-unused**: Don't warn about declared labels, variables and data arrays that are never used. These warnings (`WARNING [PARSER]`) don't stop the build. They are only given for files inside the script's folder, so libraries included from elsewhere don't warn about the routines you don't call. Constants are not reported, since it is normal not to use all of them (for example, those of an `ENUM`).
 - **\-\-no-warn-gosub**: Don't warn about the `GOSUB`/`RETURN` problems the compiler finds by following the program's flow (see [GOSUB ID](#gosub-id)): a `RETURN` that can be reached with no `GOSUB` pending, and a subroutine that can end without `RETURN`, going on into the main code. These warnings (`WARNING [CODEGEN]`) don't stop the build.
+- **\-\-no-warn-shared-vars**: Don't warn about variables that one file declares and another file uses under another name, by their number (`SET 205 TO ...`) or from another variable (`SET v TO {...}` running past `v`). That is how a library's variables, such as `sprites.cyd`'s 200..211, get overwritten without noticing. Reusing a variable under several names within one file doesn't warn, and neither does using it by its name from any file. These warnings (`WARNING [CODEGEN]`) don't stop the build.
 - **\-\-debug-stack**: For debugging. The interpreter checks the `GOSUB` stack at runtime: a `RETURN` with no `GOSUB` pending gives system error 9, and a `GOSUB` that would fill the stack gives error 10, instead of hanging or resetting the Spectrum. It adds about 30 bytes to the interpreter and a little work to each `GOSUB` and `RETURN`, so leave it out of the final build.
 - **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
 - **\-wyz**: Use WyzTracker music type instead of Vortex Tracker.
@@ -498,7 +500,9 @@ the subroutines: they only run when you call them with `GOSUB`.
 ```
 
 Each library reserves a block of variables as its workspace. The blocks **do not
-overlap**, so you can use several at once:
+overlap**, so you can use several at once. If your program uses one of those
+numbers under another name or directly by its number, the compiler warns (see
+`--no-warn-shared-vars`):
 
 | Library | Reserved variables |
 |---------|--------------------|
@@ -2095,7 +2099,7 @@ Main options:
 - `-tok, --tokens-file`: Token file path. If it does not exist, `-T` is used automatically; if it exists, `-t` is used.
 - `-chr, --charset-file`: Character set JSON path (used if found).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--debug-stack`: passed straight to the compiler.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`: passed straight to the compiler.
 - `--check`: only checks the script for errors, without building it; `SJASMPLUS_PATH` is not needed in this mode.
 
 Note: after successful `plus3` builds, temporary files `SCRIPT.DAT`, `DISK`, and `CYD.BIN` are cleaned automatically.

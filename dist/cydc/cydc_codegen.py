@@ -190,6 +190,8 @@ class CydcCodegen(object):
         self._const_locs = {}
         # Warnings from check_call_stack, filled by the first generate_code.
         self.call_stack_warnings = None
+        # Warnings from check_shared_variables, filled by the first generate_code.
+        self.shared_var_warnings = None
 
     def _at(self, statement):
         self._cur_loc = getattr(statement, "loc", None)
@@ -537,6 +539,10 @@ class CydcCodegen(object):
 
         code_tmp = []
         self._const_locs = {}
+        # For check_shared_variables: where each variable is declared and every
+        # access to one (number, name used or None, location).
+        self._var_decls = []
+        self._var_uses = []
         for t in code:
             self._at(t)
             opcode = t[0]  # get opcode type
@@ -606,6 +612,7 @@ class CydcCodegen(object):
                     self._fail(self._("ERROR: Label {q} is already declared as array").format(q=q))
                 elif variables.get(q) is None:
                     variables[q] = p  # Add to variable table
+                    self._var_decls.append((p, q, self._cur_loc))
                 else:
                     self._fail(self._("ERROR: Variable {q} declared two times!").format(q=q))
             elif opcode == "ARRAY":
@@ -706,6 +713,7 @@ class CydcCodegen(object):
                         ):  # Variable with displacement
                             disp = c[2]
                             c = c[1]
+                            self._record_var_use(c, disp, variables)
                             if isinstance(c, str):
                                 t = variables.get(c)
                                 if t is None:
@@ -773,6 +781,82 @@ class CydcCodegen(object):
         self.externs = externs
         self.extern_exports = extern_exports
         return (code, variables, constants)
+
+    def _record_var_use(self, var, disp, variables):
+        """Note an access to a variable (a name or a number) for
+        check_shared_variables: the number it reaches and the name it goes
+        through (None when it is used by its number)."""
+        num = variables.get(var) if isinstance(var, str) else var
+        if num is None or self._cur_loc is None:
+            return
+        self._var_uses.append((num + disp, var if isinstance(var, str) else None,
+                               disp, self._cur_loc))
+
+    @staticmethod
+    def _loc_file(loc):
+        """The file of a "file.cyd:12" location, or None (a script with no
+        INCLUDE only has "line 12")."""
+        if not loc or ":" not in loc:
+            return None
+        return loc.rpartition(":")[0]
+
+    def check_shared_variables(self):
+        """Warnings for a variable declared in one file and used in another one
+        under a different name or by its number, the way a game can overwrite
+        the variables a library reserves (lib/sprites.cyd, 200..211) without
+        noticing. The owner of a number is the file that DECLAREs it. Reusing a
+        variable within one file is left alone, and so is using a variable by
+        its declared name from any file."""
+        owners = {}
+        decl_file = {}
+        for num, name, loc in self._var_decls:
+            owners.setdefault(num, []).append((name, loc))
+            decl_file[name] = self._loc_file(loc)
+        warnings = []
+        seen = set()
+        # The same number declared with different names in different files.
+        for num in sorted(owners):
+            decls = owners[num]
+            for i, (name, loc) in enumerate(decls):
+                for other, oloc in decls[i + 1:]:
+                    f, of = self._loc_file(loc), self._loc_file(oloc)
+                    if f and of and f != of:
+                        warnings.append(self._(
+                            "Variable {num} is '{name}' in {file}, and at {loc} it is "
+                            "declared again as '{other}': both share it"
+                        ).format(num=num, name=name, file=f, loc=oloc, other=other))
+        # Used from another file by its number, or reached from another name
+        # (SET v TO {...} or a wide value that runs past v). Reaching it from a
+        # name of the same file is how a library's multi-byte values are set
+        # (SET mlA0 TO {...} in lib/math16_32.cyd), so that is fine.
+        for num, via, disp, loc in self._var_uses:
+            if num not in owners:
+                continue
+            ufile = self._loc_file(loc)
+            if not ufile:
+                continue
+            for name, dloc in owners[num]:
+                dfile = self._loc_file(dloc)
+                if not dfile or dfile == ufile or via == name:
+                    continue
+                if via is not None and (disp == 0 or decl_file.get(via) == dfile):
+                    continue  # reported above, or the same file's own layout
+                key = (num, name, ufile, via)
+                if key in seen:
+                    continue
+                seen.add(key)
+                if via is None:
+                    msg = self._(
+                        "Variable {num} is '{name}' in {file}, and at {loc} it is used "
+                        "by its number"
+                    )
+                else:
+                    msg = self._(
+                        "Variable {num} is '{name}' in {file}, and at {loc} it is "
+                        "reached from '{via}'"
+                    )
+                warnings.append(msg.format(num=num, name=name, file=dfile, loc=loc, via=via))
+        return warnings
 
     def code_extract_data(self, code):
         """Concatenate every DATA statement into one read-only blob (source order),
@@ -1680,6 +1764,8 @@ class CydcCodegen(object):
         # Checked once, on the code as written (before the optimizer rewrites it).
         if self.call_stack_warnings is None:
             self.call_stack_warnings = self.check_call_stack(code)
+        if self.shared_var_warnings is None:
+            self.shared_var_warnings = self.check_shared_variables()
 
         if code is None or len(code) == 0:
             code = [("END",)]
