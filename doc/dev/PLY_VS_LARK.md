@@ -116,7 +116,7 @@ la pieza más delicada del compilador.
   es Python puro y está congelado en el repo).
 - Que se necesite una gramática **ambigua / GLR / Earley** que LALR(1) no pueda expresar
   (no es el caso: la gramática CYD es LALR limpia).
-- Que el port CPC ([MULTITARGET_DESIGN §9](../../MULTITARGET_DESIGN.md)) —que sí toca el
+- Que el port CPC ([MULTITARGET_DESIGN §9](MULTITARGET_DESIGN.md)) —que sí toca el
   front-end para hacerlo "target-aware"— revele que el superset de gramática es
   inmanejable en PLY (poco probable; el diseño actual lo resuelve con gating post-parse).
 

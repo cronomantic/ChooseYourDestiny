@@ -18,7 +18,7 @@
 > extirpación de maquinaria no usada, DCE de bloques nativos y sangrado gestionado.
 > Las librerías `lib/math16_32.cyd` y `lib/strings.cyd` están migradas a nativo
 > usando esta ABI. **La referencia de implementación al día (para desarrollar el
-> motor) es [`doc/dev/EXPANSION_ABI.md`](doc/dev/EXPANSION_ABI.md)**; la doc de
+> motor) es [`doc/dev/EXPANSION_ABI.md`](EXPANSION_ABI.md)**; la doc de
 > autor está en el manual, sección "Rutinas nativas". Este estudio se conserva por
 > el razonamiento de diseño (algunos detalles finales difieren: p.ej. los
 > argumentos de servicio van en `E`/registros, no en `A`/`L`; la extirpación es
@@ -32,7 +32,7 @@ El objetivo que motiva la feature: **portar las librerías `math16_32`/`strings`
 ensamblador** de forma cómoda, sin trocearlas en ficheros `.asm` sueltos, y en
 general **poder escribir comandos nuevos** (gráficos, datos) que el intérprete no
 tiene. Hoy esas librerías son bytecode CYD puro (bucles interpretados, lentos en
-mul/div; ver cabecera de [lib/math16_32.cyd](lib/math16_32.cyd)).
+mul/div; ver cabecera de [lib/math16_32.cyd](../../lib/math16_32.cyd)).
 
 **Tesis:** el ensamblador inline **no es una vía nueva**. Un bloque `ASM nombre …
 ENDASM` registra la **misma clase de rutina nativa** que `IMPORT nombre FROM
@@ -92,7 +92,7 @@ CALL add32                                          ; invoca (runtime -> OP_EXTE
   fichero`; pasa a `nombre → ("file", ruta) | ("inline", texto)` + metadatos de
   export/uses). `CALL` fluye por `symbol_replacement` como hoy, registrando la
   posición en `self.extern_calls` para el parcheo tardío
-  ([cydc_codegen.py:1157-1163](src/cydc/cydc/cydc_codegen.py#L1157)).
+  ([cydc_codegen.py:1157-1163](../../src/cydc/cydc/cydc_codegen.py#L1157)).
 
 ---
 
@@ -124,7 +124,7 @@ relocalización dentro del chunk. Rutina con nombre = reutiliza EXTERN y encaja 
 **Por qué NO pasar la pila de enteros como canal de argumentos (decisión).** La
 "pila de enteros" de la VM es en realidad una **pila de bytes** e **IX** la comparte
 con los frames de retorno de `GOSUB`
-([interpreter.asm:56-95](src/cydc/cydc/cyd/interpreter.asm#L56)): `PUSH_INT_STACK` =
+([interpreter.asm:56-95](../../src/cydc/cydc/cyd/interpreter.asm#L56)): `PUSH_INT_STACK` =
 `dec ix : ld (ix+0),a`; `OP_GOSUB` apila un frame de 3 bytes en `ix-1/-2/-3`. Exponerla
 como canal formal es (a) mal encaje para valores anchos (habría que apilar 2-4
 bytes), (b) arriesgado (desbalancear IX corrompe la pila de retorno). FLAGS es
@@ -180,10 +180,10 @@ antepone** a cada rutina, exponiendo solo lo curado. Tres tipos de entrada:
 
 ### 6.1 Direcciones de estructuras (residentes, `$4000-$7FFF`, siempre mapeadas)
 Verificado: `vars.asm` hace `ORG $5d00` → FLAGS, pila, buffers viven en RAM baja fija,
-**no** en `$8000-$BFFF` como creí al principio ([vars.asm:33-179](src/cydc/cydc/cyd/vars.asm#L33)).
+**no** en `$8000-$BFFF` como creí al principio ([vars.asm:33-179](../../src/cydc/cydc/cyd/vars.asm#L33)).
 - `FLAGS` — base de las 256 variables (también en `DE`).
 - `SCREEN_BUFFER_PXL` / `SCREEN_BUFFER_ATT` — el buffer de imagen del motor
-  ([vars.asm:159-162](src/cydc/cydc/cyd/vars.asm#L159), `$6000`). Habilita rutinas
+  ([vars.asm:159-162](../../src/cydc/cydc/cyd/vars.asm#L159), `$6000`). Habilita rutinas
   gráficas que el intérprete no tiene (blits con máscara, scroll, efectos): la rutina
   compone en el buffer y usa `DISPLAY`/`COPY_SCREEN` para volcar.
 - `VIDEO_PXL` / `VIDEO_ATT` — base de la memoria de vídeo del hardware (`$4000`/`$5800`
@@ -195,7 +195,7 @@ Los arrays son datos inline del bytecode y pueden acabar en un banco paginado (l
 declarados en chunks que desbordan el bank 0). Como la rutina vive en `$C000`, no puede
 paginar el banco del array sin auto-expulsarse (§5.2). Solución: **servicios residentes
 que hacen el banking con buffer intermedio**. Aprovecha que **todo array es ≤ 256 B**
-([cydc_codegen.py:485](src/cydc/cydc/cydc_codegen.py#L485), `array_len in range(1,257)`)
+([cydc_codegen.py:485](../../src/cydc/cydc/cydc_codegen.py#L485), `array_len in range(1,257)`)
 → cabe entero de una copia.
 
 - **`CYD_ARR_MAP(id) → HL=puntero, BC=longitud`** (G1): paginа el banco del array,
@@ -212,7 +212,7 @@ que hacen el banking con buffer intermedio**. Aprovecha que **todo array es ≤ 
   al scratch + `PEEK`/`POKE` sobre el segundo.
 
 **Scratch = `SAVE_FLAGS`** (256 B ya existentes,
-[vars.asm:174](src/cydc/cydc/cyd/vars.asm#L174)): es el staging del salvado de partida,
+[vars.asm:174](../../src/cydc/cydc/cyd/vars.asm#L174)): es el staging del salvado de partida,
 usado **exclusivamente** en `savegame_tape/plus3/mld.asm` durante SAVE/LOAD, que **nunca
 se solapa con un `CALL`** (ambos son operaciones síncronas del bucle de bytecode). →
 **0 bytes residentes nuevos**. Invariante a documentar: no exponer SAVE/LOAD como
@@ -320,11 +320,11 @@ Requisito: una rutina nativa importada/inline que **nadie llama** no debe ensamb
 ni colocarse (ahorra RAM residente/banco, que es el recurso escaso).
 
 **Hallazgo que lo hace casi gratis.** En `generate_code`
-([cydc_codegen.py:1226-1254](src/cydc/cydc/cydc_codegen.py#L1226)) el orden es:
-declaraciones → peephole → **DCE** ([dead_code_elimination](src/cydc/cydc/cydc_codegen.py#L930),
+([cydc_codegen.py:1226-1254](../../src/cydc/cydc/cydc_codegen.py#L1226)) el orden es:
+declaraciones → peephole → **DCE** ([dead_code_elimination](../../src/cydc/cydc/cydc_codegen.py#L930),
 si `-dce`) → `code_translate` → `symbol_replacement`. Como **`self.extern_calls` se
 puebla en `symbol_replacement`, DESPUÉS de la DCE**, ya contiene **solo los `CALL` de
-bytecode alcanzable**. Pero el build actual ([cydc.py:981-992](src/cydc/cydc/cydc.py#L981))
+bytecode alcanzable**. Pero el build actual ([cydc.py:981-992](../../src/cydc/cydc/cydc.py#L981))
 ensambla y coloca **todas** las rutinas de `codegen.externs`, aunque nadie las llame.
 
 **Diseño de la limpieza:**

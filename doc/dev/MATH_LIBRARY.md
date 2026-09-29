@@ -4,7 +4,7 @@
 > la multiplicación ensanchada `mul16→32` están probados automáticamente en
 > ZEsarUX vía el harness ([EMULATOR_TESTING.md](EMULATOR_TESTING.md)). Empaquetada
 > como fichero `INCLUDE`-able con ejemplo:
-> [`examples/math_library/math16_32.cyd`](../../examples/math_library/math16_32.cyd)
+> [`lib/math16_32.cyd`](../../lib/math16_32.cyd)
 > + [`examples/math_library/test.cyd`](../../examples/math_library/test.cyd).
 
 ## Objetivo y decisiones

@@ -32,15 +32,15 @@ CYD se compone de dos mitades:
 ### 2.1 Front-end y núcleo (independiente del hardware)
 
 - **Lenguaje** tipo BASIC para librojuegos.
-- **Lexer / parser / codegen** en Python ([src/cydc/cydc/](src/cydc/cydc/)).
+- **Lexer / parser / codegen** en Python ([src/cydc/cydc/](../../src/cydc/cydc/)).
 - **Bytecode** de opcodes de 1 byte + operandos
-  ([cydc_codegen.py](src/cydc/cydc/cydc_codegen.py)).
+  ([cydc_codegen.py](../../src/cydc/cydc/cydc_codegen.py)).
 - **Intérprete** de opcodes en Z80
-  ([interpreter.asm](src/cydc/cydc/cyd/interpreter.asm), ~3.500 líneas) — lógica
+  ([interpreter.asm](../../src/cydc/cydc/cyd/interpreter.asm), ~3.500 líneas) — lógica
   de fetch-decode-execute, mayormente neutral respecto al hardware.
 - **Compresión de texto**, **fuentes**, **descompresor ZX0** — neutrales.
-- **Reproductores de música AY** ([VTII10bG.asm](src/cydc/cydc/cyd/VTII10bG.asm),
-  [wyz_player.asm](src/cydc/cydc/cyd/wyz_player.asm)) — reaprovechables; CPC, MSX
+- **Reproductores de música AY** ([VTII10bG.asm](../../src/cydc/cydc/cyd/VTII10bG.asm),
+  [wyz_player.asm](../../src/cydc/cydc/cyd/wyz_player.asm)) — reaprovechables; CPC, MSX
   y Spectrum 128 comparten el PSG AY-3-89xx. Solo cambia el acceso de I/O.
 
 ### 2.2 Subsistema gráfico-textual (acoplado al Spectrum)
@@ -49,7 +49,7 @@ El motor tiene **dos rutas de render distintas que componen sobre la misma
 pantalla visible. No hay back buffer**: todo se dibuja directo a pantalla.
 
 **(a) Texto — blitter de fuentes proporcionales.**
-`PUT_VAR_CHAR` ([text_manager.asm:504-686](src/cydc/cydc/cyd/text_manager.asm#L504-L686))
+`PUT_VAR_CHAR` ([text_manager.asm:504-686](../../src/cydc/cydc/cyd/text_manager.asm#L504-L686))
 posiciona caracteres a pixel arbitrario con máscara + rotación. Tres supuestos
 del Spectrum entretejidos en la aritmética:
 1. **1 bit = 1 píxel** (la tabla `.MASK` y el `rrca` de rotación solo valen a 1bpp).
@@ -57,17 +57,17 @@ del Spectrum entretejidos en la aritmética:
 3. **Read-modify-write directo** sobre la RAM de pantalla.
 
 Además escribe el atributo de color (`ATTR_P`) directamente en el plano de
-atributos, celda a celda ([text_manager.asm:598-608](src/cydc/cydc/cyd/text_manager.asm#L598-L608)).
+atributos, celda a celda ([text_manager.asm:598-608](../../src/cydc/cydc/cyd/text_manager.asm#L598-L608)).
 
 **(b) Gráficos — compositor de bloques.**
 - Imágenes en formato **CSC**: bloques parciales comprimidos con ZX0, planos de
   píxel y atributo separados, espejado opcional
-  ([cydc_csc.py:35-76](src/cydc/cydc/cydc_csc.py#L35-L76)).
+  ([cydc_csc.py:35-76](../../src/cydc/cydc/cydc_csc.py#L35-L76)).
 - `IMG_LOAD` descomprime al **almacén de imágenes** `SCREEN_BUFFER_PXL/ATT`
-  ([screen_manager.asm:36](src/cydc/cydc/cyd/screen_manager.asm#L36)), que vive en
+  ([screen_manager.asm:36](../../src/cydc/cydc/cyd/screen_manager.asm#L36)), que vive en
   un banco de RAM paginado.
 - **`BLIT` / `PICTURE`** copian rectángulos **desde ese almacén hacia la
-  pantalla** ([interpreter.asm:2063-2184](src/cydc/cydc/cyd/interpreter.asm#L2063-L2184)).
+  pantalla** ([interpreter.asm:2063-2184](../../src/cydc/cydc/cyd/interpreter.asm#L2063-L2184)).
 
 > **Aclaración importante:** el almacén `SCREEN_BUFFER_*` **no es un back
 > buffer**: es la reserva de imágenes cargadas que sirve de *origen* a BLIT y
@@ -86,17 +86,17 @@ SCR_PXL      EQU $4000      ; plano de atributos en $4000+6144
 MAX_X        DEFB 255       ; vars.asm:113
 ```
 El motor asume **256×192 con plano de atributos 32×24, fijo**
-([sysvars.asm:54-60](src/cydc/cydc/cyd/sysvars.asm#L54-L60),
-[vars.asm:113](src/cydc/cydc/cyd/vars.asm#L113)).
+([sysvars.asm:54-60](../../src/cydc/cydc/cyd/sysvars.asm#L54-L60),
+[vars.asm:113](../../src/cydc/cydc/cyd/vars.asm#L113)).
 
 ### 2.4 Otros puntos de acoplamiento
 
-- **Teclado:** [inkey.asm](src/cydc/cydc/cyd/inkey.asm) llama a la ROM del Spectrum.
-- **Paginación:** [bank_zx128.asm](src/cydc/cydc/cyd/bank_zx128.asm) (puerto `$7FFD`),
-  [bank_dan.asm](src/cydc/cydc/cyd/bank_dan.asm) (Dandanator).
+- **Teclado:** [inkey.asm](../../src/cydc/cydc/cyd/inkey.asm) llama a la ROM del Spectrum.
+- **Paginación:** [bank_zx128.asm](../../src/cydc/cydc/cyd/bank_zx128.asm) (puerto `$7FFD`),
+  [bank_dan.asm](../../src/cydc/cydc/cyd/bank_dan.asm) (Dandanator).
 - **Interrupción:** IM2 / VSYNC a 50 Hz.
 - **Formatos de salida:** .tap, .dsk (+3), .mld; selección por modelo en
-  [cyd.py](src/cydc/cydc/cyd.py) (`get_asm_48/128/plus3/mld/mld128`).
+  [cyd.py](../../src/cydc/cydc/cyd.py) (`get_asm_48/128/plus3/mld/mld128`).
 
 ---
 
@@ -201,15 +201,15 @@ máquinas (el intérprete CPC lee dos operandos donde el del Spectrum lee uno).
 
 - **FLASH (Spectrum)** hoy: `FLASH <expr>`, un operando; opcodes `FLASH_D` 0x26,
   `FLASH_I` 0x28, `POP_FLASH` 0x4D
-  ([cydc_codegen.py:66-105](src/cydc/cydc/cydc_codegen.py#L66)).
+  ([cydc_codegen.py:66-105](../../src/cydc/cydc/cydc_codegen.py#L66)).
   Pone el bit 7 de `ATTR_P/ATTR_T`.
 - **Aclaración (verificada en código, may 2026 — corrige una afirmación previa
   errónea):** existe una rama `cp 8` en INK/PAPER/BRIGHT/FLASH que escribe bits
   en el byte contiguo a `ATTR_P`/`ATTR_T` (los comentarios lo llaman
-  `MASK_P`/`MASK_T`) ([text_manager.asm:104-220](src/cydc/cydc/cyd/text_manager.asm#L104-L220)).
+  `MASK_P`/`MASK_T`) ([text_manager.asm:104-220](../../src/cydc/cydc/cyd/text_manager.asm#L104-L220)).
   **Pero ese byte no se lee en ningún sitio** — ni siquiera existe como símbolo;
   `PUT_VAR_CHAR` vuelca el atributo con `ld a,(ATTR_P); ld (hl),e` sin consultar
-  máscara ([text_manager.asm:598-608](src/cydc/cydc/cyd/text_manager.asm#L598-L608)).
+  máscara ([text_manager.asm:598-608](../../src/cydc/cydc/cyd/text_manager.asm#L598-L608)).
   Es código **vestigial: CYD no tiene transparencia de texto** (confirmado por
   Sergio). No hay nada que portar por ese lado.
 - **PALETTE (CPC):** keyword propia, `PALETTE pen, color` (dos operandos
@@ -220,7 +220,7 @@ máquinas (el intérprete CPC lee dos operandos donde el del Spectrum lee uno).
 
 El motor ya soporta el mecanismo: la tabla de salto usa ensamblado condicional
 (`IFNDEF UNUSED_OP_… / DW OP_…`,
-[interpreter.asm:3010+](src/cydc/cydc/cyd/interpreter.asm#L3010)). En el build
+[interpreter.asm:3010+](../../src/cydc/cydc/cyd/interpreter.asm#L3010)). En el build
 CPC, el slot 0x26 sería `DW OP_PALETTE` en vez de `DW OP_FLASH`.
 
 ### Reparto preciso compartido vs nuevo
@@ -350,7 +350,7 @@ efectos raster/split de paleta, rainbow borders, scroll CRTC como comando.
       (independiente de máquina; en CPC = 2 bytes/char, byte-alineado). Ver §11.
 - [x] **Pipeline de imágenes:** DISEÑO HECHO (§11). Formato CSC-CPC (píxel Modo 1
       + paleta incrustada + mirror, ZX0, sin plano de atributos); conversor Python
-      hermano de [cydc_csc.py](src/cydc/cydc/cydc_csc.py); BLIT solo píxel;
+      hermano de [cydc_csc.py](../../src/cydc/cydc/cydc_csc.py); BLIT solo píxel;
       paleta aplicada por flag explícito en `DISPLAY` (nunca automática, por ser
       global); mirror mantenido (tabla `FLIP4_LUT[256]`).
 - [~] **Plataforma CPC (firmware/carga/memoria):** DECIDIDO usar **firmware en
@@ -393,9 +393,9 @@ efectos raster/split de paleta, rainbow borders, scroll CRTC como comando.
 ### 9.1 La superficie de divergencia es pequeña (verificado en código)
 
 Camino de un comando: lexer (dict `reserved` keyword→token,
-[cydc_lexer.py:109+](src/cydc/cydc/cydc_lexer.py#L109)) → regla `p_*` que emite
+[cydc_lexer.py:109+](../../src/cydc/cydc/cydc_lexer.py#L109)) → regla `p_*` que emite
 tuplas de código (p.ej. `statement : INK varexpression` → `[expr…, ("POP_INK",)]`,
-[cydc_parser.py:736-741](src/cydc/cydc/cydc_parser.py#L736)) → codegen (peephole
+[cydc_parser.py:736-741](../../src/cydc/cydc/cydc_parser.py#L736)) → codegen (peephole
 `PUSH+POP_INK → INK_D/INK_I` + dict opcode→byte).
 
 - **`INK`/`PAPER`/`BORDER`: CERO cambio en front-end.** Gramática idéntica, mismos
@@ -454,7 +454,7 @@ jump table condicional — ARCHITECTURE §8).
 ## 10. Blitter de texto CPC Modo 1: diseño (DECIDIDO)
 
 > Verificado contra el blitter Spectrum real
-> ([text_manager.asm](src/cydc/cydc/cyd/text_manager.asm): `PUT_VAR_CHAR`
+> ([text_manager.asm](../../src/cydc/cydc/cyd/text_manager.asm): `PUT_VAR_CHAR`
 > :504-686, `PUT_8X8_CHAR` :1067-1106) y el hardware CPC. Es el mayor coste del
 > port (§3: render ~10-20% reaprovechable).
 
@@ -536,9 +536,9 @@ base `&C000`. Alimentan el frente de "geometría parametrizable" (§7).
 
 ## 11. Clúster gráfico CPC: BLIT + pipeline de imágenes (DECIDIDO)
 
-> Verificado contra: formato CSC ([cydc_csc.py](src/cydc/cydc/cydc_csc.py)),
-> carga ([screen_manager_tape.asm:33-181](src/cydc/cydc/cyd/screen_manager_tape.asm#L33)),
-> y el handler `BLIT` ([interpreter.asm:2078-2218](src/cydc/cydc/cyd/interpreter.asm#L2078)).
+> Verificado contra: formato CSC ([cydc_csc.py](../../src/cydc/cydc/cydc_csc.py)),
+> carga ([screen_manager_tape.asm:33-181](../../src/cydc/cydc/cyd/screen_manager_tape.asm#L33)),
+> y el handler `BLIT` ([interpreter.asm:2078-2218](../../src/cydc/cydc/cyd/interpreter.asm#L2078)).
 
 ### 11.1 Cómo es en Spectrum (base)
 
@@ -595,10 +595,10 @@ base `&C000`. Alimentan el frente de "geometría parametrizable" (§7).
 ## 12. Plataforma CPC: carga de recursos, firmware y memoria (DECIDIDO en parte)
 
 > Verificado: carga de texto/imágenes/música en cinta y disco
-> ([cyd_tape.asm:423](src/cydc/cydc/cyd/cyd_tape.asm#L423),
-> [screen_manager.asm:36-151](src/cydc/cydc/cyd/screen_manager.asm#L36),
-> [music_manager.asm:34-84](src/cydc/cydc/cyd/music_manager.asm#L34),
-> [music_manager_tape.asm:34](src/cydc/cydc/cyd/music_manager_tape.asm#L34)).
+> ([cyd_tape.asm:423](../../src/cydc/cydc/cyd/cyd_tape.asm#L423),
+> [screen_manager.asm:36-151](../../src/cydc/cydc/cyd/screen_manager.asm#L36),
+> [music_manager.asm:34-84](../../src/cydc/cydc/cyd/music_manager.asm#L34),
+> [music_manager_tape.asm:34](../../src/cydc/cydc/cyd/music_manager_tape.asm#L34)).
 
 ### 12.1 El eje cinta/disco no es formato, es modelo de carga
 
