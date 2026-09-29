@@ -185,6 +185,7 @@ _SETTINGS_KEYS = [
     ("warn_gosub",         "var_warn_gosub",         "bool"),
     ("warn_shared_vars",   "var_warn_shared_vars",   "bool"),
     ("debug_stack",        "var_debug_stack",        "bool"),
+    ("debug_errors",       "var_debug_errors",       "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
     ("run_emulator",       "var_run_emulator",       "str"),
@@ -490,6 +491,7 @@ class SettingsDialog(tk.Toplevel):
             ("Warn about GOSUB/RETURN problems", self.app.var_warn_gosub),
             ("Warn about variables shared between files", self.app.var_warn_shared_vars),
             ("Check the GOSUB stack at runtime (debug)", self.app.var_debug_stack),
+            ("Show where system errors happen (debug)", self.app.var_debug_errors),
         ]
         for i, (text, var) in enumerate(checks):
             ttk.Checkbutton(flags, text=_(text), variable=var).grid(
@@ -772,6 +774,7 @@ class MakeAdventureGUI:
         self.var_warn_gosub = tk.BooleanVar()
         self.var_warn_shared_vars = tk.BooleanVar()
         self.var_debug_stack = tk.BooleanVar()
+        self.var_debug_errors = tk.BooleanVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
         self.var_backup_cyd = tk.BooleanVar()
@@ -830,6 +833,7 @@ class MakeAdventureGUI:
         self.var_warn_gosub.set(True)
         self.var_warn_shared_vars.set(True)
         self.var_debug_stack.set(False)
+        self.var_debug_errors.set(False)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
         self.var_backup_cyd.set(False)
@@ -1231,6 +1235,8 @@ class MakeAdventureGUI:
             cydc_params = ["--no-warn-shared-vars"] + cydc_params
         if self.var_debug_stack.get():
             cydc_params = ["--debug-stack"] + cydc_params
+        if self.var_debug_errors.get():
+            cydc_params = ["--debug-errors"] + cydc_params
         if check:
             cydc_params = ["--check"] + cydc_params
 

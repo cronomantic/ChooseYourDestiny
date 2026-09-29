@@ -110,6 +110,20 @@ def emit_codegen_warnings(codegen, args):
             emit_warning("CODEGEN", w)
 
 
+def write_debug_map(codegen, path):
+    """--debug-errors: the map from where a system error stopped ("at 0:42583")
+    to the statement in the script."""
+    _ = codegen._
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(_(
+            "# --debug-errors map. A system error shows 'at chunk:address': its\n"
+            "# statement is the last line of that chunk with an address not greater.\n"
+        ))
+        for line in codegen.debug_map():
+            f.write(line + "\n")
+    print(_("Debug map written to {path}").format(path=path))
+
+
 def plan_mld128_array_banks(array_lengths, ram_banks_full):
     """Assign each mld128 DIM array to a dedicated RAM bank at $C000+offset.
 
@@ -383,6 +397,14 @@ def main():
         help=_(
             "don't warn when a variable declared in one file (such as a library's) "
             "is used from another file under another name or by its number"
+        ),
+    )
+    arg_parser.add_argument(
+        "--debug-errors",
+        action="store_true",
+        help=_(
+            "make system errors show where they happened, and write a .map file "
+            "that turns that into a file and a line (for debugging, adds some bytes)"
         ),
     )
     arg_parser.add_argument(
@@ -706,7 +728,7 @@ def main():
     # Set text to compressed bytes format
     force_slice_texts = args.slice_texts
     for posT, posC in enumerate(positions):
-        code[posC] = ("TEXT", textBytes[posT])
+        code[posC] = CydcCodegen._keep_loc(("TEXT", textBytes[posT]), code[posC])
         # If any of the texts are bigger than 16Kb (size of bank), we enforce text slicing
         if not force_slice_texts and ((len(textBytes[posT]) + 1) >= (16 * 1024)):
             force_slice_texts = True
@@ -916,6 +938,8 @@ def main():
         unused_opcodes |= {"NESTED_TOKENS"}  # EXPAND_TOKEN instead of the flat decoder
     if args.debug_stack:
         unused_opcodes |= {"STACK_CHECK"}
+    if args.debug_errors:
+        unused_opcodes |= {"DEBUG_ERRORS"}
     # route_names / route_index / dispatch_size are computed after the first
     # generate_code below, once native-block DCE has settled which blocks (and
     # therefore which callables) survive (they get a dispatch slot each).
@@ -1115,6 +1139,8 @@ def main():
         relocate_arrays_resident=(model == "mld"),
         array_bank_map=array_bank_map,
     )
+    if args.debug_errors:
+        write_debug_map(codegen, os.path.join(args.output_path, f"{output_name}.map"))
 
     if model == "mld128":
         # mld128 reads TXT/SCR/bytecode from Dandanator slots (IS_MLD_DAN), so

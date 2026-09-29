@@ -237,7 +237,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors]
               [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
@@ -270,6 +270,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-no-warn-gosub**: Don't warn about the `GOSUB`/`RETURN` problems the compiler finds by following the program's flow (see [GOSUB ID](#gosub-id)): a `RETURN` that can be reached with no `GOSUB` pending, and a subroutine that can end without `RETURN`, going on into the main code. These warnings (`WARNING [CODEGEN]`) don't stop the build.
 - **\-\-no-warn-shared-vars**: Don't warn about variables that one file declares and another file uses under another name, by their number (`SET 205 TO ...`) or from another variable (`SET v TO {...}` running past `v`). That is how a library's variables, such as `sprites.cyd`'s 200..211, get overwritten without noticing. Reusing a variable under several names within one file doesn't warn, and neither does using it by its name from any file. These warnings (`WARNING [CODEGEN]`) don't stop the build.
 - **\-\-debug-stack**: For debugging. The interpreter checks the `GOSUB` stack at runtime: a `RETURN` with no `GOSUB` pending gives system error 9, and a `GOSUB` that would fill the stack gives error 10, instead of hanging or resetting the Spectrum. It adds about 30 bytes to the interpreter and a little work to each `GOSUB` and `RETURN`, so leave it out of the final build.
+- **\-\-debug-errors**: For debugging. When a system error happens, the message also says at which instruction, and the compiler writes a `.map` file next to the game that turns it into a file and a line (see [Error codes](#error-codes)). Without this option the interpreter doesn't change; with it, the instructions that can't fail run just as fast, so it is only worth leaving out for the bytes.
 - **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
 - **\-wyz**: Use WyzTracker music type instead of Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Number of lines to use in image files (default 192).
@@ -2099,7 +2100,7 @@ Main options:
 - `-tok, --tokens-file`: Token file path. If it does not exist, `-T` is used automatically; if it exists, `-t` is used.
 - `-chr, --charset-file`: Character set JSON path (used if found).
 - `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`: passed straight to the compiler.
+- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`: passed straight to the compiler.
 - `--check`: only checks the script for errors, without building it; `SJASMPLUS_PATH` is not needed in this mode.
 
 Note: after successful `plus3` builds, temporary files `SCRIPT.DAT`, `DISK`, and `CYD.BIN` are cleaned automatically.
@@ -2600,13 +2601,26 @@ Engine errors are, as their name indicates, errors that occur when the engine de
 - System Error 1: The accessed resource does not exist. This is because PICTURE or TRACK is being executed with an index that does not exist in the adventure, since the corresponding image or track was not loaded during compilation. Without `--debug-stack`, a `RETURN` without a prior `GOSUB` usually ends in this error too.
 - System Error 2: Too many options have been created, the limit of possible options has been exceeded.
 - System Error 3: There are no options available, a `CHOOSE` command has been launched without having any `OPTION` before.
-- System Error 4: The file with the music module to load is too large, it must be less than 16Kib.
+- System Error 4: A character of the character set is more than 8 pixels wide.
 - System Error 5: There is no music module loaded to play.
 - System Error 6: Invalid instruction code.
 - System Error 7: Access to array position out of range.
 - System Error 8: Missing option. When scrolling, the declared options shift upwards. If one of them goes over the top of the margins, this error is generated.
 - System Error 9: `RETURN` with no `GOSUB` pending. Only checked when building with `--debug-stack`.
 - System Error 10: Too many nested `GOSUB`s: the call stack is full, usually because a subroutine leaves with `GOTO` instead of `RETURN` and it happens again and again. Only checked when building with `--debug-stack`.
+
+To find where a system error happened, compile with `--debug-errors`. The message adds the position of the instruction that caused it, for example `SYSTEM ERROR No:7 at 0:42582` (chunk 0, address 42582), and the compiler writes a `.map` file next to the game with the position of every statement of the script:
+
+```
+0:42577	adventure.cyd:12	SET_D
+0:42580	adventure.cyd:13	PUSH_I
+0:42582	adventure.cyd:13	PUSH_VAL_ARRAY
+0:42586	adventure.cyd:13	POP_SET
+```
+
+The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
+
+Without `--debug-errors` the interpreter doesn't change. With it, each instruction that can give a system error and that the game uses (those that print text, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` and the arrays) notes where it is, which adds 3 bytes to it, and the error message takes about 43 more; the other instructions don't get slower. Since the interpreter's instruction table is aligned, those bytes sometimes fit in the alignment gap and sometimes make the interpreter grow by 256 bytes.
 
 Disk errors are errors that could be caused when the game engine accesses the disk or the storage card. They are shown on screen as `DISK ERROR No:` followed by the code, and they halt the game (unlike the recoverable `SAVE`/`LOAD` errors, which are queried with `SAVERESULT()`).
 

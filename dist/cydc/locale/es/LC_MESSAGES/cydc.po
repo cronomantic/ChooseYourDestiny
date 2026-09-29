@@ -1676,3 +1676,15 @@ msgstr "La variable {num} es '{name}' en {file}, y en {loc} se llega a ella desd
 #: src/cydc/cydc/cydc_codegen.py
 msgid "make GOSUB and RETURN check the call stack at runtime and stop with a system error when it overflows or is empty (for debugging, adds a few bytes)"
 msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse y paren con un error de sistema si se desborda o está vacía (para depurar, añade unos bytes)"
+
+#: src/cydc/cydc/cydc.py
+msgid "make system errors show where they happened, and write a .map file that turns that into a file and a line (for debugging, adds some bytes)"
+msgstr "hacer que los errores de sistema muestren dónde ocurrieron y escribir un fichero .map que lo traduce a fichero y línea (para depurar, añade algunos bytes)"
+
+#: src/cydc/cydc/cydc.py
+msgid "# --debug-errors map. A system error shows 'at chunk:address': its\n# statement is the last line of that chunk with an address not greater.\n"
+msgstr "# Mapa de --debug-errors. Un error de sistema muestra 'at bloque:dirección': su\n# sentencia es la última línea de ese bloque con una dirección no mayor.\n"
+
+#: src/cydc/cydc/cydc.py
+msgid "Debug map written to {path}"
+msgstr "Mapa de depuración escrito en {path}"
