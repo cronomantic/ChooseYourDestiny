@@ -14,7 +14,6 @@ BEEPFX_ASM_FILENAME = SFX.asm
 CYDC_PATH := ./src/cydc/cydc
 
 ASM := ./tools/sjasmplus.exe
-MKP3FS := ./tools/mkp3fs.exe
 
 SCR_LIST := $(shell find ./IMAGES -type f -iregex '\.\/IMAGES\/[0-9][0-9][0-9].scr')
 CSC_LIST := $(SCR_LIST:%.scr=%.csc)

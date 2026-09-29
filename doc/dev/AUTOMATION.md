@@ -462,7 +462,7 @@ ChooseYourDestiny_Win_x64_v1_2_1_2026_02_21.zip
 
 **Ver documentación completa:**
 ```bash
-cat DISTRIBUTION.md
+cat doc/dev/DISTRIBUTION.md
 ```
 
 ---

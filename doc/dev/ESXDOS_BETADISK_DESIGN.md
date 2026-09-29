@@ -13,14 +13,14 @@
 > Documento de trabajo. Recoge el análisis del framework y el diseño del **target de
 > almacenamiento ESXDOS** (divMMC/divIDE, tarjeta SD) para el motor CYD sobre ZX Spectrum.
 >
-> **A diferencia del port a CPC** ([MULTITARGET_DESIGN.md](../../MULTITARGET_DESIGN.md)),
+> **A diferencia del port a CPC** ([MULTITARGET_DESIGN.md](MULTITARGET_DESIGN.md)),
 > aquí **NO cambia ni el lenguaje, ni el bytecode, ni el render, ni el color**: la
 > máquina sigue siendo un ZX Spectrum. Lo único que cambia es **la capa de
 > almacenamiento** (cómo llegan intérprete + datos a memoria, y cómo se leen medios y
 > se guardan partidas). Es, por tanto, un trabajo del mismo tipo que `plus3` frente a
 > `48k`/`128k`, **acotado al lado build/asm**, sin tocar parser/codegen.
 >
-> **Requisito previo:** leer [ARCHITECTURE.md](../../ARCHITECTURE.md) (pipeline de
+> **Requisito previo:** leer [ARCHITECTURE.md](ARCHITECTURE.md) (pipeline de
 > compilación, mecanismo multi-target por compilación condicional, size-pass,
 > `LOAD_CHUNK`, banking). Este documento asume ese conocimiento.
 >
@@ -75,7 +75,7 @@ una vez por el loader al arrancar. El disco (+3DOS) se usa **solo** para: (a) el
 loader, (b) imágenes (`screen_manager.asm`, `IMG_LOAD`), (c) música
 (`music_manager.asm`), (d) savegame (`savegame_plus3.asm`). Ese es el eje
 cinta/disco: **texto siempre residente; en disco, medios streameados**
-([MULTITARGET_DESIGN §12.1](../../MULTITARGET_DESIGN.md); ARCHITECTURE §8.4).
+([MULTITARGET_DESIGN §12.1](MULTITARGET_DESIGN.md); ARCHITECTURE §8.4).
 
 **Consecuencia para ESXDOS/TR-DOS:** el grueso del intérprete (`LOAD_CHUNK`,
 `FIND_IN_INDEX`, render, banking $7FFD, ISR) es **compartido con `plus3` sin
