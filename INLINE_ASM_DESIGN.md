@@ -130,9 +130,11 @@ como canal formal es (a) mal encaje para valores anchos (habría que apilar 2-4
 bytes), (b) arriesgado (desbalancear IX corrompe la pila de retorno). FLAGS es
 genuinamente el mejor canal aquí.
 
-**Extensión futura (opcional, no v1):** permitir que una rutina que devuelve **un
-solo byte** haga `PUSH_INT_STACK`, y así `CALL nombre` sea usable como
-**byte-expresión** (`SET x TO …`). Ortogonal; no rompe v1.
+**Implementado (`CALL` como valor):** `CALL nombre` dentro de una expresión es una
+**byte-expresión** (`SET x TO CALL nombre`): la rutina devuelve el byte en `A` y
+`OP_EXTERN` lo apila con `PUSH_INT_STACK`. Lo decide un 4.º operando de `OP_EXTERN`
+(0 = sentencia, 1 = valor), así que no hace falta otro opcode (la tabla de 128 está
+llena); en los targets con bancos, `A` se guarda antes de repaginar el guion.
 
 ---
 

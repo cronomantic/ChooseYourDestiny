@@ -613,6 +613,9 @@ Intervienen dos palabras clave:
 - **`CALL nombre`** ejecuta la rutina. Piénsalo como el equivalente nativo de
   `GOSUB`: `GOSUB etiqueta` llama a una subrutina escrita en CYD, `CALL nombre`
   llama a una escrita en Z80.
+- **`CALL nombre` como valor**: dentro de una expresión (`SET x TO CALL nombre`,
+  `IF CALL nombre = 1 THEN ...`, `PRINT CALL nombre + 1`), la rutina se ejecuta y
+  su resultado es el byte que deja en el registro **`A`** al hacer `RET`.
 
 ### Cómo escribir la rutina
 
@@ -628,7 +631,8 @@ El contrato (ABI) es deliberadamente pequeño:
   variables. Cada variable CYD `n` es el byte en `FLAGS + n`.
 - **Las entradas y salidas viajan por variables.** El guion pone los argumentos en
   variables con `SET`, llama a la rutina y lee los resultados con `@var`. La rutina
-  los lee y escribe en `FLAGS + n`. No hay otra convención de llamada que recordar.
+  los lee y escribe en `FLAGS + n`. Si devuelve un solo byte, puede dejarlo en `A` y
+  usarse como valor (`SET x TO CALL nombre`); con un `CALL` normal, `A` se ignora.
 - Debe terminar con **`RET`** y no debe saltar por su cuenta a rutinas internas del
   motor. Puede usar libremente `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (el motor guarda y
   restaura `IX`/`IY`, que usa internamente). Para lo que sí necesitas —acceder a los

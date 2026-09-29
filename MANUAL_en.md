@@ -610,6 +610,9 @@ Two keywords are involved:
 - **`CALL name`** runs the routine. Think of it as the native counterpart of
   `GOSUB`: `GOSUB label` calls a subroutine written in CYD, `CALL name` calls one
   written in Z80.
+- **`CALL name` as a value**: inside an expression (`SET x TO CALL name`,
+  `IF CALL name = 1 THEN ...`, `PRINT CALL name + 1`), the routine runs and its
+  result is the byte it leaves in register **`A`** when it returns.
 
 ### Writing the routine
 
@@ -625,8 +628,9 @@ The contract (ABI) is deliberately small:
   variable array. Every CYD variable `n` is the byte at `FLAGS + n`.
 - **Inputs and outputs travel through variables.** The script puts arguments in
   variables with `SET`, calls the routine, and reads results back with `@var`. The
-  routine reads and writes them at `FLAGS + n`. There is no other calling
-  convention to remember.
+  routine reads and writes them at `FLAGS + n`. A routine that returns a single
+  byte can leave it in `A` and be used as a value (`SET x TO CALL name`); with a
+  plain `CALL`, `A` is ignored.
 - It must end with **`RET`** and must not jump into the engine's internals on its
   own. It may freely use `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (the engine saves and
   restores `IX`/`IY`, which it relies on internally). For what you _do_ need —

@@ -528,6 +528,53 @@ EXTERN_WITH_ARRAY = (
 )
 
 
+# CALL used as a value: the routine returns a byte in A and OP_EXTERN pushes it.
+# A plain CALL statement must push nothing: the one inside the subroutine would
+# otherwise make its RETURN pop the wrong frame.
+CALL_AS_VALUE = """[[
+ASM answer
+    ld a, (FLAGS+10)
+    add a, 40
+    ret
+ENDASM
+SET 10 TO 2
+SET 1 TO CALL answer
+IF CALL answer = 42 THEN SET 2 TO 1 ENDIF
+SET 3 TO CALL answer + 1
+GOSUB plain
+GOSUB as_value
+SET 0 TO 42
+LABEL spin
+GOTO spin
+LABEL plain
+CALL answer
+RETURN
+LABEL as_value
+SET 5 TO CALL answer - 2
+RETURN
+]]"""
+
+
+@unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not found under tools/")
+class TestCallAsValue(unittest.TestCase):
+    def _check(self, model, machine):
+        with tempfile.TemporaryDirectory(prefix="cyd_callv_") as wd:
+            tap, flags = compile_cyd(CALL_AS_VALUE, model, wd)
+            f = run_in_zesarux(tap, flags, n_bytes=6, machine=machine, max_wait=35.0)
+        self.assertEqual(f[0], 42, "program did not finish (stack out of balance?)")
+        self.assertEqual(list(f[1:6]), [42, 1, 43, 0, 40])
+
+    def test_48k(self):
+        self._check("48k", "48k")
+
+    def test_128k(self):
+        """Banked: the value survives paging the script bank back in."""
+        self._check("128k", "128k")
+
+    def test_plus3(self):
+        self._check("plus3", "p3")
+
+
 @unittest.skipUnless(find_sjasmplus(), "sjasmplus not found under tools/")
 class TestBrokerExtirpation(unittest.TestCase):
     def _sym_has(self, src, symbol, model="48k"):
