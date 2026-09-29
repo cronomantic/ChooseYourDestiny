@@ -68,10 +68,10 @@ class TestCompilerProcess(unittest.TestCase):
         self.assertTrue(any("abreviatura" in line for line in lines), lines[:5])
 
 
-MAP = """# chunk:address\tlocation\topcode
-0:42500\tgame.cyd:3\tSET
-0:42510\tgame.cyd:4\tSET
-0:42580\tlib/sprites.cyd:12\tGOSUB
+MAP = """# chunk:address\tlocation\topcode\tcolumn
+0:42500\tgame.cyd:3\tSET\t1
+0:42510\tgame.cyd:4\tSET\t17
+0:42580\tlib/sprites.cyd:12\tGOSUB\t-
 1:40000\tgame.cyd:30\tPRINT
 """
 
@@ -98,17 +98,37 @@ class TestHelpers(unittest.TestCase):
             with open(path, "w", encoding="utf-8") as f:
                 f.write(MAP)
             # The last statement of that chunk at or before the address.
-            self.assertEqual(gui.lookup_debug_map(path, "0:42510"), ("game.cyd:4", "SET"))
-            self.assertEqual(gui.lookup_debug_map(path, "0:42579"), ("game.cyd:4", "SET"))
+            self.assertEqual(gui.lookup_debug_map(path, "0:42510"), ("game.cyd:4", "SET", 17))
+            self.assertEqual(gui.lookup_debug_map(path, "0:42579"), ("game.cyd:4", "SET", 17))
             self.assertEqual(gui.lookup_debug_map(path, "SYSTEM ERROR 7 at 0:42582"),
-                             ("lib/sprites.cyd:12", "GOSUB"))
-            self.assertEqual(gui.lookup_debug_map(path, "1 : 40001"), ("game.cyd:30", "PRINT"))
+                             ("lib/sprites.cyd:12", "GOSUB", None))
+            # A map without columns (an older build) still works.
+            self.assertEqual(gui.lookup_debug_map(path, "1 : 40001"),
+                             ("game.cyd:30", "PRINT", None))
             self.assertIsNone(gui.lookup_debug_map(path, "0:100"))
             self.assertIsNone(gui.lookup_debug_map(path, "5:42582"))
             with self.assertRaises(ValueError):
                 gui.lookup_debug_map(path, "SYSTEM ERROR 7")
             with self.assertRaises(FileNotFoundError):
                 gui.lookup_debug_map(os.path.join(wd, "other.map"), "0:1")
+
+    def test_error_number_and_meaning(self):
+        self.assertEqual(gui.system_error_number("SYSTEM ERROR No:7 at 0:42582"), 7)
+        self.assertEqual(gui.system_error_number("system error 10"), 10)
+        self.assertIsNone(gui.system_error_number("0:42582"))
+        for number in range(1, 11):
+            self.assertTrue(gui.system_error_meaning(number))
+        self.assertIsNone(gui.system_error_meaning(42))
+
+    def test_statement_within_its_line(self):
+        line = '  SET 0 TO 42 : SET 1 TO t(@0) : PRINT "a:b"'
+        self.assertEqual(gui.statement_span(line, 3), (2, 13))    # SET 0 TO 42
+        self.assertEqual(gui.statement_span(line, 17), (16, 30))  # SET 1 TO t(@0)
+        self.assertEqual(gui.statement_span(line, 34), (33, 44))  # ':' in quotes
+        self.assertEqual(gui.statement_span("GOSUB x ]]Hola: adiós[[ END", 11, True), (10, 21))
+        self.assertEqual(gui.statement_span("LABEL a ]]", 1), (0, 7))
+        self.assertIsNone(gui.statement_span("SET 1 TO 2", 40))
+        self.assertIsNone(gui.statement_span("SET 1 TO 2", None))
 
     def test_compiled_file_as_the_compiler_names_it(self):
         with tempfile.TemporaryDirectory() as wd:
@@ -212,11 +232,13 @@ class TestLanguageChange(unittest.TestCase):
             self.assertEqual(str(app.btn_compile["state"]), "normal")
         finally:
             root.destroy()
+            gui.set_language("en")  # it is global: don't leave it changed
 
 
 @unittest.skipUnless(_display(), "no display for tkinter")
 class TestMainWindow(unittest.TestCase):
     def setUp(self):
+        gui.set_language("en")  # the messages below are checked in English
         self.root = tk.Tk()
         self.app = gui.MakeAdventureGUI(self.root)
         self.root.update()
@@ -255,7 +277,29 @@ class TestMainWindow(unittest.TestCase):
             self.app.var_find_error.set("0:42582")
             self.app._on_find_error()
             self.root.update()
-            self.assertIn(".map", self.app.log.get(*self.app.log.tag_ranges("warning")))
+            self.assertIn("Show where system errors happen",
+                          self.app.log.get(*self.app.log.tag_ranges("warning")))
+
+    def test_game_error_shows_the_script(self):
+        with tempfile.TemporaryDirectory() as wd:
+            with open(os.path.join(wd, "juego.cyd"), "w", encoding="utf-8") as f:
+                f.write("[[ DIM t(3)\n  SET 0 TO 42 : SET 1 TO t(@0) ]]\n")
+            with open(os.path.join(wd, "juego.map"), "w", encoding="utf-8") as f:
+                f.write("0:100\tjuego.cyd:2\tSET_D\t3\n0:103\tjuego.cyd:2\tPUSH_VAL_ARRAY\t17\n")
+            self.app.paths["curr_path"] = wd
+            self.app.var_game_name.set("juego")
+            self.app.var_output_path.set(wd)
+            self.app.var_find_error.set("SYSTEM ERROR No:7 at 0:105")
+            self.app._on_find_error()
+            self.root.update()
+            log = self.app.log.get("1.0", "end")
+            self.assertIn("Error 7:", log)
+            self.assertIn("juego.cyd, line 2:", log)
+            self.assertIn("    " + "  SET 0 TO 42 : SET 1 TO t(@0)", log)
+            self.assertIn("\n    " + " " * 16 + "^" * 14 + "\n", log)
+            self.assertNotIn("PUSH_VAL_ARRAY", log)  # nothing of the interpreter
+            viewers = [w for w in self.root.winfo_children() if isinstance(w, gui.SourceViewer)]
+            self.assertEqual(len(viewers), 1)
 
 
 if __name__ == "__main__":

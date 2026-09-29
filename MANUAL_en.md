@@ -2622,13 +2622,13 @@ Engine errors are, as their name indicates, errors that occur when the engine de
 To find where a system error happened, compile with `--debug-errors`. The message adds the position of the instruction that caused it, for example `SYSTEM ERROR No:7 at 0:42582` (chunk 0, address 42582), and the compiler writes a `.map` file next to the game with the position of every statement of the script:
 
 ```
-0:42577	adventure.cyd:12	SET_D
-0:42580	adventure.cyd:13	PUSH_I
-0:42582	adventure.cyd:13	PUSH_VAL_ARRAY
-0:42586	adventure.cyd:13	POP_SET
+0:42577	adventure.cyd:12	SET_D	1
+0:42580	adventure.cyd:13	PUSH_I	15
+0:42582	adventure.cyd:13	PUSH_VAL_ARRAY	15
+0:42586	adventure.cyd:13	POP_SET	15
 ```
 
-The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. In the GUI you don't need to look for it: paste the message, or just `0:42582`, in the **Game error** field and it tells you the line and opens the file at it. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
+The statement you are looking for is the last one of that chunk whose address is not greater than the one in the message. The last column is where the statement starts on its line. In the GUI you don't need to look for it: paste the message, or just `0:42582`, in the **Game error** field and it tells you the line and opens the file at it. Errors 9 and 10 only exist with `--debug-stack`, so for them use both options.
 
 Without `--debug-errors` the interpreter doesn't change. With it, each instruction that can give a system error and that the game uses (those that print text, `GOSUB`/`RETURN`, `OPTION`/`CHOOSE`, `PICTURE`, `TRACK`/`PLAY`/`LOOP` and the arrays) notes where it is, which adds 3 bytes to it, and the error message takes about 43 more; the other instructions don't get slower. Since the interpreter's instruction table is aligned, those bytes sometimes fit in the alignment gap and sometimes make the interpreter grow by 256 bytes.
 

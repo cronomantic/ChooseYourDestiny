@@ -54,7 +54,7 @@ def read_map(path):
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if line.startswith("#"):
             continue
-        where, loc, _opcode = line.split("\t")
+        where, loc, _opcode, _col = line.split("\t")
         chunk, address = (int(v) for v in where.split(":"))
         entries.setdefault(chunk, []).append((address, loc))
     return entries
@@ -114,8 +114,14 @@ class TestDebugMap(unittest.TestCase):
             # Every statement of the script has its line.
             for line in (3, 4, 6, 7, 8):
                 self.assertIn(f"game.cyd:{line}", locs)
-            # The text after the last newline too, not as "line 10".
-            self.assertIn("game.cyd:10", locs)
+            # The text after the last "]]" too: where it starts, not "line 10".
+            self.assertIn("game.cyd:9", locs)
+            # Each statement also says where it starts on its line.
+            cols = {(loc, col) for loc, col in (
+                ln.split("\t")[1::2] for ln in (debug / "game.map").read_text(
+                    encoding="utf-8").splitlines() if not ln.startswith("#"))}
+            self.assertIn(("game.cyd:7", "1"), cols)  # SET 3 TO tabla(@2)
+            self.assertIn(("game.cyd:5", "3"), cols)  # the text after "]]"
             addresses = [a for a, _ in entries[0]]
             self.assertEqual(addresses, sorted(addresses))
 
