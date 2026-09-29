@@ -513,7 +513,7 @@ class CydcTextCompressor(object):
                             savingTokens[posToken] = 0
                         if savingTokens[posToken] > 0:
                             final_tokens.append(token)
-                        elif self.verbose:
+                        elif self.verbose and token != chr(127):  # not padding
                             if savingTokens[posToken] == 0:
                                 print(
                                     "Warning: token ["

@@ -32,7 +32,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pandoc texlive-xetex \
-            texlive-latex-extra texlive-fonts-recommended lmodern fonts-dejavu-core
+            texlive-latex-extra texlive-fonts-recommended texlive-lang-spanish lmodern \
+            fonts-dejavu-core
 
       # The manuals and tutorials are canonical in the repo; the PDFs are built
       # from them here so the packages never ship stale ones.

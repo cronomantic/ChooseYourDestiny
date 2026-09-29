@@ -619,23 +619,36 @@ PUT_VAR_CHAR:
     exx              ; Swap Back
 
     pop hl           ; Restore pointer to char
-    ex af, af'       ; Recover displacement to the right
-    jp nz, .t2        ; test if is zero
-    ld a, 8          ; In that case, set to 8
-.t2: 
-    ld d, a          ; D = num of pixel rotations to do
+    ex af, af'       ; Recover displacement to the right (0-7)
+    ; Rotating right N times is rotating left 8-N times: aim the JR below into
+    ; the chain that does fewer rotations (none when the character is aligned).
+    ld de, .ROT_ENTRY
+    add a, e
+    ld e, a
+    adc a, d
+    sub e
+    ld d, a          ; de = .ROT_ENTRY + displacement
+    ld a, (de)
+    ld (.rot_jr+1), a
 
     ld b, 8
 
 .loop1:
     ld a, (hl)       ; get char line pxl
     inc hl           ; next char line
-    ld c, b          ; Save line counter on c
-    ld b, d          ; Set on b the displacement to the right
-
-.loop2:
-    rrca             ; Rotate a
-    djnz .loop2
+.rot_jr:
+    jr $+2           ; self-modified: offset from .ROT_ENTRY
+.rot_left:
+    rlca             ; displacement 5 enters here (3 to the left)
+    rlca             ; 6
+    rlca             ; 7
+    jr .rot_done
+.rot_right:
+    rrca             ; displacement 4 enters here (4 to the right)
+    rrca             ; 3
+    rrca             ; 2
+    rrca             ; 1
+.rot_done:           ; 0
 
     exx
     ;HL' the screen pointer, b' -> mask, c' -> mask complemented
@@ -662,7 +675,6 @@ PUT_VAR_CHAR:
 .t3:
     inc h           ; next char line
     exx
-    ld b, c         ; Restore on b the line counter
     djnz .loop1
 
     ; Typing pause
@@ -674,6 +686,17 @@ PUT_VAR_CHAR:
     ret z
     dec hl
     jr .t4
+
+; JR offset (from .rot_left) of the rotations for each displacement 0-7.
+.ROT_ENTRY:
+    DEFB .rot_done-.rot_left      ; 0: none
+    DEFB .rot_done-.rot_left-1    ; 1: rrca x1
+    DEFB .rot_done-.rot_left-2    ; 2: rrca x2
+    DEFB .rot_done-.rot_left-3    ; 3: rrca x3
+    DEFB .rot_right-.rot_left     ; 4: rrca x4
+    DEFB 0                        ; 5: rlca x3
+    DEFB 1                        ; 6: rlca x2
+    DEFB 2                        ; 7: rlca x1
 
 .MASK:
     DEFB %11111111  ;CPL =>  %00000000
@@ -800,7 +823,9 @@ PRINT_STR:
     call GET_CHARACTER_WIDTH
     pop bc
     add a, c
-    ld c, a
+    jr nc, 1f
+    ld a, 255     ; Wider than any line: don't let the 8-bit sum wrap around
+1:  ld c, a
     inc de        ; Increment counter 
     jp .loop2
 .end_loop2:
