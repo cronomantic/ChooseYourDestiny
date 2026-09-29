@@ -10,6 +10,7 @@ Este documento describe el sistema de automatización que simplifica las tareas 
   - [setup_embedded_python.py](#setup_embedded_pythonpy)
   - [update_locales.py](#update_localespy)
   - [make_pdf.bat / make_pdf.sh](#make_pdfbat--make_pdfsh)
+  - [build_example_taps.py](#build_example_tapspy)
   - [update_wiki.py](#update_wikipy)
   - [tests/run_tests.py](#testsrun_testspy)
   - [make_dist.py](#make_distpy)
@@ -328,6 +329,33 @@ necesita la wiki.
 - Cabecera/pie de página con numeración
 - Motor LaTeX: Tectonic (Windows) o auto-detectado (Linux/macOS)
 - Cabecera común de estilo: `documentation/pdf/pandoc-header.tex`
+
+**En la release:** el workflow `.github/workflows/release.yml` ejecuta
+`make_pdf.sh` en Ubuntu (Pandoc y XeLaTeX) antes de empaquetar, así que los dos
+paquetes llevan siempre los PDF al día y la Release los publica también sueltos.
+Los PDF de `documentation/` en el repositorio solo sirven para empaquetar a mano.
+
+---
+
+### build_example_taps.py
+
+Regenera el `.tap` de todos los ejemplos (`examples/*/`) con el compilador de
+`src/`. Cada ejemplo lleva su `.tap` para poder cargarlo directamente en un
+emulador como demostración, y `tests/test_example_taps.py` comprueba que ninguno
+falte y que todos arrancan.
+
+**Ubicación:** `tools/`
+
+**Uso:**
+```bash
+python tools/build_example_taps.py            # todos los ejemplos
+python tools/build_example_taps.py sprites    # solo los indicados
+```
+
+La fuente es el `test.cyd` de cada ejemplo, y el modelo 48K, salvo los que
+indican `SOURCES` y `MODELS` en el script. Usa `IMAGES/`, `TRACKS/`, `SFX.asm` y
+`tokens.json` cuando el ejemplo los tiene. Hay que ejecutarlo tras cambiar el
+intérprete o un ejemplo, y subir los `.tap` nuevos.
 
 ---
 
