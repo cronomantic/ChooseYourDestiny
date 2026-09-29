@@ -40,7 +40,7 @@ def check(main, files=None, *options):
         r = subprocess.run(
             [sys.executable, str(CYDC), "--check", *options, "48k", "main.cyd"],
             cwd=wd, capture_output=True, text=True, timeout=120,
-            env={**os.environ, "CYD_LANG": "en"},
+            env={**os.environ, "CYD_LANG": "en", "LANGUAGE": "en"},
         )
         assert r.returncode == 0, r.stdout + r.stderr
         return [line.split("]: ", 1)[1] for line in r.stdout.splitlines()
@@ -106,7 +106,7 @@ class TestSharedVariables(unittest.TestCase):
                     r = subprocess.run(
                         [sys.executable, str(CYDC), "--check", "48k", src.name],
                         cwd=example, capture_output=True, text=True, timeout=120,
-                        env={**os.environ, "CYD_LANG": "en"},
+                        env={**os.environ, "CYD_LANG": "en", "LANGUAGE": "en"},
                     )
                     self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
                     self.assertNotIn("WARNING [CODEGEN]: Variable ", r.stdout)

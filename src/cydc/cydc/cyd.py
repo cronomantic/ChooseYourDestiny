@@ -40,7 +40,8 @@ def mld_intro_scr_size(loading_scr):
 # Build flags (not opcode guards), defined before vars.asm, which tests some.
 # NESTED_TOKENS (nested text tokens) drops the flat decoder's TOKEN_BUFFER.
 # STACK_CHECK (--debug-stack) makes GOSUB/RETURN check the call stack.
-EARLY_DEFINES = ("NESTED_TOKENS", "STACK_CHECK")
+# DEBUG_ERRORS (--debug-errors) makes system errors show where they happened.
+EARLY_DEFINES = ("NESTED_TOKENS", "STACK_CHECK", "DEBUG_ERRORS")
 
 
 def get_early_defines(unused_opcodes=None):

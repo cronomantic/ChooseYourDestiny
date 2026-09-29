@@ -185,6 +185,7 @@ _SETTINGS_KEYS = [
     ("warn_gosub",         "var_warn_gosub",         "bool"),
     ("warn_shared_vars",   "var_warn_shared_vars",   "bool"),
     ("debug_stack",        "var_debug_stack",        "bool"),
+    ("debug_errors",       "var_debug_errors",       "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
     # Post-build
     ("run_emulator",       "var_run_emulator",       "str"),
@@ -232,6 +233,43 @@ def _apply_settings(app, data):
 
 # ── Helpers (from make_adventure.py) ───────────────────────────────────────────
 
+def _child_env(language=None):
+    """Environment for the compiler: UTF-8 output, not buffered (so the log
+    shows it as it comes), and the GUI's language for its messages."""
+    # Force UTF-8 encoding to avoid UnicodeEncodeError on Windows
+    # when the child process outputs Unicode characters (e.g. asciibars
+    # uses ▓ and ░ which are not representable in cp1252).
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUNBUFFERED"] = "1"
+    if language:
+        env["LANGUAGE"] = language  # gettext, used by cydc
+        env["CYD_LANG"] = language
+    return env
+
+
+def stream_exec(exec_path, parameter_list, on_line, language=None):
+    """Run an external executable, passing each line it prints (stdout and
+    stderr) to on_line as it comes. Returns the exit code."""
+    command_line = [os.path.abspath(exec_path)] + list(parameter_list)
+    try:
+        proc = subprocess.Popen(
+            command_line,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=_child_env(language),
+        )
+    except Exception as exc:
+        raise OSError(str(exc)) from exc
+    with proc:
+        for line in proc.stdout:
+            on_line(line.rstrip("\r\n"))
+    return proc.returncode
+
+
 def run_exec(exec_path, parameter_list=None, capture_output=False):
     """Run an external executable and return the result."""
     if parameter_list is None:
@@ -239,11 +277,7 @@ def run_exec(exec_path, parameter_list=None, capture_output=False):
     exec_path = os.path.abspath(exec_path)
     command_line = [exec_path] + parameter_list
 
-    # Force UTF-8 encoding to avoid UnicodeEncodeError on Windows
-    # when the child process outputs Unicode characters (e.g. asciibars
-    # uses ▓ and ░ which are not representable in cp1252).
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
+    env = _child_env()
 
     try:
         result = subprocess.run(
@@ -490,6 +524,7 @@ class SettingsDialog(tk.Toplevel):
             ("Warn about GOSUB/RETURN problems", self.app.var_warn_gosub),
             ("Warn about variables shared between files", self.app.var_warn_shared_vars),
             ("Check the GOSUB stack at runtime (debug)", self.app.var_debug_stack),
+            ("Show where system errors happen (debug)", self.app.var_debug_errors),
         ]
         for i, (text, var) in enumerate(checks):
             ttk.Checkbutton(flags, text=_(text), variable=var).grid(
@@ -772,6 +807,7 @@ class MakeAdventureGUI:
         self.var_warn_gosub = tk.BooleanVar()
         self.var_warn_shared_vars = tk.BooleanVar()
         self.var_debug_stack = tk.BooleanVar()
+        self.var_debug_errors = tk.BooleanVar()
         self.var_pause_after_load = tk.StringVar()
         self.var_run_emulator = tk.StringVar()
         self.var_backup_cyd = tk.BooleanVar()
@@ -830,6 +866,7 @@ class MakeAdventureGUI:
         self.var_warn_gosub.set(True)
         self.var_warn_shared_vars.set(True)
         self.var_debug_stack.set(False)
+        self.var_debug_errors.set(False)
         self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
         self.var_backup_cyd.set(False)
@@ -871,31 +908,21 @@ class MakeAdventureGUI:
         self._refresh_ui_text()
 
     def _refresh_ui_text(self):
-        """Refresh all UI text after language change."""
-        # Update window title
-        self.root.title(_("Choose Your Destiny GUI"))
-        
-        # Update header titles
-        self.title_main.config(text=_("Choose Your Destiny"))
-        self.title_sub.config(text=_("Cross-platform adventure compiler"))
-        
-        # Update main buttons
-        self.btn_compile.config(text=_("▶  Compile"))
-        self.btn_clear_log.config(text=_("Clear Log"))
-        
-        # Update tab labels
-        for i, (tab_id, text) in enumerate([("settings", "Settings"), ("output", "Output"), ("advanced", "Advanced")]):
-            self.notebook.tab(i, text=_(text))
-        
-        # Update settings labels
-        if hasattr(self, 'lbl_adv_name'):
-            self.lbl_adv_name.config(text=_("Adventure Name:"))
-        if hasattr(self, 'lbl_target'):
-            self.lbl_target.config(text=_("Target Platform:"))
-        if hasattr(self, 'lbl_charset'):
-            self.lbl_charset.config(text=_("Character Set:"))
-        if hasattr(self, 'lbl_lang_select'):
-            self.lbl_lang_select.config(text=_("Language:"))
+        """Rebuild the window in the new language. The log is kept, and so is
+        the busy state if a compilation is running."""
+        log_text = self.log.get("1.0", "end-1c")
+        for widget in self.root.winfo_children():
+            widget.destroy()  # the settings dialog too, if open
+        self._build_ui()
+        self._apply_appearance()
+        self.log.configure(state=tk.NORMAL)
+        self.log.insert(tk.END, log_text)
+        self.log.see(tk.END)
+        self.log.configure(state=tk.DISABLED)
+        if self.compiling:
+            self.btn_compile.configure(state=tk.DISABLED)
+            self.btn_check.configure(state=tk.DISABLED)
+            self.progress.start(15)
 
     # ── UI Construction ────────────────────────────────────────────────────
 
@@ -991,17 +1018,18 @@ class MakeAdventureGUI:
         )
         target_frame = ttk.Frame(project_frame)
         target_frame.grid(row=r, column=1, columnspan=2, sticky=tk.W, **pad)
-        for val, label in [
+        # Two rows of three, so they fit in the window's minimum width.
+        for i, (val, label) in enumerate([
             ("48k", "48K (TAP)"),
             ("128k", "128K (TAP)"),
             ("plus3", "+3 (DSK)"),
             ("mld", "Dandanator (MLD) ⚠ exp."),
             ("mld128", "Dandanator 128K (MLD) ⚠ exp."),
             ("esxdos", "ESXDOS/divMMC (SD)"),
-        ]:
+        ]):
             ttk.Radiobutton(
                 target_frame, text=label, variable=self.var_target, value=val
-            ).pack(side=tk.LEFT, padx=(0, 14))
+            ).grid(row=i // 3, column=i % 3, sticky=tk.W, padx=(0, 14))
 
         # ── Buttons row: Configure + Compile ───────────────────────────────
         btn_area = ttk.Frame(self.root)
@@ -1231,6 +1259,8 @@ class MakeAdventureGUI:
             cydc_params = ["--no-warn-shared-vars"] + cydc_params
         if self.var_debug_stack.get():
             cydc_params = ["--debug-stack"] + cydc_params
+        if self.var_debug_errors.get():
+            cydc_params = ["--debug-errors"] + cydc_params
         if check:
             cydc_params = ["--check"] + cydc_params
 
@@ -1277,13 +1307,11 @@ class MakeAdventureGUI:
         """Run the compiler in a background thread."""
         success = False
         try:
-            result = run_exec(python_path, cydc_params)
-            if result.stdout:
-                self._log(result.stdout)
-            if result.stderr:
-                self._log(result.stderr)
-            if result.returncode != 0:
-                self._log(_("ERROR: Compiler exited with code {}.").format(result.returncode))
+            returncode = stream_exec(
+                python_path, cydc_params, self._log, language=self.current_language
+            )
+            if returncode != 0:
+                self._log(_("ERROR: Compiler exited with code {}.").format(returncode))
             else:
                 success = True
                 self._log("─────────────────────")

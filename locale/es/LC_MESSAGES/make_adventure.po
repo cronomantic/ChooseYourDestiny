@@ -245,3 +245,7 @@ msgstr "no avisar cuando una variable declarada en un fichero (como las de una l
 #: make_adventure.py
 msgid "make GOSUB and RETURN check the call stack at runtime (for debugging)"
 msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse (para depurar)"
+
+#: make_adventure.py
+msgid "make system errors show where they happened, and write a .map file that turns that into a file and a line (for debugging, adds some bytes)"
+msgstr "hacer que los errores de sistema muestren dónde ocurrieron y escribir un fichero .map que lo traduce a fichero y línea (para depurar, añade algunos bytes)"

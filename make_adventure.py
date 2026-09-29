@@ -369,6 +369,15 @@ def main():
         ),
     )
     arg_parser.add_argument(
+        "--debug-errors",
+        action="store_true",
+        default=False,
+        help=_(
+            "make system errors show where they happened, and write a .map file "
+            "that turns that into a file and a line (for debugging, adds some bytes)"
+        ),
+    )
+    arg_parser.add_argument(
         "--debug-stack",
         action="store_true",
         default=False,
@@ -507,6 +516,9 @@ def main():
 
     if args.debug_stack:
         cydc_params = ["--debug-stack"] + cydc_params
+
+    if args.debug_errors:
+        cydc_params = ["--debug-errors"] + cydc_params
 
     if args.check:
         cydc_params = ["--check"] + cydc_params
