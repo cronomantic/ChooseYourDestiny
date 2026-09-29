@@ -23,6 +23,7 @@ se solapan**, así que puedes usar ambas a la vez:
 | `math16_32.cyd` | 224..247 y 253 |
 | `strings.cyd`   | 216..223 |
 | `sprites.cyd`   | 200..211 |
+| `sprites_px.cyd` | 200..212 (en lugar de `sprites.cyd`) |
 
 Todas las rutinas están verificadas automáticamente en el emulador (ZEsarUX vía
 el harness, ver [doc/dev/EMULATOR_TESTING.md](../doc/dev/EMULATOR_TESTING.md)).
@@ -164,3 +165,44 @@ principal.
 restaurados en orden inverso, el recorte en los bordes, los atributos y los dos
 códigos de `sprErr` se comprueban en emulador (48K y 128K) comparando la pantalla
 entera con un modelo en Python (`tests/test_sprites_lib.py`).
+
+---
+
+## `sprites_px.cyd` — sprites con X al píxel
+
+El sprite y su posición horizontal se miden en caracteres; `sprites_px.cyd` es la
+misma librería con una variable más, `sprPX` (212): los píxeles que se suman a
+`sprDX`. Todo lo demás (rutinas, parámetros y huecos) funciona igual. Para mover un
+sprite píxel a píxel en horizontal, deja `sprDX` a 0 y usa `sprPX` como la X en
+píxeles (0..255). Con `sprAttr` a 1, los colores van a la columna donde cae la mayor
+parte de cada celda.
+
+Es una librería aparte porque la X al píxel cuesta. Cuando no cae en un borde de
+carácter, cada fila del sprite y de su máscara se desplaza al pintarla, y un sprite
+de 2x3 tarda casi medio frame en vez de 0,2. Además ocupa unos 490 bytes más: el
+código, dos buffers de fila y huecos de 12 caracteres en vez de 8 (un 2x3 que no
+está alineado ni en X ni en Y toca 3x4 celdas). Incluye solo una de las dos:
+comparten variables y etiquetas.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites_px.cyd"
+    PICTURE 1 : DISPLAY 1
+    PICTURE 2
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0
+    SET sprDX TO 0 : SET sprPX TO 117    /* X = 117 píxeles */
+    SET sprDY TO 0 : SET sprPY TO 80     /* Y = 80 píxeles */
+    GOSUB sprDraw
+]]
+```
+
+Hay un ejemplo en `examples/sprites_px`: el de `examples/sprites` con el personaje
+caminando píxel a píxel.
+
+**Estado de verificación:** los mismos casos que `sprites.cyd` y, además,
+desplazamientos de 1 a 7 píxeles repartidos entre `sprDraw`, `sprXor` y
+`sprSave`/`sprRestore`, el recorte por la derecha con desplazamiento, una X que se
+sale de la pantalla, los colores en la columna donde cae la mayor parte y dos
+sprites desplazados que se solapan en dos huecos. Se comprueban en emulador (48K y
+128K) contra el mismo modelo en Python.

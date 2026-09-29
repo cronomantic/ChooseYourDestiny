@@ -509,6 +509,7 @@ Cada librería reserva un bloque de variables como espacio de trabajo. Los bloqu
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
 | `sprites.cyd`   | 200..211 |
+| `sprites_px.cyd` | 200..212 (en lugar de `sprites.cyd`) |
 
 ### `math16_32.cyd` — aritmética de 16 y 32 bits
 
@@ -643,6 +644,38 @@ celdas); las constantes `SPR_SLOTS` y `SPR_SLOT_CHARS` del fichero los cambian, 
 bytes por carácter. En total ocupa unos 1030 bytes (730 de código y 300 de huecos),
 solo si se usa; en 128K y +3 van en un banco paginado, fuera de la memoria
 principal.
+
+### `sprites_px.cyd` — sprites con X al píxel
+
+El sprite y su posición horizontal se miden en caracteres; `sprites_px.cyd` es la
+misma librería con una variable más, `sprPX` (212): los píxeles que se suman a
+`sprDX`. Todo lo demás (rutinas, parámetros y huecos) funciona igual. Para mover un
+sprite píxel a píxel en horizontal, deja `sprDX` a 0 y usa `sprPX` como la X en
+píxeles (0..255). Con `sprAttr` a 1, los colores van a la columna donde cae la mayor
+parte de cada celda.
+
+Es una librería aparte porque la X al píxel cuesta. Cuando no cae en un borde de
+carácter, cada fila del sprite y de su máscara se desplaza al pintarla, y un sprite
+de 2x3 tarda casi medio frame en vez de 0,2. Además ocupa unos 490 bytes más: el
+código, dos buffers de fila y huecos de 12 caracteres en vez de 8 (un 2x3 que no
+está alineado ni en X ni en Y toca 3x4 celdas). Incluye solo una de las dos:
+comparten variables y etiquetas.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites_px.cyd"
+    PICTURE 1 : DISPLAY 1
+    PICTURE 2
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0
+    SET sprDX TO 0 : SET sprPX TO 117    /* X = 117 píxeles */
+    SET sprDY TO 0 : SET sprPY TO 80     /* Y = 80 píxeles */
+    GOSUB sprDraw
+]]
+```
+
+Hay un ejemplo en `examples/sprites_px`: el de `examples/sprites` con el personaje
+caminando píxel a píxel.
 
 ---
 
