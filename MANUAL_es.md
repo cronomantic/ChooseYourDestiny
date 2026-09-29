@@ -508,6 +508,7 @@ Cada librería reserva un bloque de variables como espacio de trabajo. Los bloqu
 |----------|----------------------|
 | `math16_32.cyd` | 224..254 |
 | `strings.cyd`   | 216..223 |
+| `sprites.cyd`   | 200..211 |
 
 ### `math16_32.cyd` — aritmética de 16 y 32 bits
 
@@ -582,6 +583,67 @@ buffer), `stLen` (capacidad en caracteres) y, para copiar o comparar, `stB2`
 
 Hay un ejemplo completo en `examples/strings_library`.
 
+### `sprites.cyd` — sprites con máscara
+
+Pinta trozos de la imagen cargada en el buffer (`PICTURE`) sobre la pantalla **sin
+borrar el fondo**. Cada sprite lleva su máscara: la silueta de lo que tapa, dibujada
+en tinta en la misma imagen. El núcleo es ensamblador Z80 nativo; si no llamas a
+ninguna rutina, no se incluye nada.
+
+El sprite y su posición horizontal se miden en caracteres (8x8), como en `BLIT`. La
+posición vertical es `sprDY` caracteres más `sprPY` píxeles: con `sprPY` a 0 todo va
+por caracteres; para mover un sprite píxel a píxel, deja `sprDY` a 0 y usa `sprPY`
+como la Y en píxeles (0..191). Lo que sale de la pantalla por la derecha o por abajo
+se recorta. Parámetros (variables 200..211):
+
+| Variables | Significado |
+|-----------|-------------|
+| `sprX`, `sprY` | esquina del sprite en el buffer |
+| `sprW`, `sprH` | ancho y alto |
+| `sprMX`, `sprMY` | esquina de su máscara en el buffer |
+| `sprDX`, `sprDY` | posición en pantalla, en caracteres |
+| `sprPY` | píxeles que se suman a `sprDY` |
+| `sprAttr` | 0: los colores de la pantalla no cambian; 1: el sprite pone sus colores en las celdas donde su máscara no está vacía (con `sprPY`, en la celda donde cae la mayor parte) |
+| `sprSlot` | hueco de `sprSave` / `sprRestore` (0..3) |
+| `sprErr` | 1: lo que `sprSave` tenía que guardar no cabe en el hueco; 2: no existe ese hueco |
+
+| Rutina | Efecto |
+|--------|--------|
+| `sprDraw` | pantalla = (pantalla AND NOT máscara) OR sprite |
+| `sprXor` | pantalla = pantalla XOR sprite (sin máscara; repetirlo lo borra) |
+| `sprSave` | guarda en el hueco `sprSlot` lo que hay en pantalla donde iría el sprite |
+| `sprRestore` | vuelve a poner lo guardado en el hueco `sprSlot`, donde estaba |
+
+**Ejemplo:** un personaje de 2x3 caracteres sobre un escenario.
+
+```cyd
+[[
+    INCLUDE "../../lib/sprites.cyd"
+    PICTURE 1 : DISPLAY 1        /* el escenario, en pantalla */
+    PICTURE 2                    /* la hoja de sprites, al buffer (no se ve) */
+    SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO 2 : SET sprMY TO 0      /* la máscara, a su derecha */
+    SET sprDX TO 14 : SET sprDY TO 10
+    GOSUB sprDraw
+]]
+```
+
+**Sprites que se mueven.** En cada paso: `sprSave` guarda el fondo donde va a ir el
+sprite, `sprDraw` lo pinta y, antes de moverlo, `sprRestore` repone el fondo (en su
+sitio, aunque ya hayas cambiado `sprDX`/`sprDY`). Si se mueven varios, cada uno usa
+su hueco (`sprSlot`) y se restauran **en el orden contrario al que se guardaron**
+(el último guardado, el primero): así el fondo queda bien aunque se crucen. Para
+animarlos, cambia en cada paso `sprX`/`sprY` al siguiente fotograma de la hoja.
+
+Hay un ejemplo completo en `examples/sprites`: un personaje que camina por
+caracteres y una pelota que bota píxel a píxel, cada uno en su hueco.
+
+Hay 4 huecos de 8 caracteres (un sprite de 2x3 que no está alineado toca 2x4
+celdas); las constantes `SPR_SLOTS` y `SPR_SLOT_CHARS` del fichero los cambian, a 9
+bytes por carácter. En total ocupa unos 1030 bytes (730 de código y 300 de huecos),
+solo si se usa; en 128K y +3 van en un banco paginado, fuera de la memoria
+principal.
+
 ---
 
 ## Rutinas nativas (IMPORT / CALL)
@@ -613,6 +675,9 @@ Intervienen dos palabras clave:
 - **`CALL nombre`** ejecuta la rutina. Piénsalo como el equivalente nativo de
   `GOSUB`: `GOSUB etiqueta` llama a una subrutina escrita en CYD, `CALL nombre`
   llama a una escrita en Z80.
+- **`CALL nombre` como valor**: dentro de una expresión (`SET x TO CALL nombre`,
+  `IF CALL nombre = 1 THEN ...`, `PRINT CALL nombre + 1`), la rutina se ejecuta y
+  su resultado es el byte que deja en el registro **`A`** al hacer `RET`.
 
 ### Cómo escribir la rutina
 
@@ -628,7 +693,8 @@ El contrato (ABI) es deliberadamente pequeño:
   variables. Cada variable CYD `n` es el byte en `FLAGS + n`.
 - **Las entradas y salidas viajan por variables.** El guion pone los argumentos en
   variables con `SET`, llama a la rutina y lee los resultados con `@var`. La rutina
-  los lee y escribe en `FLAGS + n`. No hay otra convención de llamada que recordar.
+  los lee y escribe en `FLAGS + n`. Si devuelve un solo byte, puede dejarlo en `A` y
+  usarse como valor (`SET x TO CALL nombre`); con un `CALL` normal, `A` se ignora.
 - Debe terminar con **`RET`** y no debe saltar por su cuenta a rutinas internas del
   motor. Puede usar libremente `AF`/`BC`/`DE`/`HL`/`IX`/`IY` (el motor guarda y
   restaura `IX`/`IY`, que usa internamente). Para lo que sí necesitas —acceder a los

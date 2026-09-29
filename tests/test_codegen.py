@@ -49,41 +49,44 @@ class CodegenTestBase(unittest.TestCase):
 
 
 class TestBytecodeEmission(CodegenTestBase):
-    """Exact byte output for representative statements."""
+    """Exact byte output for representative statements.
+
+    Each opcode is stored as its number times 2 (its offset in the interpreter's
+    OPCODES table), so e.g. CLEAR (0x36) is emitted as 0x6C."""
 
     def test_clear(self):
-        # CLEAR (0x36) + auto END (0x00)
-        self.assertEqual(self._bytecode("[[CLEAR]]"), [0x36, 0x00])
+        # CLEAR (0x36 -> 0x6C) + auto END (0x00)
+        self.assertEqual(self._bytecode("[[CLEAR]]"), [0x6C, 0x00])
 
     def test_border_literal(self):
-        # BORDER_D (0x1F) 2 + END
-        self.assertEqual(self._bytecode("[[BORDER 2]]"), [0x1F, 0x02, 0x00])
+        # BORDER_D (0x1F -> 0x3E) 2 + END
+        self.assertEqual(self._bytecode("[[BORDER 2]]"), [0x3E, 0x02, 0x00])
 
     def test_ink_paper_sequence(self):
-        # INK_D 7, PAPER_D 0, END
+        # INK_D (0x1D) 7, PAPER_D (0x1E) 0, END
         self.assertEqual(
-            self._bytecode("[[INK 7 : PAPER 0]]"), [0x1D, 0x07, 0x1E, 0x00, 0x00]
+            self._bytecode("[[INK 7 : PAPER 0]]"), [0x3A, 0x07, 0x3C, 0x00, 0x00]
         )
 
     def test_waitkey(self):
-        self.assertEqual(self._bytecode("[[WAITKEY]]"), [0x2F, 0x00])
+        self.assertEqual(self._bytecode("[[WAITKEY]]"), [0x5E, 0x00])  # 0x2F
 
     def test_declare_and_set_literal(self):
-        # SET_D var#0 = 5, END
+        # SET_D (0x08) var#0 = 5, END
         self.assertEqual(
-            self._bytecode("[[DECLARE 0 AS x : SET x TO 5]]"), [0x08, 0x00, 0x05, 0x00]
+            self._bytecode("[[DECLARE 0 AS x : SET x TO 5]]"), [0x10, 0x00, 0x05, 0x00]
         )
 
     def test_randomize_literal(self):
-        # RANDOMIZE (0x43) seed 0x1234 little-endian + END
+        # RANDOMIZE (0x43 -> 0x86) seed 0x1234 little-endian + END
         self.assertEqual(
-            self._bytecode("[[RANDOMIZE 4660]]"), [0x43, 0x34, 0x12, 0x00]
+            self._bytecode("[[RANDOMIZE 4660]]"), [0x86, 0x34, 0x12, 0x00]
         )
 
     def test_randomize_bare_equals_randomize_zero(self):
         # Bare RANDOMIZE used to leave an unresolved ("CONSTANT_L", 0) tuple
         # in the bytecode instead of two zero bytes.
-        expected = [0x43, 0x00, 0x00, 0x00]
+        expected = [0x86, 0x00, 0x00, 0x00]
         self.assertEqual(self._bytecode("[[RANDOMIZE]]"), expected)
         self.assertEqual(self._bytecode("[[RANDOMIZE 0]]"), expected)
 
@@ -97,9 +100,10 @@ class TestBytecodeInvariants(CodegenTestBase):
 
     def test_label_goto_emits_goto_opcode(self):
         # The GOTO address depends on memory layout, so assert only that the
-        # GOTO opcode (0x02) is emitted and the stream still ends with END.
+        # GOTO opcode (0x02, stored as 0x04) is emitted and the stream still
+        # ends with END.
         bc = self._bytecode("[[LABEL A : GOTO A]]")
-        self.assertEqual(bc[0], 0x02)
+        self.assertEqual(bc[0], 0x04)
         self.assertEqual(bc[-1], 0x00)
 
     def test_output_is_banks_of_bytes(self):
@@ -159,6 +163,14 @@ class TestOpcodeContract(CodegenTestBase):
                 g.opcodes[name], val, f"opcode {name} changed canonical value"
             )
 
+    def test_opcode_bytes_index_the_table(self):
+        # EXEC_LOOP uses the stored byte as the offset of the entry in the
+        # 128-entry (256-byte) OPCODES table, so it must be the number times 2.
+        g = CydcCodegen(gettext)
+        for name, val in g.opcodes.items():
+            self.assertLess(val, 128, name)
+            self.assertEqual(g._opcode_byte(name), val * 2)
+
 
 class TestConstantFolding(CodegenTestBase):
     """Constant resolution, including the cycle guard.
@@ -187,7 +199,7 @@ class TestConstantFolding(CodegenTestBase):
         # C=2 -> B=C -> A=B, then SET var#0 = A  =>  SET_D 0, 2, END
         self.assertEqual(
             self._bytecode("[[CONST C = 2 : CONST B = C : CONST A = B : SET 0 TO A]]"),
-            [0x08, 0x00, 0x02, 0x00],
+            [0x10, 0x00, 0x02, 0x00],
         )
 
 
@@ -276,9 +288,9 @@ class TestMld128ArrayRelocation(CodegenTestBase):
         )
         # symbol remapped to (bank, $C000+off)
         self.assertEqual(g.symbols["t"], (7, 0xC000))
-        # the POP_VAL_ARRAY operand (0x7B) bakes [bank, lo, hi] = [7, $00, $C0]
+        # the POP_VAL_ARRAY operand bakes [bank, lo, hi] = [7, $00, $C0]
         bc = chunks[0]
-        i = bc.index(0x7B)
+        i = bc.index(g._opcode_byte("POP_VAL_ARRAY"))
         self.assertEqual(bc[i + 1 : i + 4], [7, 0x00, 0xC0])
 
     def test_arr_init_table_entry(self):
@@ -385,19 +397,19 @@ class TestImmutableData(CodegenTestBase):
     def test_read_direct_emits_read_then_pop_set(self):
         g, chunks = self._gen("[[DATA 1 : READ 4]]")
         self.assertEqual(
-            chunks[0], [g.opcodes["READ"], g.opcodes["POP_SET"], 0x04, 0x00]
+            chunks[0], [g._opcode_byte("READ"), g._opcode_byte("POP_SET"), 0x04, 0x00]
         )
 
     def test_read_indirect_emits_read_then_pop_set_di(self):
         # Newline (not ':') before ']]' so the ']' of [4] is not eaten by ']]'.
         g, chunks = self._gen("[[\nDATA 1\nREAD [4]\n]]")
         self.assertEqual(
-            chunks[0], [g.opcodes["READ"], g.opcodes["POP_SET_DI"], 0x04, 0x00]
+            chunks[0], [g._opcode_byte("READ"), g._opcode_byte("POP_SET_DI"), 0x04, 0x00]
         )
 
     def test_restore_bare_is_offset_zero(self):
         g, chunks = self._gen("[[DATA 1, 2 : RESTORE]]")
-        self.assertEqual(chunks[0], [g.opcodes["RESTORE"], 0x00, 0x00, 0x00])
+        self.assertEqual(chunks[0], [g._opcode_byte("RESTORE"), 0x00, 0x00, 0x00])
 
     def test_restore_label_bakes_offset_of_next_data(self):
         # 'second' sits between the two DATA blocks -> offset of the first byte of
@@ -406,7 +418,7 @@ class TestImmutableData(CodegenTestBase):
             "[[DATA 11, 22, 33 : LABEL second : DATA 44, 55 : RESTORE second]]"
         )
         self.assertEqual(g.data_blob, [11, 22, 33, 44, 55])
-        self.assertEqual(chunks[0], [g.opcodes["RESTORE"], 0x03, 0x00, 0x00])
+        self.assertEqual(chunks[0], [g._opcode_byte("RESTORE"), 0x03, 0x00, 0x00])
 
     def test_restore_label_survives_code_between_label_and_data(self):
         # Intervening code does not affect the blob offset (BASIC RESTORE-line).
@@ -414,14 +426,14 @@ class TestImmutableData(CodegenTestBase):
             "[[DATA 1, 2, 3 : LABEL foo : SET 3 TO 5 : DATA 100 : RESTORE foo]]"
         )
         self.assertEqual(g.data_blob, [1, 2, 3, 100])
-        self.assertIn(g.opcodes["RESTORE"], chunks[0])
-        i = chunks[0].index(g.opcodes["RESTORE"])
+        self.assertIn(g._opcode_byte("RESTORE"), chunks[0])
+        i = chunks[0].index(g._opcode_byte("RESTORE"))
         off = chunks[0][i + 1] | (chunks[0][i + 2] << 8)
         self.assertEqual(off, 3)
 
     def test_dataend_emits_opcode(self):
         g, chunks = self._gen("[[DATA 1 : SET 2 TO DATAEND()]]")
-        self.assertIn(g.opcodes["DATAEND"], chunks[0])
+        self.assertIn(g._opcode_byte("DATAEND"), chunks[0])
 
     def test_restore_to_label_with_no_following_data_errors(self):
         code = self.parser.parse(
@@ -612,13 +624,13 @@ class TestWideConstants(CodegenTestBase):
 
     def test_let_word_writes_two_le_bytes(self):
         g, chunks = self._gen("[[ DECLARE 0 AS s : LET s = WORD 1000 ]]")
-        sd = g.opcodes["SET_D"]
+        sd = g._opcode_byte("SET_D")
         # 1000 = 0x03E8 -> low 0xE8=232, high 0x03=3
         self.assertEqual(chunks[0], [sd, 0, 232, sd, 1, 3, 0x00])
 
     def test_let_dword_writes_four_le_bytes(self):
         g, chunks = self._gen("[[ DECLARE 0 AS d : LET d = DWORD 100000 ]]")
-        sd = g.opcodes["SET_D"]
+        sd = g._opcode_byte("SET_D")
         # 100000 = 0x000186A0 -> A0 86 01 00
         self.assertEqual(
             chunks[0], [sd, 0, 0xA0, sd, 1, 0x86, sd, 2, 0x01, sd, 3, 0x00, 0x00]
@@ -626,18 +638,18 @@ class TestWideConstants(CodegenTestBase):
 
     def test_let_string_writes_glyph_bytes(self):
         g, chunks = self._gen('[[ DECLARE 0 AS b : LET b = "HI" ]]')
-        sd = g.opcodes["SET_D"]
+        sd = g._opcode_byte("SET_D")
         self.assertEqual(chunks[0], [sd, 0, ord("H"), sd, 1, ord("I"), 0x00])
 
     def test_const_reference_inside_word_resolves(self):
         g, chunks = self._gen("[[ CONST K = 1000 : DECLARE 0 AS s : LET s = WORD K ]]")
-        sd = g.opcodes["SET_D"]
+        sd = g._opcode_byte("SET_D")
         self.assertEqual(chunks[0], [sd, 0, 232, sd, 1, 3, 0x00])
 
     def test_plain_let_stays_one_byte(self):
         # Without a keyword, LET is unchanged (1 byte); no auto-widening in LET.
         g, chunks = self._gen("[[ DECLARE 0 AS x : LET x = 5 ]]")
-        sd = g.opcodes["SET_D"]
+        sd = g._opcode_byte("SET_D")
         self.assertEqual(chunks[0], [sd, 0, 5, 0x00])
 
     def test_wide_numeric_index_overflow_errors(self):

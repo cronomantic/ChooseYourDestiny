@@ -1,0 +1,76 @@
+[[
+/* Sprites con mascara (lib/sprites.cyd): un personaje que camina y una pelota
+   que bota, sobre un escenario, sin borrarlo.
+
+   - 000.scr es el escenario y 001.scr la hoja de sprites: el personaje en 4
+     fotogramas (columnas 0, 2, 4, 6) y la pelota (columna 8), cada uno con su
+     mascara 3 filas mas abajo. Se generan con make_images.py.
+   - El personaje se mueve por caracteres y la pelota pixel a pixel (sprPY).
+   - Cada uno guarda su fondo en un hueco distinto (sprSlot 0 y 1). En cada
+     paso se restauran en el orden contrario al que se guardaron, asi el fondo
+     queda bien aunque se crucen. */
+
+INCLUDE "../../lib/sprites.cyd"
+
+DECLARE 0 AS manX      /* columna del personaje */
+DECLARE 1 AS frame     /* su fotograma, 0..3 */
+DECLARE 2 AS ballY     /* altura de la pelota en pixeles */
+DECLARE 3 AS ballV     /* su velocidad, en pixeles por paso */
+DECLARE 4 AS ballUp    /* 1 mientras sube */
+
+BORDER 0
+PICTURE 0 : DISPLAY 1  /* el escenario, en pantalla */
+PICTURE 1              /* la hoja de sprites, al buffer (no se ve) */
+MARGINS 1, 20, 30, 3
+PAPER 4 : INK 0 : BRIGHT 0
+]]Sprites con máscara. Pulsa una tecla para acabar.[[
+
+SET manX TO 0 : SET frame TO 0
+SET ballY TO 16 : SET ballV TO 1 : SET ballUp TO 0
+
+LABEL paso
+    /* Borrar: el fondo vuelve en orden inverso al guardado */
+    SET sprSlot TO 1 : GOSUB sprRestore
+    SET sprSlot TO 0 : GOSUB sprRestore
+
+    /* Mover al personaje y cambiar de fotograma */
+    SET manX TO @manX + 1
+    IF @manX > 30 THEN SET manX TO 0 ENDIF
+    SET frame TO @frame + 1
+    IF @frame > 3 THEN SET frame TO 0 ENDIF
+
+    /* La pelota: acelera al caer y frena al subir */
+    IF @ballUp = 0 THEN
+        SET ballY TO @ballY + @ballV
+        SET ballV TO @ballV + 1
+        IF @ballY >= 128 THEN SET ballY TO 128 : SET ballUp TO 1 ENDIF
+    ELSE
+        SET ballY TO @ballY - @ballV
+        IF @ballV > 1 THEN SET ballV TO @ballV - 1 ELSE SET ballUp TO 0 ENDIF
+    ENDIF
+
+    /* Pintar: cada uno guarda su fondo y se dibuja */
+    GOSUB pintaPersonaje
+    GOSUB pintaPelota
+
+    WAIT 3
+    IF INKEY(1) <> 0 THEN GOTO fin ENDIF
+GOTO paso
+
+LABEL pintaPersonaje
+    SET sprX TO @frame + @frame : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
+    SET sprMX TO @sprX : SET sprMY TO 3
+    SET sprDX TO @manX : SET sprDY TO 15 : SET sprPY TO 0
+    SET sprSlot TO 0 : GOSUB sprSave : GOSUB sprDraw
+    RETURN
+
+LABEL pintaPelota
+    SET sprX TO 8 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 2
+    SET sprMX TO 8 : SET sprMY TO 3
+    SET sprDX TO 22 : SET sprDY TO 0 : SET sprPY TO @ballY
+    SET sprSlot TO 1 : GOSUB sprSave : GOSUB sprDraw
+    RETURN
+
+LABEL fin
+    END
+]]

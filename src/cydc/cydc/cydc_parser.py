@@ -1828,9 +1828,19 @@ class CydcParser(object):
     def p_statement_call(self, p):
         "statement : CALL ID"
         # Invokes an imported native routine. Emits OP_EXTERN with a placeholder
-        # (name) that the build patches to (bank, address) after memory layout.
+        # (name) that the build patches to (bank, address) after memory layout;
+        # the last operand 0 means the value it returns is not used.
         if self._symbol_usage(p[2], SymbolType.EXTERN, p.lineno(2)):
-            p[0] = ("EXTERN", p[2], 0, 0)
+            p[0] = ("EXTERN", p[2], 0, 0, 0)
+        else:
+            p[0] = None
+
+    def p_varexpression_call(self, p):
+        "varexpression : CALL ID"
+        # A native routine used as a value: it returns a byte in A, which
+        # OP_EXTERN pushes on the expression stack (last operand 1).
+        if self._symbol_usage(p[2], SymbolType.EXTERN, p.lineno(2)):
+            p[0] = ("EXTERN", p[2], 0, 0, 1)
         else:
             p[0] = None
 
