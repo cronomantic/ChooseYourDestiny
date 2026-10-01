@@ -91,6 +91,19 @@ class TestCallStackWarnings(unittest.TestCase):
             "left on the stack, and after a few hundred the game crashes",
         ])
 
+    def test_jump_into_a_subroutine_and_one_left_with_goto(self):
+        # Both checks in one program: the first used to leave "jump" set to a
+        # bool, and the second then failed with "'bool' object is not callable".
+        src = ("[[ LABEL room\nGOSUB inv\nIF @0 = 1 THEN GOTO inv\nENDIF\n"
+               "GOSUB enemies\nEND\nLABEL enemies\nGOTO room\n"
+               "LABEL inv\nRETURN ]]")
+        warnings = self._warnings(src)
+        self.assertEqual(len(warnings), 2, warnings)
+        self.assertTrue(any("the jump at line 3 goes into subroutine 'inv'" in w
+                            for w in warnings), warnings)
+        self.assertTrue(any("Subroutine 'enemies' can end without RETURN at line 8" in w
+                            for w in warnings), warnings)
+
     def test_subroutine_left_through_a_menu(self):
         src = ("[[ LABEL room\nCHOOSE IF WAIT 100 THEN GOSUB enemies\n"
                "LABEL enemies\nOPTION GOTO room\nCHOOSE ]]")

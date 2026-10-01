@@ -1460,11 +1460,12 @@ class CydcCodegen(object):
             while parent is not None:
                 if child[0] in subs:
                     label = code[child[0]][1]
-                    jump = any(
+                    # Not "jump": that name is the helper successors() calls.
+                    jumped_in = any(
                         j == child[0] and g == child[1] and is_jump
                         for j, g, is_jump in successors(*parent)
                     )
-                    if jump:
+                    if jumped_in:
                         reason = self._(
                             "the jump at {at} goes into subroutine '{label}' "
                             "instead of calling it with GOSUB"
