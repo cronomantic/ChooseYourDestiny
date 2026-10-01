@@ -1688,3 +1688,9 @@ msgstr "# Mapa de --debug-errors. Un error de sistema muestra 'at bloque:direcci
 #: src/cydc/cydc/cydc.py
 msgid "Debug map written to {path}"
 msgstr "Mapa de depuración escrito en {path}"
+
+msgid "Subroutines {labels} can end without RETURN at {at}, going on to code that runs outside any subroutine; each time a GOSUB level is left on the stack, and after a few hundred the game crashes"
+msgstr "Las subrutinas {labels} pueden terminar sin RETURN en {at} y seguir por código que se ejecuta fuera de cualquier subrutina; cada vez queda un nivel de GOSUB en la pila y, tras unos cientos, el juego se cuelga"
+
+msgid "The GOSUB at {at} never comes back: '{label}' has no RETURN and the game goes on from there; each time a GOSUB level is left on the stack, and after a few hundred the game crashes (use GOTO instead)"
+msgstr "El GOSUB de {at} nunca vuelve: '{label}' no tiene RETURN y el juego sigue desde ahí; cada vez queda un nivel de GOSUB en la pila y, tras unos cientos, el juego se cuelga (usa GOTO en su lugar)"
