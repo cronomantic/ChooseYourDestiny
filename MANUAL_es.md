@@ -1463,6 +1463,8 @@ El intérprete guarda la dirección de vuelta en una pila con sitio para unos 25
 - Una subrutina debe terminar siempre con `RETURN`. Si sale con `GOTO` (por ejemplo, volviendo a la localidad), su dirección de vuelta se queda en la pila; al repetirlo unos cientos de veces, la pila invade la memoria de las variables y el juego se cuelga o se reinicia.
 - A una subrutina solo se debe llegar con `GOSUB`, `OPTION GOSUB` o los `THEN GOSUB` de `CHOOSE`. Si se entra con `GOTO`, o cayendo desde el código que tiene encima (por ejemplo, al incluir un fichero de subrutinas al principio sin un `GOTO` que las salte), su `RETURN` no tiene adónde volver.
 
+También avisa de un `GOSUB` a una etiqueta que nunca llega a un `RETURN`, como un `CHOOSE IF WAIT ... THEN GOSUB` a un lugar normal del juego: ahí hace falta `GOTO`. Cada aviso sale aunque haya otro error de este tipo en el guion, así que no hace falta corregir uno para ver el siguiente.
+
 El compilador analiza el flujo del programa y avisa de los dos casos (`WARNING [CODEGEN]`) con la línea donde ocurren; se desactiva con `--no-warn-gosub`. Para comprobarlo también al ejecutar, compila con `--debug-stack` (ver [Códigos de error](#códigos-de-error)).
 
 ### RETURN

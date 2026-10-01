@@ -1406,14 +1406,15 @@ class CydcCodegen(object):
             ]
             return out + [nxt]
 
-        def explore(entry):
-            """States reached from entry: {(index, pending): parent state}."""
+        def explore(entry, stop=frozenset()):
+            """States reached from entry: {(index, pending): parent state}. The
+            indices in stop are not entered."""
             seen = {(entry, False): None}
             queue = deque(seen)
             while queue:
                 state = queue.popleft()
                 for j, g, _jump in successors(*state):
-                    if j < n and (j, g) not in seen:
+                    if j < n and j not in stop and (j, g) not in seen:
                         seen[(j, g)] = state
                         queue.append((j, g))
             return seen
@@ -1427,7 +1428,9 @@ class CydcCodegen(object):
         while work:
             e = work.popleft()
             queued.discard(e)
-            reached[e] = explore(e)
+            # Not into other subroutines' entries: a path that runs into one
+            # without GOSUB (reported as such) mustn't lend its RETURN to e.
+            reached[e] = explore(e, stop=frozenset(subs - {e}))
             rets = [g for (i, g) in reached[e] if code[i][0] == "RETURN"]
             for i, _ in reached[e]:
                 c = called(code[i])
@@ -1448,7 +1451,13 @@ class CydcCodegen(object):
             return "?"
 
         main = explore(0) if n else {}
-        in_main = {i for i, _ in main}
+        # Code outside any subroutine: reached from the start without going into
+        # the entry of a subroutine that returns. One entered without GOSUB
+        # (reported below) doesn't make its body, or what it jumps to,
+        # "outside", so its other mistakes are still found. A GOSUB target that
+        # never returns is just a place in the game: the GOSUB is the mistake.
+        returning = frozenset(e for e in subs if can_return[e])
+        outside = {i for i, _ in explore(0, stop=returning - {0})} if n else set()
         warnings = []
         for state in main:
             r = state[0]
@@ -1479,20 +1488,44 @@ class CydcCodegen(object):
                 child, parent = parent, main[parent]
             msg = self._("RETURN at {at} can run with no GOSUB pending").format(at=loc(r))
             warnings.append((r, msg + (": " + reason if reason else "")))
+        # Where a subroutine leaves for the code outside: one warning per place,
+        # naming every subroutine that can get there.
+        leaves = {}
         for e in sorted(subs):
-            if e in in_main:
-                continue  # entered without GOSUB, reported above if it returns
+            if e in outside:  # never returns and is also reached with GOTO
+                for i, t in enumerate(code):
+                    if t and called(t) == e:
+                        msg = self._(
+                            "The GOSUB at {at} never comes back: '{label}' has no "
+                            "RETURN and the game goes on from there; each time a "
+                            "GOSUB level is left on the stack, and after a few "
+                            "hundred the game crashes (use GOTO instead)"
+                        ).format(at=loc(i), label=code[e][1])
+                        warnings.append((i, msg))
+                continue
             for i, g in reached[e]:
-                if i in in_main:
+                if i in outside:
                     continue
-                if any(j in in_main for j, _g, _jump in successors(i, g)):
-                    msg = self._(
-                        "Subroutine '{label}' can end without RETURN at {at}, going "
-                        "on to code that runs outside any subroutine; each time a "
-                        "GOSUB level is left on the stack, and after a few hundred "
-                        "the game crashes"
-                    ).format(label=code[e][1], at=loc(i))
-                    warnings.append((i, msg))
+                if any(j in outside for j, _g, _jump in successors(i, g)):
+                    names = leaves.setdefault(i, [])
+                    if code[e][1] not in names:
+                        names.append(code[e][1])
+        for i, names in leaves.items():
+            if len(names) == 1:
+                msg = self._(
+                    "Subroutine '{label}' can end without RETURN at {at}, going "
+                    "on to code that runs outside any subroutine; each time a "
+                    "GOSUB level is left on the stack, and after a few hundred "
+                    "the game crashes"
+                ).format(label=names[0], at=loc(i))
+            else:
+                msg = self._(
+                    "Subroutines {labels} can end without RETURN at {at}, going "
+                    "on to code that runs outside any subroutine; each time a "
+                    "GOSUB level is left on the stack, and after a few hundred "
+                    "the game crashes"
+                ).format(labels=", ".join(f"'{x}'" for x in names), at=loc(i))
+            warnings.append((i, msg))
         seen_msgs = set()
         result = []
         for _i, msg in sorted(warnings, key=lambda w: w[0]):

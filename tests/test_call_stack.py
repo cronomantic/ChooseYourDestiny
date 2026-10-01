@@ -104,6 +104,32 @@ class TestCallStackWarnings(unittest.TestCase):
         self.assertTrue(any("Subroutine 'enemies' can end without RETURN at line 8" in w
                             for w in warnings), warnings)
 
+    def test_one_mistake_does_not_hide_the_others(self):
+        # "room2" falls into "used" (no GOTO/END), code the menu subroutine also
+        # uses. That used to make the whole menu count as main code, so the
+        # GOTO that leaves the menu (line 9) was not reported.
+        src = ("[[ LABEL room\nGOSUB menu\nIF @0 = 1 THEN GOTO room2\nENDIF\nGOTO room\n"
+               "LABEL menu\nOPTION GOTO used\nOPTION GOTO back\nCHOOSE\n"
+               "LABEL room2\nSET 2 TO 1\n"
+               "LABEL used\nIF @1 = 1 THEN GOTO room\nENDIF\nGOTO menu\n"
+               "LABEL back\nRETURN ]]")
+        warnings = self._warnings(src)
+        self.assertTrue(any(w.startswith("Subroutine 'menu' can end without RETURN")
+                            for w in warnings), warnings)
+        self.assertTrue(any(w.startswith("RETURN at line 17 can run with no GOSUB pending")
+                            for w in warnings), warnings)
+
+    def test_gosub_to_a_place_that_never_returns(self):
+        # "attack" is a place of the game (reached with GOTO) that a timeout
+        # calls with GOSUB: the GOSUB is the mistake, reported where it is.
+        src = ("[[ LABEL room\nOPTION GOTO attack\nCHOOSE IF WAIT 100 THEN GOSUB attack\n"
+               "LABEL attack\nSET 0 TO 1\nGOTO room ]]")
+        self.assertEqual(self._warnings(src), [
+            "The GOSUB at line 3 never comes back: 'attack' has no RETURN and the "
+            "game goes on from there; each time a GOSUB level is left on the "
+            "stack, and after a few hundred the game crashes (use GOTO instead)",
+        ])
+
     def test_subroutine_left_through_a_menu(self):
         src = ("[[ LABEL room\nCHOOSE IF WAIT 100 THEN GOSUB enemies\n"
                "LABEL enemies\nOPTION GOTO room\nCHOOSE ]]")
