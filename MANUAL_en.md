@@ -1462,6 +1462,8 @@ The interpreter keeps the return address on a stack with room for about 250 nest
 - A subroutine must always end with `RETURN`. If it leaves with `GOTO` (for example, going back to the location), its return address stays on the stack; repeated a few hundred times, the stack runs into the variables' memory and the game hangs or resets.
 - A subroutine must only be reached with `GOSUB`, `OPTION GOSUB` or the `THEN GOSUB` of `CHOOSE`. If it is entered with `GOTO`, or by running into it from the code above (for example, by including a file of subroutines at the top without a `GOTO` that skips them), its `RETURN` has nowhere to return to.
 
+It also warns about a `GOSUB` to a label that never reaches a `RETURN`, such as a `CHOOSE IF WAIT ... THEN GOSUB` to an ordinary place of the game: that needs `GOTO`. Each warning shows up even when the script has another mistake of this kind, so you don't need to fix one to see the next.
+
 The compiler follows the program's flow and warns about both cases (`WARNING [CODEGEN]`) with the line where they happen; `--no-warn-gosub` turns this off. To check it at runtime as well, build with `--debug-stack` (see [Error codes](#error-codes)).
 
 ### RETURN
