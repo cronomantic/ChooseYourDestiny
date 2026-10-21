@@ -3104,6 +3104,7 @@ SYS_ERROR_POS:
     call PRINT_STR
     ld hl, (DBG_PC)
     dec hl                      ; DEBUG_POS keeps the opcode's address + 1
+    or a                        ; No leading zeroes
     jp PRINT_HL_WORD
 
 SYS_ERROR_AT:

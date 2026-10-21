@@ -410,7 +410,8 @@ EXEC_LOOP:
     push bc
     ex de, hl
     inc hl
-    ret
+    or a                      ; Carry clear on entry to every opcode, as SLA E
+    ret                       ; left it before (PRINT_A_BYTE relies on it)
 
     ;Close file
 END_PROGRAM:
