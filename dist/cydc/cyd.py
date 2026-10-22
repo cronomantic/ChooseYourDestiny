@@ -20,8 +20,204 @@
 import os
 import re
 import sys
-from cydc_utils import bytes2str, run_assembler, get_asm_template
+from cydc_utils import AsmTemplate, bytes2str, run_assembler, get_asm_template
 from pyZX7.compress import compress_data as zx7_compress_data
+
+
+# -- The gap before the opcode table ------------------------------------------
+# OPCODES must start a 256-byte page (EXEC_LOOP indexes it with one byte), so
+# the code before it ends with an ALIGN 256 that wastes 0..255 bytes, a
+# different amount for each game (trimmed opcodes change the code size), and a
+# single byte more can cost 256. plan_opcode_layout() assembles a probe of the
+# interpreter, measures that gap and the opcode handlers, and picks handlers to
+# move after the table so the code before it ends (almost) exactly on a page.
+# Handlers are reached through the table, so where they sit doesn't matter;
+# only those that can't fall into what follows and that no relative jump
+# crosses are moved.
+
+_LATE_OPCODES = frozenset()  # handlers placed after the table (block numbers)
+_PROBE_LAYOUT = False        # mark the handlers and the gap with labels
+
+_IF = re.compile(r"^\s*(IF|IFDEF|IFNDEF|IFN|IFUSED|IFNUSED)\b", re.I)
+_ENDIF = re.compile(r"^\s*ENDIF\b", re.I)
+_JR = re.compile(r"^(?:jr|djnz)\s+(?:(?:nz|z|nc|c)\s*,\s*)?([\w.$]+)", re.I)
+_LAST_OK = re.compile(r"^(?:jp\s+(?:[\w.]+|\(\s*(?:hl|ix|iy)\s*\))|ret|reti)$", re.I)
+
+
+def _code(line):
+    return line.split(";")[0].strip()
+
+
+def _handler_blocks(lines):
+    """(name, first line, last line) of each "IFNDEF UNUSED_OP_<name>" block
+    before the opcode table, and the index of its "ALIGN 256" line."""
+    table = next(i for i, l in enumerate(lines) if l.strip() == "OPCODES:")
+    align = table - 1
+    while not lines[align].strip():
+        align -= 1
+    blocks, i = [], 0
+    while i < align:
+        m = re.match(r"^    IFNDEF UNUSED_OP_(\w+)", lines[i])
+        if not m:
+            i += 1
+            continue
+        depth, j = 0, i
+        while True:
+            if _IF.match(lines[j]):
+                depth += 1
+            elif _ENDIF.match(lines[j]):
+                depth -= 1
+            if depth == 0:
+                break
+            j += 1
+        blocks.append((m.group(1), i, j))
+        i = j + 1
+    return blocks, align
+
+
+def _movable_handlers(lines, blocks):
+    """Handlers that end in an unconditional jump or return, that no relative
+    jump (JR, DJNZ) enters or leaves and that DEFINE nothing (a DEFINE decides
+    what is assembled after it)."""
+    def labels(a, b):
+        out = set()
+        for line in lines[a:b + 1]:
+            m = re.match(r"^([A-Za-z_]\w*):", line) or re.match(r"^(\.\w+)", line)
+            if m:
+                out.add(m.group(1))
+        return out
+
+    inside = {name: labels(a, b) for name, a, b in blocks}
+    owner = {}
+    for name, a, b in blocks:
+        for k in range(a, b + 1):
+            owner[k] = name
+    crossing = set()
+    for k, line in enumerate(lines):
+        m = _JR.match(_code(line))
+        if not m:
+            continue
+        target = m.group(1)
+        if re.match(r"^\d+[fb]$", target) or target.startswith("$"):
+            continue
+        here = owner.get(k)
+        if here is None or target not in inside[here]:
+            crossing.add(target)
+            if here is not None:
+                crossing.add(("from", here))
+    out = set()
+    for k, (name, a, b) in enumerate(blocks):
+        body = [_code(l) for l in lines[a + 1:b]
+                if _code(l) and not _IF.match(l) and not _ENDIF.match(l)
+                and _code(l).upper() != "ELSE"]
+        if not body or not _LAST_OK.match(body[-1]):
+            continue
+        if any(re.match(r"^(?:DEFINE|UNDEFINE)\b", c, re.I) for c in body):
+            continue  # it decides what is assembled after it
+        if ("from", name) in crossing or inside[name] & crossing:
+            continue
+        out.add(k)
+    return out
+
+
+def interpreter_template():
+    """interpreter.asm as a template, laid out as plan_opcode_layout() chose."""
+    text = get_asm_template("interpreter").template
+    if not (_PROBE_LAYOUT or _LATE_OPCODES):
+        return AsmTemplate(text)
+    lines = text.split("\n")
+    blocks, align = _handler_blocks(lines)
+    late = []
+    for k in reversed(range(len(blocks))):  # numbered: a name can repeat
+        _name, a, b = blocks[k]
+        if k in _LATE_OPCODES:
+            late.insert(0, lines[a:b + 1])
+            del lines[a:b + 1]
+            align -= b + 1 - a
+        elif _PROBE_LAYOUT:
+            lines[b:b] = [f"CYDBLK_E_{k}:"]
+            lines[a + 1:a + 1] = [f"CYDBLK_S_{k}:"]
+            align += 2
+    if _PROBE_LAYOUT:
+        lines[align:align] = ["CYDBLK_ALIGN:"]
+    for block in late:
+        lines += block
+    return AsmTemplate("\n".join(lines) + "\n")
+
+
+def plan_opcode_layout(make_asm, sjasmplus_path, output_path):
+    """Choose the handlers to place after the opcode table for the program
+    make_asm() builds (see above). Keeps the plain layout if nothing is gained
+    or anything fails."""
+    global _LATE_OPCODES, _PROBE_LAYOUT
+    _LATE_OPCODES = frozenset()
+    _PROBE_LAYOUT = True
+    size_only = "    DEFINE SHOW_SIZE_INTERPRETER\n"  # assemble, write nothing
+    try:
+        asm = size_only + make_asm()
+    finally:
+        _PROBE_LAYOUT = False
+    sym_path = os.path.join(output_path, "cyd_layout.sym")
+    try:
+        run_assembler(asm_path=sjasmplus_path, asm=asm,
+                      filename=os.path.join(output_path, "cyd_layout.asm"),
+                      listing=False, capture_output=True, sym=sym_path)
+        with open(sym_path, encoding="utf-8", errors="replace") as f:
+            sym = dict(re.findall(r"^(\w+):\s+EQU\s+0x([0-9A-Fa-f]+)", f.read(), re.M))
+    except (OSError, ValueError):
+        return
+    finally:
+        for leftover in (sym_path, os.path.join(output_path, "cyd_layout.asm")):
+            if os.path.isfile(leftover):
+                os.remove(leftover)
+    sym = {k: int(v, 16) for k, v in sym.items()}
+    if "OPCODES" not in sym or "CYDBLK_ALIGN" not in sym:
+        return
+    gap = sym["OPCODES"] - sym["CYDBLK_ALIGN"]
+    if gap <= 0:
+        return
+    lines = get_asm_template("interpreter").template.split("\n")
+    blocks, _ = _handler_blocks(lines)
+    movable = _movable_handlers(lines, blocks)
+    sizes = {}
+    for k in movable:
+        s, e = sym.get(f"CYDBLK_S_{k}"), sym.get(f"CYDBLK_E_{k}")
+        if s is not None and e is not None and e > s:
+            sizes[k] = e - s
+    for _attempt in range(6):
+        # Moving n bytes after the table leaves a gap of (gap + n) % 256: the
+        # smallest n >= 256 - gap that the handlers' sizes add up to.
+        need = 256 - gap
+        reach = {0: ()}
+        for k, size in sorted(sizes.items()):
+            for total, ks in list(reach.items()):
+                t = total + size
+                if t < need + 256 and t not in reach:
+                    reach[t] = ks + (k,)
+        best = min((t for t in reach if t >= need), default=None)
+        if best is None or best - need >= gap:
+            break
+        _LATE_OPCODES = frozenset(reach[best])
+        layout_asm = os.path.join(output_path, "cyd_layout.asm")
+        try:  # the moved layout must assemble too
+            run_assembler(asm_path=sjasmplus_path, asm=size_only + make_asm(),
+                          filename=layout_asm, listing=False, capture_output=True)
+            return
+        except OSError as exc:
+            # A label that only exists when used before it (IFUSED): the
+            # blocks that use it stay where they are.
+            missing = set(re.findall(r"Label not found: (\w+)", str(exc)))
+            _LATE_OPCODES = frozenset()
+            if os.path.isfile(layout_asm):
+                os.remove(layout_asm)
+            users = {k for k in sizes
+                     if any(re.search(rf"\b{m}\b", "\n".join(lines[blocks[k][1]:blocks[k][2]]))
+                            for m in missing)}
+            if not users:
+                break
+            for k in users:
+                del sizes[k]
+    _LATE_OPCODES = frozenset()
 
 
 def mld_intro_scr_size(loading_scr):
@@ -287,7 +483,7 @@ def get_asm_plus3(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
@@ -390,7 +586,7 @@ def get_asm_128(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
@@ -502,7 +698,7 @@ def get_asm_esxdos(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
@@ -557,21 +753,24 @@ def get_asm_esxdos_size(
     pause_start_value=None,
     use_wyz_tracker=False,
 ):
-    asm = get_asm_esxdos(
-        index="",
-        size_index=0,
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        has_tracks=has_tracks,
-        dat_path="",
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        use_wyz_tracker=use_wyz_tracker,
-        name="",
-    )
-    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    def make_asm():
+        return get_asm_esxdos(
+            index="",
+            size_index=0,
+            tokens=tokens,
+            chars=chars,
+            charw=charw,
+            sfx_asm=sfx_asm,
+            has_tracks=has_tracks,
+            dat_path="",
+            unused_opcodes=unused_opcodes,
+            pause_start_value=pause_start_value,
+            use_wyz_tracker=use_wyz_tracker,
+            name="",
+        )
+
+    plan_opcode_layout(make_asm, sjasmplus_path, output_path)
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + make_asm()
     res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
@@ -650,7 +849,7 @@ def get_asm_mld(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     includes += sfx_asm
 
@@ -748,7 +947,7 @@ def get_asm_mld128(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
         t = get_asm_template("VTII10bG_vars")
@@ -844,7 +1043,7 @@ def get_asm_48(
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
     includes += t.substitute(d)
-    t = get_asm_template("interpreter")
+    t = interpreter_template()
     includes += t.substitute(d)
     includes += sfx_asm
 
@@ -886,21 +1085,24 @@ def get_asm_128_size(
     pause_start_value=None,
     use_wyz_tracker=False,
 ):
-    asm = get_asm_128(
-        index="",
-        size_index=0,
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        has_tracks=has_tracks,
-        tap_path="",
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        use_wyz_tracker=use_wyz_tracker,
-        name="",
-    )
-    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    def make_asm():
+        return get_asm_128(
+            index="",
+            size_index=0,
+            tokens=tokens,
+            chars=chars,
+            charw=charw,
+            sfx_asm=sfx_asm,
+            has_tracks=has_tracks,
+            tap_path="",
+            unused_opcodes=unused_opcodes,
+            pause_start_value=pause_start_value,
+            use_wyz_tracker=use_wyz_tracker,
+            name="",
+        )
+
+    plan_opcode_layout(make_asm, sjasmplus_path, output_path)
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + make_asm()
     res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
@@ -931,19 +1133,22 @@ def get_asm_48_size(
     unused_opcodes=None,
     pause_start_value=None,
 ):
-    asm = get_asm_48(
-        index="",
-        size_index=0,
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        tap_path="",
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        name="",
-    )
-    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    def make_asm():
+        return get_asm_48(
+            index="",
+            size_index=0,
+            tokens=tokens,
+            chars=chars,
+            charw=charw,
+            sfx_asm=sfx_asm,
+            tap_path="",
+            unused_opcodes=unused_opcodes,
+            pause_start_value=pause_start_value,
+            name="",
+        )
+
+    plan_opcode_layout(make_asm, sjasmplus_path, output_path)
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + make_asm()
     res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
@@ -976,21 +1181,24 @@ def get_asm_plus3_size(
     pause_start_value=None,
     use_wyz_tracker=False,
 ):
-    asm = get_asm_plus3(
-        index="",
-        size_index=0,
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        has_tracks=has_tracks,
-        dsk_path="",
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        use_wyz_tracker=use_wyz_tracker,
-        name="",
-    )
-    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    def make_asm():
+        return get_asm_plus3(
+            index="",
+            size_index=0,
+            tokens=tokens,
+            chars=chars,
+            charw=charw,
+            sfx_asm=sfx_asm,
+            has_tracks=has_tracks,
+            dsk_path="",
+            unused_opcodes=unused_opcodes,
+            pause_start_value=pause_start_value,
+            use_wyz_tracker=use_wyz_tracker,
+            name="",
+        )
+
+    plan_opcode_layout(make_asm, sjasmplus_path, output_path)
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + make_asm()
     res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
@@ -1025,21 +1233,24 @@ def get_asm_mld_size(
     mld_is_128=False,
 ):
     asm_builder = get_asm_mld128 if mld_is_128 else get_asm_mld
-    asm = asm_builder(
-        index="",
-        size_index=0,
-        tokens=tokens,
-        chars=chars,
-        charw=charw,
-        sfx_asm=sfx_asm,
-        has_tracks=has_tracks,
-        tap_path="",
-        unused_opcodes=unused_opcodes,
-        pause_start_value=pause_start_value,
-        use_wyz_tracker=use_wyz_tracker,
-        name="",
-    )
-    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + asm
+    def make_asm():
+        return asm_builder(
+            index="",
+            size_index=0,
+            tokens=tokens,
+            chars=chars,
+            charw=charw,
+            sfx_asm=sfx_asm,
+            has_tracks=has_tracks,
+            tap_path="",
+            unused_opcodes=unused_opcodes,
+            pause_start_value=pause_start_value,
+            use_wyz_tracker=use_wyz_tracker,
+            name="",
+        )
+
+    plan_opcode_layout(make_asm, sjasmplus_path, output_path)
+    asm = "    DEFINE SHOW_SIZE_INTERPRETER\n" + make_asm()
     res = run_assembler(
         asm_path=sjasmplus_path,
         asm=asm,
