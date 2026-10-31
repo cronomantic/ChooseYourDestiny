@@ -30,6 +30,14 @@ LOCALES = [(SRC / "cydc" / "locale", DIST / "cydc" / "locale"),
            (SRC / "locale", DIST / "locale")]
 
 
+def content(path):
+    """A file's bytes as git stores them: on a Windows checkout the same file can
+    have CRLF in src/ and LF in dist/ (or the other way round) while the commit
+    holds the same text, so text files are compared with LF line endings."""
+    data = path.read_bytes()
+    return data if b"\0" in data else data.replace(b"\r\n", b"\n")
+
+
 def compiled(po):
     with tempfile.TemporaryDirectory() as tmp:
         mo = Path(tmp) / "out.mo"
@@ -41,7 +49,7 @@ class TestDistSync(unittest.TestCase):
     def test_compiler_matches_src(self):
         files = make_dist.get_source_files(REPO)
         differ = [f for f in files
-                  if not (DIST / f).is_file() or (DIST / f).read_bytes() != (SRC / f).read_bytes()]
+                  if not (DIST / f).is_file() or content(DIST / f) != content(SRC / f)]
         self.assertEqual(differ, [], HINT)
 
     def test_nothing_left_over_in_dist(self):
@@ -59,7 +67,7 @@ class TestDistSync(unittest.TestCase):
                     mo = compiled(po)
                     self.assertEqual(po.with_suffix(".mo").read_bytes(), mo,
                                      "the .mo is not compiled from its .po: " + HINT)
-                    self.assertEqual((dist_dir / rel).read_bytes(), po.read_bytes(), HINT)
+                    self.assertEqual(content(dist_dir / rel), content(po), HINT)
                     self.assertEqual((dist_dir / rel).with_suffix(".mo").read_bytes(), mo, HINT)
 
 

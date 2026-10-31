@@ -209,9 +209,12 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     F_READs the .DAT sitting in ``esxdos_root``). ``--enable-esxdos-handler``
     requires divmmc paging, so both flags are emitted.
 
-    ``keys`` is a sequence of ``(delay_seconds, ascii_code)``: after loading, wait
-    each delay and press that key (e.g. ``(4, 13)`` to pick a menu option with
-    ENTER), before FLAGS starts being polled.
+    ``keys`` is a sequence of ``(delay_seconds, ascii_code)``: once the program is
+    running, wait each delay and press that key (e.g. ``(4, 13)`` to pick a menu
+    option with ENTER), before FLAGS starts being polled. "Running" means the
+    interpreter is executing and the program has written some FLAG, so a program
+    that presses keys must SET a flag before its menu. Without that wait the delay
+    counted from the load, and on a slow run the key arrived before the menu.
     """
     zes = find_zesarux()
     if not zes:
@@ -239,6 +242,14 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
         time.sleep(2.5)  # let the ROM / Dandanator autoboot reach the interpreter
         if dandanator_rom is None:
             _cmd(s, f"smartload {os.path.abspath(tap_path)}", timeout=12.0)
+        if keys:
+            # Wait for the program to start before timing the first key press.
+            deadline = time.time() + max_wait
+            while time.time() < deadline:
+                pc = _pc(s)
+                if pc is not None and pc >= 0x8000 and any(_read_mem(s, flags_addr, n_bytes)):
+                    break
+                time.sleep(0.25)
         for delay, key in keys:
             time.sleep(delay)
             _cmd(s, f"send-keys-ascii 300 {key}")
