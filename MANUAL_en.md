@@ -1345,7 +1345,7 @@ They can be used in three places: in `DATA`, in a `DIM` initializer and in `LET`
 
 - **Auto-detection by magnitude** (only in `DATA` and `DIM`): a value from 0 to 255 takes 1 byte, from 256 to 65535 takes 2 bytes, and 65536 upwards takes 4 bytes, automatically.
 - **`WORD` and `DWORD` markers**: force 2 or 4 bytes even if the value fits in fewer (`WORD 5` = 2 bytes). `WORD` does not accept values larger than 16 bits and `DWORD` not larger than 32 bits.
-- **Strings** `"..."`: expand to their character codes (no terminator; you know the length because you wrote it).
+- **Strings** `"..."`: expand to their character codes (no terminator; you know the length because you wrote it). A string must be closed on the same line and cannot contain `"` or `]]`; an unclosed quote is reported as `Unterminated string`.
 
 ```cyd
 [[

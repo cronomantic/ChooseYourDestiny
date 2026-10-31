@@ -352,5 +352,75 @@ class TestLexerRegressions(unittest.TestCase):
         self.assertIn("COLON", token_types)
 
 
+class TestLexerStringLiterals(unittest.TestCase):
+    """A string ends on its line and never spans the ]] that closes the block."""
+
+    def setUp(self):
+        self.lexer = CydcLexer()
+        self.lexer.build()
+
+    def _tokens(self, src):
+        self.lexer.input(src)
+        return list(self.lexer.lexer)
+
+    def test_closed_string(self):
+        tokens = self._tokens('[[ DATA "HI", 1 ]]After')
+        self.assertEqual([t.value for t in tokens if t.type == "STRING"], ["HI"])
+        self.assertEqual(self.lexer.errors, [])
+
+    def test_single_bracket_inside_string(self):
+        tokens = self._tokens('[[ DATA "a]b" ]]')
+        self.assertEqual([t.value for t in tokens if t.type == "STRING"], ["a]b"])
+        self.assertEqual(self.lexer.errors, [])
+
+    def test_unclosed_string_does_not_swallow_block_end(self):
+        # Before, "abc ]]Text after " was taken as one string up to the next quote.
+        tokens = self._tokens('[[ LET v = "abc ]]Text after "quote" here')
+        types = [t.type for t in tokens]
+        self.assertNotIn("STRING", types)
+        self.assertIn("CODE_BLOCK_END", types)
+        self.assertNotIn("quote", [t.value for t in tokens if t.type == "ID"])
+        self.assertEqual(
+            [e["message"] for e in self.lexer.errors],
+            ["Unterminated string (missing closing quote)"],
+        )
+
+    def test_unclosed_string_at_end_of_line(self):
+        tokens = self._tokens('[[ LET v = "abc\nPRINT 1 ]]')
+        self.assertIn("PRINT", [t.type for t in tokens])
+        self.assertEqual(len(self.lexer.errors), 1)
+        self.assertEqual(self.lexer.errors[0]["line"], 1)
+
+    def test_string_cannot_contain_block_end(self):
+        tokens = self._tokens('[[ SET v TO "]]" ]]')
+        self.assertNotIn("STRING", [t.type for t in tokens])
+        self.assertEqual(len(self.lexer.errors), 1)
+
+
+class TestLexerNumberPrefixes(unittest.TestCase):
+    """Hex and binary literals use 0x / 0b; a bare $ is not a number prefix."""
+
+    def setUp(self):
+        self.lexer = CydcLexer()
+        self.lexer.build()
+
+    def _numbers(self, src):
+        self.lexer.input(src)
+        return [(t.type, t.value) for t in self.lexer.lexer if t.type.endswith("_NUMBER")]
+
+    def test_hex_and_binary_prefixes(self):
+        self.assertEqual(
+            self._numbers("[[ PRINT 0xFF + 0b101 + 10 ]]"),
+            [("HEX_NUMBER", 255), ("BIN_NUMBER", 5), ("DEC_NUMBER", 10)],
+        )
+
+    def test_dollar_is_an_illegal_character(self):
+        self._numbers("[[ PRINT $FF ]]")
+        self.assertEqual(
+            [(e["message"], e["char"]) for e in self.lexer.errors],
+            [("Illegal character", "$")],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

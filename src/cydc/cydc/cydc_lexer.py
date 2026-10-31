@@ -397,9 +397,26 @@ class CydcLexer(object):
         return t
 
     def t_STRING(self, t):
-        r'"[^"\n]*"'
+        r'"(?:[^"\n\]]|\](?!\]))*"'
+        # A string ends on its own line and cannot contain ]]: otherwise an
+        # unclosed quote would swallow the block close and the text up to the
+        # next quote on the line.
         t.value = t.value[1:-1]  # strip the surrounding quotes
         return t
+
+    def t_UNTERMINATED_STRING(self, t):
+        r'"(?:[^"\n\]]|\](?!\]))*'
+        # A quote not closed before the end of the line or a ]]: discard up to
+        # there without consuming the ]], so the block still closes where it should.
+        self.errors.append(
+            {
+                "line": t.lexer.lineno,
+                "column": 0,
+                "char": "",
+                "message": "Unterminated string (missing closing quote)",
+            }
+        )
+        return None
 
     def t_CHAR_NUMBER(self, t):
         r"'[^'\n]'"
@@ -418,7 +435,7 @@ class CydcLexer(object):
         return t
 
     def t_BIN_NUMBER(self, t):
-        r"0[bB][01]+|$[01]+"
+        r"0[bB][01]+"
         try:
             t.value = int(t.value, 0)
         except ValueError:
@@ -427,7 +444,7 @@ class CydcLexer(object):
         return t
 
     def t_HEX_NUMBER(self, t):
-        r"0[xX][0-9a-fA-F]+|$[0-9a-fA-F]+"
+        r"0[xX][0-9a-fA-F]+"
         try:
             t.value = int(t.value, 0)
         except ValueError:

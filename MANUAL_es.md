@@ -1346,7 +1346,7 @@ Se pueden usar en tres sitios: en `DATA`, en la inicialización de un `DIM` y en
 
 - **Autodetección por magnitud** (solo en `DATA` y `DIM`): un valor de 0 a 255 ocupa 1 byte, de 256 a 65535 ocupa 2 bytes y de 65536 en adelante ocupa 4 bytes, automáticamente.
 - **Marcadores `WORD` y `DWORD`**: fuerzan 2 o 4 bytes aunque el valor quepa en menos (`WORD 5` = 2 bytes). `WORD` no admite valores mayores de 16 bits y `DWORD` no admite mayores de 32 bits.
-- **Cadenas** `"..."`: se expanden a los códigos de sus caracteres (sin terminador; tú conoces la longitud porque la escribiste).
+- **Cadenas** `"..."`: se expanden a los códigos de sus caracteres (sin terminador; tú conoces la longitud porque la escribiste). Una cadena se cierra en la misma línea y no puede contener `"` ni `]]`; una comilla sin cerrar da el error `Unterminated string`.
 
 ```cyd
 [[
