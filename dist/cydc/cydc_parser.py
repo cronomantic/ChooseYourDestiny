@@ -2921,12 +2921,23 @@ class CydcParser(object):
 
     def p_data_element_nl(self, p):
         """
-        data_element_nl : data_element newline_seq
+        data_element_nl : data_element data_newlines
         """
         if len(p) == 3 and p[1]:
             p[0] = p[1]
         else:
             p[0] = None
+
+    def p_data_newlines(self, p):
+        """
+        data_newlines : data_newlines NEWLINE_CHAR
+                      | NEWLINE_CHAR
+        """
+        # Only line breaks, not the ]] that newline_seq also accepts: DATA has no
+        # closing token, so after its last element a ]] must end the statement.
+        # Swallowing it glued the text that follows to the DATA, and the next
+        # statement on the line got "Colon required" ([[ DATA 1 ]]X[[ END ]]).
+        p[0] = None
 
     def p_data_element_wide(self, p):
         """

@@ -389,6 +389,24 @@ class TestImmutableData(CodegenTestBase):
         self.assertEqual(g.data_blob, [11, 22, 33, 44, 55])
         self.assertEqual(g.data_len, 5)
 
+    def test_data_then_text_and_code_on_the_same_line(self):
+        # The ]] after the last element ends the DATA: the text and the next
+        # block on that line need no colon (it used to say "Colon required").
+        for src in ("[[DATA 1, 2]]Text[[END]]", '[[DATA "AB"]]Text[[END]]'):
+            with self.subTest(src):
+                self.parser.parse(input=src)
+                self.assertEqual(self.parser.errors, [])
+
+    def test_data_list_still_spans_newlines(self):
+        g, _ = self._gen("[[DATA 1,\n2\n, 3\n]]")
+        self.assertEqual(g.data_blob, [1, 2, 3])
+
+    def test_data_still_needs_a_colon_before_a_statement(self):
+        self.parser.parse(input="[[DATA 1 PRINT 2]]")
+        self.assertTrue(
+            any("Colon required" in e for e in self.parser.errors), self.parser.errors
+        )
+
     def test_data_is_stripped_from_bytecode(self):
         # DATA is not executable: the bytecode is just END (0x00).
         g, chunks = self._gen("[[DATA 1, 2, 3]]")
