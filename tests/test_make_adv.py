@@ -221,6 +221,39 @@ class TestInternalEmulator(unittest.TestCase):
         self.assertIsNone(launch_line(output))
 
 
+@unittest.skipUnless(find_sjasmplus() if not WINDOWS else (REPO / "tools" / "sjasmplus.exe").is_file(),
+                     "sjasmplus not available")
+class TestTokenAndCharsetOptions(unittest.TestCase):
+    """make_adventure.py passes -t/-T/-c/-C to the compiler (it used to read
+    them and drop them, always importing or creating tokens.json)."""
+
+    def run_make_adventure(self, wd, *options):
+        cmd = [sys.executable, str(wd / "make_adventure.py"), "-n", GAME, *options, "48k"]
+        result = subprocess.run(cmd, cwd=wd, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=300,
+                                env={**os.environ, "LANGUAGE": "en", "CYD_LANG": "en"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_export_options_reach_the_compiler(self):
+        wd = new_folder(self)
+        make_project(wd, "48k")
+        self.run_make_adventure(wd, "-T", "mis_tokens.json", "-C", "mi_charset.json")
+        self.assertTrue((wd / "mis_tokens.json").is_file())
+        self.assertTrue((wd / "mi_charset.json").is_file())
+        # -T given: the automatic tokens.json is neither imported nor created.
+        self.assertFalse((wd / "tokens.json").exists())
+
+    def test_import_options_reach_the_compiler(self):
+        wd = new_folder(self)
+        make_project(wd, "48k")
+        self.run_make_adventure(wd, "-T", "mis_tokens.json", "-C", "mi_charset.json")
+        self.run_make_adventure(wd, "-t", "mis_tokens.json", "-c", "mi_charset.json")
+        self.assertFalse((wd / "tokens.json").exists())
+        # Without them, the automatic tokens.json as before.
+        self.run_make_adventure(wd)
+        self.assertTrue((wd / "tokens.json").is_file())
+
+
 @unittest.skipIf(WINDOWS, "make_adv.sh")
 @unittest.skipUnless(emulator_available() and shutil.which("bash"),
                      "sjasmplus/ZEsarUX not available under tools/")

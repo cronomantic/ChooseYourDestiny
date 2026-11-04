@@ -443,13 +443,25 @@ def main():
     # Setting parameters
     cydc_params = ["-img", f"{args.images_path}", "-trk", f"{args.tracks_path}"]
 
-    if not os.path.isfile(args.tokens_file):
+    # Tokens: -t/-T given go straight to the compiler; otherwise the tokens
+    # file is imported if it exists, or else created.
+    if args.import_tokens_file or args.export_tokens_file:
+        if args.import_tokens_file:
+            cydc_params = ["-t", f"{args.import_tokens_file}"] + cydc_params
+        if args.export_tokens_file:
+            cydc_params = ["-T", f"{args.export_tokens_file}"] + cydc_params
+    elif not os.path.isfile(args.tokens_file):
         cydc_params = ["-T", f"{args.tokens_file}"] + cydc_params
     else:
         cydc_params = ["-t", f"{args.tokens_file}"] + cydc_params
 
-    if os.path.isfile(args.charset_file):
+    # Character set: -c given, else the charset file if it exists; -C exports.
+    if args.import_charset:
+        cydc_params = ["-c", f"{args.import_charset}"] + cydc_params
+    elif os.path.isfile(args.charset_file):
         cydc_params = ["-c", f"{args.charset_file}"] + cydc_params
+    if args.export_charset:
+        cydc_params = ["-C", f"{args.export_charset}"] + cydc_params
 
     if os.path.isfile(args.sfx_asm_file):
         cydc_params = ["-sfx", f"{args.sfx_asm_file}"] + cydc_params
