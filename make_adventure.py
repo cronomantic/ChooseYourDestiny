@@ -199,7 +199,7 @@ def main():
         "-scr",
         "--load-scr-file",
         help=_("path to the SCR file used as Loading screen"),
-        default=os.path.join(curr_path, "IMAGES/000.SCR"),
+        default=os.path.join(curr_path, "IMAGES", "LOAD.scr"),
     )
     arg_parser.add_argument(
         "-tok",

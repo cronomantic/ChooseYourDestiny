@@ -98,7 +98,7 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 
 REM Loading screen
-SET LOAD_SCR="LOAD.scr"
+SET LOAD_SCR=./IMAGES/LOAD.scr
 
 REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=
@@ -124,7 +124,7 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 
 REM Loading screen
-SET LOAD_SCR="LOAD.scr"
+SET LOAD_SCR=./IMAGES/LOAD.scr
 
 REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=
@@ -149,7 +149,7 @@ TARGET="48k"
 IMGLINES="192"
 #
 # Loading screen
-LOAD_SCR="./LOAD.scr"
+LOAD_SCR="./IMAGES/LOAD.scr"
 #
 # Parameters for compiler
 CYDC_EXTRA_PARAMS=
@@ -2582,7 +2582,7 @@ REM Number of lines used on SCR files at compressing
 SET IMGLINES=192
 
 REM Loading screen
-SET LOAD_SCR="LOAD.scr"
+SET LOAD_SCR=./IMAGES/LOAD.scr
 
 REM Parameters for compiler
 SET CYDC_EXTRA_PARAMS=-c charset.json
