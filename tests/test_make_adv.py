@@ -123,8 +123,11 @@ def fake_zesarux(folder, record):
 
 def run_script(wd):
     """Run the script in wd: (exit code, output). The output goes through a
-    file: the emulator it leaves running would keep a pipe open."""
-    cmd = ["cmd", "/c", SCRIPT] if WINDOWS else ["bash", SCRIPT]
+    file: the emulator it leaves running would keep a pipe open. The script
+    goes by its whole path: with NoDefaultCurrentDirectoryInExePath set, cmd
+    doesn't look for it in the current folder."""
+    script = str(Path(wd) / SCRIPT)
+    cmd = ["cmd", "/c", script] if WINDOWS else ["bash", script]
     with tempfile.TemporaryFile() as out:
         code = subprocess.run(cmd, cwd=wd, stdout=out, stderr=subprocess.STDOUT,
                               stdin=subprocess.DEVNULL,  # PAUSE after a failure

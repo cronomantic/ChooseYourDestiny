@@ -382,7 +382,7 @@ def find_compiled_file(model, game_name, output_path):
 def find_source(name, root):
     """A script file named in a compiler message: name as given (from root) or
     else the first file with that name under root. None if there is none."""
-    direct = os.path.join(root, name)
+    direct = os.path.normpath(os.path.join(root, name))
     if os.path.isfile(direct):
         return direct
     base = os.path.basename(name).lower()
