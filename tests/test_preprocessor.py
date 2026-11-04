@@ -270,7 +270,47 @@ class TestPreprocessorErrors(unittest.TestCase):
             self.preprocessor.preprocess(filepath)
         
         self.assertIn("Circular include", str(context.exception))
-    
+
+    def test_repeated_include_is_not_circular(self):
+        """The same file included through two branches (a diamond: main ->
+        a -> c, main -> b -> c) is a repetition, not a cycle: the error says
+        where it was included first."""
+        self._write_file("c.cyd", '[[\nCONST K = 1\n]]')
+        self._write_file("a.cyd", '[[\nINCLUDE "c.cyd"\n]]')
+        self._write_file("b.cyd", '[[\nINCLUDE "c.cyd"\n]]')
+        filepath = self._write_file("main.cyd", '[[\nINCLUDE "a.cyd"\nINCLUDE "b.cyd"\n]]')
+
+        with self.assertRaises(PreprocessorError) as context:
+            self.preprocessor.preprocess(filepath)
+
+        message = str(context.exception)
+        self.assertNotIn("Circular include", message)
+        self.assertIn("already included from a.cyd:2", message)
+
+    def test_same_file_twice_from_one_file(self):
+        """Two INCLUDEs of the same file in one file: also a repetition."""
+        self._write_file("c.cyd", '[[\nCONST K = 1\n]]')
+        filepath = self._write_file("main.cyd", '[[\nINCLUDE "c.cyd"\nINCLUDE "c.cyd"\n]]')
+
+        with self.assertRaises(PreprocessorError) as context:
+            self.preprocessor.preprocess(filepath)
+
+        message = str(context.exception)
+        self.assertNotIn("Circular include", message)
+        self.assertIn("already included from main.cyd:2", message)
+
+    def test_cycle_through_a_branch_is_circular(self):
+        """main -> a -> b -> a is a cycle even after a sibling branch."""
+        self._write_file("s.cyd", '[[\nCONST S = 1\n]]')
+        self._write_file("a.cyd", '[[\nINCLUDE "b.cyd"\n]]')
+        self._write_file("b.cyd", '[[\nINCLUDE "a.cyd"\n]]')
+        filepath = self._write_file("main.cyd", '[[\nINCLUDE "s.cyd"\nINCLUDE "a.cyd"\n]]')
+
+        with self.assertRaises(PreprocessorError) as context:
+            self.preprocessor.preprocess(filepath)
+
+        self.assertIn("Circular include", str(context.exception))
+
     def test_error_message_includes_location(self):
         """Test that error messages include file and line information."""
         filepath = self._write_file("main.cyd", """

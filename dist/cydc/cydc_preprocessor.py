@@ -80,6 +80,11 @@ class CydcPreprocessor:
         self.max_errors_reached = False
         self.base_path = base_path
         self.included_files: Set[str] = set()
+        # Where each file was first included ("main.cyd:3"; None for the main
+        # file), and the files being processed right now (the include chain):
+        # a file in the chain is a cycle; one already included, a repetition.
+        self._included_from: Dict[str, str] = {}
+        self._include_stack: List[str] = []
         self.errors: List[PreprocessorError] = []
         self.line_map: Dict[int, SourceLocation] = {}  # Maps output line -> original source location
         self._output_line_num = 1  # Track current output line number
@@ -182,7 +187,8 @@ class CydcPreprocessor:
         self, 
         filepath: str, 
         depth: int = 0,
-        parent_file: str = None
+        parent_file: str = None,
+        included_from: str = None,
     ) -> List[Tuple[str, SourceLocation]]:
         """
         Recursively process a file and its includes.
@@ -191,6 +197,7 @@ class CydcPreprocessor:
             filepath: Path to the file to process
             depth: Current nesting depth
             parent_file: Path to the parent file (for relative includes)
+            included_from: "file.cyd:line" of the INCLUDE (None for the main file)
             
         Returns:
             List of tuples (line_content, source_location)
@@ -208,23 +215,37 @@ class CydcPreprocessor:
         # Read the file
         content, normalized_path = self._read_file(filepath)
         
-        # Check for circular includes
-        if normalized_path in self.included_files:
+        # A file in the current include chain includes itself: a cycle. One
+        # included before through another chain is a repetition, not a cycle.
+        if normalized_path in self._include_stack:
             raise PreprocessorError(
                 f"Circular include detected: {filepath}",
+                normalized_path
+            )
+        if normalized_path in self.included_files:
+            # Never the main file: it stays in the chain until the end.
+            raise PreprocessorError(
+                f"File already included from {self._included_from[normalized_path]}: {filepath}",
                 normalized_path
             )
         
         # Mark file as included
         self.included_files.add(normalized_path)
-        
-        # Get directory of current file for resolving relative includes
-        current_dir = os.path.dirname(normalized_path)
+        self._included_from[normalized_path] = included_from
         
         # Get display name (basename for cleaner error messages)
         display_name = os.path.basename(normalized_path)
         
         # Process the file line by line
+        self._include_stack.append(normalized_path)
+        try:
+            return self._process_lines(content, normalized_path, display_name, depth)
+        finally:
+            self._include_stack.pop()
+
+    def _process_lines(self, content, normalized_path, display_name, depth):
+        """The lines of a file being processed, its includes expanded."""
+        current_dir = os.path.dirname(normalized_path)
         result_lines = []
         lines = content.splitlines(keepends=True)
         
@@ -257,7 +278,8 @@ class CydcPreprocessor:
                     included_content = self._process_file(
                         include_path,
                         depth + 1,
-                        normalized_path
+                        normalized_path,
+                        f"{display_name}:{line_num}",
                     )
 
                     # Close the current code block before the include
@@ -308,6 +330,8 @@ class CydcPreprocessor:
         """
         # Reset state
         self.included_files.clear()
+        self._included_from.clear()
+        self._include_stack.clear()
         self.errors.clear()
         self.max_errors_reached = False
         self.line_map.clear()
