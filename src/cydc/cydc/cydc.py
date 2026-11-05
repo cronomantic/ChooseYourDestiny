@@ -212,7 +212,7 @@ def main():
     if sys.version_info[0] < 3:  # Python 2
         sys.exit(_("ERROR: Invalid python version"))
 
-    version = "1.6.6"
+    version = "1.7.0"
     program = "Choose Your Destiny Compiler " + version
     exec = "cydc"
 
