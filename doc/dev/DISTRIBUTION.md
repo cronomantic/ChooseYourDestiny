@@ -95,10 +95,17 @@ optional arguments:
 
 - Python source code (compiler, tools)
 - Documentation (manuals, tutorials in PDF format)
-- Example adventures
+- Example adventures (`examples/`, each one a project with its `cyd_project.ini`)
+- CYD libraries (`lib/`)
 - Assets (images, fonts)
 - License and README files
 - Translation files (.mo compiled from .po)
+
+There is no game in CYD's own folder any more (no root `test.cyd`, `tokens.json`,
+`IMAGES/readme.txt` or `TRACKS/readme.txt`): every game is a project in its own
+folder, and CYD's folder can't be one. The GUI's settings for the computer are
+written to `cyd_gui_settings.ini` in CYD's folder when it is used; it isn't
+packaged.
 
 ### Platform-Specific
 
@@ -297,7 +304,8 @@ unzip -l ChooseYourDestiny_*.zip
 # Extract and test
 unzip ChooseYourDestiny_*.zip -d test_dist
 cd test_dist
-# Try compiling the demo adventure
+# Try compiling an example where it is (its files go to examples/test/OUTPUT/)
+./make_adv.sh examples/test        # make_adv.cmd examples\test on Windows
 ```
 
 ## Future Enhancements

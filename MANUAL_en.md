@@ -139,10 +139,13 @@ In addition, it can also display compressed images stored on the same disk, as w
   - [Vortex Tracker Music](#vortex-tracker-music)
   - [WyzTracker Music](#wyztracker-music)
   - [How to generate an adventure](#how-to-generate-an-adventure)
+    - [Projects](#projects)
+      - [`cyd_project.ini`](#cyd_projectini)
     - [make\_adventure.py (CLI helper)](#make_adventurepy-cli-helper)
     - [Windows version](#windows-version)
-    - [GUI Compiler (make\_adventure\_gui v1.0.0)](#gui-compiler-make_adventure_gui-v100)
+    - [GUI Compiler (make\_adventure\_gui)](#gui-compiler-make_adventure_gui)
     - [Linux, BSDs and Unices version](#linux-bsds-and-unices-version)
+    - [Migrating a game from an older version](#migrating-a-game-from-an-older-version)
   - [Examples](#examples)
     - [Basic Examples](#basic-examples)
       - [`examples\test` - Engine Introduction](#examplestest---engine-introduction)
@@ -178,7 +181,7 @@ These are the external requirements for the tool:
 - [SjAsmPlus 1.20.3 or higher](http://z00m128.github.io/sjasmplus/documentation.html)
 - ZIP file decompressor
 
-If you upgrade from an older version, it is recommended NOT to overwrite it. It is better to rename the directory of the old version, unzip the new version, copy your adventure files to the new version and configure the `make_adv` script again for each case.
+If you upgrade from an older version, it is recommended NOT to overwrite it: rename the directory of the old version and unzip the new one. Your games don't have to be copied, because each one is a [project](#projects) in its own folder. If your game was made with version 1.6.6 or earlier, in CYD's own folder, see [Migrating a game from an older version](#migrating-a-game-from-an-older-version).
 
 Here are the more detailed instructions for each operating system:
 
@@ -2086,112 +2089,209 @@ When we consider that the adventure is finished, we can perform a new search for
 
 To add sound effects, images and melodies, see the corresponding sections.
 
-The process is quite simple, but it has some dependent steps, so it is recommended to use BAT files (Windows) or shell scripts (Linux, Unix) or the Make utility (or similar) to speed up development.
+The process is quite simple, but it has some dependent steps, so CYD includes tools that do all of it for us: the `make_adventure.py` program, the `make_adv.cmd` (Windows) and `make_adv.sh` (UNIX) scripts that run it, and a graphical interface. All of them work on a **project**.
 
-To make things easier, a program called `make_adventure.py` is included that will do all of these tasks for us, as well as the corresponding `make_adv.cmd` scripts for Windows and `make_adv.sh` for UNIX to run it.
+### Projects
 
-The `make_adventure.py` program will automatically search for and compress SCR files that conform to the established filename format (a 3-digit number from 0 to 255) in the `.\IMAGES` directory. It will do the same with any modules in the `.\TRACKS` directory that conform to the filename format. It will then compile the `test.txt` file and generate the `tokens.json` file with the abbreviations, if it doesn't already exist. If you want to regenerate the abbreviations file (it's recommended to do so when you're running out of memory or are finishing the adventure), simply deleting it will tell the compiler to regenerate it. It will also automatically search for a sound effects file called `SFX.ASM` that should be generated with **BeepFX**, and if a JSON file with the character set called `charset.json` exists, it will use that as well.
+Each adventure lives in **its own folder: the project**. CYD's own folder (the one with `make_adventure.py` and `make_adv.cmd`) can't be a project, but any other folder can, wherever it is: so a game doesn't have to be copied when CYD is upgraded, and several games can be worked on at the same time. The examples in `examples/` are projects too.
 
-It also supports language selection for output messages. You can specify a language with the `--lang {en,es}` parameter or by setting the `CYD_LANG` environment variable.
+A project has:
 
-This program needs the `dist` and `tools` directories with their contents to perform the process. The peculiarities of each operating system are detailed below:
+- The main script (for example `my_game.cyd`) and the files it includes with `INCLUDE`, which can be in subfolders.
+- `IMAGES/` with the images (`000.scr`, `001.scr`...; see [Images](#images)) and `TRACKS/` with the music (see [Vortex Tracker Music](#vortex-tracker-music)).
+- `SFX.ASM` with the sound effects, if any (see [Sound effects](#sound-effects)), and `IMAGES/LOAD.scr` with the loading screen, if any.
+- `tokens.json` with the abbreviations: it is created the first time the project is built. If you want to regenerate it (it's recommended to do so when you're running out of memory or are finishing the adventure), delete it and the next build will search for them again.
+- `charset.json` with the character set, if you want one other than the default one (see [CYD Character Set Converter](#cyd-character-set-converter)).
+- `cyd_project.ini`, optional, with the project's settings.
+
+The compiled files go to the project's `OUTPUT/` folder: the `.tap`, the `.DSK`, the `.MLD`, or the files for the SD card with esxdos (and the `.map` with `--debug-errors`). The compiler makes its intermediate files in `OUTPUT/cyd_tmp/` and removes them when the build ends well (see `--keep-temp`), and it keeps the compressed images in `OUTPUT/cyd_cache/`, so it only compresses an image again when it changes. You can delete `OUTPUT/` at any time.
+
+To make a new project with a short game to start from, use the GUI's **New…** button or:
+
+```batch
+make_adventure.py --new my_game 128k
+```
+
+#### `cyd_project.ini`
+
+All its settings are optional: without the file (or without a setting), the default ones are used. Paths are relative to the project's folder; the lines that start with `;` are comments (a comment goes on its own line, not after a value). These are all of them, with their default values:
+
+```ini
+; My adventure
+[project]
+; the game's name; by default, the main file's without .cyd
+name = my_game
+; the main script; by default <name>.cyd, or the only .cyd there is
+main = my_game.cyd
+; 48k, 128k, plus3, esxdos, mld or mld128
+target = 128k
+
+[paths]
+images = IMAGES
+tracks = TRACKS
+sfx = SFX.ASM
+load_scr = IMAGES/LOAD.scr
+tokens = tokens.json
+charset = charset.json
+output = OUTPUT
+; more folders for INCLUDE, separated by ";"
+include_paths =
+; folders for INCLUDE LIB, before CYD's lib/
+lib_paths =
+; more folders for IMPORT
+import_paths =
+
+[options]
+; lines of the images (-il)
+image_lines = 192
+; abbreviations (-l, -L, -s)
+min_length = 3
+max_length = 30
+superset_limit = 100
+; --token-format
+token_format = auto
+; -S
+slice_texts = no
+; -trim
+trim_interpreter = no
+; -dce
+dead_code_elimination = no
+; -code
+show_bytecode = no
+; --no-strict-colons
+no_strict_colons = no
+; -wyz
+use_wyz = no
+; -720
+disk_720 = no
+; -autoboot (esxdos)
+autoboot = no
+; -pause
+pause_after_load =
+; --max-errors
+max_errors = 20
+; no: --no-warn-unused
+warn_unused = yes
+; no: --no-warn-gosub
+warn_gosub = yes
+; no: --no-warn-shared-vars
+warn_shared_vars = yes
+; --debug-stack
+debug_stack = no
+; --debug-errors
+debug_errors = no
+; --keep-temp
+keep_temp = no
+; copy the main script to the project's BACKUP/ after each build
+backup = no
+```
+
+The `[options]` are the [compiler](#cydc-compiler)'s options of the same name. The GUI writes this file for you, keeping your comments; you can also edit it by hand.
 
 ### make_adventure.py (CLI helper)
 
-`make_adventure.py` is a helper wrapper around `cydc_cli.py` that standardizes project paths and automates token handling.
+`make_adventure.py` builds a project: it gathers its images, music, effects, loading screen, abbreviations and character set, runs the compiler with the project's settings, and leaves the result in its output folder. The `make_adv` scripts and the GUI use it.
 
 ```batch
-make_adventure.py [options] {48k,128k,plus3,mld,mld128,esxdos} [SJASMPLUS_PATH]
+make_adventure.py [options] [TARGET] [PROJECT]
 ```
 
-Main options:
-- `--lang {en,es}`: Output language for helper messages.
-- `-n, --name NAME`: Adventure base name (expects `NAME.cyd`, default `test`).
-- `-o, --output-path OUTPUT_PATH`: Directory for output files.
-- `-img, --images-path`, `-trk, --tracks-path`, `-sfx, --sfx-asm-file`, `-scr, --load-scr-file`.
-- `-tok, --tokens-file`: Token file path. If it does not exist, `-T` is used automatically; if it exists, `-t` is used.
-- `-chr, --charset-file`: Character set JSON path (used if found).
-- `-il, --image-lines`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-code`, `--no-strict-colons`, `-pause`, `-wyz`, `-720`.
-- `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`: passed straight to the compiler.
-- `--check`: only checks the script for errors, without building it; `SJASMPLUS_PATH` is not needed in this mode.
+- `PROJECT` is the project's folder, or its main script (`.cyd`). The target and the project can be given in any order.
+- `TARGET` is one of `48k`, `128k`, `plus3`, `esxdos`, `mld`, `mld128` (the last two are EXPERIMENTAL). Without it, the project's is used.
 
-Note: the compiler's intermediate files (among them the `plus3` `DISK` and `.BIN`, which go inside the `.DSK`) are made in the `cyd_tmp` folder of the output folder and removed when the build ends well (see `--keep-temp`).
+Main options:
+- `--new FOLDER`: makes a new project in `FOLDER` (a short game, `IMAGES/`, `TRACKS/` and its `cyd_project.ini`) and exits. With `-n NAME`, its name; with a target, its target.
+- `--describe`: prints the project's folder, main script, name, target, output folder and backup setting as `KEY=value` lines, and exits (the `make_adv` scripts use it).
+- `--check`: only checks the script for errors, without building it (SjASMPlus is not needed).
+- `--sjasmplus PATH`: the SjASMPlus to use; by default, the one that comes with CYD.
+- `--lang {en,es}`: language of the messages (also with the `CYD_LANG` environment variable).
+- `-n, --name NAME`, `-o, --output-path`, `-img, --images-path`, `-trk, --tracks-path`, `-sfx, --sfx-asm-file`, `-scr, --load-scr-file`, `-tok, --tokens-file`, `-chr, --charset-file`, `-I, --include-path`, `--lib-path`, `--import-path`: instead of the project's.
+- `-T`, `-t`, `-C`, `-c`: export or import the abbreviations or the character set from other files, instead of the project's `tokens.json` and `charset.json`.
+- `-il`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-dce`, `-code`, `--no-strict-colons`, `--max-errors`, `--token-format`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`, `--keep-temp`, `-pause`, `-720`, `-autoboot`, `-wyz`, `-v`: the [compiler](#cydc-compiler)'s options.
+
+What is given on the command line wins over the project's `cyd_project.ini`, which wins over the default values.
+
+On Windows it runs with the Python that comes with CYD, for example:
+
+```batch
+dist\python\python make_adventure.py --new ..\my_game
+dist\python\python make_adventure.py ..\my_game
+dist\python\python make_adventure.py plus3 examples\test
+```
+
+The compiler's messages say where each problem is, with the path of the file relative to the project: `ERROR [PARSER] chapters/chapter 1.cyd:12:5: Syntax error: ...`.
 
 ### Windows version
 
-As an example, the file `make_adv.cmd` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
-
-You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header: 
+The `make_adv.cmd` script builds a project and, if you want, runs it in an emulator and makes a backup copy of the script. Give it the project's folder (or its main script), and optionally a target:
 
 ```batch
-REM ---- Configuration variables ----------
+make_adv.cmd ..\my_game
+make_adv.cmd examples\test 48k
+```
 
-REM Name of the game
-SET GAME=test
-REM This name will be used as:
-REM   - The file to compile will be test.cyd with this example
-REM   - The name of the TAP file or +3 disk image
+You can also **drag the project's folder (or its `.cyd`) onto `make_adv.cmd`** in the file explorer.
 
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK, mld or mld128 for MLD)
-SET TARGET=48k
+The game's settings are in its `cyd_project.ini`. The variables in the script's header are for your computer:
 
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
+```batch
+REM The project to compile when none is given: the folder of the game (or its
+REM main .cyd file). Relative to this script's folder, or absolute.
+SET PROJECT=
 
-REM Loading screen
-SET LOAD_SCR=./IMAGES/LOAD.scr
+REM Target platform, instead of the project's. Empty: the project's.
+SET TARGET=
 
-REM Parameters for compiler
+REM Name of the game, instead of the project's (empty: the project's).
+SET GAME=
+
+REM Extra parameters for make_adventure.py (optional)
 SET CYDC_EXTRA_PARAMS=
 
-REM Run emulator after compilation (none/internal/default)
-REM     -None: Do nothing
-REM     -internal: run the compiled file with ZEsarUX (see ZESARUX_PATH)
-REM     -default: run the compiled file with the program set on Windows to run its extension
+REM Run emulator after successful compilation (none/internal/default)
 SET RUN_EMULATOR=none
 
 REM Path to zesarux.exe (internal). Empty: .\tools\zesarux\, the newest .\tools\ZEsarUX*\ or the PATH
 SET ZESARUX_PATH=
 
-REM Backup CYD file after compilation (yes/no) on ./BACKUP directory.
-SET BACKUP_CYD=no
+REM Backup the main .cyd file after compilation, to the project's BACKUP folder
+REM (yes/no; empty: the project's "backup" setting)
+SET BACKUP_CYD=
 
 REM Maximum number of backup files to keep (0 = unlimited)
 SET BACKUP_MAX_FILES=0
-
-REM --------------------------------------
 ```
 
-- The variable `TARGET` is the output system and format, with these possible options:
+- The variable `PROJECT` is the project that is compiled when the script is run without one (for example, with a double click).
+- The variable `TARGET` is the output system and format, if you want another than the project's:
 -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
 -- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
 -- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
 -- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
-- The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
-- The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
-- The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters in the call to the compiler [cydc](#cydc-compiler).
+- The variable `CYDC_EXTRA_PARAMS` is used to add extra parameters to [make_adventure.py](#make_adventurepy-cli-helper).
 - The variable `RUN_EMULATOR` indicates if we want the compiled program to be executed under an emulator with the following possible values:
 -- none: If we do not want it to do this.
--- internal: Executes the compiled file under ZEsarUX (see `ZESARUX_PATH`). The +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
+-- internal: Executes the compiled file under ZEsarUX (see `ZESARUX_PATH`). The +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the project's output folder as its SD card.
 -- default: If the file extension is associated under Windows with another emulator, it will be executed with this one.
 - The variable `ZESARUX_PATH` is the path to `zesarux.exe` for `internal`. If left empty, it is looked for in `.\tools\zesarux\`, then in the `.\tools\ZEsarUX*\` folder with the highest version (for example `.\tools\ZEsarUX_win-13.0\`) and last on the `PATH`.
-- The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the current file inside the `.\BACKUP` directory. Each copy adds the date on which it was created to the file name.
+- The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the main script inside the project's `BACKUP` folder after each build. Each copy adds the date on which it was created to the file name. Empty, the project's `backup` setting is used.
 - The variable `BACKUP_MAX_FILES` limits how many backups are kept per game (`0` means unlimited).
 
-The script will produce a DSK or TAP file (depending on the format selected in `TARGET`) that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_win-<version>\`), with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
+The script will produce a DSK or TAP file (depending on the target) in the project's output folder, that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_win-<version>\`), with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
 
-### GUI Compiler (make_adventure_gui v1.0.0)
+### GUI Compiler (make_adventure_gui)
 
 For those who prefer a graphical interface instead of editing scripts or command lines, the **make_adventure_gui** tool provides a cross-platform GUI for compiling Choose Your Destiny adventures.
 
 **Features:**
 - Cross-platform support (Windows, Linux, macOS with Python 3.11+)
 - Embedded Python on Windows (no separate Python installation needed)
+- Works on projects: **New…** makes one with a short game to start from, **Open…** opens the folder of a game, and **Recent** lists the last ones. The last project is opened again when the GUI starts. Without a project open, it explains what to do and has a **How to migrate it** button for games made with an older version
 - 30 configurable options including compilation targets, paths, abbreviation format, warnings about unused symbols and `GOSUB`/`RETURN` problems, a runtime check of the `GOSUB` stack (`--debug-stack`) and post-build actions
 - A **Check** button that looks for errors in the script without assembling it (`--check`), in about a second and without SjASMPlus
-- Settings persistence (remembered between sessions)
+- The project's settings are saved in its `cyd_project.ini` (only what isn't a default value, keeping your comments), and the GUI's own (SjASMPlus, emulator, appearance, recent projects) in `cyd_gui_settings.ini`, in CYD's folder. The settings of earlier versions (`cyd_gui_settings.json`) are moved there the first time; their game options are applied to the first project made with **New…**
 - Full internationalization support (English and Spanish) with runtime language switching via dropdown
 - Real-time compilation output display, with errors in red, warnings in orange and a summary at the end. Double-clicking a `file.cyd:12` in the log opens the file at that line
 - A **Run** button, which opens the last compiled game in the emulator without compiling it again, and an **Open folder** button, which opens the output folder. The internal emulator is ZEsarUX: the GUI looks for it in `tools/zesarux/`, in the newest `tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it on Linux) or on the `PATH`
@@ -2233,39 +2333,38 @@ export CYD_LANG=es
 
 | Category | Options |
 |----------|---------|
-| **Project** | Game name, Target (48k/128k/plus3/mld/mld128) |
-| **Paths** | Output directory, Images path, Tracks path, SFX file, Loading screen, Tokens file, Character set, SjASMPlus executable |
-| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Strict colon compatibility, Pause-after-load, WyzTracker support, 720KB disk |
-| **Post-Build** | Run emulator after compilation, Backup CYD file |
+| **Project** | Folder (New…, Open…, Recent), Main file, Game name, Target (48k/128k/plus3/mld/mld128/esxdos) |
+| **Paths** | The project's (relative to its folder): output folder, images, tracks, SFX file, loading screen, tokens file, character set, INCLUDE / INCLUDE LIB / IMPORT folders. This computer's: SjASMPlus executable |
+| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Keep the intermediate files, Strict colon compatibility, Pause-after-load, WyzTracker support, 720KB disk |
+| **Post-Build** | Run emulator after compilation, Backup the main script |
 | **Appearance** | Font size, Log font family/size, Log text/background colors |
 
-All compiled output files are placed in the specified output directory, and the GUI will display detailed compilation messages for debugging if needed.
+All compiled output files are placed in the project's output folder, and the GUI will display detailed compilation messages for debugging if needed.
 
 ### Linux, BSDs and Unices version
 
-As an example, the file `make_adv.sh` has been included in the root of the repository, which will compile the sample adventure included in the file `test.cyd`.
-
-You can use it as a base to easily create your own adventure. You can customize the behavior by modifying some variables in the script header: 
+The `make_adv.sh` script works like the Windows one: give it the project's folder (or its main script), and optionally a target:
 
 ```bash
-# ---- Configuration variables ----------
-# Name of the game
-GAME="test"
-# This name will be used as:
-#   - The file to compile will be test.cyd with this example
-#   - The name of the TAP file or +3 disk image
-#
-# Target for the compiler (48k, 128k for TAP, plus3 for DSK, mld or mld128 for MLD)
-TARGET="48k"
-#
-# Number of lines used on SCR files at compressing
-IMGLINES="192"
-#
-# Loading screen
-LOAD_SCR="./IMAGES/LOAD.scr"
-#
-# Parameters for compiler
-CYDC_EXTRA_PARAMS=
+./make_adv.sh ../my_game
+./make_adv.sh examples/test 48k
+```
+
+The game's settings are in its `cyd_project.ini`. The variables in the script's header are for your computer:
+
+```bash
+# The project to compile when none is given: the folder of the game (or its
+# main .cyd file). Relative to this script's folder, or absolute.
+PROJECT=""
+
+# Target platform, instead of the project's. Empty: the project's.
+TARGET=""
+
+# Name of the game, instead of the project's (empty: the project's).
+GAME=""
+
+# Extra parameters for make_adventure.py (optional)
+CYDC_EXTRA_PARAMS=""
 
 # Run emulator after successful compilation (none/internal/custom)
 RUN_EMULATOR="none"
@@ -2277,27 +2376,31 @@ CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
 # the newest ./tools/ZEsarUX-<version>/ or the PATH
 ZESARUX_PATH=""
 
-# Backup CYD file after compilation (yes/no)
-BACKUP_CYD="no"
+# Backup the main .cyd file after compilation, to the project's BACKUP folder
+# (yes/no; empty: the project's "backup" setting)
+BACKUP_CYD=""
 
 # Maximum number of backup files to keep (0 = unlimited)
 BACKUP_MAX_FILES=0
-# --------------------------------------
 ```
 
-- The variable `TARGET` is the output system and format, with these possible options:
--- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
--- 128k: Generates a TAP file for Spectrum 128K.
--- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
--- mld: Generates a strict 48K (non-banked) MLD file for Dandanator.
--- mld128: Generates an MLD file for Dandanator targeting Spectrum 128K. The RAM banks are used for music and for the `DIM` arrays (which must be writable); the rest of the adventure data (text/images/bytecode) is read directly from the cartridge slots.
--- esxdos: Generates a boot TAP and the files for the SD card of a divMMC/divIDE with esxDOS (see [cydc](#cydc-compiler)).
-- The variable `IMGLINES` is the number of horizontal lines of the image files to be compressed. By default it is 192 (the full Spectrum screen)
-- The variable `LOAD_SCR` is the path to a SCR file (Spectrum screen) with the screen to be used during loading.
+- `PROJECT`, `TARGET`, `GAME`, `CYDC_EXTRA_PARAMS`, `BACKUP_CYD` and `BACKUP_MAX_FILES` work as in the [Windows version](#windows-version).
 - `RUN_EMULATOR` supports `none`, `internal` (ZEsarUX), or `custom`.
 - `CUSTOM_EMULATOR_CMD` is used when `RUN_EMULATOR=custom`.
-- `ZESARUX_PATH` defines the emulator executable path for `internal` mode. If left empty, it is looked for in `./tools/zesarux/`, then in the highest `./tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it) and last on the `PATH`. As on Windows, the +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the game's folder as its SD card.
-- `BACKUP_CYD` and `BACKUP_MAX_FILES` control automatic backup generation and retention.
+- `ZESARUX_PATH` defines the emulator executable path for `internal` mode. If left empty, it is looked for in `./tools/zesarux/`, then in the highest `./tools/ZEsarUX-<version>/` folder (where `tools/build_emu_tools.sh` leaves it) and last on the `PATH`. As on Windows, the +3 boots as a +3 with ROM 4.1, and esxdos as a 128K with divMMC and the project's output folder as its SD card.
+
+### Migrating a game from an older version
+
+Up to version 1.6.6, a game was made in CYD's own folder: its script, `IMAGES`, `TRACKS` and the rest were next to `make_adv.cmd`, which was configured with the `GAME`, `TARGET`, `IMGLINES` and `LOAD_SCR` variables. Now each game is a [project](#projects) in its own folder, and CYD's folder can't be one. To move a game:
+
+1. Make the project's folder, outside CYD's folder: with `make_adventure.py --new FOLDER`, with the GUI's **New…**, or just a new folder. (If you use `--new` or **New…**, delete the short game it makes.)
+2. Copy into it the game's script and the files it includes, `IMAGES/`, `TRACKS/`, `SFX.ASM`, `tokens.json`, `charset.json` and the loading screen (`IMAGES/LOAD.scr` by default).
+3. The libraries are now included with [`INCLUDE LIB`](#include-directive-multi-file-projects): change `INCLUDE "lib/strings.cyd"` (or `INCLUDE "../../lib/strings.cyd"`) to `INCLUDE LIB "strings.cyd"`. The compiler suggests it when it doesn't find the old path.
+4. Move what the `make_adv` script had to the project's [`cyd_project.ini`](#cyd_projectini): `GAME` to `name` (or `main`, the script's name), `TARGET` to `target`, `IMGLINES` to `image_lines`, `LOAD_SCR` to `load_scr`, and each option of `CYDC_EXTRA_PARAMS` to its key in `[options]`.
+5. The GUI's settings move on their own the first time it is opened.
+6. The compiled files are now in the project's `OUTPUT/` folder.
+
+Then build it with `make_adv.cmd FOLDER` (or dragging the folder onto `make_adv.cmd`), `./make_adv.sh FOLDER`, or the GUI's **Open…**.
 
 ## Examples
 
@@ -2540,10 +2643,12 @@ This is the most complex example and serves as a foundation for creating traditi
 Each directory includes a precompiled `.tap` file that you can load directly into your favorite ZX Spectrum emulator.
 
 **To compile them yourself:**
-1. Copy the contents of the example folder to the root directory of the CYD distribution.
-2. **Important:** If you have your own files, save them first, as they will be overwritten.
-3. Run `make_adv.cmd` (Windows) or `./make_adv.sh` (Linux/macOS).
-4. The resulting `.tap` file will be ready to test.
+Each example is a [project](#projects): its `cyd_project.ini` says its main script and its target. Build it where it is, without copying anything:
+- Windows: `make_adv.cmd examples\test`, or drag the example's folder onto `make_adv.cmd`.
+- Linux/macOS: `./make_adv.sh examples/test`.
+- GUI: **Open…** and the example's folder.
+
+The compiled file is left in the example's `OUTPUT/` folder (and, the first time, a `tokens.json` in the example's folder if it doesn't have one).
 
 **Recommended study order:**
 It's recommended to study the examples in this order for a gradual learning curve:

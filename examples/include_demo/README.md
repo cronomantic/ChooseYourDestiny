@@ -53,19 +53,20 @@ Each chapter is in its own file, making it easy to:
 
 ## Compiling This Adventure
 
-To compile this demo adventure, navigate to the example directory and run:
+This demo is a project: its `cyd_project.ini` says the main file (`main.cyd`) and the target (48K). Build it where it is, from the ChooseYourDestiny directory:
 
 **Windows:**
 ```batch
-..\..\dist\cydc_cli.py 48k main.cyd ..\..\tools\sjasmplus.exe ..\..\
+make_adv.cmd examples\include_demo
 ```
+(or drag the `include_demo` folder onto `make_adv.cmd`)
 
 **Linux/macOS:**
 ```bash
-../../dist/cydc_cli.py 48k main.cyd ../../external/sjasmplus/sjasmplus ../../
+./make_adv.sh examples/include_demo
 ```
 
-Or copy the entire `include_demo` folder to the root of the ChooseYourDestiny directory and modify the `make_adv` script to compile it.
+Or open the folder with *Open…* in the GUI, or run `python make_adventure.py examples/include_demo`. The `.tap` goes to `examples/include_demo/OUTPUT/`.
 
 ## Key Concepts Demonstrated
 

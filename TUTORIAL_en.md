@@ -50,7 +50,7 @@ When designing this type of tool there are different approaches. You can design 
 
 Therefore, this tutorial has been created to introduce concepts that will allow you to understand how it works and start making your own adventures. This document is constantly being revised and updated but may be a bit out of date with respect to the reference distribution, so the absolute reference for information will always be the manual, which is always updated with the tool. I recommend that you always have it at hand.
 
-In addition, there are also examples in the distribution's `examples` folder, which you can play with and learn from, and which will surely give you many ideas for your own creations. To try them out, simply copy the contents of each example folder and copy it to the root directory of the distribution, overwriting the files. If you have something already done that you want to keep, **remember to copy it somewhere else first**.
+In addition, there are also examples in the distribution's `examples` folder, which you can play with and learn from, and which will surely give you many ideas for your own creations. Each example is a project of its own (we will see what that means shortly), so you can build it right where it is, without copying anything: for example, with `make_adv.cmd examples\test` on Windows, `./make_adv.sh examples/test` on other systems, or by opening its folder with the GUI's **Open…** button. The compiled files are left in the `OUTPUT` folder of the example.
 
 With this, I hope it helps you create adventures that we can all enjoy.
 
@@ -60,13 +60,13 @@ With this, I hope it helps you create adventures that we can all enjoy.
 
 ### Windows
 
-To install on Windows 10 (64-bit) or higher, download the `ChooseYourDestiny.Win_x64.zip` file from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository and unzip it into a folder called Tutorial, which you can create wherever you see fit. The script to build the adventure is called `make_adv.cmd`, you will need to run it to compile the adventure. I recommend doing this from the command line.
+To install on Windows 10 (64-bit) or higher, download the `ChooseYourDestiny.Win_x64.zip` file from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository and unzip it into a folder called `CYD`, which you can create wherever you see fit. The script to build the adventure is called `make_adv.cmd`, you will need to run it to compile the adventure. I recommend doing this from the command line. Your adventures won't go in this folder, but each one in a folder of its own, as we will see in the next chapter.
 
 ### Linux, BSDs, etc. (Experimental)
 
 You must first meet the prerequisites, for this see the relevant section of the [manual](MANUAL_en).
 
-Then download the `ChooseYourDestiny.Linux_x64.zip` file from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository and unzip it into a folder called Tutorial, which you can create wherever you see fit. The script to build the adventures is called `make_adv.cmd`, you will need to run it to compile the adventure. I recommend doing this from the command line.
+Then download the `ChooseYourDestiny.Linux_x64.zip` file from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository and unzip it into a folder called `CYD`, which you can create wherever you see fit. The script to build the adventures is called `make_adv.sh`, you will need to run it to compile the adventure. I recommend doing this from the command line. Your adventures won't go in this folder, but each one in a folder of its own, as we will see in the next chapter.
 
 ### Highlighter for VSCode
 
@@ -82,91 +82,60 @@ Otherwise, download this repository and copy the folder into the `<user home>/.v
 
 ## Preparing our first adventure
 
-The first thing we are going to do is change a couple of things so that we can generate a custom adventure.
+In **CYD**, each adventure lives in a folder of its own, which we call the **project**. In it go the main source file (with the extension `.cyd`), the images, the music, the sound effects and the rest of the game's files, and, optionally, a file called `cyd_project.ini` with its settings. The compiled files are left in the project's `OUTPUT` folder. CYD's own folder (the one with `make_adv.cmd`) can't be a project: this way your adventures are kept apart from the tool, and you won't have to move them when you upgrade CYD.
 
-If you are using Windows, open the file `make_adv.cmd` with any text editor and you will see this at the beginning: 
-
-```batch
-REM ---- Configuration variables ----------
-
-REM Name of the game
-SET GAME=test
-REM This name will be used as:
-REM   - The file to compile will be test.cyd with this example
-REM   - The name of the TAP file or +3 disk image
-
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=48k
-
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
-
-REM Loading screen
-SET LOAD_SCR=./IMAGES/LOAD.scr
-
-REM Parameters for compiler
-SET CYDC_EXTRA_PARAMS=
-
-REM ------
-```
-
-The first thing we are going to do is give a name to the adventure we are going to create. For example, we will call it `Tutorial`:
+So the first thing we are going to do is create a project for our tutorial. The easiest way is to let CYD do it for us. If you are using Windows, open a command line window in CYD's folder and type:
 
 ```batch
-REM ---- Configuration variables ----------
-
-REM Name of the game
-SET GAME=Tutorial
-REM This name will be used as:
-REM   - The file to compile will be test.cyd with this example
-REM   - The name of the TAP file or +3 disk image
-
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=48k
-
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
-
-REM Loading screen
-SET LOAD_SCR=./IMAGES/LOAD.scr
-
-REM Parameters for compiler
-SET CYDC_EXTRA_PARAMS=
-
-REM ------
+dist\python\python make_adventure.py --new ..\tutorial 48k
 ```
 
-If you use another operating system, the process is similar with `make_adv.sh`:
+If you use another operating system, the process is similar:
 
 ```bash
-# ---- Configuration variables ----------
-# Name of the game
-GAME="Tutorial"
-# This name will be used as:
-#   - The file to compile will be test.cyd with this example
-#   - The name of the TAP file or +3 disk image
-#
-# Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-TARGET="48k"
-#
-# Number of lines used on SCR files at compressing
-IMGLINES="192"
-#
-# Loading screen
-LOAD_SCR="./IMAGES/LOAD.scr"
-#
-# Parameters for compiler
-CYDC_EXTRA_PARAMS=
-# --------------------------------------
+python3 make_adventure.py --new ../tutorial 48k
 ```
 
-We save the file and now create a new text file, called `tutorial.Cyd`.In this file, we write this:
+This creates a folder called `tutorial` next to CYD's folder, with a short adventure to start from called `tutorial.cyd`, the folders `IMAGES` and `TRACKS`, and its `cyd_project.ini`. The `48k` at the end is the Spectrum model we are going to make the adventure for; we will talk about it later. You can also do this with the **New…** button of the GUI (see [GUI Compiler Alternative](#gui-compiler-alternative)), choosing `48k` as its target, or simply by creating the `tutorial` folder yourself, since `cyd_project.ini` is optional.
+
+If you open `cyd_project.ini` with any text editor, you will see this:
+
+```ini
+; Choose Your Destiny project. Paths are relative to this folder.
+[project]
+name = tutorial
+main = tutorial.cyd
+target = 48k
+
+[paths]
+images = IMAGES
+tracks = TRACKS
+output = OUTPUT
+
+[options]
+```
+
+`name` is the name of the adventure, which is also the name of the TAP file or the +3 disk image; `main` is the source file to compile, and `target` is the Spectrum model. The lines starting with `;` are comments. All the settings are optional: when one is missing, its default value is used (the manual lists all of them in its *Projects* section). Two of them will be useful later on: `load_scr`, in `[paths]`, is the loading screen (`IMAGES/LOAD.scr` by default), and `image_lines`, in `[options]`, is the number of lines of the images (192 by default).
+
+Now open `tutorial.cyd` with your text editor and replace its contents with this:
 
 ```
 Hello World[[WAITKEY]]
 ```
 
-And we keep it in the same place as `Make_adv.cmd` and` make_adv.sh`. We execute the batch file and if everything goes well, you will have created a tape file called tutorial.TAP, which you can run with your favorite emulator.
+We save the file and build the adventure. On Windows, from CYD's folder:
+
+```batch
+make_adv.cmd ..\tutorial
+```
+
+Or, even easier, drag the `tutorial` folder onto `make_adv.cmd` in the file explorer. On other operating systems:
+
+```bash
+./make_adv.sh ../tutorial
+```
+
+If everything goes well, you will have created a tape file called `tutorial.tap` in the `OUTPUT` folder of the project, which you can run with your favorite emulator. If you don't want to type the project's folder every time, put it in the `PROJECT` variable at the beginning of `make_adv.cmd` (`SET PROJECT=..\tutorial`) or `make_adv.sh` (`PROJECT="../tutorial"`), and the script will build it when you run it without arguments. You can also open the folder with the GUI's **Open…** button and press **Compile**.
 
 ## Source File Format
 
@@ -176,7 +145,7 @@ When launching the resulting Tap file with an emulator, this comes out:
 
 Let's analyze what happens...
 
-Apart from `GAME`, another important variable is `TARGET`, which indicates the Spectrum model and the type of output file to use. For now we will use the value `48k`, which we will later change when we want more advanced features.
+Apart from `name`, another important setting of `cyd_project.ini` is `target`, which indicates the Spectrum model and the type of output file to use. For now we will use the value `48k`, which we will later change when we want more advanced features.
 
 Returning to the code of the adventure, we see that the text *Hello World* is painted and then a kind of cursor appears. If we press the `Enter` or `Space` key, the program is restarted. If we return to the code:
 
@@ -700,9 +669,9 @@ The author will need to make these small adjustments to improve the presentation
 
 To make the adventure more attractive, it is possible to add images in SCR format, of Spectrum screens. These images will be compressed with the `CSC` utility, creating files with the same extension, which must be included in the final disk.
 
-The manual explains how `CSC` works, in case you want to do it manually. But the `MakeAdv` script automatically searches for and compresses the SCR files that are in the `\IMAGES` directory, so you will simply have to place the files there.
+The manual explains how `CSC` works, in case you want to do it manually. But the compiler automatically searches for and compresses the SCR files that are in the `IMAGES` folder of the project, so you will simply have to place the files there.
 
-We are going to use an image that we have as an example, called `ORIGIN1.SCR`, inside the `\examples\test\IMAGES` directory. Copy it and rename it as `001.SCR`. And put the following code in `tutorial.txt`:
+We are going to use an image that we have as an example, called `ORIGIN1.SCR`, inside the `examples\test\IMAGES` folder of CYD. Copy it to the `IMAGES` folder of your project and rename it as `001.SCR`. And put the following code in `tutorial.cyd`:
 
 ```
 [[ /* Set screen colors and clear it */
@@ -723,7 +692,7 @@ I'm going to display the image.[[
 Done[[ WAITKEY: END ]]
 ```
 
-The `MakeAdv` script looks in the `\IMAGES` directory for files named xxx.SCR, where the three x's are digits, and compresses them with `CSC` (it keeps the compressed images in the `cyd_cache` folder of the output folder, so it only compresses an image again when it changes). On the disk they go as files with the extension `.CSC`, like `001.CSC`. The engine will search the disk for files with this name when asked to load images.
+The compiler looks in the `IMAGES` folder for files named xxx.SCR, where the three x's are digits, and compresses them with `CSC` (it keeps the compressed images in the `cyd_cache` folder of the output folder, `OUTPUT`, so it only compresses an image again when it changes). On the disk they go as files with the extension `.CSC`, like `001.CSC`. The engine will search the disk for files with this name when asked to load images.
 
 Now we can launch the emulator. The first thing you will see is this:
 
@@ -743,11 +712,11 @@ Another thing you might be wondering is why are the commands to load the image a
 
 For now, just remember that you first need `PICTURE 3`, to load the image `003.CSC`, for example, and then `DISPLAY 1` to display it. Note that we can only load one image at a time, so if we load another image, the one already loaded will be deleted, and a loaded image can be displayed as many times as we want. And you'll get a nice error if you try to load an image that doesn't exist on disk or in memory, or when displaying an image without loading it first.
 
-When displaying images, keep in mind that whatever is already on the screen will always be overwritten. The default behavior is to load images full screen (192 lines), but you can edit the number of lines to load by modifying the value of the `IMGLINES` variable in the `make_adv.cmd` script:
+When displaying images, keep in mind that whatever is already on the screen will always be overwritten. The default behavior is to load images full screen (192 lines), but you can edit the number of lines to load with the `image_lines` setting, in the `[options]` section of the project's `cyd_project.ini`:
 
-```batch
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
+```ini
+[options]
+image_lines = 192
 ```
 
 Due to the color limitations of the Spectrum, I recommend that it always be a multiple of 8.
@@ -795,7 +764,7 @@ And with this it's better:
 
 ![Showing image and text](assets/tut032.png)
 
-Here we've used a random image, more specifically the loading screen from the *La Adventura Original*. But if we're going to do this kind of cropping with all images, we can change the value of the `IMGLINES` variable, so that it crops out the lines we don't want. This will save space, and prevent the bottom text area from being overwritten when we load a new image.
+Here we've used a random image, more specifically the loading screen from the *La Adventura Original*. But if we're going to do this kind of cropping with all images, we can change the value of `image_lines`, so that it crops out the lines we don't want. This will save space, and prevent the bottom text area from being overwritten when we load a new image.
 
 For image management and taking into account these restrictions, it's important to plan in advance how and when we're going to display them.
 
@@ -819,7 +788,7 @@ Now comes the important part, **we must always leave the `Assembly` and `Include
 
 ![Options for BeepFx](assets/tut023.png)
 
-We click on the `Compile` button and a dialog box will appear to save the file. **We must call it `SFX.ASM`** and save it in the folder where we are developing our adventure. When we run the script `make_adv.cmd`, if it finds the file `SFX.ASM` in the same directory, it will automatically include it in the resulting file and we can use it from the engine.
+We click on the `Compile` button and a dialog box will appear to save the file. **We must call it `SFX.ASM`** and save it in the folder of our project, next to `tutorial.cyd`. When we build the adventure, if the file `SFX.ASM` is in the project's folder, it will automatically be included in the resulting file and we can use it from the engine.
 
 Let's give an example, put this as the code for the adventure:
 
@@ -860,28 +829,25 @@ So far, we have only developed adventures for the original 48k Zx Spectrum, howe
 
 The available space will vary depending on the adventure and the extra resources to be used, since if music and sound effects are omitted, the size of the interpreter will be reduced, leaving more space for text and images. On average, you should expect to have about 96 Kb available on the 128K models and about 24 Kb on the 40K models. For this reason, the 48K version does not include support for AY melodies.
 
-If you use the `make_adv.cmd` script, to change the model, you simply have to change the `TARGET` variable to the values ​​`48k` or `128k` if you want to generate the TAPs for the corresponding models. For example, if we want to create a version of our tutorial for Spectrum 128k:
+To change the model, you simply have to change the `target` setting in the project's `cyd_project.ini` to the values `48k` or `128k` if you want to generate the TAPs for the corresponding models. For example, if we want to create a version of our tutorial for Spectrum 128k, with the image `000.scr` of the `IMAGES` folder as its loading screen:
 
-```batch
-@echo off  &SETLOCAL
+```ini
+[project]
+name = tutorial
+main = tutorial.cyd
+target = 128k
 
-REM ---- Configuration variables
+[paths]
+images = IMAGES
+tracks = TRACKS
+output = OUTPUT
+load_scr = IMAGES/000.scr
 
-REM Name of the game
-SET GAME=Tutorial
-REM This name will be used as:
-REM   - The file to compile will be test.txt with this example
-REM   - The name of the TAP file or +3 disk image
-
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=128k
-
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
-
-REM Loading screen
-SET LOAD_SCR=%~dp0\IMAGES\000.scr
+[options]
+image_lines = 192
 ```
+
+In the GUI, the **Target** you choose is saved in this same file. You can also give the model when building, without touching the file, and it will be used instead of the project's: `make_adv.cmd ..\tutorial 128k` or `./make_adv.sh ../tutorial 128k`.
 
 With the `plus3` model, the output format will be a disk image in DSK format.
 
@@ -889,9 +855,9 @@ With the `plus3` model, the output format will be a disk image in DSK format.
 
 ## Music (AY)
 
-CYD also allows playing music using the AY chip, using modules created with Vortex Tracker, in `PT3` format. AY music is not available for the 48K models, so we will need to change the `TARGET` variable in `made_adv.cmd`, as described in the previous chapter.
+CYD also allows playing music using the AY chip, using modules created with Vortex Tracker, in `PT3` format. AY music is not available for the 48K models, so we will need to change the `target` setting in `cyd_project.ini`, as described in the previous chapter.
 
-The operation is intentionally similar to that of the images. The module file names have to be 3-digit numbers with the extension `.PT3`, so that they are `000.PT3`, `001.PT3` and so on, and they must be included on the disk. To make things easier, the `make_adv.cmd` script will do it for us with all the files that follow this nomenclature and are inside the `.\TRACKS` folder.
+The operation is intentionally similar to that of the images. The module file names have to be 3-digit numbers with the extension `.PT3`, so that they are `000.PT3`, `001.PT3` and so on, and they must be included on the disk. To make things easier, the compiler will do it for us with all the files that follow this nomenclature and are inside the `TRACKS` folder of the project.
 
 The commands we have are also similar to the image management commands. With the `TRACK` command, we load a music module from disk into memory, so that with `TRACK 0`, we would load the module `000.PT3`, with `TRACK 1` we would load `001.PT3`, etc.
 
@@ -1187,7 +1153,7 @@ In the end you keep [[GOSUB ImprimirGamusimos]].[[
 ## Conditional Execution
 
 In the following example we will use the `IF ... THEN ... ENDIF` structure to illustrate how it works:
-Copy the following into `Tutorial.cyd`:
+Copy the following into `tutorial.cyd`:
 
 ```cyd
 [[ /* Set screen colors and clear it */
@@ -1346,7 +1312,7 @@ With the addition of the loop, we can implement almost anything with the CYD lan
 
 To save disk space, the compiler compresses the text, looking for the most common substrings in the text and replacing them with tokens or abbreviations.
 
-The `make_adv.cmd` script will make the compiler look for abbreviations if it does not find a file named `tokens.json` in its folder, and will save the abbreviations found in a file with that name. On the other hand, if it finds such a file, it will pass it as a parameter to the compiler so that it uses the abbreviations contained in it. To make it look for abbreviations again, simply delete the `tokens.json` file before running it.
+When building the adventure, the compiler will look for abbreviations if it does not find a file named `tokens.json` in the project's folder, and will save the abbreviations found in a file with that name. On the other hand, if it finds such a file, it will use the abbreviations contained in it. To make it look for abbreviations again, simply delete the `tokens.json` file before building the adventure again.
 
 The process of looking for abbreviations can be very expensive as the amount of text in the adventure increases. My advice is to write the adventure script *before* you start programming and put it all in a text file that you can feed to the compiler, so that it can generate a suitable abbreviation file. Once you have that, you can start adding commands to the text to shape the adventure. Once you have it *almost* finished, you can generate abbreviations again to see if you can carve out some more space.
 
@@ -1391,10 +1357,11 @@ When compiled, the preprocessor will automatically insert the contents of `varia
 
 ### Organizing a Larger Project
 
-Here's a recommended structure for a larger adventure:
+Here's a recommended structure for the project folder of a larger adventure:
 
 ```
 my_adventure/
+  ├── cyd_project.ini       # Project settings
   ├── main.cyd              # Main entry point
   ├── config/
   │   ├── variables.cyd     # All variable declarations
@@ -1407,6 +1374,8 @@ my_adventure/
       ├── chapter2.cyd      # Chapter 2
       └── ending.cyd        # Ending sequences
 ```
+
+The `IMAGES` and `TRACKS` folders, `SFX.ASM` and the rest of the game's files would also be in `my_adventure/`, and the compiled files in `my_adventure/OUTPUT/`. Since the main file is not called like the game, `cyd_project.ini` says it with `main = main.cyd`, and gives the game its name with `name = my_adventure`. The `lib/` folder here is the project's own: the libraries bundled with CYD are included with `INCLUDE LIB`, as we will see in the next section.
 
 **Example main.cyd:**
 ```cyd
@@ -1602,7 +1571,7 @@ From this point on, you should have enough knowledge to be able to tackle your o
 
 ### GUI Compiler Alternative
 
-Instead of manually editing and running the `make_adv` scripts, you can use the **make_adventure_gui** tool, which provides a graphical interface for compiling your adventures.
+Instead of running the `make_adv` scripts and editing `cyd_project.ini` by hand, you can use the **make_adventure_gui** tool, which provides a graphical interface for compiling your adventures.
 
 **Launching the GUI:**
 
@@ -1616,7 +1585,7 @@ make_adventure_gui.cmd
 ./make_adventure_gui.sh
 ```
 
-The GUI allows you to configure all compilation options (target, paths, image lines, abbreviation settings, and more) without touching any scripts. Once configured, you can compile your adventure with a single button click. The GUI will display detailed compilation messages and automatically open the compiled file on your chosen emulator if configured.
+The GUI works on projects: in its **Project** frame, the **New…** button creates one with a short adventure to start from, **Open…** opens the folder of an existing one (such as our `tutorial` folder or any of the examples), and **Recent** lists the last ones; the last project is opened again when the GUI starts. It allows you to configure all compilation options (target, paths, image lines, abbreviation settings, and more) without touching any scripts, and it saves them in the project's `cyd_project.ini`. Once configured, you can compile your adventure with a single click of the **Compile** button. The GUI will display detailed compilation messages and automatically open the compiled file on your chosen emulator if configured.
 
 This approach eliminates the need to understand batch or shell scripts, making the compilation process more accessible for users who prefer graphical interfaces.
 
@@ -1764,7 +1733,7 @@ But first, let's create the following SCR image with some graphical editor for S
 
 ![Example](assets/tut042.png)
 
-And we leave it in the directory `IMAGES`. You can see that we have drawn in the first block of 16x16 pixels, or what is the same, 2x2 characters.
+And we leave it in the `IMAGES` folder of the project. You can see that we have drawn in the first block of 16x16 pixels, or what is the same, 2x2 characters.
 
 Now, let's use the following example:
 
@@ -2519,7 +2488,7 @@ Characters 127 through 143 (both inclusive and starting from zero) are special a
 Once we have this clear, what many of you will want is to change the animated icons to give them a personal touch.
 For this task we will need **ZxPaintbrush**. There is a copy included in the `Utiles` folder. We will also need the default font found in the `assets\default_charset.chr` file.
 
-We will copy the file to the top directory, rename it as `charset.chr` and open it with ZxPaintbrush and with this we will have this:
+We will copy the file to the folder of our project, rename it as `charset.chr` and open it with ZxPaintbrush and with this we will have this:
 
 ![charset1](assets/tut052.png)
 
@@ -2527,14 +2496,14 @@ We are going to edit the key wait animation cycle (those marked in blue in the s
 
 ![charset2](assets/tut053.png)
 
-Now we need to convert them to a format that the compiler can digest. To do this we use the cyd_char_conv tool, which is located in `.\dist\cyd_chr_conv.cmd`. This tool is command line, so we will have to open a *Command Prompt* window in the project directory. If we run this command `.\dist\cyd_chr_conv.cmd --help`, we can see the options.
+Now we need to convert them to a format that the compiler can digest. To do this we use the cyd_char_conv tool, which is located in the `dist` folder of CYD (`dist\cyd_chr_conv.cmd`). This tool is command line, so we will have to open a *Command Prompt* window in the project's folder. If CYD is in the `CYD` folder next to it, as at the beginning of this tutorial, and we run this command `..\CYD\dist\cyd_chr_conv.cmd --help`, we can see the options.
 
 ![charset3](assets/tut054.png)
 
 To do the conversion, we'll use it like this:
 
 ```batch
-.\dist\cyd_chr_conv.cmd -w 6 -W 4 charset.chr charset.json
+..\CYD\dist\cyd_chr_conv.cmd -w 6 -W 4 charset.chr charset.json
 ```
 
 With the parameter `-w`, we indicate the width that the characters of the lower set will have, which in our case are 6 and with `-W` we indicate the size of the characters of the upper set, 4 in this case.
@@ -2543,36 +2512,14 @@ With this, we already have the file `charset.json` that we would have to pass to
 
 ![charset4](assets/tut055.png)
 
-To tell the compiler that we are going to use the new character set, we have to indicate it with the parameter `-c`. Fortunately, the file `make_adv.cmd` will do this work for us.
+To tell the compiler that we are going to use the new character set, we have to indicate it with the parameter `-c`. Fortunately, we don't have to do anything: when the project is built, if there is a file called `charset.json` in its folder, it is used automatically. If you prefer to give it another name or keep it somewhere else, put its path in the `charset` setting of the `[paths]` section of `cyd_project.ini`:
 
-To do this, we modify the header of that file, putting `-c charset.json` inside the `CYDC_EXTRA_PARAMS` variable, like this:
-
-```batch
-REM ---- Configuration variables ----------
-
-REM Name of the game
-SET GAME=test
-REM This name will be used as:
-REM   - The file to compile will be test.cyd with this example
-REM   - The name of the TAP file or +3 disk image
-
-REM Target for the compiler (48k, 128k for TAP, plus3 for DSK)
-SET TARGET=48k
-
-REM Number of lines used on SCR files at compressing
-SET IMGLINES=192
-
-REM Loading screen
-SET LOAD_SCR=./IMAGES/LOAD.scr
-
-REM Parameters for compiler
-SET CYDC_EXTRA_PARAMS=-c charset.json
-
-REM --------------------------------------
-...
+```ini
+[paths]
+charset = fonts/my_charset.json
 ```
 
-Running the `make_adv.cmd` file and launching the resulting tape file with an emulator, we see that the icon has changed:
+Building the project again and launching the resulting tape file with an emulator, we see that the icon has changed:
 
 ![charset4](assets/tut056.png)
 

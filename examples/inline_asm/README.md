@@ -30,16 +30,22 @@ la resta (`43-15 = 28`), y muestra los tres valores. Funciona en **48K, 128K y +
 
 ## Compilar
 
+El ejemplo es un proyecto (`test.cyd`, 48K en su `cyd_project.ini`) y se compila
+donde está, desde la carpeta de CYD:
+
 ```
-python src/cydc/cydc/cydc.py 48k examples/inline_asm/test.cyd tools/sjasmplus.exe examples/inline_asm
+make_adv.cmd examples\inline_asm        (Windows; o arrastra la carpeta sobre make_adv.cmd)
+./make_adv.sh examples/inline_asm       (Linux, macOS)
 ```
 
-(cambia `48k` por `128k` o `plus3` para los otros targets).
+o con *Abrir…* en la GUI. Lo compilado queda en `examples/inline_asm/OUTPUT/`.
+Para los otros targets, añade `128k` o `plus3` tras la carpeta
+(`make_adv.cmd examples\inline_asm 128k`).
 
 ## Por qué existe esta funcionalidad
 
-El objetivo último del ensamblador inline es poder **reescribir en Z80 nativo las
-dos librerías del proyecto** (`math16_32` y `strings`, hoy escritas en CYD) para
-ganar velocidad en los bucles calientes, manteniendo una interfaz cómoda
-(multi-export, acceso a variables y arrays, llamadas entre rutinas). Este ejemplo
-es la prueba de que las piezas necesarias para esa migración están en su sitio.
+El ensamblador inline es lo que ha permitido **reescribir en Z80 nativo las
+librerías del proyecto** (el núcleo de `math16_32` y de `strings` ya es un bloque
+`ASM` nativo) para ganar velocidad en los bucles calientes, manteniendo una
+interfaz cómoda (multi-export, acceso a variables y arrays, llamadas entre
+rutinas). Este ejemplo muestra esas piezas por separado.

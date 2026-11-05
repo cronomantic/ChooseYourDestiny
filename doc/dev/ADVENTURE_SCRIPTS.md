@@ -11,6 +11,13 @@ ChooseYourDestiny provides two methods for building adventures:
 
 Both methods are now **fully cross-platform** with feature parity.
 
+Both build a **project**: the folder of a game, with its main `.cyd` file (and the
+files it INCLUDEs), `IMAGES/`, `TRACKS/`, `SFX.ASM`, the loading screen,
+`tokens.json`, `charset.json` and an optional `cyd_project.ini` with the game's
+settings (main file, target, paths, image lines, compiler options...). CYD's own
+folder can't be a project; its subfolders can (each example in `examples/` is
+one). Both run `make_adventure.py`, which does the build.
+
 ## Files
 
 ### Command-Line Builder
@@ -35,45 +42,71 @@ Both methods are now **fully cross-platform** with feature parity.
 
 ### Quick Start
 
+```
+make_adv.cmd [PROJECT] [TARGET]
+./make_adv.sh [PROJECT] [TARGET]
+```
+
+`PROJECT` is the folder of the game, or its main `.cyd` file; `TARGET` (`48k`,
+`128k`, `plus3`, `esxdos`, `mld`, `mld128`), if given, is used instead of the
+project's. They can go in any order.
+
 **Windows:**
 ```cmd
-make_adv.cmd
+make_adv.cmd ..\my_game
+make_adv.cmd examples\test 48k
 ```
+The project's folder (or its `.cyd`) can also be **dragged onto `make_adv.cmd`**.
 
 **Linux/macOS:**
 ```bash
 chmod +x make_adv.sh  # First time only
-./make_adv.sh
+./make_adv.sh ../my_game
+./make_adv.sh examples/test 48k
 ```
+
+To start a new project: `python make_adventure.py --new ../my_game` (on Windows,
+`dist\python\python make_adventure.py --new ..\my_game`), or *New…* in the GUI.
 
 ### Configuration
 
-Edit the variables at the top of the script:
+The game's settings (main file, target, image lines, loading screen, compiler
+options...) are in its `cyd_project.ini`. The variables at the top of the script
+are for this computer:
 
 ```bash
-# Name of your game (without .cyd extension)
-GAME="test"
+# The project to compile when none is given: the folder of the game (or its
+# main .cyd file). Relative to the script's folder, or absolute.
+PROJECT=""
 
-# Target platform: 48k, 128k, or plus3
-TARGET="128k"
+# Target platform, instead of the project's (empty: the project's)
+TARGET=""
 
-# Number of lines for screen compression (192 = full screen)
-IMGLINES="192"
+# Name of the game, instead of the project's (empty: the project's)
+GAME=""
 
-# Path to loading screen
-LOAD_SCR="./IMAGES/LOAD.scr"
-
-# Extra compiler parameters (optional)
+# Extra parameters for make_adventure.py (optional)
 CYDC_EXTRA_PARAMS=""
 
 # Run emulator after compilation
 # Options: none, internal, default (Windows), custom (Linux/Mac)
 RUN_EMULATOR="none"
 
-# Backup settings
-BACKUP_CYD="no"
+# Path to ZEsarUX (empty: look for it, see below)
+ZESARUX_PATH=""
+
+# Backup settings (empty: the project's "backup" setting)
+BACKUP_CYD=""
 BACKUP_MAX_FILES=0  # 0 = unlimited
 ```
+
+`IMGLINES` and `LOAD_SCR` are gone: they are now `image_lines` and `load_scr` in
+the project's `cyd_project.ini`.
+
+The script reads the project with `make_adventure.py --describe` (its folder,
+main file, name, target, output folder and backup setting), builds it with
+`make_adventure.py`, backs up the main `.cyd` and runs the emulator on the
+compiled file.
 
 ### Emulator Integration
 
@@ -92,7 +125,7 @@ SET RUN_EMULATOR=internal
 Looks for `zesarux.exe` in `ZESARUX_PATH` if set, else in `.\tools\zesarux\`, else in
 the `.\tools\ZEsarUX*\` folder with the highest version (`ZEsarUX_win-13.0` before
 `ZEsarUX_win-11.0`), else on the `PATH`. The +3 runs as `P341`, and esxdos as a 128K
-with divMMC and the script's folder as the SD card.
+with divMMC and the project's output folder as the SD card.
 
 #### Linux/macOS
 
@@ -116,27 +149,37 @@ Same search and machines as on Windows; `tools/build_emu_tools.sh` builds it int
 
 ### Backup Feature
 
-Enable automatic backups of your source files:
+Enable automatic backups of the main `.cyd` file, for every project with
+`backup = yes` in its `cyd_project.ini`, or for all of them in the script:
 
 ```bash
 BACKUP_CYD="yes"
 BACKUP_MAX_FILES=10  # Keep only 10 most recent backups
 ```
 
-Backups are saved to `./BACKUP/` with timestamps:
+Backups are saved to the project's `BACKUP/` folder with timestamps:
 ```
-BACKUP/
-  test_2026-02-21_14-30-45.cyd
-  test_2026-02-21_15-22-10.cyd
+my_game/BACKUP/
+  my_game_2026-02-21_14-30-45.cyd
+  my_game_2026-02-21_15-22-10.cyd
   ...
 ```
 
 ### Output Files
 
-Depending on the target platform:
+Everything the build delivers goes to the project's output folder (`OUTPUT/` by
+default, `output` in `cyd_project.ini`), depending on the target platform:
 
-- **48k / 128k**: `{GAME}.TAP` (tape file)
+- **48k / 128k**: `{GAME}.tap` (tape file)
 - **plus3**: `{GAME}.DSK` (disk image)
+- **mld / mld128**: `{GAME}.MLD` (Dandanator Mini)
+- **esxdos**: the SD files (`{GAME}.tap`, `{GAME}.DAT`, `NNN.CSC`, `NNN.BIN`, and
+  `AUTOBOOT.BAS` + `ESXDOS.CFG` with `-autoboot`)
+
+The compiler cuts the name to 10 characters on tape and to 8 on the other
+targets. Intermediate files go to `OUTPUT/cyd_tmp/` (removed when the build ends
+well, kept if it fails or with `--keep-temp`), and the compressed images are
+cached in `OUTPUT/cyd_cache/`.
 
 ## GUI Builder (`make_adventure_gui`)
 
@@ -198,13 +241,24 @@ pip3 install tk
 ### Using the GUI
 
 1. **Launch** the GUI using the appropriate script
-2. **Configure** your adventure:
-   - Game name
-   - Target platform (48k/128k/+3)
-   - Loading screen
-   - Image compression settings
-3. **Compile** by clicking the build button
-4. **Test** your adventure with the integrated emulator launcher
+2. **Open a project** in the "Project" frame: **New…** makes one, **Open…** opens
+   the folder of a game, **Recent** lists the last ones (the GUI reopens the last
+   project when it starts). Without a project open it shows a welcome text and a
+   **How to migrate it** button, and Compile and Check are disabled.
+3. **Configure** your adventure:
+   - Main file and game name (empty: the main file's name)
+   - Target platform (48k/128k/+3/esxdos/mld/mld128)
+   - Configure → Paths: the project's paths (relative to its folder), loading
+     screen, INCLUDE / INCLUDE LIB / IMPORT folders
+   - Image compression and compiler settings
+4. **Compile** by clicking the build button
+5. **Test** your adventure with the integrated emulator launcher
+
+The project's settings are saved in its `cyd_project.ini` (only what isn't a
+default, keeping its comments). This computer's settings (SjASMPlus, emulator,
+appearance, recent projects) are saved in `cyd_gui_settings.ini` in CYD's folder.
+An old `cyd_gui_settings.json` is migrated once (and renamed `.json.old`); its
+game options are applied to the first project made with New….
 
 ## Platform-Specific Notes
 
@@ -291,8 +345,25 @@ python3 make_adventure.py --help
 You can add these to `CYDC_EXTRA_PARAMS` in the scripts:
 
 ```bash
-CYDC_EXTRA_PARAMS="--verbose --debug"
+CYDC_EXTRA_PARAMS="--verbose --debug-errors"
 ```
+
+Options given on the command line win over the project's `cyd_project.ini`, which
+wins over the defaults. For settings that belong to the game, prefer its key in
+`cyd_project.ini`.
+
+Direct usage:
+
+```bash
+python make_adventure.py [options] [TARGET] [PROJECT]   # in any order
+python make_adventure.py --new ../my_game 48k           # make a project and exit
+python make_adventure.py ../my_game                     # build it for its target
+python make_adventure.py 128k examples/test             # another target
+```
+
+Without `TARGET`, the project's. `--describe` prints the project's `ROOT=`,
+`MAIN=`, `NAME=`, `TARGET=`, `OUTPUT=` and `BACKUP=` (the make_adv scripts use it);
+`--sjasmplus PATH` uses another assembler (default: the bundled one).
 
 ### Automation
 
@@ -308,9 +379,8 @@ done
 
 **Batch processing multiple games:**
 ```bash
-for game in game1 game2 game3; do
-  sed -i "s/GAME=.*/GAME=\"$game\"/" make_adv.sh
-  ./make_adv.sh
+for game in ../game1 ../game2 ../game3; do
+  ./make_adv.sh "$game"
 done
 ```
 
@@ -333,9 +403,12 @@ cd external/sjasmplus
 make
 ```
 
-### "Source file not found"
+### "No project given" / main file not found
 
-Make sure your `.cyd` file exists and the `GAME` variable matches the filename.
+Give the project's folder (or its main `.cyd`) as an argument, or set the
+`PROJECT` variable in the script. If the folder has several `.cyd` files, say
+which is the main one with `main` (or `name`) in its `cyd_project.ini`. CYD's own
+folder can't be a project: put the game in its own folder.
 
 ### Emulator doesn't launch (Linux/Mac)
 
@@ -352,50 +425,51 @@ chmod +x make_adv.sh make_adventure_gui.sh
 
 ## Migration from Old Scripts
 
-The new scripts are **backward compatible**. Your existing configuration will work, but you gain:
+The scripts **no longer build a game in CYD's own folder**: every game is a
+project in its own folder (and upgrading CYD no longer means copying the game).
+To move a game from an older version (see the manual, section *Migrating a game
+from an older version* / *Migrar un juego de una versión anterior*):
 
-### New Features
+1. Make the project's folder, outside CYD's folder: `make_adventure.py --new
+   FOLDER`, *New…* in the GUI, or just a new folder.
+2. Copy the game's `.cyd` and the files it INCLUDEs, `IMAGES/`, `TRACKS/`,
+   `SFX.ASM`, `tokens.json`, `charset.json` and the loading screen.
+3. Change `INCLUDE "lib/x.cyd"` / `INCLUDE "../../lib/x.cyd"` to
+   `INCLUDE LIB "x.cyd"` (the compiler suggests it).
+4. Move what the make_adv script had to `cyd_project.ini`: `GAME` → `name` (or
+   `main`), `TARGET` → `target`, `IMGLINES` → `image_lines`, `LOAD_SCR` →
+   `load_scr`, each option of `CYDC_EXTRA_PARAMS` → its key in `[options]`.
+5. The GUI's settings migrate on their own.
+6. The compiled files are now in the project's `OUTPUT/`, and the backups in its
+   `BACKUP/`.
 
-1. ✨ **Better error messages** - Clear indication of what went wrong
-2. ✨ **Backup system** - Automatic source file backups with rotation
-3. ✨ **Improved emulator integration** - More options, better detection
-4. ✨ **Cross-platform consistency** - Same features everywhere
-5. ✨ **Enhanced documentation** - Inline comments and help text
-
-### Changes
-
-- **Windows**: ZEsarUX path updated to `tools\ZEsarUX_win-11.0\`
-- **Linux/Mac**: New `custom` emulator mode with configurable command
-- **All platforms**: Enhanced error checking and user feedback
-
-Old scripts are backed up as:
-- `make_adv_old.cmd` / `make_adv_old.sh`
-- `make_adventure_gui_old.cmd` / `make_adventure_gui_old.sh`
+Then build it with `make_adv.cmd FOLDER` (or drag the folder onto it),
+`./make_adv.sh FOLDER`, the GUI's *Open…*, or `make_adventure.py FOLDER`.
 
 ## Examples
 
 ### Example 1: Quick Compilation
 
-Compile a game called "mygame.cyd" for 128k:
+Compile a game in the folder `mygame` (with `mygame.cyd`) for 128k:
 
-**Edit make_adv script:**
-```bash
-GAME="mygame"
-TARGET="128k"
+**`mygame/cyd_project.ini`:**
+```ini
+[project]
+main = mygame.cyd
+target = 128k
 ```
 
 **Run:**
 ```bash
-./make_adv.sh  # or make_adv.cmd on Windows
+./make_adv.sh ../mygame  # or make_adv.cmd ..\mygame on Windows
 ```
 
 ### Example 2: With Backups and Emulator
 
-Enable backups and auto-launch:
+Build `../adventure` when no project is given, with backups and auto-launch:
 
 ```bash
-GAME="adventure"
-TARGET="48k"
+PROJECT="../adventure"
 BACKUP_CYD="yes"
 BACKUP_MAX_FILES=5
 RUN_EMULATOR="custom"
@@ -404,14 +478,13 @@ CUSTOM_EMULATOR_CMD="fuse ${OUTPUT_FILE}"
 
 ### Example 3: +3 Disk Image
 
-Create a +3 disk image:
+Create a +3 disk image of a project, whatever its target:
 
 ```bash
-GAME="diskgame"
-TARGET="plus3"
+./make_adv.sh ../diskgame plus3
 ```
 
-Output: `diskgame.DSK`
+Output: `../diskgame/OUTPUT/diskgame.DSK`
 
 ## Tips and Best Practices
 
@@ -419,7 +492,7 @@ Output: `diskgame.DSK`
 2. **Enable backups**: Useful safety net during development
 3. **Test on target**: Use emulators matching your target platform
 4. **Start with 48k**: Smaller, faster, easier to debug
-5. **Organize assets**: Keep screens in `IMAGES/`, music in `TRACKS/`
+5. **Organize assets**: Keep screens in the project's `IMAGES/`, music in its `TRACKS/`
 6. **Comment your code**: Use `/* comments */` in your `.cyd` files
 7. **Version your builds**: Include version numbers in game names
 

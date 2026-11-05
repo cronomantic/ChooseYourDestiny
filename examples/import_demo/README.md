@@ -11,11 +11,18 @@ register it with `IMPORT`, and run it with `CALL`.
 
 ## Build
 
-Compile it like any other example (from this directory), e.g. for 48K:
+Like every example, it is a project: its `cyd_project.ini` says the main file
+(`import_demo.cyd`) and the target (48K). Build it where it is, from CYD's
+folder:
 
 ```
-python ../../src/cydc/cydc/cydc.py 48k import_demo.cyd <path-to-sjasmplus> .
+make_adv.cmd examples\import_demo        (Windows; or drag the folder onto make_adv.cmd)
+./make_adv.sh examples/import_demo       (Linux, macOS)
+python make_adventure.py examples/import_demo
 ```
+
+or open its folder with *Open…* in the GUI. The `.tap` goes to
+`examples/import_demo/OUTPUT/`.
 
 The routine is assembled in isolation and placed automatically; you only write
 the body of `peek.asm` (no `ORG`, no directives).

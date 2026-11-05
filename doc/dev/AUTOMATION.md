@@ -354,10 +354,13 @@ python tools/build_example_taps.py            # todos los ejemplos
 python tools/build_example_taps.py sprites    # solo los indicados
 ```
 
-La fuente es el `test.cyd` de cada ejemplo, y el modelo 48K, salvo los que
-indican `SOURCES` y `MODELS` en el script. Usa `IMAGES/`, `TRACKS/`, `SFX.asm` y
-`tokens.json` cuando el ejemplo los tiene. Hay que ejecutarlo tras cambiar el
-intérprete o un ejemplo, y subir los `.tap` nuevos.
+Cada ejemplo es un proyecto: el script lee su `cyd_project.ini`, que dice el
+fichero principal y el target, y compila con las mismas opciones que le daría
+`make_adventure.py` (imágenes, pistas, efectos, pantalla de carga, abreviaturas…).
+El `.tap` se escribe junto al fichero principal, con su nombre
+(`test.cyd` → `test.tap`), no en `OUTPUT/`. Si el ejemplo no tiene
+`tokens.json`, no se crea: las abreviaturas se buscan cada vez. Hay que
+ejecutarlo tras cambiar el intérprete o un ejemplo, y subir los `.tap` nuevos.
 
 ---
 
@@ -469,7 +472,10 @@ python make_dist.py --skip-compile
 ```
 
 **`dist/` debe estar siempre al día con `src/`:** los scripts (`make_adv.*`,
-`make_adventure*.py`) ejecutan el compilador de `dist/cydc`. Tras cambiar algo en
+`make_adventure*.py`) ejecutan el compilador de `dist/cydc`; solo el `Makefile`
+de desarrollo (`make tape PROJECT=examples/test`, `disk`, `esxdos`, `mld`,
+`mld_music`, `rom`, `clean`) usa el de `src/`, con
+`make_adventure.py --compiler src/cydc/cydc/cydc.py`. Tras cambiar algo en
 `src/cydc`, ejecuta `python make_dist.py --sync-only` y sube también los cambios
 de `dist/`. Si falta, `tests/test_dist_sync.py` falla en la CI. La lista de
 ficheros sale de `src/cydc/cydc` (salvo traducciones, cachés y
@@ -488,10 +494,15 @@ ficheros sale de `src/cydc/cydc` (salvo traducciones, cachés y
 - Código fuente del compilador (`dist/cydc/`)
 - Scripts de construcción (`make_adv.*`, `make_adventure_gui.*`)
 - Herramientas (`sjasmplus`, `csc`)
-- Ejemplos (`examples/`)
+- Ejemplos (`examples/`, cada uno un proyecto con su `cyd_project.ini`)
+- Librerías CYD (`lib/`)
 - Documentación PDF (`documentation/`)
 - Archivos de traducción (`locale/`)
-- Assets (`assets/`, `IMAGES/`, `TRACKS/`)
+- Assets (`assets/`)
+
+La distribución no lleva un juego en la carpeta de CYD (ya no hay `test.cyd`,
+`tokens.json`, `IMAGES/readme.txt` ni `TRACKS/readme.txt` en la raíz): cada juego
+es un proyecto en su propia carpeta.
 
 **Nombre del ZIP generado:**
 ```

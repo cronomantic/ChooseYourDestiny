@@ -26,8 +26,14 @@ es el escenario y `IMAGES/001.scr` la hoja de sprites.
 
 ## Compilar
 
+Como `examples/sprites`, es un proyecto (`test.cyd`, 48K en su
+`cyd_project.ini`) y se compila donde está, desde la carpeta de CYD:
+
 ```
-make_adv 48k examples/sprites_px/test.cyd
+make_adv.cmd examples\sprites_px     (Windows; o arrastra la carpeta sobre make_adv.cmd)
+./make_adv.sh examples/sprites_px    (Linux, macOS)
 ```
 
-Funciona igual en 128K y +3.
+o con *Abrir…* en la GUI. Lo compilado queda en `examples/sprites_px/OUTPUT/`.
+
+Funciona igual en 128K y +3 (`make_adv.cmd examples\sprites_px 128k`, o `plus3`).

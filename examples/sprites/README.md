@@ -32,11 +32,18 @@ ejecutarlo (`python make_images.py`).
 
 ## Compilar
 
+El ejemplo es un proyecto (su `cyd_project.ini` dice el fichero principal,
+`test.cyd`, y el target, 48K) y se compila donde está, desde la carpeta de CYD:
+
 ```
-make_adv 48k examples/sprites/test.cyd
+make_adv.cmd examples\sprites        (Windows; o arrastra la carpeta sobre make_adv.cmd)
+./make_adv.sh examples/sprites       (Linux, macOS)
 ```
 
-Funciona igual en 128K y +3; ahí la librería va en un banco paginado.
+o con *Abrir…* en la GUI. Lo compilado queda en `examples/sprites/OUTPUT/`.
+
+Funciona igual en 128K y +3 (`make_adv.cmd examples\sprites 128k`, o `plus3`);
+ahí la librería va en un banco paginado.
 
 En [`examples/sprites_px`](../sprites_px/README.md) está el mismo ejemplo con el
 personaje caminando píxel a píxel, con `lib/sprites_px.cyd`.

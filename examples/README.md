@@ -1,18 +1,30 @@
 # ChooseYourDestiny — Examples
 
 This directory contains sample adventures and technical demos for the CYD engine.
-Each example is a folder with a `test.cyd` source (plus any assets it needs).
+Each example is a **project**: a folder with its main `.cyd` file, the assets it
+needs and a `cyd_project.ini` that says which is the main file and the target.
+The main file is `test.cyd`, except in `Delerict` (`delerict.cyd`),
+`import_demo` (`import_demo.cyd`) and `include_demo` (`main.cyd`); the target is
+48K, except in `test` and `Delerict` (128K).
 
 Every example also ships its compiled `.tap`, so you can load it straight into
-an emulator to see it running. To build one yourself, point the compiler at its
-`test.cyd` (see the manual, section *Workflow* / *Flujo de trabajo*), for example:
+an emulator to see it running. To build one yourself, build it where it is, from
+CYD's folder:
 
-```
-make_adv 48k examples/test/test.cyd
-```
+- **Windows:** `make_adv.cmd examples\test`, or drag the example's folder onto
+  `make_adv.cmd`.
+- **Linux/macOS:** `./make_adv.sh examples/test`
+- **GUI:** open the example's folder with *Open…* and compile it.
+- **Command line:** `python make_adventure.py examples/test` (on Windows,
+  `dist\python\python make_adventure.py examples\test`).
 
-In the repository, `python tools/build_example_taps.py` regenerates the tapes of
-every example with the current compiler.
+A target given after the folder (`make_adv.cmd examples\test 48k`) is used
+instead of the project's. The build writes its files to the example's `OUTPUT/`
+folder (and creates its `tokens.json` if it has none).
+
+In the repository, `python tools/build_example_taps.py` regenerates the shipped
+tape of every example with the current compiler, reading each one's
+`cyd_project.ini`.
 
 ## Basic
 
