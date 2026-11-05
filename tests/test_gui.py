@@ -16,7 +16,9 @@
   one.
 """
 
+import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -24,6 +26,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -206,6 +209,20 @@ class TestRunInZesarux(unittest.TestCase):
                     proc.wait()
 
 
+def make_app(test, root, old_settings=None):
+    """The main window, with a temporary folder as CYD's: it reads and
+    writes its settings there, not in the repository. old_settings: the
+    cyd_gui_settings.json of an earlier version to find there."""
+    cyd = os.path.realpath(tempfile.mkdtemp())
+    test.addCleanup(shutil.rmtree, cyd, True)
+    if old_settings is not None:
+        with open(os.path.join(cyd, "cyd_gui_settings.json"), "w", encoding="utf-8") as f:
+            json.dump(old_settings, f)
+    real = gui.resolve_paths()
+    with mock.patch.object(gui, "resolve_paths", lambda: {**real, "curr_path": cyd}):
+        return gui.MakeAdventureGUI(root)
+
+
 def _display():
     if gui is None:
         return False
@@ -221,7 +238,7 @@ class TestLanguageChange(unittest.TestCase):
     def test_rebuilds_the_window_and_keeps_the_log(self):
         root = tk.Tk()
         try:
-            app = gui.MakeAdventureGUI(root)
+            app = make_app(self, root)
             app._log("hello\nERROR [PARSER]: bad")
             root.update()
             app.lang_var.set("es" if app.current_language != "es" else "en")
@@ -229,7 +246,7 @@ class TestLanguageChange(unittest.TestCase):
             root.update()
             self.assertIn("hello", app.log.get("1.0", "end"))
             self.assertIn("ERROR [PARSER]", app.log.get(*app.log.tag_ranges("error")))
-            self.assertEqual(str(app.btn_compile["state"]), "normal")
+            self.assertEqual(str(app.btn_compile["state"]), "disabled")  # no project yet
         finally:
             root.destroy()
             gui.set_language("en")  # it is global: don't leave it changed
@@ -240,7 +257,7 @@ class TestMainWindow(unittest.TestCase):
     def setUp(self):
         gui.set_language("en")  # the messages below are checked in English
         self.root = tk.Tk()
-        self.app = gui.MakeAdventureGUI(self.root)
+        self.app = make_app(self, self.root)
         self.root.update()
 
     def tearDown(self):
@@ -300,6 +317,125 @@ class TestMainWindow(unittest.TestCase):
             self.assertNotIn("PUSH_VAL_ARRAY", log)  # nothing of the interpreter
             viewers = [w for w in self.root.winfo_children() if isinstance(w, gui.SourceViewer)]
             self.assertEqual(len(viewers), 1)
+
+
+@unittest.skipUnless(_display(), "no display for tkinter")
+class TestProjects(unittest.TestCase):
+    """The window works on a project: a folder with its cyd_project.ini."""
+
+    def setUp(self):
+        gui.set_language("en")
+        self.root = tk.Tk()
+        self.addCleanup(self.root.destroy)
+        self.dir = Path(os.path.realpath(tempfile.mkdtemp()))
+        self.addCleanup(shutil.rmtree, self.dir, True)
+
+    def project(self, ini):
+        folder = self.dir / "juego"
+        folder.mkdir()
+        (folder / "juego.cyd").write_text("Hola[[ WAITKEY ]]", encoding="utf-8")
+        (folder / "cyd_project.ini").write_text(ini, encoding="utf-8")
+        return folder
+
+    def test_without_a_project_it_welcomes(self):
+        app = make_app(self, self.root)
+        self.root.update()
+        self.assertIsNone(app.project)
+        self.assertTrue(app.welcome.winfo_ismapped())
+        self.assertEqual(str(app.btn_compile["state"]), "disabled")
+        self.assertEqual(str(app.btn_check["state"]), "disabled")
+
+    def test_opening_a_project_reads_its_settings(self):
+        folder = self.project("[project]\ntarget = plus3\n[options]\nimage_lines = 96\n")
+        app = make_app(self, self.root)
+        self.assertTrue(app._open_project(str(folder)))
+        self.root.update()
+        self.assertEqual(app.var_target.get(), "plus3")
+        self.assertEqual(app.var_image_lines.get(), 96)
+        self.assertEqual(app.var_output_path.get(), "OUTPUT")
+        self.assertEqual(app._game_name(), "juego")
+        self.assertEqual(app._output_dir(), str(folder / "OUTPUT"))
+        self.assertFalse(app.welcome.winfo_ismapped())
+        self.assertEqual(str(app.btn_compile["state"]), "normal")
+        self.assertEqual(app.recent_projects[0], str(folder))
+
+    def test_saving_keeps_comments_and_writes_what_changed(self):
+        folder = self.project("; mi juego\n[project]\ntarget = 48k\n")
+        app = make_app(self, self.root)
+        app._open_project(str(folder))
+        app.var_dead_code_elimination.set(True)
+        app.var_target.set("128k")
+        app._save_project()
+        text = (folder / "cyd_project.ini").read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("; mi juego\n[project]\ntarget = 128k\n"), text)
+        self.assertIn("dead_code_elimination = yes", text)
+        self.assertNotIn("image_lines", text)  # still the default
+
+    def test_compiles_the_project(self):
+        app = make_app(self, self.root)
+        if not os.path.isfile(app.var_sjasmplus.get()):
+            self.skipTest("sjasmplus not available")
+        with mock.patch.object(gui.filedialog, "askdirectory", lambda **_k: str(self.dir / "nuevo")):
+            app._on_new_project()
+        app.var_target.set("48k")
+        app._on_compile()
+        # The compiling thread writes to the window through Tk: wait in the
+        # main loop, as the application does.
+        deadline = time.time() + 180
+
+        def wait():
+            if app.compiling and time.time() < deadline:
+                self.root.after(100, wait)
+            else:
+                self.root.quit()
+
+        self.root.after(100, wait)
+        self.root.mainloop()
+        self.root.update()
+        log = app.log.get("1.0", "end")
+        self.assertIn("Compilation finished successfully!", log)
+        self.assertTrue((self.dir / "nuevo" / "OUTPUT" / "nuevo.tap").is_file(), log)
+        self.assertEqual(str(app.btn_run["state"]), "normal")
+        # The settings went to the project.
+        self.assertIn("target = 48k", (self.dir / "nuevo" / "cyd_project.ini").read_text())
+
+    def test_cyd_folder_is_not_a_project(self):
+        app = make_app(self, self.root)
+        self.assertFalse(app._open_project(app.paths["curr_path"], quiet=True))
+        self.assertIsNone(app.project)
+
+    def test_last_project_is_opened_again(self):
+        folder = self.project("[project]\ntarget = 48k\n")
+        app = make_app(self, self.root)
+        app._open_project(str(folder))
+        app._save_settings()
+        cyd = app.paths["curr_path"]
+        real = gui.resolve_paths()
+        with mock.patch.object(gui, "resolve_paths", lambda: {**real, "curr_path": cyd}):
+            again = gui.MakeAdventureGUI(tk.Toplevel(self.root))
+        self.assertEqual(again.project.root, str(folder))
+
+    def test_old_settings_are_moved(self):
+        old = {"_version": 2, "game_name": "test", "target": "plus3",
+               "output_path": "C:\\CYD", "image_lines": 96, "dead_code_elimination": True,
+               "verbose": True, "log_font_size": 11, "backup_cyd": True}
+        app = make_app(self, self.root, old_settings=old)
+        cyd = app.paths["curr_path"]
+        self.assertTrue(os.path.isfile(os.path.join(cyd, "cyd_gui_settings.ini")))
+        self.assertFalse(os.path.isfile(os.path.join(cyd, "cyd_gui_settings.json")))
+        self.assertTrue(os.path.isfile(os.path.join(cyd, "cyd_gui_settings.json.old")))
+        self.assertTrue(app.var_verbose.get())
+        self.assertEqual(app.var_log_font_size.get(), 11)
+        # The game's options go to the first new project (not its paths).
+        with mock.patch.object(gui.filedialog, "askdirectory", lambda **_k: str(self.dir / "nuevo")):
+            app._on_new_project()
+        values = gui.cyd_project.load(str(self.dir / "nuevo")).values
+        self.assertEqual(values["target"], "plus3")
+        self.assertEqual(values["image_lines"], "96")
+        self.assertEqual(values["dead_code_elimination"], "yes")
+        self.assertEqual(values["backup"], "yes")
+        self.assertEqual(values["output"], "OUTPUT")
+        self.assertIsNone(app._old_project)  # only for the first one
 
 
 if __name__ == "__main__":

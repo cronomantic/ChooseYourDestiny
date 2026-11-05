@@ -227,11 +227,13 @@ _KEY_LINE = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*[=:]\s*)(.*?)(\s*)$")
 _SECTION_LINE = re.compile(r"^\s*\[([^\]]+)\]\s*$")
 
 
-def update_ini_text(text, values):
+def update_ini_text(text, values, section_of=None, default_section="options"):
     """text with values set: each key changed on its own line, so comments,
     order and unknown keys stay (configparser.write() would lose the
-    comments); a key that isn't there is added at the end of its section,
-    and a missing section at the end."""
+    comments); a key that isn't there is added at the end of its section
+    (section_of[key], by default a project's), and a missing section at the
+    end."""
+    section_of = SECTION_OF if section_of is None else section_of
     newline = "\r\n" if "\r\n" in text else "\n"
     lines = text.splitlines()
     pending = {k: str(v) for k, v in values.items()}
@@ -256,7 +258,7 @@ def update_ini_text(text, values):
     # keys still pending: at the end of their section (or a new one)
     by_section = {}
     for key, value in pending.items():
-        by_section.setdefault(SECTION_OF.get(key, "options"), []).append(f"{key} = {value}")
+        by_section.setdefault(section_of.get(key, default_section), []).append(f"{key} = {value}")
     for sec in [s for s in SCHEMA if s in by_section] + [s for s in by_section if s not in SCHEMA]:
         new_lines = by_section[sec]
         if sec in section_end:

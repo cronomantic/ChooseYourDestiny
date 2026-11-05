@@ -83,9 +83,11 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext, colorchooser
 # Import i18n from dist/cydc or src/cydc/cydc depending on location
 try:
     from cydc.cyd_i18n import setup_i18n, get_available_languages, set_language, get_language, _
+    from cydc import cyd_project
 except ImportError:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'dist'))
     from cydc.cyd_i18n import setup_i18n, get_available_languages, set_language, get_language, _
+    from cydc import cyd_project
 
 
 # ── Internationalisation ──────────────────────────────────────────────────────
@@ -94,7 +96,7 @@ setup_i18n("make_adventure_gui", locale_dir=_LOCALE_DIR)
 
 
 # ── Version ────────────────────────────────────────────────────────────────────
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 PROGRAM_TITLE = f"Choose Your Destiny GUI {VERSION}"
 
 # Logo file to use in the header (relative to the project root).
@@ -111,67 +113,45 @@ LOGO_CANDIDATES = [
 # Maximum logo height in pixels for the header
 LOGO_MAX_HEIGHT = 80
 
-# Settings file name (saved next to the script)
-SETTINGS_FILE = "cyd_gui_settings.json"
+# The GUI's own settings, for this computer (in CYD's folder). A project's
+# settings are in the project's cyd_project.ini.
+SETTINGS_FILE = "cyd_gui_settings.ini"
+# The settings of earlier versions, read once and renamed to .json.old.
+OLD_SETTINGS_FILE = "cyd_gui_settings.json"
+# How many recent projects are remembered.
+MAX_RECENT = 8
 
-# Current settings format version – bump when adding/removing keys
-SETTINGS_VERSION = 2
-
-
-# ── Settings persistence ──────────────────────────────────────────────────────
-
-def _settings_path(curr_path):
-    """Return the full path to the settings JSON file."""
-    return os.path.join(curr_path, SETTINGS_FILE)
-
-
-def load_settings(curr_path):
-    """Load settings from the JSON file.  Returns a dict or None."""
-    path = _settings_path(curr_path)
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if not isinstance(data, dict):
-            return None
-        return data
-    except (json.JSONDecodeError, OSError):
-        return None
-
-
-def save_settings(curr_path, data):
-    """Save the settings dict to the JSON file."""
-    path = _settings_path(curr_path)
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    except OSError:
-        pass  # Non‑critical – fail silently
-
-
-# Keys used for serialisation.  The order here defines the JSON layout.
-# Each entry: (json_key, attribute_name, type)
-#   type is "str", "int", "bool"
-_SETTINGS_KEYS = [
-    # Project
-    ("game_name",          "var_game_name",          "str"),
-    ("target",             "var_target",             "str"),
-    # Paths
-    ("output_path",        "var_output_path",        "str"),
-    ("images_path",        "var_images_path",        "str"),
-    ("tracks_path",        "var_tracks_path",        "str"),
-    ("sfx_file",           "var_sfx_file",           "str"),
-    ("load_scr",           "var_load_scr",           "str"),
-    ("tokens_file",        "var_tokens_file",        "str"),
-    ("charset_file",       "var_charset_file",       "str"),
+# The GUI's settings: (key, attribute, type), all in its [gui] section.
+_GLOBAL_KEYS = [
     ("sjasmplus",          "var_sjasmplus",          "str"),
-    # Compiler
+    ("run_emulator",       "var_run_emulator",       "str"),
+    ("verbose",            "var_verbose",            "bool"),
+    ("app_font_size",      "var_app_font_size",      "int"),
+    ("log_font_family",    "var_log_font_family",    "str"),
+    ("log_font_size",      "var_log_font_size",      "int"),
+    ("log_fg_color",       "var_log_fg_color",       "str"),
+    ("log_bg_color",       "var_log_bg_color",       "str"),
+]
+
+# A project's settings (cyd_project.ini keys): (key, attribute, type).
+_PROJECT_KEYS = [
+    ("name",               "var_game_name",          "str"),
+    ("main",               "var_main",               "str"),
+    ("target",             "var_target",             "str"),
+    ("output",             "var_output_path",        "str"),
+    ("images",             "var_images_path",        "str"),
+    ("tracks",             "var_tracks_path",        "str"),
+    ("sfx",                "var_sfx_file",           "str"),
+    ("load_scr",           "var_load_scr",           "str"),
+    ("tokens",             "var_tokens_file",        "str"),
+    ("charset",            "var_charset_file",       "str"),
+    ("include_paths",      "var_include_paths",      "str"),
+    ("lib_paths",          "var_lib_paths",          "str"),
+    ("import_paths",       "var_import_paths",       "str"),
     ("image_lines",        "var_image_lines",        "int"),
     ("min_length",         "var_min_length",         "int"),
     ("max_length",         "var_max_length",         "int"),
     ("superset_limit",     "var_superset_limit",     "int"),
-    ("verbose",            "var_verbose",            "bool"),
     ("slice_texts",        "var_slice_texts",        "bool"),
     ("trim_interpreter",   "var_trim_interpreter",   "bool"),
     ("dead_code_elimination", "var_dead_code_elimination", "bool"),
@@ -188,44 +168,116 @@ _SETTINGS_KEYS = [
     ("debug_stack",        "var_debug_stack",        "bool"),
     ("debug_errors",       "var_debug_errors",       "bool"),
     ("pause_after_load",   "var_pause_after_load",   "str"),
-    # Post-build
-    ("run_emulator",       "var_run_emulator",       "str"),
-    ("backup_cyd",         "var_backup_cyd",         "bool"),
-    # Appearance
-    ("app_font_size",      "var_app_font_size",      "int"),
-    ("log_font_family",    "var_log_font_family",    "str"),
-    ("log_font_size",      "var_log_font_size",      "int"),
-    ("log_fg_color",       "var_log_fg_color",       "str"),
-    ("log_bg_color",       "var_log_bg_color",       "str"),
+    ("keep_temp",          "var_keep_temp",          "bool"),
+    ("backup",             "var_backup_cyd",         "bool"),
 ]
 
+# Keys of the old JSON settings that were the game's: kept for the first
+# project made with New (its paths were CYD's own folder's, so they aren't).
+_OLD_PROJECT_KEYS = {
+    "target": "target", "image_lines": "image_lines", "min_length": "min_length",
+    "max_length": "max_length", "superset_limit": "superset_limit",
+    "slice_texts": "slice_texts", "trim_interpreter": "trim_interpreter",
+    "dead_code_elimination": "dead_code_elimination", "show_bytecode": "show_bytecode",
+    "no_strict_colons": "no_strict_colons", "use_wyz": "use_wyz", "disk_720": "disk_720",
+    "autoboot": "autoboot", "max_errors": "max_errors", "token_format": "token_format",
+    "warn_unused": "warn_unused", "warn_gosub": "warn_gosub",
+    "warn_shared_vars": "warn_shared_vars", "debug_stack": "debug_stack",
+    "debug_errors": "debug_errors", "pause_after_load": "pause_after_load",
+    "backup_cyd": "backup",
+}
 
-def _collect_settings(app):
-    """Read all tk variables into a plain dict for JSON serialisation."""
-    data = {"_version": SETTINGS_VERSION}
-    for json_key, attr_name, _ in _SETTINGS_KEYS:
+
+# ── Settings persistence ──────────────────────────────────────────────────────
+
+def _settings_path(curr_path):
+    """Return the full path to the GUI's settings file."""
+    return os.path.join(curr_path, SETTINGS_FILE)
+
+
+def _ini_value(value):
+    if isinstance(value, bool):
+        return cyd_project.from_bool(value)
+    return str(value)
+
+
+def load_settings(curr_path):
+    """The GUI's settings: {key: value as text}, or None if there are none.
+    The JSON settings of earlier versions are moved to the new file once:
+    {"_old_project": {...}} then also holds the ones that were the game's."""
+    path = _settings_path(curr_path)
+    old = os.path.join(curr_path, OLD_SETTINGS_FILE)
+    if not os.path.isfile(path) and os.path.isfile(old):
+        try:
+            with open(old, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            data = None
+        if isinstance(data, dict):
+            settings = {k: _ini_value(data[k]) for k, _a, _t in _GLOBAL_KEYS if k in data}
+            project = {new: _ini_value(data[k]) for k, new in _OLD_PROJECT_KEYS.items() if k in data}
+            settings["old_project"] = json.dumps(project)
+            save_settings(curr_path, settings)
+            try:
+                os.replace(old, old + ".old")
+            except OSError:
+                pass
+    if not os.path.isfile(path):
+        return None
+    try:
+        parser = cyd_project.configparser.ConfigParser(interpolation=None)
+        parser.optionxform = str
+        with open(path, encoding="utf-8") as f:
+            parser.read_file(f)
+        return dict(parser.items("gui")) if parser.has_section("gui") else {}
+    except (cyd_project.configparser.Error, OSError):
+        return None
+
+
+def save_settings(curr_path, data):
+    """Set the GUI's settings (a dict) in its file, keeping its comments."""
+    path = _settings_path(curr_path)
+    try:
+        text = ""
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", newline="") as f:
+                text = f.read()
+        else:
+            text = "; Choose Your Destiny GUI settings for this computer.\n[gui]\n"
+        values = {k: _ini_value(v) for k, v in data.items()}
+        text = cyd_project.update_ini_text(text, values, section_of={}, default_section="gui")
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+    except OSError:
+        pass  # Non‑critical – fail silently
+
+
+def _get_vars(app, keys):
+    """{key: value} of the tk variables of keys."""
+    data = {}
+    for key, attr_name, _ in keys:
         var = getattr(app, attr_name, None)
         if var is not None:
-            data[json_key] = var.get()
+            data[key] = var.get()
     return data
 
 
-def _apply_settings(app, data):
-    """Write values from a loaded dict into the tk variables."""
+def _set_vars(app, keys, data):
+    """Write values from data (text or values) into the tk variables."""
     if not isinstance(data, dict):
         return
-    for json_key, attr_name, typ in _SETTINGS_KEYS:
-        if json_key not in data:
+    for key, attr_name, typ in keys:
+        if key not in data:
             continue
         var = getattr(app, attr_name, None)
         if var is None:
             continue
-        value = data[json_key]
+        value = data[key]
         try:
             if typ == "int":
                 var.set(int(value))
             elif typ == "bool":
-                var.set(bool(value))
+                var.set(value if isinstance(value, bool) else cyd_project.to_bool(value))
             else:
                 var.set(str(value))
         except (ValueError, tk.TclError):
@@ -249,7 +301,7 @@ def _child_env(language=None):
     return env
 
 
-def stream_exec(exec_path, parameter_list, on_line, language=None):
+def stream_exec(exec_path, parameter_list, on_line, language=None, cwd=None):
     """Run an external executable, passing each line it prints (stdout and
     stderr) to on_line as it comes. Returns the exit code."""
     command_line = [os.path.abspath(exec_path)] + list(parameter_list)
@@ -262,6 +314,7 @@ def stream_exec(exec_path, parameter_list, on_line, language=None):
             encoding="utf-8",
             errors="replace",
             env=_child_env(language),
+            cwd=cwd,
         )
     except Exception as exc:
         raise OSError(str(exc)) from exc
@@ -381,16 +434,20 @@ def find_compiled_file(model, game_name, output_path):
 
 def find_source(name, root):
     """A script file named in a compiler message: name as given (from root) or
-    else the first file with that name under root. None if there is none."""
-    direct = os.path.normpath(os.path.join(root, name))
-    if os.path.isfile(direct):
-        return direct
+    else the first file with that name under root. None if there is none.
+    root can be a list of folders, looked in in order."""
+    roots = [root] if isinstance(root, str) else list(root)
+    for r in roots:
+        direct = os.path.normpath(os.path.join(r, name))
+        if os.path.isfile(direct):
+            return direct
     base = os.path.basename(name).lower()
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in ("dist", "external", ".git"))
-        for f in sorted(filenames):
-            if f.lower() == base:
-                return os.path.join(dirpath, f)
+    for r in roots:
+        for dirpath, dirnames, filenames in os.walk(r):
+            dirnames[:] = sorted(d for d in dirnames if d not in ("dist", "external", ".git"))
+            for f in sorted(filenames):
+                if f.lower() == base:
+                    return os.path.join(dirpath, f)
     return None
 
 
@@ -662,7 +719,8 @@ class SettingsDialog(tk.Toplevel):
 
     def _build_paths_tab(self, parent):
         pad = {"padx": 6, "pady": 3}
-        frame = ttk.LabelFrame(parent, text=_("File & Directory Paths"))
+        frame = ttk.LabelFrame(
+            parent, text=_("Project paths (relative to the project's folder)"))
         frame.pack(fill=tk.BOTH, expand=True, **pad)
         frame.columnconfigure(1, weight=1)
 
@@ -674,7 +732,9 @@ class SettingsDialog(tk.Toplevel):
             (_("Loading screen (.scr):"), self.app.var_load_scr, "file"),
             (_("Tokens file:"), self.app.var_tokens_file, "file"),
             (_("Charset file:"), self.app.var_charset_file, "file"),
-            (_("SjASMPlus executable:"), self.app.var_sjasmplus, "file"),
+            (_("INCLUDE folders:"), self.app.var_include_paths, "dirs"),
+            (_("INCLUDE LIB folders:"), self.app.var_lib_paths, "dirs"),
+            (_("IMPORT folders:"), self.app.var_import_paths, "dirs"),
         ]
 
         for i, (label, var, kind) in enumerate(path_rows):
@@ -683,11 +743,26 @@ class SettingsDialog(tk.Toplevel):
             entry.grid(row=i, column=1, sticky=tk.EW, **pad)
             if kind == "dir":
                 cmd = lambda v=var: self._browse_dir(v)
+                text = _("Browse…")
+            elif kind == "dirs":
+                cmd = lambda v=var: self._add_dir(v)
+                text = _("Add…")
+                Tooltip(entry, _("Folders separated by ';', where the compiler also "
+                                 "looks for the files (see the manual, INCLUDE)."))
             else:
                 cmd = lambda v=var: self._browse_file(v)
-            ttk.Button(frame, text=_("Browse…"), command=cmd).grid(
-                row=i, column=2, **pad
-            )
+                text = _("Browse…")
+            ttk.Button(frame, text=text, command=cmd).grid(row=i, column=2, **pad)
+
+        tools = ttk.LabelFrame(parent, text=_("This computer"))
+        tools.pack(fill=tk.X, **pad)
+        tools.columnconfigure(1, weight=1)
+        ttk.Label(tools, text=_("SjASMPlus executable:")).grid(row=0, column=0, sticky=tk.W, **pad)
+        ttk.Entry(tools, textvariable=self.app.var_sjasmplus).grid(
+            row=0, column=1, sticky=tk.EW, **pad)
+        ttk.Button(tools, text=_("Browse…"),
+                   command=lambda: self._browse_file(self.app.var_sjasmplus, False)).grid(
+            row=0, column=2, **pad)
 
     # ── Compiler tab ───────────────────────────────────────────────────────
 
@@ -798,6 +873,10 @@ class SettingsDialog(tk.Toplevel):
                    "next to the game turns that into a file and a line: use "
                    "'Game error' in the main window. Leave it out of the final "
                    "version.")),
+                ("Keep the intermediate files", app.var_keep_temp,
+                 _("Keep cyd.asm, cyd.sym and the listing in the cyd_tmp folder of "
+                   "the output folder (without it they are removed when the build "
+                   "ends well).")),
                 ("Show generated bytecode", app.var_show_bytecode,
                  _("Show the generated bytecode in the log.")),
                 ("Verbose output", app.var_verbose,
@@ -879,7 +958,7 @@ class SettingsDialog(tk.Toplevel):
         bkp_frame.pack(fill=tk.X, **pad)
         ttk.Checkbutton(
             bkp_frame,
-            text=_("Backup .cyd file after successful compilation (to ./BACKUP/)"),
+            text=_("Backup the main .cyd file after successful compilation (to the project's BACKUP folder)"),
             variable=self.app.var_backup_cyd,
         ).pack(anchor=tk.W, **pad)
 
@@ -1016,40 +1095,47 @@ class SettingsDialog(tk.Toplevel):
 
     # ── Browse helpers ─────────────────────────────────────────────────────────
 
-    def _browse_dir(self, var):
-        path = filedialog.askdirectory(
-            parent=self,
-            initialdir=var.get() or self.app.paths["curr_path"],
-        )
-        if path:
-            var.set(path)
+    def _start_dir(self, value):
+        path = self.app._abs(value) if value else ""
+        if path and not os.path.isdir(path):
+            path = os.path.dirname(path)
+        if path and os.path.isdir(path):
+            return path
+        return self.app.project.root if self.app.project else self.app.paths["curr_path"]
 
-    def _browse_file(self, var):
-        path = filedialog.askopenfilename(
-            parent=self,
-            initialdir=os.path.dirname(var.get()) or self.app.paths["curr_path"],
-        )
+    def _browse_dir(self, var):
+        path = filedialog.askdirectory(parent=self, initialdir=self._start_dir(var.get()))
         if path:
-            var.set(path)
+            var.set(self.app._relative(path))
+
+    def _add_dir(self, var):
+        """Add a folder to a list of folders ("a;b")."""
+        path = filedialog.askdirectory(parent=self, initialdir=self._start_dir(""))
+        if path:
+            folders = [f for f in var.get().split(";") if f.strip()]
+            folders.append(self.app._relative(path))
+            var.set(";".join(folders))
+
+    def _browse_file(self, var, relative=True):
+        path = filedialog.askopenfilename(parent=self, initialdir=self._start_dir(var.get()))
+        if path:
+            var.set(self.app._relative(path) if relative else path)
 
     # ── Reset to defaults ──────────────────────────────────────────────────
 
     def _reset_defaults(self):
-        """Reset all settings to their default values."""
+        """Reset all settings to their default values (the project's file and
+        the GUI's are written with them when saved)."""
         if not messagebox.askyesno(
             _("Reset to Defaults"),
             _("Are you sure you want to reset all settings to their default values?"),
             parent=self,
         ):
             return
+        main, name = self.app.var_main.get(), self.app.var_game_name.get()
         self.app._set_defaults()
-        # Also delete the saved settings file
-        path = _settings_path(self.app.paths["curr_path"])
-        if os.path.isfile(path):
-            try:
-                os.remove(path)
-            except OSError:
-                pass
+        self.app.var_main.set(main)  # the project's own, not settings
+        self.app.var_game_name.set(name)
 
 
 # ── Main Application ──────────────────────────────────────────────────────────
@@ -1073,7 +1159,12 @@ class MakeAdventureGUI:
 
         # ── Create tk variables ────────────────────────────────────────────
         self.var_game_name = tk.StringVar()
+        self.var_main = tk.StringVar()
         self.var_target = tk.StringVar()
+        self.var_include_paths = tk.StringVar()
+        self.var_lib_paths = tk.StringVar()
+        self.var_import_paths = tk.StringVar()
+        self.var_keep_temp = tk.BooleanVar()
         self.var_image_lines = tk.IntVar()
         self.var_output_path = tk.StringVar()
         self.var_images_path = tk.StringVar()
@@ -1112,6 +1203,12 @@ class MakeAdventureGUI:
         self.var_log_fg_color = tk.StringVar()
         self.var_log_bg_color = tk.StringVar()
 
+        # The open project (a cyd_project.Project), the recent ones and the
+        # old settings' game options, for the first new project.
+        self.project = None
+        self.recent_projects = []
+        self._old_project = None
+
         # Set defaults first, then override with saved settings
         self._set_defaults()
         self._load_settings()
@@ -1119,8 +1216,11 @@ class MakeAdventureGUI:
         self._build_ui()
         self._apply_appearance()
         self._set_window_icon()
-        for var in (self.var_target, self.var_game_name, self.var_output_path):
+        for var in (self.var_target, self.var_game_name, self.var_main, self.var_output_path):
             var.trace_add("write", lambda *_a: self._update_run_button())
+        # The last project, if it is still there.
+        if self._last_project and os.path.isdir(self._last_project):
+            self._open_project(self._last_project, quiet=True)
         
         # Hide console window on Windows after successful GUI initialization
         hide_console_window()
@@ -1131,41 +1231,12 @@ class MakeAdventureGUI:
     # ── Defaults ───────────────────────────────────────────────────────────
 
     def _set_defaults(self):
-        """Set all variables to their default values."""
-        curr = self.paths["curr_path"]
-        self.var_game_name.set("test")
-        self.var_target.set("128k")
-        self.var_image_lines.set(192)
-        self.var_output_path.set(curr)
-        self.var_images_path.set(os.path.join(curr, "IMAGES"))
-        self.var_tracks_path.set(os.path.join(curr, "TRACKS"))
-        self.var_sfx_file.set(os.path.join(curr, "SFX.ASM"))
-        self.var_load_scr.set(os.path.join(curr, "IMAGES", "LOAD.scr"))
-        self.var_tokens_file.set(os.path.join(curr, "tokens.json"))
-        self.var_charset_file.set(os.path.join(curr, "charset.json"))
+        """Set all variables to their default values: a project's (as
+        cyd_project.ini writes them) and the GUI's."""
+        self._set_project_defaults()
         self.var_sjasmplus.set(self.paths["sjasmplus_path"])
-        self.var_min_length.set(3)
-        self.var_max_length.set(30)
-        self.var_superset_limit.set(100)
         self.var_verbose.set(False)
-        self.var_slice_texts.set(False)
-        self.var_trim_interpreter.set(False)
-        self.var_dead_code_elimination.set(False)
-        self.var_show_bytecode.set(False)
-        self.var_no_strict_colons.set(False)
-        self.var_use_wyz.set(False)
-        self.var_disk_720.set(False)
-        self.var_autoboot.set(False)
-        self.var_max_errors.set(20)
-        self.var_token_format.set("auto")
-        self.var_warn_unused.set(True)
-        self.var_warn_gosub.set(True)
-        self.var_warn_shared_vars.set(True)
-        self.var_debug_stack.set(False)
-        self.var_debug_errors.set(False)
-        self.var_pause_after_load.set("")
         self.var_run_emulator.set("none")
-        self.var_backup_cyd.set(False)
         # Appearance defaults
         self.var_app_font_size.set(9)
         self.var_log_font_family.set("Courier")
@@ -1173,23 +1244,225 @@ class MakeAdventureGUI:
         self.var_log_fg_color.set("#000000")
         self.var_log_bg_color.set("#ffffff")
 
+    def _set_project_defaults(self):
+        _set_vars(self, _PROJECT_KEYS, cyd_project.DEFAULTS)
+
     # ── Settings persistence ───────────────────────────────────────────────
 
     def _load_settings(self):
-        """Load saved settings from disk and apply them."""
+        """Load the GUI's saved settings (the last project among them)."""
+        self._last_project = None
         data = load_settings(self.paths["curr_path"])
-        if data is not None:
-            _apply_settings(self, data)
+        if data is None:
+            return
+        _set_vars(self, _GLOBAL_KEYS, data)
+        self.recent_projects = [p for p in data.get("recent_projects", "").split(";") if p]
+        self._last_project = data.get("last_project") or None
+        try:
+            self._old_project = json.loads(data["old_project"]) if data.get("old_project") else None
+        except ValueError:
+            self._old_project = None
 
     def _save_settings(self):
-        """Collect current settings and write them to disk."""
-        data = _collect_settings(self)
+        """Write the GUI's settings, and the open project's."""
+        data = _get_vars(self, _GLOBAL_KEYS)
+        data["recent_projects"] = ";".join(self.recent_projects)
+        data["last_project"] = self.project.root if self.project else ""
+        data["old_project"] = json.dumps(self._old_project) if self._old_project else ""
         save_settings(self.paths["curr_path"], data)
+        self._save_project()
 
     def _on_close(self):
         """Called when the window is closed – save settings and exit."""
         self._save_settings()
         self.root.destroy()
+
+    # ── Projects ───────────────────────────────────────────────────────────
+
+    def _project_values(self):
+        """The project's settings as the window has them (text values)."""
+        return {k: _ini_value(v) for k, v in _get_vars(self, _PROJECT_KEYS).items()}
+
+    def _project_from_window(self):
+        """A cyd_project.Project with the window's settings (for the open
+        project, or for CYD's folder if none is open, so the output folder of
+        the Run button still means something)."""
+        root = self.project.root if self.project else self.paths["curr_path"]
+        return cyd_project.Project(root, self._project_values(), has_file=True)
+
+    def _abs(self, value):
+        """A path of the settings, absolute: relative ones are from the project."""
+        root = self.project.root if self.project else self.paths["curr_path"]
+        return os.path.normpath(os.path.join(root, value)) if value else ""
+
+    def _output_dir(self):
+        return self._abs(self.var_output_path.get().strip())
+
+    def _game_name(self):
+        name = self.var_game_name.get().strip()
+        if name:
+            return name
+        main = self.var_main.get().strip()
+        if main:
+            return os.path.splitext(os.path.basename(main))[0]
+        if self.project:
+            try:
+                return self.project.name
+            except cyd_project.ProjectError:
+                pass
+        return ""
+
+    def _source_roots(self):
+        """Where the files named in the compiler's messages are looked for."""
+        roots = [self.project.root] if self.project else [self.paths["curr_path"]]
+        return roots + [os.path.join(self.paths["curr_path"], "lib")]
+
+    def _relative(self, path):
+        """path relative to the project, if it is inside it (as the project
+        file keeps it), else as it is."""
+        if self.project and path:
+            try:
+                rel = os.path.relpath(path, self.project.root)
+            except ValueError:  # another drive
+                return path
+            if not rel.startswith(".."):
+                return rel.replace(os.sep, "/")
+        return path
+
+    def _save_project(self):
+        """Write the window's settings to the open project's
+        cyd_project.ini: the ones that aren't the defaults, and the ones the
+        file already has."""
+        if not self.project:
+            return
+        values = self._project_values()
+        present = set()
+        if os.path.isfile(self.project.ini_path):
+            try:
+                present = set(cyd_project.read_ini(self.project.ini_path))
+            except (cyd_project.configparser.Error, OSError):
+                present = set()
+        to_save = {k: v for k, v in values.items()
+                   if k in present or v != cyd_project.DEFAULTS.get(k, "")}
+        try:
+            cyd_project.save(self.project, to_save)
+        except OSError as exc:
+            self._log(_("Can't save {path}: {error}").format(
+                path=self.project.ini_path, error=exc), "error")
+
+    def _open_project(self, path, quiet=False):
+        """Open the project of path (its folder or its main .cyd file)."""
+        try:
+            project = cyd_project.find(path)
+            if cyd_project.is_install_root(project.root, self.paths["curr_path"]):
+                raise cyd_project.ProjectError("install_root", project.root)
+        except cyd_project.ProjectError as e:
+            if not quiet:
+                messagebox.showerror(_("Error"), self._project_error(e))
+            return False
+        self._save_project()  # the one that was open
+        self.project = project
+        self._set_project_defaults()
+        _set_vars(self, _PROJECT_KEYS, project.values)
+        if project.root in self.recent_projects:
+            self.recent_projects.remove(project.root)
+        self.recent_projects.insert(0, project.root)
+        del self.recent_projects[MAX_RECENT:]
+        self._refresh_project_frame()
+        self._log(_("Project: {root}").format(root=project.root))
+        return True
+
+    def _project_error(self, e):
+        messages = {
+            "install_root": _("CYD's own folder can't be a project: move the game to a "
+                              "folder of its own (see the manual, \"Migrating a game "
+                              "from an older version\")."),
+            "not_a_folder": _("Not a valid path:"),
+            "not_a_project": _("Not a project folder or a .cyd file:"),
+            "no_main": _("The project doesn't say its main .cyd file and there isn't "
+                         "exactly one in its folder:"),
+            "already_a_project": _("There is already a project in"),
+            "file_exists": _("The file already exists:"),
+            "bad_target": _("Unknown target:"),
+            "bad_number": _("Invalid number in cyd_project.ini:"),
+        }
+        text = messages.get(e.code, _("Error"))
+        return text if e.code == "install_root" else f"{text}\n{e.detail}"
+
+    def _on_open_project(self):
+        path = filedialog.askdirectory(
+            parent=self.root, title=_("Open the folder of a project"),
+            initialdir=self.project.root if self.project else self.paths["curr_path"],
+        )
+        if path:
+            self._open_project(path)
+
+    def _on_new_project(self):
+        """Make a project in a folder (empty or new): a short game, IMAGES,
+        TRACKS and its cyd_project.ini, and open it."""
+        path = filedialog.askdirectory(
+            parent=self.root, title=_("Choose (or create) the folder of the new project"),
+            initialdir=os.path.dirname(self.project.root) if self.project else
+            os.path.expanduser("~"),
+        )
+        if not path:
+            return
+        try:
+            target = self.var_target.get() or "128k"
+            project = cyd_project.new_project(path, target=target)
+            if self._old_project:  # the game options of the old settings
+                cyd_project.save(project, self._old_project)
+                self._old_project = None
+        except cyd_project.ProjectError as e:
+            messagebox.showerror(_("Error"), self._project_error(e))
+            return
+        self._open_project(project.root)
+
+    def _on_browse_main(self):
+        if not self.project:
+            return
+        path = filedialog.askopenfilename(
+            parent=self.root, initialdir=self.project.root,
+            filetypes=[(_("CYD scripts"), "*.cyd"), (_("All files"), "*.*")],
+        )
+        if path:
+            self.var_main.set(self._relative(path))
+
+    def _open_migration_help(self):
+        """The manual, at "Migrating a game from an older version"."""
+        lang = "es" if self.current_language == "es" else "en"
+        curr = self.paths["curr_path"]
+        for candidate in (os.path.join(curr, "documentation", lang, f"MANUAL_{lang}.pdf"),
+                          os.path.join(curr, f"MANUAL_{lang}.md")):
+            if os.path.isfile(candidate):
+                try:
+                    open_with_system(candidate)
+                except Exception as exc:
+                    self._log(_("Failed to open {path}: {error}").format(
+                        path=candidate, error=exc), "error")
+                return
+
+    def _refresh_project_frame(self):
+        """Show the open project, or the welcome when there is none."""
+        if not hasattr(self, "lbl_project"):
+            return
+        has = self.project is not None
+        self.lbl_project.configure(text=self.project.root if has else _("(none)"))
+        for widget in (self.entry_main, self.btn_browse_main, self.entry_name):
+            widget.configure(state=tk.NORMAL if has else tk.DISABLED)
+        if has:
+            self.welcome.grid_remove()
+        else:
+            self.welcome.grid()
+        if not self.compiling:
+            self.btn_compile.configure(state=tk.NORMAL if has else tk.DISABLED)
+            self.btn_check.configure(state=tk.NORMAL if has else tk.DISABLED)
+        menu = self.recent_menu
+        menu.delete(0, tk.END)
+        for path in self.recent_projects:
+            menu.add_command(label=path, command=lambda p=path: self._open_project(p))
+        if not self.recent_projects:
+            menu.add_command(label=_("(none)"), state=tk.DISABLED)
 
     def _on_language_change(self, event=None):
         """Handle language change from dropdown."""
@@ -1296,20 +1569,51 @@ class MakeAdventureGUI:
         pad = {"padx": 6, "pady": 4}
         project_frame = ttk.LabelFrame(main_frame, text=_("Project"))
         project_frame.pack(fill=tk.X, **pad)
+        project_frame.columnconfigure(1, weight=1)
 
-        # Game name
+        # The project's folder, and New / Open / Recent
         r = 0
-        ttk.Label(project_frame, text=_("Game name:")).grid(
-            row=r, column=0, sticky=tk.W, **pad
-        )
-        ttk.Entry(project_frame, textvariable=self.var_game_name, width=25).grid(
-            row=r, column=1, sticky=tk.W, **pad
-        )
+        ttk.Label(project_frame, text=_("Folder:")).grid(row=r, column=0, sticky=tk.W, **pad)
+        self.lbl_project = ttk.Label(project_frame, text="")
+        self.lbl_project.grid(row=r, column=1, sticky=tk.W, **pad)
+        proj_buttons = ttk.Frame(project_frame)
+        proj_buttons.grid(row=r, column=2, sticky=tk.E, **pad)
+        ttk.Button(proj_buttons, text=_("New…"), command=self._on_new_project).pack(side=tk.LEFT)
+        ttk.Button(proj_buttons, text=_("Open…"), command=self._on_open_project).pack(
+            side=tk.LEFT, padx=(4, 0))
+        recent = ttk.Menubutton(proj_buttons, text=_("Recent"))
+        self.recent_menu = tk.Menu(recent, tearoff=False)
+        recent["menu"] = self.recent_menu
+        recent.pack(side=tk.LEFT, padx=(4, 0))
+
+        # Welcome, while there is no project open
+        r += 1
+        self.welcome = ttk.Frame(project_frame)
+        self.welcome.grid(row=r, column=0, columnspan=3, sticky=tk.W, **pad)
         ttk.Label(
-            project_frame,
-            text=_("(the .cyd file must match this name)"),
-            foreground="gray",
-        ).grid(row=r, column=2, sticky=tk.W, **pad)
+            self.welcome, wraplength=620, justify=tk.LEFT,
+            text=_("No project open. Make one with New… (a short game to start "
+                   "from) or open the folder of a game with Open…. A game made with "
+                   "an older version, in CYD's own folder, has to be moved to a "
+                   "folder of its own first."),
+        ).pack(side=tk.LEFT)
+        ttk.Button(self.welcome, text=_("How to migrate it"),
+                   command=self._open_migration_help).pack(side=tk.LEFT, padx=(8, 0))
+
+        # Main file and game name
+        r += 1
+        ttk.Label(project_frame, text=_("Main file:")).grid(row=r, column=0, sticky=tk.W, **pad)
+        self.entry_main = ttk.Entry(project_frame, textvariable=self.var_main, width=25)
+        self.entry_main.grid(row=r, column=1, sticky=tk.W, **pad)
+        self.btn_browse_main = ttk.Button(project_frame, text=_("Browse…"),
+                                          command=self._on_browse_main)
+        self.btn_browse_main.grid(row=r, column=2, sticky=tk.E, **pad)
+        r += 1
+        ttk.Label(project_frame, text=_("Game name:")).grid(row=r, column=0, sticky=tk.W, **pad)
+        self.entry_name = ttk.Entry(project_frame, textvariable=self.var_game_name, width=25)
+        self.entry_name.grid(row=r, column=1, sticky=tk.W, **pad)
+        ttk.Label(project_frame, text=_("(empty: the main file's name)"),
+                  foreground="gray").grid(row=r, column=2, sticky=tk.W, **pad)
 
         # Target
         r += 1
@@ -1401,6 +1705,7 @@ class MakeAdventureGUI:
         self.log.tag_configure("warning", foreground="#a05a00")
         # Double-click on a "game.cyd:12" opens the script at that line.
         self.log.bind("<Double-Button-1>", self._on_log_double_click)
+        self._refresh_project_frame()
         self._update_run_button()
 
     # ── Window icon ────────────────────────────────────────────────────────
@@ -1480,10 +1785,10 @@ class MakeAdventureGUI:
         return "break"  # don't select the word
 
     def _open_source(self, name, line, span=None):
-        path = find_source(name, self.paths["curr_path"])
+        path = find_source(name, self._source_roots())
         if path is None:
             self._log(_("Can't find {name} in {root}.").format(
-                name=name, root=self.paths["curr_path"]), "warning")
+                name=name, root=self._source_roots()[0]), "warning")
             return
         SourceViewer(self.root, path, line, span)
 
@@ -1492,8 +1797,7 @@ class MakeAdventureGUI:
     def _update_run_button(self):
         """Run is available when there is a compiled game to run."""
         built = find_compiled_file(
-            self.var_target.get(), self.var_game_name.get().strip(),
-            self.var_output_path.get().strip())
+            self.var_target.get(), self._game_name(), self._output_dir())
         self.btn_run.configure(
             state=tk.NORMAL if built and not self.compiling else tk.DISABLED)
 
@@ -1501,11 +1805,11 @@ class MakeAdventureGUI:
         mode = self.var_run_emulator.get()
         if mode == "none":  # nothing chosen: the internal one if it is there
             mode = "internal" if find_zesarux(self.paths["tools_path"]) else "default"
-        self._run_emulator(self.var_target.get(), self.var_game_name.get().strip(),
-                           self.var_output_path.get().strip(), mode)
+        self._run_emulator(self.var_target.get(), self._game_name(),
+                           self._output_dir(), mode)
 
     def _on_open_folder(self):
-        folder = self.var_output_path.get().strip()
+        folder = self._output_dir()
         try:
             open_with_system(folder)
         except Exception as exc:
@@ -1519,8 +1823,8 @@ class MakeAdventureGUI:
         text = self.var_find_error.get().strip()
         if not text:
             return
-        game = self.var_game_name.get().strip()
-        map_path = os.path.join(self.var_output_path.get().strip(), f"{game}.map")
+        game = self._game_name()
+        map_path = os.path.join(self._output_dir(), f"{game}.map")
         try:
             found = lookup_debug_map(map_path, text)
         except FileNotFoundError:
@@ -1550,7 +1854,7 @@ class MakeAdventureGUI:
             self._log(_("It happened when the program ended, after its last line."))
             return
         name, line_no = match.group(1), int(match.group(2))
-        path = find_source(name, self.paths["curr_path"])
+        path = find_source(name, self._source_roots())
         line, span = "", None
         if path:
             try:
@@ -1585,13 +1889,17 @@ class MakeAdventureGUI:
         self._save_settings()
 
         # ── Validation ─────────────────────────────────────────────────────
-        curr_path = self.paths["curr_path"]
-        game_name = self.var_game_name.get().strip()
-        if not game_name:
-            messagebox.showerror(_("Error"), _("Game name cannot be empty."))
+        if not self.project:
+            messagebox.showerror(_("Error"), _("Open a project first (New… or Open…)."))
             return
-
-        input_file = os.path.join(curr_path, f"{game_name}.cyd")
+        project = self._project_from_window()
+        try:
+            input_file = project.main_path
+            game_name = project.name
+            model = project.target
+        except cyd_project.ProjectError as e:
+            messagebox.showerror(_("Error"), self._project_error(e))
+            return
         if not os.path.isfile(input_file):
             messagebox.showerror(
                 _("Error"), _("Input file does not exist:\n") + input_file
@@ -1602,13 +1910,6 @@ class MakeAdventureGUI:
         if not check and not os.path.isfile(sjasmplus):
             messagebox.showerror(
                 _("Error"), _("SjASMPlus executable not found:\n") + sjasmplus
-            )
-            return
-
-        output_path = self.var_output_path.get().strip()
-        if not check and not os.path.isdir(output_path):
-            messagebox.showerror(
-                _("Error"), _("Output path does not exist:\n") + output_path
             )
             return
 
@@ -1627,84 +1928,28 @@ class MakeAdventureGUI:
                 )
                 return
 
-        # ── Build parameter list (mirrors make_adventure.py logic) ─────────
-        cydc_params = [
-            "-img",
-            self.var_images_path.get(),
-            "-trk",
-            self.var_tracks_path.get(),
-        ]
-
-        tokens_file = self.var_tokens_file.get()
-        if not os.path.isfile(tokens_file):
-            cydc_params = ["-T", tokens_file] + cydc_params
-        else:
-            cydc_params = ["-t", tokens_file] + cydc_params
-
-        charset_file = self.var_charset_file.get()
-        if os.path.isfile(charset_file):
-            cydc_params = ["-c", charset_file] + cydc_params
-
-        sfx_file = self.var_sfx_file.get()
-        if os.path.isfile(sfx_file):
-            cydc_params = ["-sfx", sfx_file] + cydc_params
-
-        load_scr = self.var_load_scr.get()
-        if os.path.isfile(load_scr):
-            cydc_params = ["-scr", load_scr] + cydc_params
-
-        cydc_params = ["-l", str(self.var_min_length.get())] + cydc_params
-        cydc_params = ["-L", str(self.var_max_length.get())] + cydc_params
-        cydc_params = ["-s", str(self.var_superset_limit.get())] + cydc_params
-        if self.var_max_errors.get():
-            cydc_params = ["--max-errors", str(self.var_max_errors.get())] + cydc_params
-
+        # ── Build parameter list (the same as make_adventure.py) ───────────
+        try:
+            cydc_params = cyd_project.compiler_args(project, model, check=check)
+        except cyd_project.ProjectError as e:
+            messagebox.showerror(_("Error"), self._project_error(e))
+            return
         if self.var_verbose.get():
-            cydc_params = ["-v"] + cydc_params
-        if self.var_slice_texts.get():
-            cydc_params = ["-S"] + cydc_params
-        if self.var_trim_interpreter.get():
-            cydc_params = ["-trim"] + cydc_params
-        if self.var_dead_code_elimination.get():
-            cydc_params = ["-dce"] + cydc_params
-        if self.var_show_bytecode.get():
-            cydc_params = ["-code"] + cydc_params
-        if self.var_no_strict_colons.get():
-            cydc_params = ["--no-strict-colons"] + cydc_params
-        if pause_val:
-            cydc_params = ["-pause", pause_val] + cydc_params
-        if self.var_disk_720.get():
-            cydc_params = ["-720"] + cydc_params
-
-        if self.var_autoboot.get():
-            cydc_params = ["-autoboot"] + cydc_params
-        if self.var_use_wyz.get():
-            cydc_params = ["-wyz"] + cydc_params
-        if self.var_image_lines.get():
-            cydc_params = ["-il", str(self.var_image_lines.get())] + cydc_params
-        token_format = self.var_token_format.get()
-        if token_format in ("flat", "nested"):
-            cydc_params = ["--token-format", token_format] + cydc_params
-        if not self.var_warn_unused.get():
-            cydc_params = ["--no-warn-unused"] + cydc_params
-        if not self.var_warn_gosub.get():
-            cydc_params = ["--no-warn-gosub"] + cydc_params
-        if not self.var_warn_shared_vars.get():
-            cydc_params = ["--no-warn-shared-vars"] + cydc_params
-        if self.var_debug_stack.get():
-            cydc_params = ["--debug-stack"] + cydc_params
-        if self.var_debug_errors.get():
-            cydc_params = ["--debug-errors"] + cydc_params
-        if check:
-            cydc_params = ["--check"] + cydc_params
+            cydc_params.append("-v")
 
         cydc_path = self.paths["cydc_path"]
         python_path = self.paths["python_path"]
-        model = self.var_target.get()
+        output_path = project.path("output")
 
         cydc_params = [cydc_path] + cydc_params
         cydc_params += [model, input_file]
         if not check:
+            try:
+                os.makedirs(output_path, exist_ok=True)
+            except OSError as exc:
+                messagebox.showerror(_("Error"), _("Output path does not exist:\n") +
+                                     f"{output_path}\n{exc}")
+                return
             cydc_params += [sjasmplus, output_path]
 
         # ── Launch ─────────────────────────────────────────────────────────
@@ -1751,7 +1996,8 @@ class MakeAdventureGUI:
 
         try:
             returncode = stream_exec(
-                python_path, cydc_params, on_line, language=self.current_language
+                python_path, cydc_params, on_line, language=self.current_language,
+                cwd=self.project.root if self.project else None,
             )
             self._log(_("Errors: {errors}   Warnings: {warnings}").format(
                 errors=counts["error"], warnings=counts["warning"]), "summary")
@@ -1787,16 +2033,16 @@ class MakeAdventureGUI:
 
     def _compile_finished(self):
         self.progress.stop()
-        self.btn_compile.configure(state=tk.NORMAL)
-        self.btn_check.configure(state=tk.NORMAL)
         self.compiling = False
+        self._refresh_project_frame()  # Compile and Check, if there is a project
         self._update_run_button()
 
     # ── Backup ─────────────────────────────────────────────────────────────
 
     def _do_backup(self, input_file, game_name):
         """Backup the .cyd file, mirroring make_adv.cmd logic."""
-        backup_dir = os.path.join(self.paths["curr_path"], "BACKUP")
+        root = self.project.root if self.project else self.paths["curr_path"]
+        backup_dir = os.path.join(root, "BACKUP")
         os.makedirs(backup_dir, exist_ok=True)
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         dst = os.path.join(backup_dir, f"{game_name}_{now}.cyd")

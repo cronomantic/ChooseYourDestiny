@@ -581,3 +581,105 @@ msgstr "Demasiadas opciones (OPTION) a la vez."
 
 msgid "{file}, line {line}:"
 msgstr "{file}, línea {line}:"
+
+msgid "CYD's own folder can't be a project: move the game to a folder of its own (see the manual, \"Migrating a game from an older version\")."
+msgstr "La carpeta de CYD no puede ser un proyecto: mueve el juego a una carpeta propia (ver el manual, «Migrar un juego de una versión anterior»)."
+
+msgid "Not a valid path:"
+msgstr "Ruta no válida:"
+
+msgid "Not a project folder or a .cyd file:"
+msgstr "No es la carpeta de un proyecto ni un fichero .cyd:"
+
+msgid "The project doesn't say its main .cyd file and there isn't exactly one in its folder:"
+msgstr "El proyecto no indica su fichero .cyd principal y en su carpeta no hay exactamente uno:"
+
+msgid "There is already a project in"
+msgstr "Ya hay un proyecto en"
+
+msgid "The file already exists:"
+msgstr "El fichero ya existe:"
+
+msgid "Unknown target:"
+msgstr "Target desconocido:"
+
+msgid "Invalid number in cyd_project.ini:"
+msgstr "Número no válido en cyd_project.ini:"
+
+msgid "Project paths (relative to the project's folder)"
+msgstr "Rutas del proyecto (relativas a su carpeta)"
+
+msgid "INCLUDE folders:"
+msgstr "Carpetas de INCLUDE:"
+
+msgid "INCLUDE LIB folders:"
+msgstr "Carpetas de INCLUDE LIB:"
+
+msgid "IMPORT folders:"
+msgstr "Carpetas de IMPORT:"
+
+msgid "This computer"
+msgstr "Este ordenador"
+
+msgid "Open the folder of a project"
+msgstr "Abrir la carpeta de un proyecto"
+
+msgid "Choose (or create) the folder of the new project"
+msgstr "Elige (o crea) la carpeta del nuevo proyecto"
+
+msgid "Recent"
+msgstr "Recientes"
+
+msgid "Open a project first (New… or Open…)."
+msgstr "Abre antes un proyecto (Nuevo… o Abrir…)."
+
+msgid "Add…"
+msgstr "Añadir…"
+
+msgid "Project: {root}"
+msgstr "Proyecto: {root}"
+
+msgid "(none)"
+msgstr "(ninguno)"
+
+msgid "Folders separated by ';', where the compiler also looks for the files (see the manual, INCLUDE)."
+msgstr "Carpetas separadas por ';' donde el compilador también busca los ficheros (ver el manual, INCLUDE)."
+
+msgid "Keep cyd.asm, cyd.sym and the listing in the cyd_tmp folder of the output folder (without it they are removed when the build ends well)."
+msgstr "Conserva cyd.asm, cyd.sym y el listado en la carpeta cyd_tmp de la carpeta de salida (sin esto se borran cuando la compilación termina bien)."
+
+msgid "Backup the main .cyd file after successful compilation (to the project's BACKUP folder)"
+msgstr "Copia de seguridad del .cyd principal tras compilar bien (en la carpeta BACKUP del proyecto)"
+
+msgid "CYD scripts"
+msgstr "Guiones de CYD"
+
+msgid "All files"
+msgstr "Todos los ficheros"
+
+msgid "Folder:"
+msgstr "Carpeta:"
+
+msgid "New…"
+msgstr "Nuevo…"
+
+msgid "Open…"
+msgstr "Abrir…"
+
+msgid "No project open. Make one with New… (a short game to start from) or open the folder of a game with Open…. A game made with an older version, in CYD's own folder, has to be moved to a folder of its own first."
+msgstr "No hay ningún proyecto abierto. Crea uno con Nuevo… (un juego corto para empezar) o abre la carpeta de un juego con Abrir…. Un juego hecho con una versión anterior, en la carpeta de CYD, hay que moverlo antes a una carpeta propia."
+
+msgid "How to migrate it"
+msgstr "Cómo migrarlo"
+
+msgid "Main file:"
+msgstr "Fichero principal:"
+
+msgid "(empty: the main file's name)"
+msgstr "(vacío: el nombre del fichero principal)"
+
+msgid "Can't save {path}: {error}"
+msgstr "No se puede guardar {path}: {error}"
+
+msgid "Keep the intermediate files"
+msgstr "Conservar los ficheros intermedios"

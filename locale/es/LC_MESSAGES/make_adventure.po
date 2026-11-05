@@ -249,3 +249,69 @@ msgstr "hacer que GOSUB y RETURN comprueben la pila de llamadas al ejecutarse (p
 #: make_adventure.py
 msgid "make system errors show where they happened, and write a .map file that turns that into a file and a line (for debugging, adds some bytes)"
 msgstr "hacer que los errores de sistema muestren dónde ocurrieron y escribir un fichero .map que lo traduce a fichero y línea (para depurar, añade algunos bytes)"
+
+msgid "ERROR: Not a project folder or a .cyd file:"
+msgstr "ERROR: No es la carpeta de un proyecto ni un fichero .cyd:"
+
+msgid "ERROR: The project doesn't say its main .cyd file (main in cyd_project.ini) and there isn't exactly one in its folder:"
+msgstr "ERROR: El proyecto no indica su fichero .cyd principal (main en cyd_project.ini) y en su carpeta no hay exactamente uno:"
+
+msgid "ERROR: Unknown target:"
+msgstr "ERROR: Target desconocido:"
+
+msgid "ERROR: Invalid number in cyd_project.ini:"
+msgstr "ERROR: Número no válido en cyd_project.ini:"
+
+msgid "ERROR: There is already a project in"
+msgstr "ERROR: Ya hay un proyecto en"
+
+msgid "ERROR: The file already exists:"
+msgstr "ERROR: El fichero ya existe:"
+
+msgid "The project is a folder with the game (and its cyd_project.ini, if it has one), or the game's main .cyd file. The target, if not given, is the project's."
+msgstr "El proyecto es una carpeta con el juego (y su cyd_project.ini, si lo tiene), o el fichero .cyd principal del juego. Si no se indica el target, se usa el del proyecto."
+
+msgid "FOLDER"
+msgstr "CARPETA"
+
+msgid "make a new project in FOLDER (a short game, IMAGES, TRACKS and its cyd_project.ini) and exit"
+msgstr "crea un proyecto nuevo en CARPETA (un juego corto, IMAGES, TRACKS y su cyd_project.ini) y termina"
+
+msgid "print the project's root, main file, name, target and output folder as KEY=value lines, and exit (for the make_adv scripts)"
+msgstr "muestra la raíz, el fichero principal, el nombre, el target y la carpeta de salida del proyecto como líneas CLAVE=valor y termina (para los scripts make_adv)"
+
+msgid "another folder for INCLUDE, after the project root (can be repeated)"
+msgstr "otra carpeta para INCLUDE, después de la raíz del proyecto (se puede repetir)"
+
+msgid "a folder for INCLUDE LIB, before the bundled lib/ (can be repeated)"
+msgstr "una carpeta para INCLUDE LIB, antes de la lib/ incluida (se puede repetir)"
+
+msgid "another folder for IMPORT, after the script's folder (can be repeated)"
+msgstr "otra carpeta para IMPORT, después de la del guion (se puede repetir)"
+
+msgid "keep the intermediate files (cyd.asm, cyd.sym, the listing...) in the cyd_tmp folder of the output folder; without it they are removed when the build ends well"
+msgstr "conserva los ficheros intermedios (cyd.asm, cyd.sym, el listado...) en la carpeta cyd_tmp de la carpeta de salida; sin esta opción se borran cuando la compilación termina bien"
+
+msgid "CYDC_PATH"
+msgstr "RUTA_CYDC"
+
+msgid "the compiler to run instead of dist/cydc_cli.py (for development: src/cydc/cydc/cydc.py)"
+msgstr "el compilador que se ejecuta en lugar de dist/cydc_cli.py (para desarrollo: src/cydc/cydc/cydc.py)"
+
+msgid "TARGET / PROJECT"
+msgstr "TARGET / PROYECTO"
+
+msgid "ERROR: No project given. Give the folder of your game (or its main .cyd file); to start one, use --new FOLDER. A game made with an older version, in CYD's own folder, has to be moved to a folder of its own (see the manual, \"Migrating a game from an older version\")."
+msgstr "ERROR: No se ha indicado ningún proyecto. Indica la carpeta de tu juego (o su fichero .cyd principal); para empezar uno, usa --new CARPETA. Un juego hecho con una versión anterior, en la carpeta de CYD, hay que moverlo a una carpeta propia (ver el manual, «Migrar un juego de una versión anterior»)."
+
+msgid "ERROR: CYD's own folder can't be a project: move the game to a folder of its own (see the manual, \"Migrating a game from an older version\")."
+msgstr "ERROR: La carpeta de CYD no puede ser un proyecto: mueve el juego a una carpeta propia (ver el manual, «Migrar un juego de una versión anterior»)."
+
+msgid "the target ({targets}; mld/mld128 are EXPERIMENTAL) and the project (its folder or its main .cyd file), in any order"
+msgstr "el target ({targets}; mld/mld128 son EXPERIMENTALES) y el proyecto (su carpeta o su fichero .cyd principal), en cualquier orden"
+
+msgid "New project in {root}: {main}"
+msgstr "Proyecto nuevo en {root}: {main}"
+
+msgid "too many arguments: {item}"
+msgstr "demasiados argumentos: {item}"
