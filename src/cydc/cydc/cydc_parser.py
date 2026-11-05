@@ -219,6 +219,8 @@ class CydcParser(object):
                     | text_statement
         """
         self._tag_location(p, len(p) - 1)
+        # Text separates code: the next statement needs no colon.
+        p.slice[0].ends_with_text = True
         if (len(p) == 2) and p[1]:
             p[0] = []
             if isinstance(p[1], list):
@@ -270,17 +272,17 @@ class CydcParser(object):
         """
         self._tag_location(p, 2)
         if len(p) == 3 and p[1] and p[2]:
-            if self.strict_colon_mode:
-                # In strict mode, check if statements are on the same line
-                # We need to get the line of the last statement in p[1]
-                # Since p[1] is a list of statements, we check if the new statement
-                # is on a different line by comparing line numbers
-                if hasattr(p.slice[1], 'lineno') and hasattr(p.slice[2], 'lineno'):
-                    if p.slice[1].lineno == p.slice[2].lineno:
-                        # Only report error if they're actually on the same line
-                        loc = self._format_error_location(p.lineno(2))
-                        self.errors.append(self._("{loc}: Colon required between statements on same line").format(loc=loc))
-        
+            if self.strict_colon_mode and not getattr(p.slice[1], "ends_with_text", False):
+                # The new statement must not start on the line where the previous
+                # one ENDS (endlineno, from position tracking). Comparing with
+                # where the list STARTS missed it whenever the list began on an
+                # earlier line: after text ("Hola\n[[ INK 5 GOTO L ]]") or after a
+                # multi-line IF. Text before the statement separates it already.
+                prev_end = getattr(p.slice[1], "endlineno", None)
+                if prev_end is not None and prev_end == p.slice[2].lineno:
+                    loc = self._format_error_location(p.lineno(2))
+                    self.errors.append(self._("{loc}: Colon required between statements on same line").format(loc=loc))
+
         p[0] = p[1]
         if not p[0]:
             p[0] = []

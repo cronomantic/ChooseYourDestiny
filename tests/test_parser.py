@@ -292,6 +292,29 @@ class TestParserStrictColonMode(unittest.TestCase):
         colon_errors = [e for e in self.parser_strict.errors if "colon" in e.lower()]
         self.assertEqual(len(colon_errors), 0)
 
+    def _colon_errors(self, code):
+        self.parser_strict.errors = []
+        self.parser_strict.parse(input=code)
+        return [e for e in self.parser_strict.errors if "Colon required" in e]
+
+    def test_strict_mode_rejects_missing_colon_after_text(self):
+        """Not only in the first block: after text and on later lines too
+        (it compared the line where the statement list STARTS)."""
+        for code in ("Hola\n[[PRINT 1 PRINT 2]]",
+                     "[[PRINT 1\nPRINT 2 PRINT 3]]",
+                     "[[IF @0 = 0 THEN\nPRINT 1\nENDIF PRINT 2]]"):
+            with self.subTest(code=code):
+                self.assertEqual(len(self._colon_errors(code)), 1)
+
+    def test_strict_mode_text_separates_statements(self):
+        """Text between two statements (or a new line) needs no colon."""
+        for code in ("[[PRINT 1]]x[[PRINT 2]]",
+                     "Hola\n[[PRINT 1 : PRINT 2]]",
+                     "[[IF @0 = 0 THEN\nPRINT 1\nENDIF\nPRINT 2]]",
+                     "[[DATA 1, 2,\n3\nPRINT 1]]"):
+            with self.subTest(code=code):
+                self.assertEqual(self._colon_errors(code), [])
+
     def test_lenient_mode_accepts_missing_colon(self):
         """Test that lenient mode accepts statements without colons."""
         code = "[[PRINT 1 PRINT 2]]"
