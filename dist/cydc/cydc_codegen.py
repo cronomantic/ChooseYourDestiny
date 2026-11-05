@@ -18,6 +18,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import deque
+import os
 import sys
 from cydc_font import CydcFont
 
@@ -171,6 +172,11 @@ class CydcCodegen(object):
         # ("inline", body), "exports": [callable names], "uses": [names called via
         # CYD_CALL]}. IMPORT and inline ASM blocks share this table.
         self.externs = {}
+        # Where IMPORT ... FROM "x.asm" is looked for, after the folder of the
+        # file with the IMPORT: the main .cyd's folder (what it always was),
+        # then --import-path. Set by cydc.py.
+        self.import_base_dir = None
+        self.import_paths = []
         # callable name -> block_name it resolves to (an IMPORT name, or one of a
         # block's EXPORTS). This is what a CALL target is checked against.
         self.extern_exports = {}
@@ -548,7 +554,8 @@ class CydcCodegen(object):
             opcode = t[0]  # get opcode type
             if opcode == "IMPORT":
                 q = t[1]  # routine name
-                p = t[2]  # assembler file path
+                # assembler file path, found from the file with the IMPORT
+                p = self._resolve_import(t[2], t[3] if len(t) > 3 else None)
                 if externs.get(q) is not None:
                     self._fail(self._("ERROR: Native routine {q} imported two times!").format(q=q))
                 # A file-backed block with a single callable = its own name; its
@@ -1806,6 +1813,26 @@ class CydcCodegen(object):
     # flash). The array-access opcodes recognise it under IS_MLD_DAN and address
     # ARR_POOL + offset directly instead of paging the flash slot.
     ARR_RESIDENT_BANK = 0xFE
+
+    def _resolve_import(self, path, source_file):
+        """The assembler file of IMPORT ... FROM path: next to source_file (the
+        .cyd with the IMPORT), then in import_base_dir (the main .cyd's folder,
+        as it always was), then in each import_paths folder. An absolute path,
+        or one found nowhere, is returned as it is: the build reports a missing
+        file, resolving it against the main .cyd's folder."""
+        if os.path.isabs(path):
+            return path
+        dirs = []
+        if source_file:
+            dirs.append(os.path.dirname(source_file))
+        if self.import_base_dir:
+            dirs.append(self.import_base_dir)
+        dirs += list(self.import_paths)
+        for d in dirs:
+            candidate = os.path.join(d, path)
+            if os.path.isfile(candidate):
+                return os.path.abspath(candidate)
+        return path
 
     def generate_code(
         self,

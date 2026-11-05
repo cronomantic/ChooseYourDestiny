@@ -530,5 +530,192 @@ INCLUDE "lib.cyd"
         self.assertEqual(line_map[out_line].line_num, 3)
 
 
+class TestSearchPaths(unittest.TestCase):
+    """INCLUDE "x": next to its file, then the project root, then the include
+    paths. INCLUDE LIB "x": only the library paths. A library included again
+    with INCLUDE LIB is skipped; any other repetition is an error."""
+
+    def setUp(self):
+        self.test_dir = os.path.realpath(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.test_dir, True)
+        self.project = os.path.join(self.test_dir, "proyecto")
+        self.libs = os.path.join(self.test_dir, "libs")
+        self.extra = os.path.join(self.test_dir, "extra")
+
+    def _write(self, path, content):
+        full = os.path.join(self.test_dir, path)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        with open(full, "w", encoding="utf-8") as f:
+            f.write(content)
+        return full
+
+    def _run(self, main, **kwargs):
+        kwargs.setdefault("lib_paths", [self.libs])
+        pre = CydcPreprocessor(base_path=os.path.dirname(main), **kwargs)
+        return pre.preprocess(main)[0]
+
+    def test_include_falls_back_to_the_project_root(self):
+        self._write("proyecto/comun/vars.cyd", "[[\nCONST V = 1\n]]")
+        self._write("proyecto/capitulos/cap1.cyd", '[[\nINCLUDE "comun/vars.cyd"\n]]')
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE "capitulos/cap1.cyd"\n]]')
+        self.assertIn("CONST V = 1", self._run(main))
+
+    def test_next_to_the_file_wins_over_the_root(self):
+        self._write("proyecto/x.cyd", "[[\nCONST RAIZ = 1\n]]")
+        self._write("proyecto/sub/x.cyd", "[[\nCONST JUNTO = 1\n]]")
+        self._write("proyecto/sub/a.cyd", '[[\nINCLUDE "x.cyd"\n]]')
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE "sub/a.cyd"\n]]')
+        out = self._run(main)
+        self.assertIn("JUNTO", out)
+        self.assertNotIn("RAIZ", out)
+
+    def test_include_paths_after_the_root(self):
+        self._write("extra/util.cyd", "[[\nCONST U = 1\n]]")
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE "util.cyd"\n]]')
+        self.assertIn("CONST U = 1", self._run(main, include_paths=[self.extra]))
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn("Include file not found: util.cyd", str(ctx.exception))
+
+    def test_project_root_can_be_given(self):
+        self._write("proyecto/comun.cyd", "[[\nCONST C = 1\n]]")
+        main = self._write("proyecto/src/main.cyd", '[[\nINCLUDE "comun.cyd"\n]]')
+        self.assertIn("CONST C = 1", self._run(main, project_root=self.project))
+
+    def test_include_lib(self):
+        self._write("libs/strings.cyd", "[[\nCONST S = 1\n]]")
+        main = self._write("proyecto/main.cyd", '[[\ninclude lib "strings.cyd"\n]]')
+        self.assertIn("CONST S = 1", self._run(main))
+
+    def test_include_lib_only_in_library_paths(self):
+        self._write("proyecto/strings.cyd", "[[\nCONST PROPIO = 1\n]]")
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE LIB "strings.cyd"\n]]')
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn("Library file not found: strings.cyd", str(ctx.exception))
+
+    def test_library_paths_in_order(self):
+        self._write("extra/strings.cyd", "[[\nCONST PRIMERO = 1\n]]")
+        self._write("libs/strings.cyd", "[[\nCONST SEGUNDO = 1\n]]")
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE LIB "strings.cyd"\n]]')
+        out = self._run(main, lib_paths=[self.extra, self.libs])
+        self.assertIn("PRIMERO", out)
+        self.assertNotIn("SEGUNDO", out)
+
+    def test_library_twice_is_included_once(self):
+        self._write("libs/strings.cyd", "[[\nCONST S = 1\n]]")
+        self._write("proyecto/a.cyd", '[[\nINCLUDE LIB "strings.cyd"\n]]')
+        main = self._write("proyecto/main.cyd",
+                           '[[\nINCLUDE LIB "strings.cyd"\nINCLUDE "a.cyd"\n]]')
+        self.assertEqual(self._run(main).count("CONST S = 1"), 1)
+
+    def test_library_then_plain_is_an_error(self):
+        self._write("libs/strings.cyd", "[[\nCONST S = 1\n]]")
+        main = self._write("proyecto/main.cyd",
+                           '[[\nINCLUDE LIB "strings.cyd"\nINCLUDE "../libs/strings.cyd"\n]]')
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn("File already included from main.cyd:2", str(ctx.exception))
+
+    def test_plain_then_library_is_an_error(self):
+        self._write("libs/strings.cyd", "[[\nCONST S = 1\n]]")
+        main = self._write("proyecto/main.cyd",
+                           '[[\nINCLUDE "../libs/strings.cyd"\nINCLUDE LIB "strings.cyd"\n]]')
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn("already included as a normal file from main.cyd:2", str(ctx.exception))
+
+    def test_cycle_between_libraries_is_circular(self):
+        self._write("libs/a.cyd", '[[\nINCLUDE LIB "b.cyd"\n]]')
+        self._write("libs/b.cyd", '[[\nINCLUDE LIB "a.cyd"\n]]')
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE LIB "a.cyd"\n]]')
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn("Circular include", str(ctx.exception))
+
+
+class TestIncludeLeavesNoText(unittest.TestCase):
+    """What the preprocessor adds around an included file compiles to nothing:
+    its markers used to end up outside [[ ]], as text of the game. And an
+    INCLUDE can share its line with [[ and ]], as the manual shows it."""
+
+    def setUp(self):
+        self.test_dir = os.path.realpath(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.test_dir, True)
+
+    def _write(self, name, content):
+        path = os.path.join(self.test_dir, name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return path
+
+    def _texts(self, main, **kwargs):
+        from cydc_lexer import CydcLexer
+        text, line_map = CydcPreprocessor(**kwargs).preprocess(main)
+        lexer = CydcLexer()
+        lexer.build()
+        lexer.input(text)
+        return [t.value[1] for t in iter(lexer.token, None) if t.type == "TEXT"], line_map, text
+
+    def test_include_on_its_own_line(self):
+        self._write("inc.cyd", "[[\nCONST K = 1\n]]")
+        main = self._write("main.cyd", 'Hola\n[[\nINCLUDE "inc.cyd"\n]]Adios[[ WAITKEY ]]')
+        texts, _, _ = self._texts(main)
+        self.assertEqual(texts, ["Hola\r", "Adios"])
+
+    def test_text_of_the_included_file_stays(self):
+        self._write("inc.cyd", "Dentro\n[[ CONST K = 1 ]]")
+        main = self._write("main.cyd", '[[\nINCLUDE "inc.cyd"\n]]Fuera')
+        texts, _, _ = self._texts(main)
+        self.assertEqual(texts, ["Dentro\r", "Fuera"])
+
+    def test_include_on_one_line_with_the_brackets(self):
+        self._write("cap/cap1.cyd", "[[\nCONST K = 1\n]]Cap1")
+        main = self._write("main.cyd", 'Hola [[ INCLUDE "cap/cap1.cyd" ]]Sigue')
+        texts, _, _ = self._texts(main)
+        self.assertEqual(texts, ["Hola ", "Cap1", "Sigue"])
+
+    def test_library_already_included_on_one_line(self):
+        libs = os.path.join(self.test_dir, "libs")
+        self._write("libs/l.cyd", "[[\nCONST L = 1\n]]")
+        main = self._write("main.cyd",
+                           '[[ INCLUDE LIB "l.cyd" ]]A\n[[ INCLUDE LIB "l.cyd" ]]B')
+        texts, _, out = self._texts(main, lib_paths=[libs])
+        self.assertEqual(texts, ["A\r", "B"])
+        self.assertEqual(out.count("CONST L = 1"), 1)
+
+    def test_lines_still_map_to_their_files(self):
+        self._write("inc.cyd", "PRIMERA\nSEGUNDA")
+        main = self._write("main.cyd", 'x\n[[ INCLUDE "inc.cyd" ]]\nDESPUES')
+        _, line_map, out = self._texts(main)
+        lines = out.split("\n")
+        where = {word: line_map[i + 1] for i, l in enumerate(lines)
+                 for word in ("PRIMERA", "SEGUNDA", "DESPUES") if word in l}
+        self.assertEqual((where["PRIMERA"].filename, where["PRIMERA"].line_num), ("inc.cyd", 1))
+        self.assertEqual((where["SEGUNDA"].filename, where["SEGUNDA"].line_num), ("inc.cyd", 2))
+        self.assertEqual((where["DESPUES"].filename, where["DESPUES"].line_num), ("main.cyd", 3))
+
+
+class TestFindCydHome(unittest.TestCase):
+    """CYD_HOME: the environment variable, else the first folder up that holds
+    lib/ and version.txt."""
+
+    def test_environment_variable(self):
+        from unittest import mock
+        import cydc_preprocessor
+        with mock.patch.dict(os.environ, {"CYD_HOME": "/donde/sea"}):
+            self.assertEqual(cydc_preprocessor.find_cyd_home(), os.path.abspath("/donde/sea"))
+
+    def test_found_from_the_repository_source(self):
+        from unittest import mock
+        import cydc_preprocessor
+        repo = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
+        env = {k: v for k, v in os.environ.items() if k != "CYD_HOME"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            for start in (os.path.join(repo, "src", "cydc", "cydc"), os.path.join(repo, "dist", "cydc")):
+                self.assertEqual(os.path.realpath(cydc_preprocessor.find_cyd_home(start)), repo)
+
+
 if __name__ == '__main__':
     unittest.main()

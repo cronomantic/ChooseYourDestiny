@@ -61,6 +61,17 @@ class TestUnusedSymbolWarnings(unittest.TestCase):
         warnings = self._warnings("[[ LABEL mine ]]\n[[ LABEL routine ]]", project)
         self.assertEqual(warnings, ["Label 'mine' on main.cyd:1 is never used."])
 
+    def test_symbols_from_library_folders_are_skipped_inside_the_project(self):
+        project = os.path.abspath("game")
+        libs = os.path.join(project, "lib")
+        self.parser.set_line_map({
+            1: SourceLocation("main.cyd", 1, os.path.join(project, "main.cyd")),
+            2: SourceLocation("lib.cyd", 1, os.path.join(libs, "lib.cyd")),
+        })
+        self.parser.parse(input="[[ LABEL mine ]]\n[[ LABEL routine ]]")
+        warnings = self.parser.unused_symbol_warnings(project, exclude_dirs=[libs])
+        self.assertEqual(warnings, ["Label 'mine' on main.cyd:1 is never used."])
+
 
 class TestCheckMode(unittest.TestCase):
     def _run(self, source, *args):

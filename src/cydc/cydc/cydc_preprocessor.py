@@ -51,15 +51,37 @@ class MaxPreprocessorErrorsReached(Exception):
     pass
 
 
+def find_cyd_home(start=None):
+    """The CYD installation folder (CYD_HOME), whose lib/ INCLUDE LIB looks in:
+    the CYD_HOME environment variable if set, else the first folder up from
+    this module's that holds lib/ and version.txt (the repo's src/cydc/cydc/
+    and the distribution's dist/cydc/ are at different depths). None if there
+    is none."""
+    env = os.environ.get("CYD_HOME")
+    if env:
+        return os.path.abspath(env)
+    d = os.path.abspath(start or os.path.dirname(__file__))
+    while True:
+        if os.path.isdir(os.path.join(d, "lib")) and os.path.isfile(os.path.join(d, "version.txt")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
 class CydcPreprocessor:
     """Preprocessor for CYD source files that handles INCLUDE directives."""
     
     # Pattern to match INCLUDE directives with quoted filenames
-    # Supports: INCLUDE "filename.cyd" (case-insensitive)
+    # Supports: INCLUDE "filename.cyd" and INCLUDE LIB "filename.cyd"
+    # (case-insensitive). Group 1 is "LIB" or None, group 2 the path, group 3
+    # the "]]" that may close the code block on the same line and group 4 what
+    # follows it (text, or more code after a "[["). One INCLUDE per line.
     # Can be followed by optional comments
     # Note: This will match INCLUDE anywhere on the line, not just at the start
     INCLUDE_PATTERN = re.compile(
-        r'INCLUDE\s+["\']([^"\']+)["\']\s*(?://.*)?(?:\]\])?$',
+        r'INCLUDE\s+(?:(LIB)\s+)?["\']([^"\']+)["\'][ \t]*(?://.*|(\]\])(.*))?$',
         re.IGNORECASE | re.MULTILINE
     )
     
@@ -67,7 +89,13 @@ class CydcPreprocessor:
     CODE_OPEN = re.compile(r'\[\[')
     CODE_CLOSE = re.compile(r'\]\]')
     
-    def __init__(self, max_depth: int = 20, base_path: str = None, max_errors: int = 20):
+    def __init__(self, max_depth: int = 20, base_path: str = None, max_errors: int = 20,
+                 project_root: str = None, include_paths=None, lib_paths=None):
+        # project_root: INCLUDE "x" not found next to its file is looked for
+        #   here (default: the main file's folder).
+        # include_paths: more folders for INCLUDE "x", after the project root.
+        # lib_paths: the folders INCLUDE LIB "x" looks in, in order (the
+        #   user's ones, then CYD_HOME/lib).
         """
         Initialize the preprocessor.
         
@@ -79,12 +107,18 @@ class CydcPreprocessor:
         self.max_errors = max(1, int(max_errors))
         self.max_errors_reached = False
         self.base_path = base_path
+        self.project_root = project_root
+        self.include_paths = [os.path.abspath(d) for d in (include_paths or ())]
+        self.lib_paths = [os.path.abspath(d) for d in (lib_paths or ())]
+        self._root = None  # the project root in use, set by preprocess()
         self.included_files: Set[str] = set()
         # Where each file was first included ("main.cyd:3"; None for the main
         # file), and the files being processed right now (the include chain):
         # a file in the chain is a cycle; one already included, a repetition.
         self._included_from: Dict[str, str] = {}
         self._include_stack: List[str] = []
+        # How each file was included: "lib" (INCLUDE LIB) or "plain".
+        self._included_kind: Dict[str, str] = {}
         self.errors: List[PreprocessorError] = []
         self.line_map: Dict[int, SourceLocation] = {}  # Maps output line -> original source location
         self._output_line_num = 1  # Track current output line number
@@ -146,6 +180,41 @@ class CydcPreprocessor:
                 filepath
             )
     
+    def _search_dirs(self, current_dir, is_lib):
+        """The folders a relative INCLUDE (or INCLUDE LIB) looks in, in order."""
+        if is_lib:
+            return list(self.lib_paths)
+        dirs = [current_dir]
+        if self._root:
+            dirs.append(self._root)
+        return dirs + self.include_paths
+
+    def _resolve_include(self, include_file, current_dir, is_lib):
+        """The path of an included file: INCLUDE "x" next to the file with
+        the INCLUDE, then in the project root, then in the include paths;
+        INCLUDE LIB "x" in the library paths. An absolute path as it is.
+        Raises PreprocessorError if it is nowhere."""
+        if os.path.isabs(include_file):
+            return include_file
+        seen = []
+        for d in self._search_dirs(current_dir, is_lib):
+            if d in seen:
+                continue
+            seen.append(d)
+            candidate = os.path.join(d, include_file)
+            if os.path.isfile(candidate):
+                return candidate
+        if is_lib and not seen:
+            raise PreprocessorError(
+                f"Library file not found: {include_file} (there are no library folders)",
+                include_file,
+            )
+        what = "Library file" if is_lib else "Include file"
+        raise PreprocessorError(
+            f"{what} not found: {include_file} (searched in: {', '.join(seen)})",
+            include_file,
+        )
+
     def _is_include_in_code_block(self, lines: List[str], line_idx: int, include_match) -> bool:
         """
         Check if an INCLUDE directive at the given line is inside a code block [[ ]].
@@ -189,6 +258,7 @@ class CydcPreprocessor:
         depth: int = 0,
         parent_file: str = None,
         included_from: str = None,
+        kind: str = "plain",
     ) -> List[Tuple[str, SourceLocation]]:
         """
         Recursively process a file and its includes.
@@ -198,7 +268,8 @@ class CydcPreprocessor:
             depth: Current nesting depth
             parent_file: Path to the parent file (for relative includes)
             included_from: "file.cyd:line" of the INCLUDE (None for the main file)
-            
+            kind: "lib" for INCLUDE LIB, "plain" otherwise
+
         Returns:
             List of tuples (line_content, source_location)
             
@@ -223,16 +294,21 @@ class CydcPreprocessor:
                 normalized_path
             )
         if normalized_path in self.included_files:
-            # Never the main file: it stays in the chain until the end.
-            raise PreprocessorError(
-                f"File already included from {self._included_from[normalized_path]}: {filepath}",
-                normalized_path
-            )
-        
+            # Never the main file: it stays in the chain until the end. (A
+            # library included again with INCLUDE LIB never gets here: it is
+            # skipped where the INCLUDE is.)
+            first = self._included_from[normalized_path]
+            if kind == "lib" and self._included_kind.get(normalized_path) == "plain":
+                message = f"File already included as a normal file from {first}: {filepath}"
+            else:
+                message = f"File already included from {first}: {filepath}"
+            raise PreprocessorError(message, normalized_path)
+
         # Mark file as included
         self.included_files.add(normalized_path)
         self._included_from[normalized_path] = included_from
-        
+        self._included_kind[normalized_path] = kind
+
         # Get display name (basename for cleaner error messages)
         display_name = os.path.basename(normalized_path)
         
@@ -265,39 +341,56 @@ class CydcPreprocessor:
                     )
                     continue
                 
-                include_file = match.group(1)
-                
-                # Resolve the include path relative to current file's directory
-                if not os.path.isabs(include_file):
-                    include_path = os.path.join(current_dir, include_file)
-                else:
-                    include_path = include_file
-                
+                is_lib = match.group(1) is not None
+                include_file = match.group(2)
+                kind = "lib" if is_lib else "plain"
+                here = SourceLocation(display_name, line_num, normalized_path)
+                # What the line has around the INCLUDE stays: before it (say
+                # "[[ " or text and "[["), and the "]]" that may close the
+                # block after it with what follows, and the line's newline.
+                before = line[:match.start()]
+                close = "]]" + (match.group(4) or "") if match.group(3) else ""
+                newline = "\n" if line.endswith("\n") else ""
+
                 try:
+                    include_path = self._resolve_include(include_file, current_dir, is_lib)
+                    # A library already included with INCLUDE LIB: once is
+                    # enough (a real cycle still goes on to be reported).
+                    resolved = os.path.normpath(include_path)
+                    if (is_lib and self._included_kind.get(resolved) == "lib"
+                            and resolved not in self._include_stack):
+                        result_lines.append((f"{before}/* INCLUDE LIB {include_file}: already included */"
+                                             f"{close}{newline}", here))
+                        continue
+
                     # Recursively process the included file
-                    included_content = self._process_file(
+                    included_content = list(self._process_file(
                         include_path,
                         depth + 1,
                         normalized_path,
                         f"{display_name}:{line_num}",
-                    )
+                        kind,
+                    ))
 
-                    # Close the current code block before the include
-                    result_lines.append(("]] /* Close block for INCLUDE */\n", SourceLocation(display_name, line_num, normalized_path)))
-
-                    # Add a comment marker for debugging/tracing
-                    marker_line = f"/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n"
-                    result_lines.append((marker_line, SourceLocation(display_name, line_num, normalized_path)))
-                    
+                    # The markers are comments in code, so they compile to
+                    # nothing. The included file starts and ends outside code:
+                    # its first line gets the "]]" that closes this block and
+                    # its last one the "[[" that reopens it, so no newline is
+                    # left between them to become text of the game.
+                    result_lines.append((
+                        f"{before}/* BEGIN INCLUDE: {include_file} (from {display_name}:{line_num}) */\n",
+                        here))
+                    if included_content:
+                        text, loc = included_content[0]
+                        included_content[0] = ("]]" + text, loc)
+                        text, loc = included_content[-1]
+                        if text.endswith("\n"):
+                            included_content[-1] = (text[:-1] + "[[\n", loc)
+                        else:
+                            included_content[-1] = (text + "[[", loc)
                     result_lines.extend(included_content)
-                    
-                    # Add end marker
-                    end_marker = f"/* END INCLUDE: {include_file} */\n"
-                    result_lines.append((end_marker, SourceLocation(display_name, line_num, normalized_path)))
-                    
-                    # Reopen the code block after the include
-                    result_lines.append(("[[ /* Reopen block after INCLUDE */\n", SourceLocation(display_name, line_num, normalized_path)))
-                    
+                    result_lines.append((f"/* END INCLUDE: {include_file} */{close}{newline}", here))
+
                 except PreprocessorError as e:
                     # Add context about where the include was found
                     self._append_error(
@@ -332,6 +425,9 @@ class CydcPreprocessor:
         self.included_files.clear()
         self._included_from.clear()
         self._include_stack.clear()
+        self._included_kind.clear()
+        root = self.project_root or os.path.dirname(self._normalize_path(filepath))
+        self._root = os.path.abspath(root)
         self.errors.clear()
         self.max_errors_reached = False
         self.line_map.clear()

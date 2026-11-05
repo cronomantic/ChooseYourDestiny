@@ -118,6 +118,16 @@ class CydcParser(object):
             return f"{loc.filename}:{loc.line_num + line_num - max(before)}"
         return self._("line {}").format(line_num)
 
+    def _source_path(self, line_num):
+        """The real path of the file a preprocessed line comes from (as
+        _format_error_location finds it), or None without a line map."""
+        if not self.line_map:
+            return None
+        if line_num in self.line_map:
+            return getattr(self.line_map[line_num], "path", None)
+        before = [n for n in self.line_map if n < line_num]
+        return getattr(self.line_map[max(before)], "path", None) if before else None
+
     def _tag_location(self, p, i):
         """Turn the statement(s) in p[i] into SourceStatements located at that
         symbol's line. Statements that already have a location (the body of an
@@ -1833,7 +1843,8 @@ class CydcParser(object):
         # Declares a native Z80 routine: name -> assembler file. Resolved at build
         # time (assembled and placed in memory); no runtime bytecode is emitted here.
         if self._declare_symbol(p[2], SymbolType.EXTERN, p.lineno(2)):
-            p[0] = ("IMPORT", p[2], p[4])
+            # The file it is in: a relative path is looked for next to it first.
+            p[0] = ("IMPORT", p[2], p[4], self._source_path(p.lineno(2)))
         else:
             p[0] = None
 
@@ -3557,20 +3568,22 @@ class CydcParser(object):
                     res = False
         return res
 
-    def unused_symbol_warnings(self, project_dir=None):
+    def unused_symbol_warnings(self, project_dir=None, exclude_dirs=()):
         """Warnings for declared labels, variables and data arrays that nothing
         refers to. Constants are left out, like unused #defines in C: a set of
         them (an ENUM, a palette) is rarely used in full.
 
         With project_dir, only symbols declared in files under that directory
         (the script's own) count, so a library INCLUDEd from elsewhere doesn't
-        warn about the routines the game doesn't call."""
+        warn about the routines the game doesn't call. Nor do the ones in
+        exclude_dirs (the library folders), even inside the project."""
         messages = {
             SymbolType.LABEL: self._("Label '{symbol}' on {loc} is never used."),
             SymbolType.VARIABLE: self._("Variable '{symbol}' on {loc} is never used."),
             SymbolType.ARRAY: self._("Data array '{symbol}' on {loc} is never used."),
         }
         root = os.path.abspath(project_dir) if project_dir else None
+        excluded = [os.path.abspath(d) for d in exclude_dirs]
         warnings = []
         for symbol, (symbol_type, lineno) in sorted(
             self.symbols.items(), key=lambda item: item[1][1]
@@ -3580,6 +3593,8 @@ class CydcParser(object):
             source = self.line_map.get(lineno) if self.line_map else None
             path = getattr(source, "path", None)
             if root and path and not _is_inside(path, root):
+                continue
+            if path and any(_is_inside(path, d) for d in excluded):
                 continue
             warnings.append(messages[symbol_type].format(
                 symbol=symbol, loc=self._format_error_location(lineno)

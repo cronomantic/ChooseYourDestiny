@@ -750,5 +750,59 @@ class TestNativeDCE(unittest.TestCase):
         )
 
 
+@unittest.skipUnless(find_sjasmplus(), "sjasmplus not available")
+class TestImportSearch(unittest.TestCase):
+    """IMPORT ... FROM "x.asm" is looked for next to the .cyd with the IMPORT,
+    then next to the main .cyd (as it always was), then in --import-path."""
+
+    CYDC = Path(__file__).resolve().parent.parent / "src" / "cydc" / "cydc_cli.py"
+
+    def _build(self, wd, *options):
+        import subprocess
+        out = Path(wd) / "out"
+        out.mkdir(exist_ok=True)
+        r = subprocess.run(
+            [sys.executable, str(self.CYDC), *options, "48k", str(Path(wd) / "juego" / "main.cyd"),
+             find_sjasmplus(), str(out)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+        )
+        return r.returncode, r.stdout + r.stderr
+
+    def _project(self, wd, main, files):
+        for name, text in {"juego/main.cyd": main, **files}.items():
+            path = Path(wd) / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+
+    def test_next_to_the_file_with_the_import(self):
+        with tempfile.TemporaryDirectory() as wd:
+            self._project(wd, '[[\nINCLUDE "rutinas/r.cyd"\nCALL nat\n]]Hola[[ WAITKEY ]]', {
+                "juego/rutinas/r.cyd": '[[\nIMPORT nat FROM "nat.asm"\n]]',
+                "juego/rutinas/nat.asm": NATIVE,
+            })
+            code, out = self._build(wd)
+            self.assertEqual(code, 0, out)
+
+    def test_next_to_the_main_file_as_always(self):
+        with tempfile.TemporaryDirectory() as wd:
+            self._project(wd, '[[\nINCLUDE "rutinas/r.cyd"\nCALL nat\n]]Hola[[ WAITKEY ]]', {
+                "juego/rutinas/r.cyd": '[[\nIMPORT nat FROM "asm/nat.asm"\n]]',
+                "juego/asm/nat.asm": NATIVE,
+            })
+            code, out = self._build(wd)
+            self.assertEqual(code, 0, out)
+
+    def test_import_path(self):
+        with tempfile.TemporaryDirectory() as wd:
+            self._project(wd, '[[\nIMPORT nat FROM "nat.asm"\nCALL nat\n]]Hola[[ WAITKEY ]]', {
+                "comunes/nat.asm": NATIVE,
+            })
+            code, out = self._build(wd)
+            self.assertNotEqual(code, 0)
+            self.assertIn("assembler file not found: nat.asm", out)
+            code, out = self._build(wd, "--import-path", str(Path(wd) / "comunes"))
+            self.assertEqual(code, 0, out)
+
+
 if __name__ == "__main__":
     unittest.main()

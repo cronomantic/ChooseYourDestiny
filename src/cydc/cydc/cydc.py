@@ -28,7 +28,7 @@ from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
 from cydc_font import CydcFont
 from cydc_music import compress_track_data, create_wyz_player_bank, add_size_header
-from cydc_preprocessor import CydcPreprocessor, PreprocessorError
+from cydc_preprocessor import CydcPreprocessor, PreprocessorError, find_cyd_home
 
 from cyd import *
 from cydc_utils import *
@@ -321,6 +321,40 @@ def main():
         type=file_path,
         help=_("path to the SCR file used as Loading screen"),
     )
+    arg_parser.add_argument(
+        "--project-root",
+        type=dir_path,
+        metavar=_("FOLDER"),
+        help=_(
+            "the project's root folder (default: the script's folder): an INCLUDE "
+            "not found next to its file is looked for here"
+        ),
+    )
+    arg_parser.add_argument(
+        "-I",
+        "--include-path",
+        type=dir_path,
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("another folder for INCLUDE, after the project root (can be repeated)"),
+    )
+    arg_parser.add_argument(
+        "--lib-path",
+        type=dir_path,
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("a folder for INCLUDE LIB, before the bundled lib/ (can be repeated)"),
+    )
+    arg_parser.add_argument(
+        "--import-path",
+        type=dir_path,
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("another folder for IMPORT, after the script's folder (can be repeated)"),
+    )
     ###
     arg_parser.add_argument(
         "-v",
@@ -515,11 +549,22 @@ def main():
         print(_("Preprocessing includes..."))
     tmp_timer.reset()
     
+    # The project root (INCLUDE looks here after the file's own folder) and
+    # the library folders INCLUDE LIB looks in: the user's, then CYD_HOME/lib.
+    project_root = os.path.abspath(args.project_root or os.path.dirname(os.path.abspath(args.input)))
+    cyd_home = find_cyd_home()
+    lib_paths = [os.path.abspath(d) for d in args.lib_path]
+    if cyd_home and os.path.isdir(os.path.join(cyd_home, "lib")):
+        lib_paths.append(os.path.join(cyd_home, "lib"))
+
     try:
         preprocessor = CydcPreprocessor(
             max_depth=20, 
             base_path=os.path.dirname(os.path.abspath(args.input)),
             max_errors=args.max_errors,
+            project_root=project_root,
+            include_paths=args.include_path,
+            lib_paths=lib_paths,
         )
         # Absolute: a relative path would be joined onto base_path a second time.
         text, line_map = preprocessor.preprocess(os.path.abspath(args.input))
@@ -665,8 +710,8 @@ def main():
     print(_("Code parsing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     if not args.no_warn_unused:
-        project_dir = os.path.dirname(os.path.abspath(args.input))
-        for w in parser.unused_symbol_warnings(project_dir):
+        # Symbols of the library folders don't warn, even inside the project.
+        for w in parser.unused_symbol_warnings(project_root, exclude_dirs=lib_paths):
             emit_warning("PARSER", w)
 
     if args.check:
@@ -682,6 +727,8 @@ def main():
             for s in code
         ]
         codegen = CydcCodegen(gettext)
+        codegen.import_base_dir = os.path.dirname(os.path.abspath(args.input))
+        codegen.import_paths = [os.path.abspath(d) for d in args.import_path]
         codegen.set_bank_offset_list([0xC000])
         codegen.set_bank_size_list([16 * 1024])
         codegen.generate_code(code=checked, slice_text=True)
@@ -899,6 +946,8 @@ def main():
     ######################################################################
 
     codegen = CydcCodegen(gettext)
+    codegen.import_base_dir = os.path.dirname(os.path.abspath(args.input))
+    codegen.import_paths = [os.path.abspath(d) for d in args.import_path]
     codegen.eliminate_dead_code = args.dead_code_elimination
     chunks = []
     l_tokens = []
