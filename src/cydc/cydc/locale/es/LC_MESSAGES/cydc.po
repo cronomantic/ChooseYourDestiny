@@ -119,6 +119,12 @@ msgstr "ruta al directorio con las pistas de música"
 msgid "FOLDER"
 msgstr "CARPETA"
 
+msgid "keep the intermediate files (cyd.asm, cyd.sym, the listing...) in the cyd_tmp folder of the output folder; without it they are removed when the build ends well"
+msgstr "conserva los ficheros intermedios (cyd.asm, cyd.sym, el listado...) en la carpeta cyd_tmp de la carpeta de salida; sin esta opción se borran cuando la compilación termina bien"
+
+msgid "Intermediate files kept in {path}"
+msgstr "Ficheros intermedios conservados en {path}"
+
 msgid "the project's root folder (default: the script's folder): an INCLUDE not found next to its file is looked for here"
 msgstr "carpeta raíz del proyecto (por defecto, la del guion): un INCLUDE que no está junto a su fichero se busca aquí"
 

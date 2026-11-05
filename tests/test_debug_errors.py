@@ -71,7 +71,7 @@ def run_and_locate(source, model, *options):
     location the .map gives for it."""
     with tempfile.TemporaryDirectory() as wd:
         image, flags_addr = compile_cyd(source, model, wd, extra_args=options)
-        lst = Path(wd) / "cyd.lst"
+        lst = Path(wd) / "cyd_tmp" / "cyd.lst"
         dbg = _parse_label_addr(lst, "DBG_PC")
         chunk = _parse_label_addr(lst, "CHUNK")
         flags, (pos, cur) = run_in_zesarux(
@@ -95,7 +95,7 @@ class TestDebugMap(unittest.TestCase):
                 out = Path(wd) / ("out" + "".join(options).replace("-", "_"))
                 out.mkdir()
                 r = subprocess.run(
-                    [sys.executable, str(CYDC), *options, "48k", "game.cyd",
+                    [sys.executable, str(CYDC), "--keep-temp", *options, "48k", "game.cyd",
                      str(find_sjasmplus()), str(out)],
                     cwd=wd, capture_output=True, text=True, timeout=120,
                     env={**os.environ, "CYD_LANG": "en", "LANGUAGE": "en"},
@@ -105,10 +105,10 @@ class TestDebugMap(unittest.TestCase):
 
             plain = build()
             self.assertFalse((plain / "game.map").exists())
-            self.assertNotIn("DBG_PC", (plain / "cyd.sym").read_text())
+            self.assertNotIn("DBG_PC", (plain / "cyd_tmp" / "cyd.sym").read_text())
 
             debug = build("--debug-errors")
-            self.assertIn("DBG_PC", (debug / "cyd.sym").read_text())
+            self.assertIn("DBG_PC", (debug / "cyd_tmp" / "cyd.sym").read_text())
             entries = read_map(debug / "game.map")
             locs = [loc for chunk in entries.values() for _, loc in chunk]
             # Every statement of the script has its line.

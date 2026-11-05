@@ -238,7 +238,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--project-root FOLDER] [-I FOLDER] [--lib-path FOLDER] [--import-path FOLDER]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors] [--keep-temp]
               [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
@@ -275,6 +275,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-no-warn-gosub**: Don't warn about the `GOSUB`/`RETURN` problems the compiler finds by following the program's flow (see [GOSUB ID](#gosub-id)): a `RETURN` that can be reached with no `GOSUB` pending, and a subroutine that can end without `RETURN`, going on into the main code. These warnings (`WARNING [CODEGEN]`) don't stop the build.
 - **\-\-no-warn-shared-vars**: Don't warn about variables that one file declares and another file uses under another name, by their number (`SET 205 TO ...`) or from another variable (`SET v TO {...}` running past `v`). That is how a library's variables, such as `sprites.cyd`'s 200..211, get overwritten without noticing. Reusing a variable under several names within one file doesn't warn, and neither does using it by its name from any file. These warnings (`WARNING [CODEGEN]`) don't stop the build.
 - **\-\-debug-stack**: For debugging. The interpreter checks the `GOSUB` stack at runtime: a `RETURN` with no `GOSUB` pending gives system error 9, and a `GOSUB` that would fill the stack gives error 10, instead of hanging or resetting the Spectrum. It adds about 30 bytes to the interpreter and a little work to each `GOSUB` and `RETURN`, so leave it out of the final build.
+- **\-\-keep-temp**: Keep the intermediate files of the build (`cyd.asm`, `cyd.sym`, the listing with `-v`, and the +3 `DISK` and `.BIN`) in the `cyd_tmp` folder of the output folder. Without it, the output folder only gets what the build delivers (the `.tap`, `.DSK`, `.MLD`, or the esxdos SD files), and `cyd_tmp` is removed when the build ends well; if it fails, `cyd_tmp` stays and the compiler says where it is.
 - **\-\-debug-errors**: For debugging. When a system error happens, the message also says at which instruction, and the compiler writes a `.map` file next to the game that turns it into a file and a line (see [Error codes](#error-codes)). Without this option the interpreter doesn't change; with it, the instructions that can't fail run just as fast, so it is only worth leaving out for the bytes.
 - **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
 - **\-wyz**: Use WyzTracker music type instead of Vortex Tracker.
@@ -1998,7 +1999,7 @@ _Function_ that returns the last accessible position of the given array. For all
 
 The engine supports a maximum of 256 images, plus whatever fits on disk or memory. They must be named with a 3-digit number, corresponding to the image number that will be invoked from the program. For example, image 0 should be called `000.scr`, image 1 `001.scr`, and so on up to 255. Images must be in the Spectrum display format.
 
-To display images, the compiler compresses the SCR format files from the Spectrum display into compressed files with a `csc` extension. The compression process can be lengthy, so the compiler detects whether for each `scr` file, there is a more recent equivalent file with a `csc` extension in the images directory. If so, it skips this file, and if not, it recompresses it, generating the `csc` file again.
+To display images, the compiler compresses the SCR format files from the Spectrum display into compressed files with a `csc` extension. The compression process can be lengthy, so the compiler keeps the compressed images in the `cyd_cache` folder of the output folder, and only compresses an image again when its `scr` file changes or when it has to be compressed differently (another number of lines, or another symmetry setting). The images folder is only read: a `csc` file you put there without its `scr` is used as an image already compressed.
 
 You can configure the number of horizontal lines to display in the image using the corresponding parameter in the compiler to further reduce the size. Additionally, if it detects that the right half of the image is mirrored by the left half, it discards the left half to further reduce the size, although we can force this behavior with any image. To do this, create a file called `images.json` in the images directory.
 
@@ -2114,7 +2115,7 @@ Main options:
 - `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`: passed straight to the compiler.
 - `--check`: only checks the script for errors, without building it; `SJASMPLUS_PATH` is not needed in this mode.
 
-Note: after successful `plus3` builds, temporary files `SCRIPT.DAT`, `DISK`, and `CYD.BIN` are cleaned automatically.
+Note: the compiler's intermediate files (among them the `plus3` `DISK` and `.BIN`, which go inside the `.DSK`) are made in the `cyd_tmp` folder of the output folder and removed when the build ends well (see `--keep-temp`).
 
 ### Windows version
 

@@ -111,8 +111,9 @@ def compile_cyd(source, model, workdir, images=None, tracks=None, extra_args=())
         raise RuntimeError("sjasmplus not found under tools/")
     src = Path(workdir) / "test.cyd"
     src.write_text(source, encoding="utf-8")
-    # -v makes run_assembler keep the .lst listing (we parse FLAGS from it).
-    cmd = [sys.executable, str(CYDC), "-v"]
+    # -v makes run_assembler keep the .lst listing (we parse FLAGS from it);
+    # --keep-temp keeps it, in cyd_tmp/ of the output folder.
+    cmd = [sys.executable, str(CYDC), "-v", "--keep-temp"]
     if images:
         idir = Path(workdir) / "IMAGES"
         idir.mkdir(exist_ok=True)
@@ -143,7 +144,7 @@ def compile_cyd(source, model, workdir, images=None, tracks=None, extra_args=())
         image = Path(workdir) / "test.tap"
         if not image.is_file():
             raise RuntimeError("no TAP produced")
-    lst = Path(workdir) / "cyd.lst"
+    lst = Path(workdir) / "cyd_tmp" / "cyd.lst"
     flags_addr = _parse_flags_addr(lst) if lst.is_file() else None
     if flags_addr is None:
         raise RuntimeError("could not determine FLAGS address from listing")
@@ -295,7 +296,7 @@ def build_mld_rom(source, model, workdir):
         raise RuntimeError("sjasmplus not found under tools/")
     (Path(workdir) / "test.cyd").write_text(source, encoding="utf-8")
     proc = subprocess.run(
-        [sys.executable, str(CYDC), "-v", model, "test.cyd", sj, "."],
+        [sys.executable, str(CYDC), "-v", "--keep-temp", model, "test.cyd", sj, "."],
         cwd=workdir, capture_output=True, text=True, timeout=180,
     )
     if proc.returncode != 0:
@@ -304,7 +305,7 @@ def build_mld_rom(source, model, workdir):
         )
     if not (Path(workdir) / "test.MLD").is_file():
         raise RuntimeError("no MLD produced")
-    lst = Path(workdir) / "cyd.lst"
+    lst = Path(workdir) / "cyd_tmp" / "cyd.lst"
     flags_addr = _parse_flags_addr(lst) if lst.is_file() else None
     if flags_addr is None:
         raise RuntimeError("could not determine FLAGS address from listing")
@@ -364,7 +365,7 @@ def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,
             (Path(wd) / name).write_text(content, encoding="utf-8")
         tap, flags_addr = compile_cyd(source, model, wd, images=images, tracks=tracks,
                                       extra_args=extra_args)
-        lst = Path(wd) / "cyd.lst"
+        lst = Path(wd) / "cyd_tmp" / "cyd.lst"
         abs_reads = []
         for r in reads:
             if len(r) == 2:

@@ -20,7 +20,7 @@
 from __future__ import print_function
 from operator import itemgetter, attrgetter
 
-import sys, os, argparse, json, re, copy, math, gettext, traceback
+import sys, os, argparse, json, re, copy, math, gettext, traceback, shutil
 import multiprocessing
 
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
@@ -166,6 +166,29 @@ def plan_mld128_array_banks(array_lengths, ram_banks_full):
             array_bank_map[name] = (b, 0xC000)
             bank_used[b] = nbytes
     return array_bank_map, order
+
+
+# The build's work folder (<output>/cyd_tmp) while it is being built: kept
+# if the build fails, so cli() can say where it is.
+_WORK = {"path": None}
+
+# The intermediate files of a build go to this folder inside the output one.
+WORK_FOLDER = "cyd_tmp"
+# The compressed pictures, kept between builds, go to this one.
+CACHE_FOLDER = "cyd_cache"
+
+
+def collect_deliverables(work_path, output_path):
+    """Move what a build delivers from its work folder to the output folder:
+    the tape, the esxdos .DAT and its autoboot files, and the Dandanator .MLD.
+    The rest is intermediate: cyd.asm, cyd.sym, the listing, the __ files, and
+    the +3 DISK and .BIN, which are already inside the .DSK."""
+    for name in os.listdir(work_path):
+        if name.startswith("__"):
+            continue
+        ext = os.path.splitext(name)[1].lower()
+        if ext in (".tap", ".dat", ".mld") or name.upper() in ("AUTOBOOT.BAS", "ESXDOS.CFG"):
+            os.replace(os.path.join(work_path, name), os.path.join(output_path, name))
 
 
 def main():
@@ -431,6 +454,16 @@ def main():
         help=_(
             "don't warn when a variable declared in one file (such as a library's) "
             "is used from another file under another name or by its number"
+        ),
+    )
+    arg_parser.add_argument(
+        "--keep-temp",
+        action="store_true",
+        default=False,
+        help=_(
+            "keep the intermediate files (cyd.asm, cyd.sym, the listing...) in the "
+            "cyd_tmp folder of the output folder; without it they are removed "
+            "when the build ends well"
         ),
     )
     arg_parser.add_argument(
@@ -736,6 +769,16 @@ def main():
         print(_("No errors found in {input}.").format(input=args.input))
         sys.exit(0)
 
+    # The build works in <output>/cyd_tmp: only what it delivers ends up in the
+    # output folder (collect_deliverables). The work folder is removed when the
+    # build ends well, unless --keep-temp; if it fails, it stays.
+    final_output = os.path.abspath(args.output_path)
+    work_path = os.path.join(final_output, WORK_FOLDER)
+    shutil.rmtree(work_path, ignore_errors=True)
+    os.makedirs(work_path, exist_ok=True)
+    _WORK["path"] = work_path
+    args.output_path = work_path
+
     ######################################################################
 
     if verbose > 0:
@@ -812,10 +855,16 @@ def main():
         if not result:
             sys.exit(_(error_txt))
         tmp_timer.reset()
+        # The compressed pictures are kept in <output>/cyd_cache, named after
+        # what they were compressed with (lines and symmetry): changing them
+        # compresses the picture again. A .csc in the images folder without its
+        # .scr is a picture already compressed, used as it is.
+        cache_path = os.path.join(final_output, CACHE_FOLDER)
+        os.makedirs(cache_path, exist_ok=True)
         for i in range(256):
             fpath = os.path.join(args.images_path, f"{i:03d}.scr")
-            dpath = os.path.join(args.images_path, f"{i:03d}.csc")
-            if os.path.isfile(fpath) and file_must_be_generated(fpath, dpath):
+            given_csc = os.path.join(args.images_path, f"{i:03d}.csc")
+            if os.path.isfile(fpath):
                 scr_num_lines = args.image_lines
                 scr_force_mirror = False
                 if images_json is not None:
@@ -827,25 +876,30 @@ def main():
                                 print(_("{fpath} is set with {scr_num_lines} lines.").format(fpath=fpath, scr_num_lines=scr_num_lines))
                                 if scr_force_mirror:
                                     print(_("{fpath} has forced simmetry.").format(fpath=fpath))
-                b = compress_screen_file(
-                    fpath,
-                    num_lines=scr_num_lines,
-                    force_mirror=scr_force_mirror,
-                    verbose=(verbose >= 1),
+                dpath = os.path.join(
+                    cache_path, f"{i:03d}_{scr_num_lines}_{'m' if scr_force_mirror else 'n'}.csc"
                 )
-                if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
-                    sys.exit(_("ERROR: Invalid SCR file, it is too big"))
-                with open(dpath, "wb") as f:
-                    f.write(bytearray(b))
-                t = ("SCR", i, len(b), b, dpath)
-                blocks.append(t)
-            elif os.path.isfile(dpath):
+                if file_must_be_generated(fpath, dpath):
+                    b = compress_screen_file(
+                        fpath,
+                        num_lines=scr_num_lines,
+                        force_mirror=scr_force_mirror,
+                        verbose=(verbose >= 1),
+                    )
+                    with open(dpath, "wb") as f:
+                        f.write(bytearray(b))
+                else:
+                    with open(dpath, "rb") as f:
+                        b = list(f.read())
+            elif os.path.isfile(given_csc):
+                dpath = given_csc
                 with open(dpath, "rb") as f:
                     b = list(f.read())
-                    t = ("SCR", i, len(b), b, dpath)
-                    blocks.append(t)
-                    if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
-                        sys.exit(_("ERROR: Invalid SCR file, it is too big"))
+            else:
+                continue
+            if (model in ("plus3", "esxdos")) and (len(b) > (7 * 1024)):
+                sys.exit(_("ERROR: Invalid SCR file, it is too big"))
+            blocks.append(("SCR", i, len(b), b, dpath))
         print(_("Images processing completed ({tmp_timer})").format(tmp_timer=tmp_timer))
 
     has_tracks = False
@@ -928,7 +982,7 @@ def main():
         if verbose > 0:
             print(_("Assembling WyzTracker bank..."))
         res, wyz_player_bin = create_wyz_player_bank(
-            track_path=args.tracks_path,
+            track_path=args.output_path,  # its temporary files: the work folder
             sjasmplus_path=args.sjasmplus_path,
             tracks=wyz_tracks,
             instruments=wyz_instruments,
@@ -1189,7 +1243,7 @@ def main():
         array_bank_map=array_bank_map,
     )
     if args.debug_errors:
-        write_debug_map(codegen, os.path.join(args.output_path, f"{output_name}.map"))
+        write_debug_map(codegen, os.path.join(final_output, f"{output_name}.map"))
 
     if model == "mld128":
         # mld128 reads TXT/SCR/bytecode from Dandanator slots (IS_MLD_DAN), so
@@ -1806,7 +1860,11 @@ def main():
             btype = b[0]
             bpath = b[4]
             if btype == "SCR":
-                files.append(bpath)
+                # On the disk as NNN.csc, the name the engine opens: the cached
+                # file's name also says how it was compressed.
+                disk_csc = os.path.join(args.output_path, f"{b[1]:03d}.csc")
+                shutil.copyfile(bpath, disk_csc)
+                files.append(disk_csc)
             elif btype == "TRK":
                 track_list.append(bpath)
 
@@ -1814,15 +1872,15 @@ def main():
         res = True
         try:
             for t in track_list:
-                tb, _ext = os.path.splitext(t)
-                tb += ".BIN"
+                # NNN.BIN, in the work folder (not next to the .PT3)
+                tb = os.path.join(args.output_path, os.path.splitext(os.path.basename(t))[0] + ".BIN")
                 add_size_header(t, tb)
                 track_list_aux.append(tb)
 
             files += track_list_aux
 
             make_plus3_dsk(
-                filename=os.path.join(args.output_path, output_name + ".DSK"),
+                filename=os.path.join(final_output, output_name + ".DSK"),
                 filelist=files,
                 label=output_name,
                 disk_720=args.disk_720,
@@ -1851,24 +1909,38 @@ def main():
             try:
                 if b[0] == "SCR":
                     src = b[4]
-                    dst = os.path.join(args.output_path, f"{b[1]:03d}.CSC")
+                    dst = os.path.join(final_output, f"{b[1]:03d}.CSC")
                     with open(src, "rb") as fi, open(dst, "wb") as fo:
                         fo.write(fi.read())
                 elif b[0] == "TRK":
                     # Vortex PT3: prepend the 2-byte size header music_manager_esxdos
                     # expects, writing "NNN.BIN" (mirrors the +3 track packaging).
-                    dst = os.path.join(args.output_path, f"{b[1]:03d}.BIN")
+                    dst = os.path.join(final_output, f"{b[1]:03d}.BIN")
                     add_size_header(b[4], dst)
             except OSError:
                 sys.exit("ERROR: could not copy ESXDOS media file")
 
     ######################################################################
+    collect_deliverables(work_path, final_output)
+    if args.keep_temp:
+        print(_("Intermediate files kept in {path}").format(path=work_path))
+    else:
+        shutil.rmtree(work_path, ignore_errors=True)
+    _WORK["path"] = None
+
     if model == "mld" or model == "mld128":
         print(_("{model} generation completed ({tmp_timer})").format(model=model.upper(), tmp_timer=tmp_timer))
     else:
         print(_("TAP/DSK generation completed ({tmp_timer})").format(tmp_timer=tmp_timer))
     print(_("Compilation successful in {timer}").format(timer=timer))
     sys.exit(0)
+
+
+def _say_work_kept(failed):
+    """After a failed build, where its intermediate files are."""
+    path = _WORK["path"]
+    if failed and path and os.path.isdir(path):
+        sys.stderr.write(gettext.gettext("Intermediate files kept in {path}").format(path=path) + "\n")
 
 
 def cli():
@@ -1883,7 +1955,11 @@ def cli():
     multiprocessing.freeze_support()
     try:
         main()
+    except SystemExit as e:
+        _say_work_kept(e.code not in (0, None))
+        raise
     except Exception as e:
+        _say_work_kept(True)
         sys.stderr.write(f"\nERROR [INTERNAL]: {type(e).__name__}: {e}\n")
         sys.stderr.write(
             "Unexpected compiler error. Re-run with -v for the full traceback "

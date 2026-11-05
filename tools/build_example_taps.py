@@ -76,9 +76,8 @@ def build(example, asm):
         if r.returncode != 0 or len(built) != 1:
             sys.exit(f"{example.name}: compilation failed\n{r.stdout}{r.stderr}")
         shutil.copyfile(built[0], tape(example))
-    # The compiler leaves its compressed images next to the .scr files.
-    for csc in (example / "IMAGES").glob("*.[cC][sS][cC]") if (example / "IMAGES").is_dir() else ():
-        csc.unlink()
+    # (The compressed images go to the output folder's cyd_cache, not next to
+    # the .scr files: nothing to clean in the example.)
 
 
 def main(names):

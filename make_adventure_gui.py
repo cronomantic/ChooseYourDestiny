@@ -1771,14 +1771,8 @@ class MakeAdventureGUI:
             self.root.after(0, self._compile_finished)
             return
 
-        # Plus3 cleanup (mirrors make_adventure.py)
-        if success and model == "plus3":
-            self._log(_("Cleaning temporary files…"))
-            for fname in ["SCRIPT.DAT", "DISK", "CYD.BIN"]:
-                p = os.path.join(output_path, fname)
-                if os.path.isfile(p):
-                    os.remove(p)
-                    self._log(_("  Removed {}").format(fname))
+        # (No +3 cleanup: the compiler keeps its intermediate files in cyd_tmp
+        # and removes them itself.)
 
         # Backup (mirrors make_adv.cmd)
         if success and self.var_backup_cyd.get():

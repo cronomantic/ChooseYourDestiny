@@ -723,7 +723,7 @@ I'm going to display the image.[[
 Done[[ WAITKEY: END ]]
 ```
 
-Before launching the emulator, look in the `\IMAGES` directory, where you will find `001.SCR` and `001.CSC`. The `MakeAdv` script looks for files named xxx.SCR, where the three x's are digits, and compresses them with `CSC`, generating the corresponding files with the extension `.CSC`. The engine will search the disk for files with this name when asked to load images.
+The `MakeAdv` script looks in the `\IMAGES` directory for files named xxx.SCR, where the three x's are digits, and compresses them with `CSC` (it keeps the compressed images in the `cyd_cache` folder of the output folder, so it only compresses an image again when it changes). On the disk they go as files with the extension `.CSC`, like `001.CSC`. The engine will search the disk for files with this name when asked to load images.
 
 Now we can launch the emulator. The first thing you will see is this:
 

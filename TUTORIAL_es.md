@@ -721,7 +721,7 @@ Voy a mostrar la imagen.[[
 Hecho[[ WAITKEY: END ]]
 ```
 
-Antes de lanzar el emulador, mira el directorio `\IMAGES`, donde encontrarás `001.SCR` y `001.CSC`. El compilador lo que hace es buscar los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime, generando los ficheros correspondientes con la extensión `.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes en el caso de la versión de disco. En las versiones de cinta, se almacenarán y descomprimirán en la memoria.
+El compilador busca en el directorio `\IMAGES` los ficheros con nombre xxx.SCR, donde las tres x son dígitos, y los comprime (guarda las imágenes comprimidas en la carpeta `cyd_cache` de la carpeta de salida, así que solo vuelve a comprimir una imagen cuando cambia). En el disco van como ficheros con la extensión `.CSC`, como `001.CSC`. El motor buscará en el disco ficheros con esta nomenclatura cuando se le pida cargar imágenes en el caso de la versión de disco. En las versiones de cinta, se almacenarán y descomprimirán en la memoria.
 
 Ahora ya podemos lanzar el emulador. Lo primero que verás es esto:
 

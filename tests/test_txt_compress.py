@@ -263,7 +263,7 @@ class TestNestedDecoderSize(unittest.TestCase):
             emu_harness.compile_cyd("Hola hola hola\n", "48k", wd,
                                     extra_args=["--token-format", token_format])
             syms = {}
-            for line in (Path(wd) / "cyd.sym").read_text().splitlines():
+            for line in (Path(wd) / "cyd_tmp" / "cyd.sym").read_text().splitlines():
                 m = re.match(r"([A-Za-z_][A-Za-z0-9_]*):?\s+EQU\s+0x([0-9A-F]+)", line)
                 if m:
                     syms[m.group(1)] = int(m.group(2), 16)

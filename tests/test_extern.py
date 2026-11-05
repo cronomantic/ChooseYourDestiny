@@ -579,8 +579,8 @@ class TestCallAsValue(unittest.TestCase):
 class TestBrokerExtirpation(unittest.TestCase):
     def _sym_has(self, src, symbol, model="48k"):
         with tempfile.TemporaryDirectory(prefix="cyd_strip_") as wd:
-            compile_cyd(src, model, wd)  # writes cyd.sym in wd
-            sym = Path(wd) / "cyd.sym"
+            compile_cyd(src, model, wd)  # keeps cyd.sym in wd/cyd_tmp
+            sym = Path(wd) / "cyd_tmp" / "cyd.sym"
             text = sym.read_text(encoding="utf-8", errors="ignore") if sym.is_file() else ""
         return symbol in text
 

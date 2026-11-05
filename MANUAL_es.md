@@ -238,7 +238,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
               [--project-root FOLDER] [-I FOLDER] [--lib-path FOLDER] [--import-path FOLDER]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
-              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors]
+              [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors] [--keep-temp]
               [--token-format {auto,flat,nested}]
               [-pause PAUSE_AFTER_LOAD] [-wyz] [-il NUM_IMAGE_LINES] [-720]
               {48k,128k,plus3,mld,mld128,esxdos} input.cyd [SJASMPLUS_PATH] [OUTPUT_PATH]
@@ -275,6 +275,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-no-warn-shared-vars**: No avisa de las variables que un fichero declara y otro fichero usa con otro nombre, por su número (`SET 205 TO ...`) o desde otra variable (`SET v TO {...}` pasándose de `v`). Es la forma de pisar sin darse cuenta las variables de una librería, como las 200..211 de `sprites.cyd`. Reutilizar una variable con varios nombres dentro de un mismo fichero no avisa, ni usarla por su nombre desde cualquier fichero. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
+- **\-\-keep-temp**: Conserva los ficheros intermedios de la compilación (`cyd.asm`, `cyd.sym`, el listado con `-v`, y el `DISK` y el `.BIN` de +3) en la carpeta `cyd_tmp` de la carpeta de salida. Sin ella, en la carpeta de salida solo queda lo que entrega la compilación (el `.tap`, el `.DSK`, el `.MLD` o los ficheros de la SD de esxdos), y `cyd_tmp` se borra cuando la compilación termina bien; si falla, `cyd_tmp` se queda y el compilador dice dónde está.
 - **\-\-debug-errors**: Para depurar. Cuando se produce un error de sistema, el mensaje dice también en qué instrucción, y el compilador escribe junto al juego un fichero `.map` que lo traduce a fichero y línea (ver [Códigos de error](#códigos-de-error)). Sin esta opción el intérprete no cambia; con ella, las instrucciones que no pueden fallar van igual de rápido, así que conviene quitarla solo por los bytes.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
@@ -2008,7 +2009,7 @@ _Función_ que devuelve la última posición accessible del array dado. A todos 
 
 El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco o la memoria, y deben estar nombradas con un número de 3 dígitos, que corresponderá al número de imagen que se invocará desde el programa. Por ejemplo, la imagen 0 debería llamarse `000.scr`, la imagen número 1 `001.scr`, y así hasta 255. Las imágenes deben estar en el formato de pantalla de Spectrum.
 
-Para mostrar imágenes, el compilador comprime los ficheros en formato SCR de la pantalla de Spectrum en ficheros comprimidos con extensión `csc`. El proceso de compresión puede ser largo, así que el compilador detecta si por cada fichero `scr`, existe un fichero equivalente con extensión `csc` más reciente en el directorio de imágenes. Si es el caso, entonces se salta este fichero, y si no, lo vuelve a comprimir, generando de nuevo el fichero `csc`.
+Para mostrar imágenes, el compilador comprime los ficheros en formato SCR de la pantalla de Spectrum en ficheros comprimidos con extensión `csc`. El proceso de compresión puede ser largo, así que el compilador guarda las imágenes comprimidas en la carpeta `cyd_cache` de la carpeta de salida, y solo vuelve a comprimir una imagen cuando cambia su fichero `scr` o cuando hay que comprimirla de otra forma (otro número de líneas u otro ajuste de simetría). El directorio de imágenes solo se lee: un fichero `csc` que pongas ahí sin su `scr` se usa como imagen ya comprimida.
 
 Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con el compilador para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque podemos forzar este comportamiento con cualquier imagen. Para ello hay que crear un fichero llamado `images.json` dentro del directorio de imágenes.
 
@@ -2124,7 +2125,7 @@ Opciones principales:
 - `--token-format {auto,flat,nested}`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`: se pasan tal cual al compilador.
 - `--check`: solo comprueba si el script tiene errores, sin generarlo; en este modo no hace falta `SJASMPLUS_PATH`.
 
-Nota: tras una compilación `plus3` correcta, limpia automáticamente los ficheros temporales `SCRIPT.DAT`, `DISK` y `CYD.BIN`.
+Nota: los ficheros intermedios del compilador (entre ellos el `DISK` y el `.BIN` de `plus3`, que van dentro del `.DSK`) se crean en la carpeta `cyd_tmp` de la carpeta de salida y se borran cuando la compilación termina bien (ver `--keep-temp`).
 
 ### Windows
 

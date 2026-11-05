@@ -552,14 +552,8 @@ def main():
         err = _("ERROR: Error running CYDC.") + str(os1)
         sys.exit(err)
 
-    if args.model == "plus3" and not args.check:
-        print(_("Cleaning..."))
-        files_to_clean = ["SCRIPT.DAT", "DISK", "CYD.BIN"]
-        for f in files_to_clean:
-            p = os.path.join(args.output_path, f)
-            if os.path.isfile(p):
-                os.remove(p)
-
+    # Nothing to clean: the compiler keeps its intermediate files (the +3
+    # DISK and .BIN among them) in cyd_tmp and removes them itself.
     sys.exit(0)
 
 

@@ -49,11 +49,11 @@ class TestOpcodeLayout(unittest.TestCase):
                             tempfile.TemporaryDirectory() as wd:
                         (Path(wd) / "game.cyd").write_text(source, encoding="utf-8")
                         r = subprocess.run(
-                            [sys.executable, str(CYDC), "-v", *trim, model, "game.cyd",
+                            [sys.executable, str(CYDC), "-v", "--keep-temp", *trim, model, "game.cyd",
                              str(find_sjasmplus()), wd],
                             cwd=wd, capture_output=True, text=True, timeout=300)
                         self.assertEqual(r.returncode, 0, r.stdout[-2000:] + r.stderr)
-                        listing = (Path(wd) / "cyd.lst").read_text(errors="replace")
+                        listing = (Path(wd) / "cyd_tmp" / "cyd.lst").read_text(errors="replace")
                         # A tiny trimmed program may not have handlers enough to
                         # fill the gap; it must still build.
                         if not (trim and name == "small"):
