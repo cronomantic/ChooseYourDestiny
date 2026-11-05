@@ -23,6 +23,12 @@ from operator import itemgetter, attrgetter
 import sys, os, argparse, json, re, copy, math, gettext, traceback, shutil
 import multiprocessing
 
+# Run as a script by the embedded Python (dist/python), whose ._pth leaves the
+# script's own folder out of sys.path, the modules next to it must still load.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+
 from cydc_txt_compress import CydcTextCompressor, NUM_TOKENS
 from cydc_parser import CydcParser
 from cydc_codegen import CydcCodegen
