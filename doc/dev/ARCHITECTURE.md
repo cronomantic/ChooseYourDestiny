@@ -371,12 +371,13 @@ ejecutan las herramientas de autor.** El build lo hace
   `make_adventure_gui.py` ejecutan `dist/python/python.exe` (Python embebido) +
   `dist/cydc_cli.py`, que hace `sys.path.append('.../dist/cydc')` y
   `from cydc import main` → importa **`dist/cydc/`**.
-- ⚠️ **El redirect a `src/` está MUERTO (a propósito, no tocar — solo saberlo).**
-  Hay un `dist/python/Lib/sitecustomize.py` (generado por `setup_embedded_python.py`)
-  que inserta `src/cydc` en `sys.path`, pero (1) apunta un nivel de más
-  (los módulos están en `src/cydc/cydc/`) y (2) **nunca se ejecuta**: el `._pth` del
-  Python embebido tiene `import site` comentado (`site` deshabilitado). Ambos son
-  artefactos untracked.
+- **No hay redirect a `src/`.** El Python embebido no ejecuta `site` (el `._pth` tiene
+  `import site` comentado), así que ni lee `sitecustomize.py` ni añade la carpeta del
+  script a `sys.path`: cada script de entrada se la añade él mismo (`dist/cydc_cli.py`,
+  y `src/cydc/cydc/cydc.py` cuando se lanza directo, p. ej. con
+  `make_adventure.py --compiler`). Hasta la 1.6.6 había un `dist/python/Lib/sitecustomize.py`
+  muerto, con rutas absolutas de la máquina donde se generó; `setup_embedded_python.py`
+  ya no lo crea.
 - **CONSECUENCIA OPERATIVA: cualquier cambio en `src/cydc/` NO llega a las
   herramientas ni a la distribución hasta rehacer `dist/`** (ejecutar `make_dist.py`
   o su paso de copia). Es fácil olvidarlo y probar con un `dist/` stale. El

@@ -176,7 +176,7 @@ def create_distributions(base_path, platforms=None):
     return run_command(cmd, cwd=base_path)
 
 
-def setup_python(base_path, arch="64bit", version="3.14.3", no_download=False):
+def setup_python(base_path, arch="64bit", version="3.15.2", no_download=False):
     """Setup embedded Python."""
     print("\n" + "=" * 60)
     print("STEP: Setting up Embedded Python")
@@ -270,8 +270,8 @@ Examples:
     
     parser.add_argument(
         "--python-version",
-        default="3.14.3",
-        help="Python version to install (default: 3.14.3)"
+        default="3.15.2",
+        help="Python version to install (default: 3.15.2)"
     )
     
     parser.add_argument(

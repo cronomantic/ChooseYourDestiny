@@ -1,3 +1,5 @@
+"""Utilities to help work with fonts in Tkinter."""
+
 # Tkinter font wrapper
 #
 # written by Fredrik Lundh, February 1998
@@ -6,7 +8,6 @@
 import itertools
 import tkinter
 
-__version__ = "0.9"
 __all__ = ["NORMAL", "ROMAN", "BOLD", "ITALIC",
            "nametofont", "Font", "families", "names"]
 
@@ -72,8 +73,15 @@ class Font:
             root = tkinter._get_default_root('use font')
         tk = getattr(root, 'tk', root)
         if font:
-            # get actual settings corresponding to the given font
-            font = tk.splitlist(tk.call("font", "actual", font))
+            # start from the settings of the given font
+            try:
+                # a named font: copy its options, preserving the size,
+                # which can be negative (specified in pixels)
+                font = tk.splitlist(tk.call("font", "configure", font))
+            except tkinter.TclError:
+                # a font description: resolve it ("font configure" only
+                # accepts a font name); this loses a size in pixels
+                font = tk.splitlist(tk.call("font", "actual", font))
         else:
             font = self._set(options)
         if not name:
@@ -83,7 +91,8 @@ class Font:
         if exists:
             self.delete_font = False
             # confirm font exists
-            if self.name not in tk.splitlist(tk.call("font", "names")):
+            name = getattr(name, 'string', name)  # can be a Tcl object
+            if name not in tk.splitlist(tk.call("font", "names")):
                 raise tkinter._tkinter.TclError(
                     "named font %s does not already exist" % (self.name,))
             # if font config info supplied, apply it
@@ -98,7 +107,7 @@ class Font:
         self._call  = tk.call
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def __repr__(self):
         return f"<{self.__class__.__module__}.{self.__class__.__qualname__}" \
@@ -107,13 +116,21 @@ class Font:
     def __eq__(self, other):
         if not isinstance(other, Font):
             return NotImplemented
-        return self.name == other.name and self._tk == other._tk
+        name = self.name
+        other_name = other.name
+        if type(name) is not type(other_name):
+            # A Tcl object does not compare equal to a string.
+            name = getattr(name, 'string', name)
+            other_name = getattr(other_name, 'string', other_name)
+        return name == other_name and self._tk == other._tk
 
     def __getitem__(self, key):
         return self.cget(key)
 
     def __setitem__(self, key, value):
         self.configure(**{key: value})
+
+    __iter__ = None  # prevent using __getitem__ for iteration
 
     def __del__(self):
         try:
@@ -124,7 +141,7 @@ class Font:
 
     def copy(self):
         "Return a distinct copy of the current font"
-        return Font(self._tk, **self.actual())
+        return Font(self._tk, self.name)
 
     def actual(self, option=None, displayof=None):
         "Return actual font attributes"
@@ -196,6 +213,15 @@ def names(root=None):
     if root is None:
         root = tkinter._get_default_root('use font.names()')
     return root.tk.splitlist(root.tk.call("font", "names"))
+
+
+def __getattr__(name):
+    if name == "__version__":
+        from warnings import _deprecated
+
+        _deprecated("__version__", remove=(3, 20))
+        return "0.9"  # Do not change
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 # --------------------------------------------------------------------

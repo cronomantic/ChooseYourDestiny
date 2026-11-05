@@ -72,7 +72,7 @@ python automate.py [opciones]
 
 - `--setup-python` - Instalar y personalizar Python embebido
 - `--python-arch {32bit|64bit}` - Arquitectura del Python a instalar (default: 64bit)
-- `--python-version VERSION` - Versión de Python a instalar (default: 3.14.0)
+- `--python-version VERSION` - Versión de Python a instalar (default: 3.15.2)
 - `--no-download` - Usar instalación existente sin descargar
 
 ### Ejemplos de Uso
@@ -158,20 +158,20 @@ Instala y personaliza una distribución de Python embebido para facilitar la dis
 - Instala paquetes directamente desde PyPI (sin pip)
 - Extrae tkinter desde la distribución completa de Python
 - Configura `Lib/site-packages` para hacer paquetes accesibles
-- Actualiza automáticamente el archivo `._pth` de Python (python314._pth, etc.)
-- Crea `sitecustomize.py` como respaldo de configuración de rutas
+- Actualiza automáticamente el archivo `._pth` de Python (python315._pth, etc.)
 
 **Uso directo (PowerShell en Windows):**
 ```powershell
 python setup_embedded_python.py                           # Setup 64-bit Python (última)
 python setup_embedded_python.py --list-versions           # Ver versiones soportadas
 python setup_embedded_python.py --32bit                   # Setup 32-bit Python
-python setup_embedded_python.py --python-version 3.14.3   # Versión específica
+python setup_embedded_python.py --python-version 3.15.2   # Versión específica
 python setup_embedded_python.py --no-download             # Usar instalación existente
 ```
 
 **Versiones soportadas (ver `--list-versions` para lista completa):**
-- 3.14.3, 3.14.2, 3.14.1, 3.14.0
+- 3.15.2 (la que se distribuye)
+- 3.14.10, 3.14.6 … 3.14.0
 - 3.13.1, 3.13.0
 - 3.12.8, 3.12.7
 - 3.11.9, 3.11.8
@@ -184,8 +184,8 @@ python setup_embedded_python.py --no-download             # Usar instalación ex
 Ejemplo:
 ```python
 PYTHON_VERSIONS = {
-    "3.15.0": "3150",  # Nueva entrada (formato: "XYZ" de la versión)
-    "3.14.3": "3143",
+    "3.15.3": "3153",  # Nueva entrada (formato: "XYZ" de la versión)
+    "3.15.2": "3152",
     ...
 }
 ```
@@ -194,16 +194,16 @@ PYTHON_VERSIONS = {
 
 1. **Descarga de distribuciones** - Descarga Python embebido + completo desde python.org (con caché)
 2. **Extracción del embebido** - Extrae la distribución embebida a `dist/python/`
-3. **Instalación de tkinter** - Extrae tcl/, DLLs y módulos tkinter desde distribución completa
+3. **Instalación de tkinter** - Extrae las DLLs de Tcl/Tk y los módulos tkinter (con Python 3.15, Tcl/Tk 9 lleva su biblioteca dentro de `tcl90.dll`, así que ya no hay carpeta `tcl/`) desde distribución completa
 4. **Instalación de paquetes** - Descarga e instala paquetes desde PyPI a `Lib/site-packages/`
-5. **Configuración de sitecustomize.py** - Crea sitecustomize.py como respaldo para configuración de sys.path
+5. **Sin sitecustomize.py** - No se crea (y se borra si existe): el `._pth` deja `site` desactivado, así que nunca se ejecutaría
 6. **Verificación de tkinter** - Crea ventana de prueba para verificar tkinter funciona
 7. **Limpieza de caché** - Elimina archivos temporales (mantiene get-pip.py en caché)
-8. **Actualización de ._pth** - Modifica `python314._pth` (u otro versión) para incluir `Lib\site-packages`
+8. **Actualización de ._pth** - Modifica `python315._pth` (u otra versión) para incluir `Lib\site-packages`
 
 **Qué instala:**
 - Python embebido en `dist/python/`
-- tkinter y todas sus dependencias (tcl/, DLLs)
+- tkinter y todas sus dependencias (DLLs de Tcl/Tk 9)
 - Paquetes desde `src/cydc/requirements.txt`:
   - progressbar (barras de progreso)
   - asciibars (gráficos ASCII)
@@ -212,7 +212,7 @@ PYTHON_VERSIONS = {
 
 **Acerca de tkinter:**
 - El script descarga automáticamente la versión completa de Python (no embebida)
-- Extrae tkinter y todas sus bibliotecas necesarias (tcl/, DLLs)
+- Extrae tkinter y todas sus bibliotecas necesarias (DLLs de Tcl/Tk)
 - Copia los archivos al Python embebido
 - Verifica funcionamiento creando una ventana Tk temporal
 - **No requiere intervención manual** - todo es transparente

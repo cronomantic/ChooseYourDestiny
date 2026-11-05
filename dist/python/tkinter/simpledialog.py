@@ -8,7 +8,7 @@
 # fredrik@pythonware.com
 # http://www.pythonware.com
 #
-"""This modules handles dialog boxes.
+"""This module handles dialog boxes.
 
 It contains the following public symbols:
 
@@ -23,9 +23,12 @@ askfloat -- get a float from the user
 askstring -- get a string from the user
 """
 
-from tkinter import *
+from tkinter import Button, Entry, Frame, Label, Message, Tk, Toplevel
 from tkinter import _get_temp_root, _destroy_temp_root
 from tkinter import messagebox
+from tkinter.constants import ACTIVE, BOTH, END, LEFT, RIDGE, W, E
+
+__all__ = ["SimpleDialog", "Dialog", "askinteger", "askfloat", "askstring"]
 
 
 class SimpleDialog:
@@ -259,8 +262,11 @@ def _place_window(w, parent=None):
 
 def _setup_dialog(w):
     if w._windowingsystem == "aqua":
-        w.tk.call("::tk::unsupported::MacWindowStyle", "style",
-                  w, "moveableModal", "")
+        if w.info_patchlevel() >= (9, 1):
+            w.wm_attributes(stylemask='titled')
+        else:
+            w.tk.call('::tk::unsupported::MacWindowStyle', 'style',
+                      w, 'moveableModal', '')
     elif w._windowingsystem == "x11":
         w.wm_attributes(type="dialog")
 

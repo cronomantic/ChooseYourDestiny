@@ -21,6 +21,8 @@ if sys.stdout:
 
 
 PYTHON_VERSIONS = {
+    "3.15.2": "3152",
+    "3.14.10": "31410",
     "3.14.6": "3146",
     "3.14.5": "3145",
     "3.14.4": "3144",
@@ -372,26 +374,14 @@ def setup_embedded_python(version="3.14.3", arch="64bit", no_download=False):
     else:
         print(f"  Note: {req_file} not found - skipping package installation")
     
-    print("\nStep 5: Configuring sitecustomize.py (backup path configuration)...")
-    try:
-        # For embedded Python, we create sitecustomize.py which is automatically imported
-        # This is more reliable than ._pth files for site-packages configuration
-        sitecustomize_path = dist_path / "Lib" / "sitecustomize.py"
-        site_packages_path = dist_path / "Lib" / "site-packages"
-        src_cydc_path = project_root / "src" / "cydc"
-        
-        with open(sitecustomize_path, 'w') as f:
-            f.write("# Automatically add site-packages and project paths\n")
-            f.write("import sys\n")
-            f.write(f"sys.path.insert(0, r'{site_packages_path}')\n")
-            f.write(f"sys.path.insert(0, r'{src_cydc_path}')\n")
-        
-        print(f"  sitecustomize.py configured")
-        print(f"    - Added site-packages path: {site_packages_path}")
-        print(f"    - Added src/cydc path: {src_cydc_path}")
-    except Exception as e:
-        print(f"  Warning: sitecustomize configuration failed: {e}")
-    
+    # Step 5: no sitecustomize.py. The ._pth (step 8) leaves `import site` off,
+    # so it would never run; it only carried this machine's absolute paths into
+    # the package. Lib\site-packages comes from the ._pth, and the compiler
+    # scripts add their own folder to sys.path.
+    stale = dist_path / "Lib" / "sitecustomize.py"
+    if stale.exists():
+        stale.unlink()
+
     print("\nStep 6: Verifying tkinter installation...")
     tkinter_ok = False
     
@@ -412,7 +402,7 @@ def setup_embedded_python(version="3.14.3", arch="64bit", no_download=False):
     
     # Check 2: Verify _tkinter.pyd exists as backup
     if not tkinter_ok:
-        if (dist_path / "_tkinter.pyd").exists() and (dist_path / "tcl86t.dll").exists():
+        if (dist_path / "_tkinter.pyd").exists() and any(dist_path.glob("tcl*.dll")):
             print(f"  ⚠ _tkinter.pyd and DLLs exist (tkinter may be operational)")
     
     # Clean up cached files from different versions/architectures
@@ -478,7 +468,7 @@ def main():
     
     parser.add_argument("--32bit", action="store_const", const="32bit", dest="arch", default="64bit",
         help="Setup 32-bit Python (default: 64-bit)")
-    parser.add_argument("--python-version", default="3.14.3", help="Python version (default: 3.14.3)")
+    parser.add_argument("--python-version", default="3.15.2", help="Python version (default: 3.15.2)")
     parser.add_argument("--no-download", action="store_true", help="Use existing cache")
     parser.add_argument("--list-versions", action="store_true", help="List supported versions")
     parser.add_argument("--verify", action="store_true", help="Only verify installation")
