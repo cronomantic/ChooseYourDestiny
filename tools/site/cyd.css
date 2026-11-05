@@ -64,3 +64,13 @@
 .md-typeset .highlight .cp {
   font-weight: 700;
 }
+
+/* Home page: the big logo, centred. */
+.md-typeset .cyd-home-logo {
+  text-align: center;
+}
+
+.md-typeset .cyd-home-logo img {
+  width: 320px;
+  max-width: 100%;
+}

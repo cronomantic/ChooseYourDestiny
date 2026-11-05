@@ -23,7 +23,7 @@ SITE_DOCS = REPO / "build" / "site_docs"
 
 HOME = """# Choose Your Destiny
 
-![CYD](assets/cydlogo_2_gui.png)
+<p class="cyd-home-logo"><img src="assets/cydlogo_2.png" alt="Choose Your Destiny"></p>
 
 **Choose Your Destiny** (CYD) is an engine and a compiler for making
 "choose your own adventure" games, interactive fiction and gamebooks for the
@@ -54,7 +54,7 @@ def prepare(source, out=SITE_DOCS):
     if out.exists():
         shutil.rmtree(out)
     (out / "assets").mkdir(parents=True)
-    wanted = {"assets/cydlogo_2_gui.png"}
+    wanted = {"assets/cydlogo_2_gui.png", "assets/cydlogo_2.png"}
     for name in DOCS:
         text = (source / name).read_text(encoding="utf-8")
         (out / name).write_text(text, encoding="utf-8")
