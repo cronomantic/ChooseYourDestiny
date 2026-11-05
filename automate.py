@@ -10,7 +10,9 @@ This script provides a unified interface to:
 - Run regression tests
 - Generate PDF documentation
 - Create distribution packages
-- Update GitHub Wiki
+
+The documentation site (GitHub Pages) is published by GitHub on each release
+tag (.github/workflows/docs.yml).
 
 MIT License - Copyright (c) 2024-2026 Sergio Chico
 """
@@ -174,34 +176,6 @@ def create_distributions(base_path, platforms=None):
     return run_command(cmd, cwd=base_path)
 
 
-def update_wiki(base_path):
-    """Update GitHub Wiki."""
-    print("\n" + "=" * 60)
-    print("STEP 5: Updating GitHub Wiki")
-    print("=" * 60)
-    
-    script = base_path / "update_wiki.py"
-    if not script.exists():
-        print(f"✗ Error: {script} not found")
-        return False
-    
-    return run_command([sys.executable, str(script)], cwd=base_path)
-
-
-def update_wiki(base_path):
-    """Update GitHub Wiki."""
-    print("\n" + "=" * 60)
-    print("STEP 5: Updating GitHub Wiki")
-    print("=" * 60)
-    
-    script = base_path / "update_wiki.py"
-    if not script.exists():
-        print(f"[X] Error: {script} not found")
-        return False
-    
-    return run_command([sys.executable, str(script)], cwd=base_path)
-
-
 def setup_python(base_path, arch="64bit", version="3.14.3", no_download=False):
     """Setup embedded Python."""
     print("\n" + "=" * 60)
@@ -239,7 +213,6 @@ Examples:
   python automate.py --all                    Run all tasks
   python automate.py --locales --tests        Update locales and run tests
   python automate.py --dist --platform all    Create all distributions
-  python automate.py --pdf --wiki             Generate PDFs and update wiki
   python automate.py --release                Full release workflow
         """
     )
@@ -270,21 +243,15 @@ Examples:
     )
     
     parser.add_argument(
-        "--wiki",
-        action="store_true",
-        help="Update GitHub Wiki"
-    )
-    
-    parser.add_argument(
         "--all",
         action="store_true",
-        help="Run all tasks (except wiki update)"
+        help="Run all tasks"
     )
     
     parser.add_argument(
         "--release",
         action="store_true",
-        help="Full release workflow (all tasks including wiki)"
+        help="Full release workflow (the same tasks as --all)"
     )
     
     # Embedded Python setup
@@ -323,7 +290,7 @@ Examples:
     args = parser.parse_args()
     
     # If no tasks specified, show help
-    if not any([args.locales, args.tests, args.pdf, args.dist, args.wiki, args.all, args.release, args.setup_python]):
+    if not any([args.locales, args.tests, args.pdf, args.dist, args.all, args.release, args.setup_python]):
         parser.print_help()
         return 0
     
@@ -365,7 +332,7 @@ Examples:
         return 0 if success else 1
     
     if args.release:
-        tasks = ["locales", "tests", "pdf", "dist", "wiki"]
+        tasks = ["locales", "tests", "pdf", "dist"]
     elif args.all:
         tasks = ["locales", "tests", "pdf", "dist"]
     else:
@@ -377,8 +344,6 @@ Examples:
             tasks.append("pdf")
         if args.dist:
             tasks.append("dist")
-        if args.wiki:
-            tasks.append("wiki")
     
     print(f"\nTasks to execute: {', '.join(tasks)}")
     
@@ -410,11 +375,6 @@ Examples:
         if not create_distributions(base_path, platform_arg):
             print("\n[X] Distribution creation failed")
             success = False
-    
-    if success and "wiki" in tasks:
-        if not update_wiki(base_path):
-            print("\n[X] Wiki update failed (you may need to commit changes)")
-            # Don't set success = False, as this is non-critical
     
     # Final summary
     print("\n" + "=" * 60)

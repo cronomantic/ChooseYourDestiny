@@ -62,7 +62,7 @@ Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo `ChooseY
 
 ### Linux, BSDs, etc. (Experimental)
 
-Antes tienes que cumplir los prerrequisitos, para ello consulta la sección relevante del [manual](MANUAL_es).
+Antes tienes que cumplir los prerrequisitos, para ello consulta la sección relevante del [manual](MANUAL_es.md).
 
 Luego descarga el archivo `ChooseYourDestiny.Linux_x64.zip` de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada `CYD`, que puedes crear donde creas conveniente. El guion para montar aventuras se llama `make_adv.sh`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos. Tus aventuras no irán en esta carpeta, sino cada una en una carpeta propia, como veremos en el siguiente capítulo.
 
@@ -181,7 +181,7 @@ Ahora hemos puesto un comando por delante del texto. Si compilamos y ejecutamos,
 
 ![Pantalla 3](assets/tut003.png)
 
-Con el comando CLEAR borramos la zona imprimible que, de momento, es la pantalla completa. Como la pantalla se borra automáticamente al iniciarse el intérprete, no veremos de momento nada, pero con este comando tendremos la pantalla limpia para imprimir desde el comienzo. Tienes una referencia completa de los comandos en el [manual](https://github.com/cronomantic/ChooseYourDestiny/blob/main/MANUAL_es.md).
+Con el comando CLEAR borramos la zona imprimible que, de momento, es la pantalla completa. Como la pantalla se borra automáticamente al iniciarse el intérprete, no veremos de momento nada, pero con este comando tendremos la pantalla limpia para imprimir desde el comienzo. Tienes una referencia completa de los comandos en el [manual](MANUAL_es.md).
 
 Ahora vamos a cambiar el color del texto. Para ello vamos a usar el comando INK n, donde n es un número del 0 al 7 que corresponde con los colores del Spectrum. Por defecto es blanco, así que vamos a ponerlo de color cian, que es el número 5, con lo que sería INK 5. Lo pondremos antes del CLEAR, tal que así:
 
@@ -194,7 +194,7 @@ El resultado es...
 ![Pantalla 4](assets/tut004.png)
 
 Pero el color es un poco apagado... ¡Vamos a darle brillo!
-Para ello usamos el comando BRIGHT 1, (de nuevo, mirar la referencia en el [manual](https://github.com/cronomantic/ChooseYourDestiny/blob/main/MANUAL_es.md)), de esta manera:
+Para ello usamos el comando BRIGHT 1, (de nuevo, mirar la referencia en el [manual](MANUAL_es.md)), de esta manera:
 
 ```
 [[INK 5]][[BRIGHT 1]][[CLEAR]]Hola Mundo[[WAITKEY]]

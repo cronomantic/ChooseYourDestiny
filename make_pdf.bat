@@ -15,7 +15,7 @@ set "HEADER=%~dp0documentation\pdf\pandoc-header.tex"
 
 set "COMMON_ARGS=-f markdown-yaml_metadata_block --pdf-engine=""%TECTONIC%"" --include-in-header=""%HEADER%"" --number-sections --toc --toc-depth=3 --highlight-style=tango -V papersize:a4 -V geometry:margin=2.2cm -V fontsize=11pt -V linestretch=1.15 -V colorlinks=true -V linkcolor=CYDAccent -V urlcolor=CYDAccent -V toccolor=black -V monofont=""DejaVu Sans Mono"""
 
-REM The manuals and tutorials are canonical in this repo (the wiki is a mirror).
+REM The manuals and tutorials are canonical in this repo.
 REM They are built from the repo root so their image paths (assets\) resolve.
 
 REM Create output directories

@@ -19,8 +19,8 @@ elif locale -a 2>/dev/null | grep -qi '^C\.utf8$'; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# The repository is the canonical source for the documentation (the wiki is a
-# mirror), so the PDFs are generated from the repo's own Markdown.
+# The repository is the canonical source for the documentation, so the PDFs
+# are generated from the repo's own Markdown.
 cd "$SCRIPT_DIR"
 
 # Check if pandoc is installed
@@ -77,7 +77,7 @@ COMMON_PANDOC_ARGS=(
 # Ensure output directories exist
 mkdir -p "$SCRIPT_DIR/documentation/es" "$SCRIPT_DIR/documentation/en"
 
-# The manuals and tutorials are canonical in this repo (the wiki is a mirror).
+# The manuals and tutorials are canonical in this repo.
 # They are built from the repo root so their image paths (assets/) resolve.
 cd "$SCRIPT_DIR"
 for doc in MANUAL TUTORIAL; do

@@ -1,0 +1,66 @@
+/* Documentation site: the colours of the CYD logo (black, red #9d2b2b,
+   blue #4d75f3) and, for the code, those of the Spectrum. Copied to the site
+   by tools/build_site.py; mkdocs.yml uses it as extra_css. */
+
+:root {
+  --cyd-black: #000000;
+  --cyd-red: #9d2b2b;
+  --cyd-blue: #4d75f3;
+
+  /* Header and tabs: the logo's black. */
+  --md-primary-fg-color: var(--cyd-black);
+  --md-primary-fg-color--light: #1a1a1a;
+  --md-primary-fg-color--dark: var(--cyd-black);
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+  --md-accent-fg-color: var(--cyd-red);
+  --md-accent-fg-color--transparent: #9d2b2b1a;
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #2f55d4;
+  --cyd-heading: var(--cyd-red);
+
+  --md-code-hl-keyword-color: #1f45c4;   /* IF, GOTO, SET... : blue   */
+  --md-code-hl-constant-color: #9a1fb0;  /* PRINT, INK...    : magenta */
+  --md-code-hl-function-color: #00787a;  /* labels           : cyan    */
+  --md-code-hl-string-color: #1d7a2c;    /* "strings"        : green   */
+  --md-code-hl-number-color: #9a6200;    /* numbers          : yellow  */
+  --md-code-hl-special-color: var(--cyd-red); /* [[ ]]       : red     */
+  --md-code-hl-variable-color: #1f45c4;  /* @variables */
+}
+
+[data-md-color-scheme="slate"] {
+  /* Almost the logo's black (pure black tires the eyes with long text). */
+  --md-default-bg-color: #121212;
+  --md-code-bg-color: #1c1c1c;
+  --md-footer-bg-color: #000000;
+  --md-footer-bg-color--dark: #000000;
+  --md-typeset-a-color: #7f9cf8;
+  --md-accent-fg-color: #e06464;
+  --cyd-heading: #e06464;
+
+  --md-code-hl-keyword-color: #7f9cf8;
+  --md-code-hl-constant-color: #d58cf5;
+  --md-code-hl-function-color: #4fd0d6;
+  --md-code-hl-string-color: #72cc78;
+  --md-code-hl-number-color: #e5c060;
+  --md-code-hl-special-color: #e06464;
+  --md-code-hl-variable-color: #7f9cf8;
+}
+
+.md-typeset h1,
+.md-typeset h2 {
+  color: var(--cyd-heading);
+  font-weight: 700;
+}
+
+.md-typeset h2 {
+  border-bottom: 2px solid var(--md-default-fg-color--lightest);
+  padding-bottom: 0.2em;
+}
+
+/* [[ ]] stand out like in the editor. */
+.md-typeset .highlight .cp {
+  font-weight: 700;
+}

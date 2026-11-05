@@ -11,7 +11,6 @@ import argparse
 import fnmatch
 import os
 import platform
-import re
 import shutil
 import struct
 import sys
@@ -261,50 +260,6 @@ def compile_translations(current_path, src_path):
             compile_locale_dir(locale_dir)
 
 
-# Documentation that is canonical in this repo and mirrored to the wiki. The
-# images each one references (assets/...) are mirrored with it.
-WIKI_DOCS = ["MANUAL_es.md", "MANUAL_en.md", "TUTORIAL_es.md", "TUTORIAL_en.md"]
-
-
-def sync_docs_to_wiki(current_path):
-    """Replicate the canonical docs (WIKI_DOCS) and the images they reference to
-    the wiki submodule (external/ChooseYourDestiny.wiki). The repo is the source
-    of truth, the wiki a mirror: edit the docs here, never in the wiki. Returns
-    the relative paths copied, or None if the wiki submodule isn't there. See
-    also update_wiki.py, which additionally commits and pushes the wiki."""
-    wiki_path = os.path.join(current_path, "external", "ChooseYourDestiny.wiki")
-
-    if not os.path.exists(wiki_path):
-        print(f"Wiki submodule not found, skipping doc sync: {wiki_path}")
-        print("  (run: git submodule update --init external/ChooseYourDestiny.wiki)")
-        return None
-
-    print("Replicating docs to wiki submodule (repo -> wiki)...")
-    copied = []
-    for name in WIKI_DOCS:
-        src_file = os.path.join(current_path, name)
-        if not os.path.exists(src_file):
-            print(f"  Warning: repo doc not found: {src_file}")
-            continue
-        shutil.copy2(src_file, os.path.join(wiki_path, name))
-        copied.append(name)
-        with open(src_file, encoding="utf-8") as f:
-            images = sorted(set(re.findall(r"assets/[A-Za-z0-9_.-]+", f.read())))
-        for ref in images:
-            if ref in copied:
-                continue
-            img = os.path.join(current_path, ref)
-            if not os.path.exists(img):
-                print(f"  Warning: {name} references a missing image: {ref}")
-                continue
-            os.makedirs(os.path.join(wiki_path, "assets"), exist_ok=True)
-            shutil.copy2(img, os.path.join(wiki_path, ref))
-            copied.append(ref)
-    docs = sum(1 for c in copied if not c.startswith("assets/"))
-    print(f"  Synced {docs} docs and {len(copied) - docs} images")
-    return copied
-
-
 def copy_translations(current_path, src_path, dst_path):
     """Copy locale directories to dist."""
     print("Copying translations...")
@@ -469,12 +424,6 @@ Examples:
         help="Only bring dist/ up to date with src (compiler and translations), without packaging",
     )
 
-    parser.add_argument(
-        "--do-doc-sync",
-        action="store_true",
-        help="Replicates the canonical docs (manuals and tutorials) from this repo to the sibling wiki",
-    )
-    
     args = parser.parse_args()
     
     current_path = Path(__file__).parent
@@ -494,13 +443,6 @@ Examples:
     print(f"Target platform(s): {', '.join(platforms)}")
     print()
 
-    if args.do_doc_sync:
-        sync_docs_to_wiki(current_path)
-        print()
-    else:
-        print("Skipping doc sync")
-        print()
-    
     # Prepare source files and translations (once for all platforms)
     if args.sync_only:
         sync_dist(current_path, src_path, dst_path)

@@ -451,10 +451,9 @@ cada bloque, análogo a `USES` para rutinas. A diseñar en fase 3 junto con la A
      vídeo, arrays), servicios `CYD_SYSCALL`, broker de arrays (`MAP`/`FLUSH`/`PEEK`/
      `POKE`), `CYD_CALL`, la regla de oro y el límite de un banco. Aviso "avanzado, a
      tu propio riesgo".
-   - **Tutorial** (vive SOLO en la wiki, `external/ChooseYourDestiny.wiki`): entrada
-     introductoria como la de IMPORT/CALL.
-   - **Regenerar PDFs** por WSL (pandoc + xelatex) y **sincronizar/pushear la wiki**
-     (+ bump del submódulo en el repo padre).
+   - **Tutorial** (`TUTORIAL_*.md`): entrada introductoria como la de IMPORT/CALL.
+   - **Regenerar PDFs** por WSL (pandoc + xelatex); el sitio de documentación se
+     publica solo al subir el tag de la versión.
    - **Resaltador** (repo aparte `chooseyourdestiny-highlighter`): keywords nuevas
      `ASM`/`ENDASM`/`EXPORTS`/`USES`/`CYD_CALL`, e idealmente resaltar el **cuerpo
      verbatim** como ensamblador (bloque embebido). Snippets `asm`/`call`. Bump de

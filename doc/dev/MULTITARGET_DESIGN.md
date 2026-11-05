@@ -8,8 +8,8 @@
 > **Requisito previo:** para entender cómo funciona la herramienta hoy (pipeline
 > de compilación, mecanismo multi-target por compilación condicional, opcodes,
 > banking) leer primero [ARCHITECTURE.md](ARCHITECTURE.md). Este documento asume
-> ese conocimiento. La referencia autoritativa del **lenguaje** es el manual del
-> wiki (`MANUAL_es.md`).
+> ese conocimiento. La referencia autoritativa del **lenguaje** es el manual
+> (`MANUAL_es.md`).
 
 ---
 

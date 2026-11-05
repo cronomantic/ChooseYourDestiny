@@ -352,7 +352,7 @@ Optionally, you can specify the paths to directories containing the compressed i
 
 The images will be compressed into a `CSC` file. The screens can be full, or the number of horizontal lines can be limited to save memory. It also detects mirrored (symmetrical) images along the vertical axis, so it only stores half of the image. You can even force this behavior and discard the right side of the image to save space. More details on how this works are found in the [Images](#images) section.
 
-For the music, we can use Vortex Tracker modules (`PT3`) or music created with WyzTracker v2.0 and higher. The behavior is also described in their corresponding sections: [Vortex Tracker Tunes](#vortex-tracker-tunes) and [WyzTracker Tunes](#wyztracker-tunes).
+For the music, we can use Vortex Tracker modules (`PT3`) or music created with WyzTracker v2.0 and higher. The behavior is also described in their corresponding sections: [Vortex Tracker Tunes](#vortex-tracker-music) and [WyzTracker Tunes](#wyztracker-music).
 
 You can add sound effects generated with Shiru's BeepFx application. To use them, export them using the `File->Compile` option in the top menu. In the pop-up window that appears, make sure `Assembly` and `Include Player Code` are selected; the rest of the options are irrelevant. Then save the file somewhere accessible, specifying the path from the command line with the `-sfx` option.
 
@@ -446,7 +446,7 @@ LABEL Location1]]You are in location 1. Where do you want to go?
 [[ #Final : WAITKEY: END ]]
 ```
 
-The available commands are described in their corresponding [section](#commands).
+The available commands are described in their corresponding [section](#list-of-commands).
 
 ### Strict Colon Mode (Syntax Enforcement)
 
@@ -1067,7 +1067,7 @@ INK @Var-1
 ]]
 ```
 
-Check the [commands](#commands) reference to find out which commands accept them.
+Check the [commands](#list-of-commands) reference to find out which commands accept them.
 
 Finally, there are a number of special commands called **functions**. These commands cannot be used on their own, but must be used within a numeric expression, since they return a value to be used within it.
 
@@ -2418,7 +2418,7 @@ This is the perfect starting point. It demonstrates the fundamental concepts of 
 - **Images:** Loads and displays SCR images from the `IMAGES` directory using `PICTURE` and `DISPLAY`.
 - **Flow control:** Illustrates the use of `GOTO`, `LABEL`, `WAITKEY`, and screen clearing with `CLEAR`.
 
-This example is an expanded version of the code shown in the [Syntax](#syntax) section of the manual.
+This example is an expanded version of the code shown in the [Syntax](#basic-syntax) section of the manual.
 
 #### `examples\multicolumn_menu` - Multi-column Menus
 **Level:** Beginner

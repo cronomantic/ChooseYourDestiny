@@ -1,0 +1,76 @@
+name: Documentation site
+
+# Publishes the manuals and tutorials on GitHub Pages
+# (https://cronomantic.github.io/ChooseYourDestiny/), built with MkDocs by
+# tools/build_site.py.
+#
+# - On a version tag (v*): the documentation of that release.
+# - Manually (workflow_dispatch): the documentation of any tag, branch or
+#   commit ("ref"), built with the tooling of the branch the workflow runs on;
+#   that way a release older than the site (v1.6.6) can be published too.
+#
+# Needs Settings > Pages > Source: "GitHub Actions".
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag, branch or commit whose documentation to publish"
+        required: true
+        default: main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (tooling)
+        uses: actions/checkout@v4
+
+      - name: Checkout (documentation)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          path: docs-source
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs
+        run: pip install -r tools/site_requirements.txt
+
+      - name: Build
+        run: python tools/build_site.py --source docs-source
+
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

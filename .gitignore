@@ -46,3 +46,7 @@ parsetab.py
 
 # Embedded Python download cache (setup_embedded_python.py)
 .python_cache/
+
+# Documentation site (tools/build_site.py)
+/build/site/
+/build/site_docs/

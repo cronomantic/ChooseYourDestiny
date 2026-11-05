@@ -39,7 +39,7 @@ El **bytecode no se guarda en disco como artefacto suelto**: se incrusta como
 | [src/cydc/cydc/cyd/](../../src/cydc/cydc/cyd/) | **Plantillas `.asm`** del runtime (módulos del motor) |
 | `dist/cydc/cyd/*.asm` | **Artefactos** copiados del source; NO editar (el source está en `src/cydc/cydc/cyd/`) |
 | [documentation/](../../documentation/) | Manuales PDF (es/en) |
-| `ChooseYourDestiny.wiki/` (workdir aparte) | Manual y tutorial en Markdown — **referencia autoritativa del lenguaje** (`MANUAL_es.md`) |
+| `MANUAL_*.md`, `TUTORIAL_*.md` | Manual y tutorial en Markdown — **referencia autoritativa del lenguaje** (`MANUAL_es.md`); publicados en GitHub Pages (`tools/build_site.py`) |
 
 > Nota: `dist/cydc/cyd/*.asm` aparecen como untracked pero **no son WIP**; son
 > copias del build. El source real está en `src/cydc/cydc/cyd/`.

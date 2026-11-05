@@ -14,9 +14,9 @@ The system consists of a compiler that transforms the source code and associated
 
 Besides tape (48K/128K) and +3 disk, the compiler can also target divMMC/esxDOS SD cards, and — experimentally — the Dandanator cartridge.
 
-More information is available in the [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en) and a [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_en) to learn step by step. All information can be found in the [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). To make writing code easier, there is also a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
+More information is available in the [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/) and a [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_en/) to learn step by step. All information can be found in the [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). To make writing code easier, there is also a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
 
-The [credits](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en#acknowledgements) and [license](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en#license) are detailed in the corresponding sections of the [manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_en).
+The [credits](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/#acknowledgements) and [license](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/#licenses) are detailed in the corresponding sections of the [manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/).
 
 Improvements and contributions are welcome.
 
@@ -32,8 +32,8 @@ El sistema consiste en un compilador que transforma el código fuente y los recu
 
 Además de cinta (48K/128K) y disco +3, el compilador también puede generar para tarjetas SD divMMC/esxDOS y —de forma experimental— el cartucho Dandanator.
 
-Más información en el [Manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es) y dispones de un [tutorial](https://github.com/cronomantic/ChooseYourDestiny/wiki/TUTORIAL_es) para aprender paso a paso. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones también de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
+Más información en el [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/) y dispones de un [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_es/) para aprender paso a paso. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones también de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
 
-Los [créditos](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es#referencias-y-agradecimientos) y [licencia](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es#licencia) se detallan en las correspondientes secciones del [manual](https://github.com/cronomantic/ChooseYourDestiny/wiki/MANUAL_es).
+Los [créditos](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/#referencias-y-agradecimientos) y [licencia](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/#licencias) se detallan en las correspondientes secciones del [manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/).
 
 Mejoras y aportaciones son bienvenidas.

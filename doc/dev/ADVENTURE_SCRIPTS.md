@@ -500,7 +500,7 @@ Output: `../diskgame/OUTPUT/diskgame.DSK`
 
 - **Manual**: See `MANUAL_en.md` or `MANUAL_es.md`
 - **Tutorial**: See `TUTORIAL_en.md` or `TUTORIAL_es.md`
-- **Wiki**: https://github.com/cronomantic/ChooseYourDestiny/wiki
+- **Documentation site**: https://cronomantic.github.io/ChooseYourDestiny/
 - **Issues**: https://github.com/cronomantic/ChooseYourDestiny/issues
 - **Discussions**: https://github.com/cronomantic/ChooseYourDestiny/discussions
 

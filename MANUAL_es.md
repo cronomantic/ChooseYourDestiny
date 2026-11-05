@@ -96,7 +96,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [PAUSE expression](#pause-expression)
     - [TYPERATE expression](#typerate-expression)
     - [MARGINS expression, expression, expression, expression](#margins-expression-expression-expression-expression)
-    - [FADEOUT  expression, expression, expression, expression](#fadeout--expression-expression-expression-expression)
+    - [FADEOUT expression, expression, expression, expression](#fadeout-expression-expression-expression-expression)
     - [AT varexpression, varexpression](#at-varexpression-varexpression)
     - [FILLATTR varexpression, varexpression, varexpression, varexpression, varexpression](#fillattr-varexpression-varexpression-varexpression-varexpression-varexpression)
     - [PUTATTR varexpression, varexpression AT varexpression, varexpression](#putattr-varexpression-varexpression-at-varexpression-varexpression)
@@ -449,7 +449,7 @@ También se permite una versión acortada de las etiquetas precediendo el caract
 [[ #Final : WAITKEY: END ]]
 ```
 
-Los comandos disponibles están descritos en su [sección](#comandos) correspondiente.
+Los comandos disponibles están descritos en su [sección](#listado-de-comandos) correspondiente.
 
 ### Modo Colon Estricto (Enforced Colon Syntax)
 
@@ -1067,7 +1067,7 @@ INK @Var-1
 ]]
 ```
 
-Consulta la referencia de [comandos](#comandos) para saber cuáles de ellos los aceptan.
+Consulta la referencia de [comandos](#listado-de-comandos) para saber cuáles de ellos los aceptan.
 
 Por último, hay una serie de comandos especiales llamados **funciones**. Estos comandos no pueden usarse por sí solos, sino que deben usarse dentro de una expresión numérica, ya que devuelven un valor a emplear dentro de ella.
 
@@ -1782,7 +1782,7 @@ Define el área de pantalla donde se escribirá el texto. Los parámetros, por �
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
-### FADEOUT  expression, expression, expression, expression
+### FADEOUT expression, expression, expression, expression
 
 Hace un fundido en negro en el área de pantalla definida por los parámetros que, por órden, son:
 
@@ -2428,7 +2428,7 @@ Este es el ejemplo perfecto para empezar. Demuestra los conceptos fundamentales 
 - **Imágenes:** Carga y muestra imágenes SCR desde el directorio `IMAGES` usando `PICTURE` y `DISPLAY`.
 - **Control de flujo:** Ilustra el uso de `GOTO`, `LABEL`, `WAITKEY` y limpieza de pantalla con `CLEAR`.
 
-Este ejemplo es una versión ampliada del código mostrado en la sección de [Sintaxis](#sintaxis) del manual.
+Este ejemplo es una versión ampliada del código mostrado en la sección de [Sintaxis](#sintaxis-básica) del manual.
 
 #### `examples\multicolumn_menu` - Menús en múltiples columnas
 **Nivel:** Principiante

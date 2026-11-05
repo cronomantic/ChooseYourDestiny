@@ -1,0 +1,76 @@
+# The documentation site (GitHub Pages), made from the repo's manuals and
+# tutorials by tools/build_site.py, which copies them to build/site_docs and
+# runs MkDocs. Published by .github/workflows/docs.yml on each release.
+site_name: Choose Your Destiny
+site_description: Engine and compiler for making "choose your own adventure" games for the ZX Spectrum
+site_url: https://cronomantic.github.io/ChooseYourDestiny/
+repo_url: https://github.com/cronomantic/ChooseYourDestiny
+repo_name: cronomantic/ChooseYourDestiny
+edit_uri: ""
+
+docs_dir: build/site_docs
+site_dir: build/site
+
+theme:
+  name: material
+  language: en
+  logo: assets/cydlogo_2_gui.png
+  favicon: assets/cydlogo_2_gui.png
+  features:
+    - navigation.top
+    - navigation.tabs
+    - search.highlight
+    - toc.follow
+  # Dark by default, like the logo's background; the button switches to light.
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+
+# The logo's colours, and the Spectrum's for the code (tools/site/cyd.css).
+extra_css:
+  - stylesheets/cyd.css
+
+nav:
+  - Home: index.md
+  - English:
+      - Manual: MANUAL_en.md
+      - Tutorial: TUTORIAL_en.md
+  - Español:
+      - Manual: MANUAL_es.md
+      - Tutorial: TUTORIAL_es.md
+
+plugins:
+  - search:
+      lang: [en, es]
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      use_pygments: true
+      guess_lang: false
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+# Headings get the same ids as on GitHub, so the manuals' own links
+# (#cómo-generar-una-aventura, #let-varid--varexpression-1) work.
+hooks:
+  - tools/mkdocs_hooks.py
+
+validation:
+  omitted_files: warn
+  absolute_links: info
+  unrecognized_links: warn
+  anchors: warn

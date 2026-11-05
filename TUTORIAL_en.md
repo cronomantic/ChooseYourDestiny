@@ -64,7 +64,7 @@ To install on Windows 10 (64-bit) or higher, download the `ChooseYourDestiny.Win
 
 ### Linux, BSDs, etc. (Experimental)
 
-You must first meet the prerequisites, for this see the relevant section of the [manual](MANUAL_en).
+You must first meet the prerequisites, for this see the relevant section of the [manual](MANUAL_en.md).
 
 Then download the `ChooseYourDestiny.Linux_x64.zip` file from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository and unzip it into a folder called `CYD`, which you can create wherever you see fit. The script to build the adventures is called `make_adv.sh`, you will need to run it to compile the adventure. I recommend doing this from the command line. Your adventures won't go in this folder, but each one in a folder of its own, as we will see in the next chapter.
 
@@ -198,7 +198,7 @@ The result is ...
 ![Screen 4](assets/tut004.png)
 
 But the color is a bit dark ... let's bright it!
-To do this we use the Bright 1 command, (again, look at the reference in the [manual](https://github.com/cronomantic/ChooseYourDestiny/blob/main/MANUAL_es.md)), this way:
+To do this we use the Bright 1 command, (again, look at the reference in the [manual](MANUAL_en.md)), this way:
 
 ```
 [[INK 5]][[BRIGHT 1]][[CLEAR]]Hello World[[WAITKEY]]
@@ -906,7 +906,7 @@ One thing you might have noticed is that `PRINT` puts an at sign in front of the
 
 ![Variables2](assets/tut025.png)
 
-Wow! The thing is that when you put an @ sign in front, it means **take the value of the variable whose number I indicate after it**. If you have consulted the [manual](MANUAL_es.md), you will have seen that almost all commands allow expressions with variables.
+Wow! The thing is that when you put an @ sign in front, it means **take the value of the variable whose number I indicate after it**. If you have consulted the [manual](MANUAL_en.md), you will have seen that almost all commands allow expressions with variables.
 
 Therefore, with `PRINT 1`, what you are indicating is "Print the value 1", but with `PRINT @1`, what is indicated is "Print the content of the variable 1".
 

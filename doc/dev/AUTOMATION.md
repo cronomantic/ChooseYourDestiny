@@ -11,7 +11,7 @@ Este documento describe el sistema de automatización que simplifica las tareas 
   - [update_locales.py](#update_localespy)
   - [make_pdf.bat / make_pdf.sh](#make_pdfbat--make_pdfsh)
   - [build_example_taps.py](#build_example_tapspy)
-  - [update_wiki.py](#update_wikipy)
+  - [tools/build_site.py](#toolsbuild_sitepy)
   - [tests/run_tests.py](#testsrun_testspy)
   - [make_dist.py](#make_distpy)
 - [Flujos de Trabajo Comunes](#flujos-de-trabajo-comunes)
@@ -24,7 +24,7 @@ Este documento describe el sistema de automatización que simplifica las tareas 
 ### Todos los Sistemas
 
 - Python 3.11 o superior
-- Git (para actualizar la wiki)
+- Git
 
 ### Windows
 
@@ -58,12 +58,11 @@ python automate.py [opciones]
 - `--tests` - Ejecutar suite de tests de regresión
 - `--pdf` - Generar documentación PDF (manual + tutorial, EN/ES)
 - `--dist` - Crear paquetes de distribución
-- `--wiki` - Actualizar GitHub Wiki
 
 #### Flujos de Trabajo Combinados
 
-- `--all` - Ejecutar todas las tareas excepto actualizar wiki
-- `--release` - Flujo completo de lanzamiento (incluye wiki)
+- `--all` - Ejecutar todas las tareas
+- `--release` - Flujo completo de lanzamiento (las mismas tareas que `--all`)
 
 #### Opciones Adicionales
 
@@ -85,7 +84,7 @@ python automate.py --locales --tests
 # Generar PDFs y crear distribución para Windows
 python automate.py --pdf --dist --platform windows
 
-# Flujo completo de desarrollo (sin wiki)
+# Flujo completo de desarrollo
 python automate.py --all
 
 # Flujo completo de lanzamiento
@@ -140,11 +139,6 @@ Cuando se ejecutan múltiples tareas, se procesan en este orden:
    - Compila traducciones
    - Crea ZIP con nombramiento automático basado en versión git
    - Soporta Windows, Linux y macOS
-
-6. **Actualizar wiki** (`--wiki`)
-   - Verifica cambios en repositorio wiki
-   - Solicita confirmación antes de hacer commit
-   - Hace push a GitHub
 
 ---
 
@@ -308,8 +302,7 @@ make_pdf.bat
 ```
 
 Genera los PDF de los manuales y los tutoriales desde el Markdown del propio
-repositorio (`MANUAL_*.md`, `TUTORIAL_*.md` y las imágenes de `assets/`); no
-necesita la wiki.
+repositorio (`MANUAL_*.md`, `TUTORIAL_*.md` y las imágenes de `assets/`).
 
 **Requisitos:**
 - Windows: Pandoc incluido en `tools/pandoc/`
@@ -364,38 +357,36 @@ ejecutarlo tras cambiar el intérprete o un ejemplo, y subir los `.tap` nuevos.
 
 ---
 
-### update_wiki.py
+### tools/build_site.py
 
-Sincroniza documentación con el repositorio GitHub Wiki.
-
-**Ubicación:** Raíz del proyecto
+Construye el sitio de documentación (GitHub Pages,
+https://cronomantic.github.io/ChooseYourDestiny/) con MkDocs a partir de los
+manuales y los tutoriales del repositorio.
 
 **Uso:**
 ```bash
-python update_wiki.py
+pip install -r tools/site_requirements.txt   # mejor en un venv aparte
+python tools/build_site.py                   # sitio en build/site
+python tools/build_site.py --source DIR      # con la documentación de otro checkout
 ```
 
 **Qué hace:**
-1. Verifica que el submódulo de la wiki esté inicializado
-2. Copia a la wiki la documentación del repositorio y las imágenes que cita
-3. Muestra los cambios
-4. Solicita confirmación del usuario
-5. Hace commit y push al repositorio wiki
+1. Copia `MANUAL_*.md`, `TUTORIAL_*.md`, las imágenes de `assets/` que citan y
+   una portada a `build/site_docs`
+2. Ejecuta MkDocs (`mkdocs.yml`), que deja el sitio en `build/site` y avisa de
+   los enlaces y anclas rotos
 
-**Requisitos:**
-- Submódulo de la wiki inicializado: `git submodule update --init external/ChooseYourDestiny.wiki`
-- Permisos de escritura en el repositorio wiki de GitHub
-- Git configurado con credenciales
+Los encabezados reciben los mismos identificadores que en GitHub
+(`tools/mkdocs_hooks.py`), así que los índices de los manuales funcionan igual
+en el repositorio y en el sitio.
 
-**Archivos sincronizados** (del repositorio a la wiki):
-- `MANUAL_es.md`, `MANUAL_en.md`
-- `TUTORIAL_es.md`, `TUTORIAL_en.md`
-- Las imágenes de `assets/` que citan
+**Publicación:** el workflow `.github/workflows/docs.yml` lo ejecuta en cada
+tag de versión (`v*`) y publica el resultado. También se puede lanzar a mano
+(Actions → Documentation site → Run workflow) indicando el tag, rama o commit
+cuya documentación publicar. Requiere Settings → Pages → Source: GitHub Actions.
 
-**Nota:** el repositorio es la fuente de la documentación y la wiki una copia:
-los manuales y los tutoriales se editan aquí (por PR, como el código), nunca en
-la wiki, porque la siguiente sincronización sobrescribiría los cambios.
-`make_dist.py --do-doc-sync` hace la misma copia, sin commit ni push.
+**Nota:** el repositorio es la única fuente de la documentación: los manuales y
+los tutoriales se editan aquí (por PR, como el código).
 
 ---
 
@@ -558,8 +549,11 @@ ls -la ChooseYourDestiny_*.zip
 ### Solo Generar Documentación
 
 ```bash
-# PDFs y wiki
-python automate.py --pdf --wiki
+# PDFs
+python automate.py --pdf
+
+# Sitio de documentación (local)
+python tools/build_site.py
 ```
 
 ### Actualizar Solo Traducciones
@@ -595,15 +589,6 @@ brew install pandoc basictex
 
 **Windows:** Debería estar incluido en `tools/pandoc/`. Si falta, descarga desde [pandoc.org](https://pandoc.org/).
 
-### Error: "Wiki directory not found"
-
-Clona el repositorio wiki:
-```bash
-cd ..
-git clone https://github.com/cronomantic/ChooseYourDestiny.wiki.git
-cd ChooseYourDestiny
-```
-
 ### Error: "Permission denied" en scripts .sh
 
 Haz los scripts ejecutables:
@@ -634,13 +619,6 @@ python tests/run_tests.py
 
 ### PDFs no se generan correctamente
 
-**Verifica que el repositorio wiki esté actualizado:**
-```bash
-cd ../ChooseYourDestiny.wiki
-git pull
-cd ../ChooseYourDestiny
-```
-
 **Verifica sintaxis Markdown:**
 - Los archivos .md deben tener sintaxis válida
 - Las imágenes deben existir en el directorio `assets/`
@@ -658,9 +636,10 @@ Edita `make_dist.py` y añade los archivos a:
 
 ### Orden de Ejecución Recomendado para Lanzamientos
 
-1. Tests → 2. Locales → 3. PDFs → 4. Distribuciones → 5. Wiki
+1. Tests → 2. Locales → 3. PDFs → 4. Distribuciones
 
-El comando `--release` ya hace esto automáticamente.
+El comando `--release` ya hace esto automáticamente. El sitio de documentación
+lo publica GitHub al subir el tag de la versión.
 
 ### Archivos Generados (añadir a .gitignore si es necesario)
 
@@ -681,7 +660,6 @@ El comando `--release` ya hace esto automáticamente.
 
 Se recomienda hacer backup de:
 - Archivos `.po` personalizados antes de ejecutar `--locales`
-- Repositorio wiki antes de ejecutar `--wiki`
 - Archivos de configuración personalizados
 
 ---
@@ -690,7 +668,7 @@ Se recomienda hacer backup de:
 
 Para problemas o preguntas:
 - GitHub Issues: https://github.com/cronomantic/ChooseYourDestiny/issues
-- Wiki: https://github.com/cronomantic/ChooseYourDestiny/wiki
+- Documentación: https://cronomantic.github.io/ChooseYourDestiny/
 
 ---
 

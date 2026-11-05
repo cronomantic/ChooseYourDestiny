@@ -74,7 +74,7 @@ ahí, en lugar de tener que estar en la raíz de la instalación (`CYD_HOME`).
 - **Ejemplos y manual** pasan de `INCLUDE "../../lib/x.cyd"` a
   `INCLUDE LIB "x.cyd"`.
 - **Cuatro superficies:** `INCLUDE LIB` es sintaxis nueva, así que se aplica la
-  regla de siempre (resaltador, manual, tutorial y wiki).
+  regla de siempre (resaltador, manual y tutorial).
 
 ## 3. Mensajes del compilador
 
