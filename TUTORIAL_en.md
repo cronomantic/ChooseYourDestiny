@@ -1306,6 +1306,21 @@ And now it counts from one to 10:
 
 It is important to define the entry and exit conditions well, and to keep in mind that the verification of the loop condition is always done **at the beginning** of each iteration.
 
+If we need the check to happen **at the end** instead, we have `DO ... UNTIL (cond)`, which repeats what is between `DO` and `UNTIL` **until** the condition is met. The same counter looks like this:
+
+```cyd
+[[
+   DECLARE 0 AS cnt
+   SET cnt TO 1
+   DO
+      PRINT @cnt : TAB 1
+      SET cnt TO @cnt + 1
+   UNTIL (@cnt > 10)
+]]
+```
+
+Note that the condition is the other way round from the `WHILE`: there it repeats **while** `@cnt < 11`, and here **until** `@cnt > 10`. The other difference is that, since the condition is checked at the end, the body of a `DO ... UNTIL` always runs **at least once**: if `cnt` started at 20, the previous `WHILE` would print nothing, but this one would print 20 before leaving. It is useful, for example, to repeat a question until the answer is valid.
+
 When all we want is to **count** (repeat something a fixed number of times with a changing counter), there is a handier way than building the `WHILE` by hand: the `FOR ... NEXT` loop. The previous example that counts from 1 to 10 becomes:
 
 ```cyd

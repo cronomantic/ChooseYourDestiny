@@ -1305,6 +1305,21 @@ Y ya cuenta del uno al 10:
 
 Es importante definir bien las condiciones de entrada y salida, y tener en cuenta que la verificación de la condición del bucle se realiza siempre **al principio** de cada iteración.
 
+Si lo que necesitamos es que la comprobación se haga **al final**, tenemos `DO ... UNTIL (cond)`, que repite lo que hay entre `DO` y `UNTIL` **hasta que** la condición se cumpla. El mismo contador queda así:
+
+```cyd
+[[
+   DECLARE 0 AS cnt
+   SET cnt TO 1
+   DO
+      PRINT @cnt : TAB 1
+      SET cnt TO @cnt + 1
+   UNTIL (@cnt > 10)
+]]
+```
+
+Fíjate en que la condición está al revés que en el `WHILE`: allí se repite **mientras** `@cnt < 11`, y aquí **hasta que** `@cnt > 10`. La otra diferencia es que, como la condición se comprueba al final, el cuerpo de un `DO ... UNTIL` se ejecuta **siempre al menos una vez**: si `cnt` empezase valiendo 20, el `WHILE` anterior no imprimiría nada, pero este imprimiría el 20 antes de salir. Es útil, por ejemplo, para repetir una pregunta hasta que la respuesta sea válida.
+
 Cuando lo que queremos es simplemente **contar** (repetir algo un número fijo de veces con un contador que va cambiando), hay una forma más cómoda que montar el `WHILE` a mano: el bucle `FOR ... NEXT`. El ejemplo anterior de contar del 1 al 10 queda así:
 
 ```cyd
