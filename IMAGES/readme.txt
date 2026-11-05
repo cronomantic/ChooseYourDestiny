@@ -1,1 +1,0 @@
-Put your SCR files here, format: 000.SCR, 001.SCR, etc.

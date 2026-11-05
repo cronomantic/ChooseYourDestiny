@@ -67,13 +67,14 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --upgrade pip ply
 
-      - name: Compile test.cyd for all targets
+      - name: Compile the examples/test project for all targets
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force output/ci | Out-Null
           $models = @("48k", "128k", "plus3", "mld", "mld128")
           foreach ($m in $models) {
-            python src/cydc/cydc/cydc.py $m test.cyd tools/sjasmplus.exe output/ci
+            python src/cydc/cydc/cydc.py -img examples/test/IMAGES -trk examples/test/TRACKS -t examples/test/tokens.json $m examples/test/test.cyd tools/sjasmplus.exe output/ci
+            if ($LASTEXITCODE -ne 0) { throw "Compilation failed for $m" }
           }
 
       - name: Verify expected artifacts exist

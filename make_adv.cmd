@@ -3,37 +3,37 @@
 REM ===============================================================================
 REM  ChooseYourDestiny - Adventure Builder Script (Windows)
 REM ===============================================================================
-REM  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
-REM  for the ZX Spectrum 48k, 128k, +3, esxDOS (divMMC) or Dandanator MLD target.
+REM  This script compiles a project (a folder with a game, and its
+REM  cyd_project.ini) into a TAP, DSK, or MLD file for the ZX Spectrum 48k,
+REM  128k, +3, esxDOS (divMMC) or Dandanator MLD target.
 REM
-REM  Usage: make_adv.cmd [options]
-REM  
-REM  Configuration is done by editing the variables below.
+REM  Usage: make_adv.cmd [PROJECT] [TARGET]
+REM
+REM  PROJECT is the folder of the game, or its main .cyd file (you can also drag
+REM  it onto this script); without it, the PROJECT variable below. TARGET, if
+REM  given, is used instead of the project's. The game's settings (target, image
+REM  lines, loading screen...) are in its cyd_project.ini; the variables below
+REM  are for this computer.
 REM ===============================================================================
 
 REM ──────────────────────────────────────────────────────────────────────────────
 REM  CONFIGURATION SECTION - Edit these variables as needed
 REM ──────────────────────────────────────────────────────────────────────────────
 
-REM Name of the game (without .cyd extension)
-SET GAME=test
-REM This name will be used for:
-REM   - The source file to compile: %GAME%.cyd
-REM   - The output file: %GAME%.TAP, %GAME%.DSK, or %GAME%.MLD (the compiler
-REM     cuts the name to 10 characters on tape and to 8 on the other targets)
+REM The project to compile when none is given: the folder of the game (or its
+REM main .cyd file). Relative to this script's folder, or absolute.
+SET PROJECT=
 
-REM Target platform: 48k, 128k (for TAP), plus3 (for DSK), esxdos (TAP + DAT for
-REM the SD card), mld, or mld128 (for MLD)
-SET TARGET=128k
+REM Target platform, instead of the project's: 48k, 128k (for TAP), plus3 (for
+REM DSK), esxdos (TAP + DAT for the SD card), mld, or mld128 (for MLD). Empty:
+REM the project's.
+SET TARGET=
 
-REM Number of screen lines to use when compressing SCR files (default: 192)
-REM Use 192 for full screen, or less for partial screen images
-SET IMGLINES=192
+REM Name of the game, instead of the project's (empty: the project's). The
+REM compiler cuts it to 10 characters on tape and to 8 on the other targets.
+SET GAME=
 
-REM Path to the loading screen SCR file
-SET LOAD_SCR=./IMAGES/LOAD.scr
-
-REM Extra parameters for the CYD compiler (optional)
+REM Extra parameters for make_adventure.py (optional)
 REM Example: --verbose for more output
 SET CYDC_EXTRA_PARAMS=
 
@@ -49,8 +49,9 @@ REM .\tools\zesarux\, then in the newest .\tools\ZEsarUX*\ (for example
 REM .\tools\ZEsarUX_win-13.0\), then on the PATH.
 SET ZESARUX_PATH=
 
-REM Backup the .cyd source file after compilation (yes/no)
-SET BACKUP_CYD=no
+REM Backup the main .cyd file after compilation, to the project's BACKUP folder
+REM (yes/no; empty: the project's "backup" setting)
+SET BACKUP_CYD=
 
 REM Maximum number of backup files to keep (0 = unlimited)
 REM When this limit is reached, oldest backups are deleted
@@ -60,37 +61,72 @@ REM ─────────────────────────�
 REM  END OF CONFIGURATION
 REM ──────────────────────────────────────────────────────────────────────────────
 
-ECHO ===============================================================================
-ECHO  ChooseYourDestiny Adventure Builder
-ECHO ===============================================================================
-ECHO  Game: %GAME%
-ECHO  Target: %TARGET%
-ECHO  Loading screen: %LOAD_SCR%
-ECHO ===============================================================================
-ECHO.
+REM The subroutines below use SCRIPT_DIR: inside a CALL, %~dp0 is not always
+REM this script's folder.
+SET "SCRIPT_DIR=%~dp0"
+SET "PY=%SCRIPT_DIR%dist\python\python.exe"
+
+REM Arguments: the project and the target, in any order. A relative PROJECT
+REM variable is from this script's folder.
+SET "ARG_PROJECT="
+CALL :TAKE_ARG "%~1"
+CALL :TAKE_ARG "%~2"
+IF DEFINED ARG_PROJECT (
+    SET "PROJECT=!ARG_PROJECT!"
+) ELSE IF DEFINED PROJECT (
+    PUSHD "%SCRIPT_DIR%"
+    FOR %%F IN ("!PROJECT!") DO SET "PROJECT=%%~fF"
+    POPD
+)
+
+IF NOT DEFINED PROJECT (
+    ECHO ERROR: No project given.
+    ECHO.
+    ECHO Usage: make_adv.cmd PROJECT [TARGET]  ^(the folder of the game, or its main
+    ECHO .cyd file; you can also drag it onto this script^), or set the PROJECT
+    ECHO variable in this script. To start a project:
+    ECHO   dist\python\python make_adventure.py --new FOLDER
+    GOTO ERROR
+)
 
 REM Check if Python distribution exists
-IF NOT EXIST "%~dp0dist\python\python.exe" (
+IF NOT EXIST "%PY%" (
     ECHO ERROR: Python distribution not found^^!
-    ECHO Expected location: %~dp0dist\python\python.exe
+    ECHO Expected location: %PY%
     ECHO.
     ECHO Please ensure you have the complete ChooseYourDestiny distribution.
     ECHO Download it from: https://github.com/cronomantic/ChooseYourDestiny/releases
     GOTO ERROR
 )
 
-REM Check if source file exists
-IF NOT EXIST "%~dp0%GAME%.cyd" (
-    ECHO ERROR: Source file not found: %GAME%.cyd
-    ECHO.
-    ECHO Please create your adventure file or edit the GAME variable in this script.
+REM The project as make_adventure.py sees it: ROOT, MAIN, NAME, TARGET, OUTPUT
+REM and BACKUP (as CYD_ROOT, CYD_MAIN...).
+SET "NAME_PARAMS="
+IF DEFINED GAME SET NAME_PARAMS=-n "%GAME%"
+SET "CYD_ROOT="
+FOR /F "usebackq tokens=1,* delims==" %%A IN (`CALL "%PY%" "%SCRIPT_DIR%make_adventure.py" --describe %NAME_PARAMS% "%PROJECT%" %TARGET%`) DO SET "CYD_%%A=%%B"
+IF NOT DEFINED CYD_ROOT (
+    REM Again, to show make_adventure.py's message.
+    "%PY%" "%SCRIPT_DIR%make_adventure.py" --describe %NAME_PARAMS% "%PROJECT%" %TARGET% >NUL
     GOTO ERROR
 )
+SET "GAME=%CYD_NAME%"
+SET "TARGET=%CYD_TARGET%"
+IF NOT DEFINED BACKUP_CYD SET "BACKUP_CYD=%CYD_BACKUP%"
+
+ECHO ===============================================================================
+ECHO  ChooseYourDestiny Adventure Builder
+ECHO ===============================================================================
+ECHO  Project: %CYD_ROOT%
+ECHO  Game: %GAME%
+ECHO  Target: %TARGET%
+ECHO ===============================================================================
+ECHO.
 
 REM Compile the adventure
-ECHO Compiling %GAME%.cyd...
+FOR %%F IN ("%CYD_MAIN%") DO ECHO Compiling %%~nxF...
 ECHO.
-%~dp0dist\python\python "%~dp0make_adventure.py" -n %GAME% %CYDC_EXTRA_PARAMS% -il %IMGLINES% -scr %LOAD_SCR% %TARGET%
+"%PY%" "%SCRIPT_DIR%make_adventure.py" %CYDC_EXTRA_PARAMS% %NAME_PARAMS% "%PROJECT%" %TARGET%
 
 IF ERRORLEVEL 1 GOTO ERROR
 
@@ -100,39 +136,40 @@ ECHO  SUCCESS^^! Adventure compiled successfully.
 ECHO ===============================================================================
 
 REM Create backup if enabled
-IF "%BACKUP_CYD%"=="yes" (
+IF /I "%BACKUP_CYD%"=="yes" (
     ECHO.
     ECHO Creating backup...
-    
-    IF NOT EXIST "%~dp0BACKUP\" MKDIR "%~dp0BACKUP"
-    
+
+    SET "BACKUP_DIR=%CYD_ROOT%\BACKUP"
+    IF NOT EXIST "!BACKUP_DIR!\" MKDIR "!BACKUP_DIR!"
+
     REM Generate timestamp for backup filename
     SET DATESTAMP=%DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%
     SET TIMESTAMP=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%
     SET TIMESTAMP=!TIMESTAMP: =0!
-    
-    COPY /Y "%~dp0%GAME%.cyd" "%~dp0BACKUP\%GAME%_!DATESTAMP!_!TIMESTAMP!.cyd" >NUL
-    
+
+    COPY /Y "%CYD_MAIN%" "!BACKUP_DIR!\%GAME%_!DATESTAMP!_!TIMESTAMP!.cyd" >NUL
+
     IF ERRORLEVEL 1 (
         ECHO Warning: Could not create backup.
     ) ELSE (
         ECHO Backup created: BACKUP\%GAME%_!DATESTAMP!_!TIMESTAMP!.cyd
     )
-    
+
     REM Delete old backups if limit is set
     IF %BACKUP_MAX_FILES% GTR 0 (
         SET count=0
-        FOR /F "delims=" %%F IN ('DIR "%~dp0BACKUP\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
+        FOR /F "delims=" %%F IN ('DIR "!BACKUP_DIR!\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
             SET /A count+=1
         )
-        
+
         IF !count! GTR %BACKUP_MAX_FILES% (
             ECHO Rotating backups ^(keeping %BACKUP_MAX_FILES% most recent^)...
             SET /A to_delete=!count!-%BACKUP_MAX_FILES%
             SET deleted=0
-            FOR /F "delims=" %%F IN ('DIR "%~dp0BACKUP\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
+            FOR /F "delims=" %%F IN ('DIR "!BACKUP_DIR!\%GAME%_*.cyd" /B /O:D 2^>NUL') DO (
                 IF !deleted! LSS !to_delete! (
-                    DEL /Q "%~dp0BACKUP\%%F" >NUL 2>&1
+                    DEL /Q "!BACKUP_DIR!\%%F" >NUL 2>&1
                     SET /A deleted+=1
                 )
             )
@@ -141,9 +178,7 @@ IF "%BACKUP_CYD%"=="yes" (
     )
 )
 
-REM Run emulator if configured (the subroutines below use SCRIPT_DIR: inside a
-REM CALL, %~dp0 is not always this script's folder)
-SET "SCRIPT_DIR=%~dp0"
+REM Run emulator if configured
 IF "%RUN_EMULATOR%"=="default" GOTO RUN_DEFAULT
 IF "%RUN_EMULATOR%"=="internal" GOTO RUN_INTERNAL
 GOTO END
@@ -172,9 +207,9 @@ IF "%TARGET%"=="128k" SET ZESARUX_MACHINE=128k
 IF "%TARGET%"=="esxdos" SET ZESARUX_MACHINE=128k
 IF "%TARGET%"=="plus3" SET ZESARUX_MACHINE=P341
 SET ZESARUX_PARAMS=--noconfigfile --quickexit --zoom 2 --realvideo --nosplash --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage --cpuspeed 100 --machine %ZESARUX_MACHINE%
-REM The .TAP bootstrap loads the .DAT from the SD card: this folder. (The "."
-REM keeps the closing quote from being read as \".)
-IF "%TARGET%"=="esxdos" SET ZESARUX_PARAMS=%ZESARUX_PARAMS% --enable-divmmc --enable-esxdos-handler --esxdos-root-dir "%SCRIPT_DIR%."
+REM The .TAP bootstrap loads the .DAT from the SD card: the output folder. (The
+REM "\." keeps the closing quote from being read as \".)
+IF "%TARGET%"=="esxdos" SET ZESARUX_PARAMS=%ZESARUX_PARAMS% --enable-divmmc --enable-esxdos-handler --esxdos-root-dir "%CYD_OUTPUT%\."
 
 ECHO Launching ZEsarUX: "%ZESARUX%" %ZESARUX_PARAMS% "%OUTPUT_FILE%"
 REM From its own folder, where its ROMs are.
@@ -198,8 +233,18 @@ ECHO Please download ZEsarUX from https://github.com/chernandezba/zesarux/releas
 ECHO or set ZESARUX_PATH in this script.
 GOTO END
 
-REM The compiled file: the compiler cuts the name to 10 characters on tape and
-REM to 8 on the other targets.
+REM %1: a target name goes to TARGET, anything else to ARG_PROJECT.
+:TAKE_ARG
+IF "%~1"=="" GOTO :EOF
+FOR %%T IN (48k 128k plus3 esxdos mld mld128) DO IF /I "%~1"=="%%T" (
+    SET "TARGET=%%T"
+    GOTO :EOF
+)
+FOR %%F IN ("%~1") DO SET "ARG_PROJECT=%%~fF"
+GOTO :EOF
+
+REM The compiled file, in the output folder: the compiler cuts the name to 10
+REM characters on tape and to 8 on the other targets.
 :FIND_OUTPUT
 SET OUTPUT_EXT=TAP
 IF "%TARGET%"=="plus3" SET OUTPUT_EXT=DSK
@@ -207,11 +252,11 @@ IF "%TARGET%"=="mld" SET OUTPUT_EXT=MLD
 IF "%TARGET%"=="mld128" SET OUTPUT_EXT=MLD
 SET "OUTPUT_FILE="
 SET "OUTPUT_NAME=%GAME%"
-IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+IF EXIST "%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%"
 SET "OUTPUT_NAME=%GAME:~0,10%"
-IF NOT DEFINED OUTPUT_FILE IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+IF NOT DEFINED OUTPUT_FILE IF EXIST "%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%"
 SET "OUTPUT_NAME=%GAME:~0,8%"
-IF NOT DEFINED OUTPUT_FILE IF EXIST "%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%SCRIPT_DIR%%OUTPUT_NAME%.%OUTPUT_EXT%"
+IF NOT DEFINED OUTPUT_FILE IF EXIST "%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%" SET "OUTPUT_FILE=%CYD_OUTPUT%\%OUTPUT_NAME%.%OUTPUT_EXT%"
 GOTO :EOF
 
 REM The ZEsarUX to use: ZESARUX_PATH, else tools\zesarux\, else the highest
@@ -255,16 +300,4 @@ EXIT /B 1
 
 :END
 ECHO.
-REM Clean up variables
-SET GAME=
-SET TARGET=
-SET IMGLINES=
-SET LOAD_SCR=
-SET CYDC_EXTRA_PARAMS=
-SET RUN_EMULATOR=
-SET ZESARUX_PATH=
-SET BACKUP_CYD=
-SET BACKUP_MAX_FILES=
-SET DATESTAMP=
-SET TIMESTAMP=
 EXIT /B 0

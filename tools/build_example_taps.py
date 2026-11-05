@@ -8,10 +8,11 @@ regenerated tapes:
     python tools/build_example_taps.py            # every example
     python tools/build_example_taps.py sprites    # only the ones named
 
-For each example the source is its test.cyd (or the one in SOURCES) and the
-target 48k (or the one in MODELS). IMAGES/, TRACKS/, SFX.asm and tokens.json are
-used when the example has them. The tape is written next to the source, with
-its name (test.cyd -> test.tap).
+Each example is a project: its cyd_project.ini says its main .cyd file and its
+target, and the build uses the same compiler options make_adventure.py gives
+it (images, tracks, effects, loading screen, tokens...). The tape is written
+next to the main file, with its name (test.cyd -> test.tap). A missing
+tokens.json is not created: the abbreviations are searched for each time.
 """
 
 import shutil
@@ -24,17 +25,8 @@ REPO = Path(__file__).resolve().parent.parent
 EXAMPLES = REPO / "examples"
 CYDC = REPO / "src" / "cydc" / "cydc" / "cydc.py"
 
-# Examples whose source is not test.cyd.
-SOURCES = {
-    "Delerict": "delerict.cyd",
-    "import_demo": "import_demo.cyd",
-    "include_demo": "main.cyd",
-}
-# Examples that need more than 48K (music, several banks of text).
-MODELS = {
-    "Delerict": "128k",
-    "test": "128k",
-}
+sys.path.insert(0, str(REPO / "src" / "cydc" / "cydc"))
+import cyd_project  # noqa: E402
 
 
 def examples():
@@ -42,8 +34,16 @@ def examples():
     return sorted(d for d in EXAMPLES.iterdir() if d.is_dir() and not d.name.startswith((".", "_")))
 
 
+def project(example):
+    return cyd_project.load(str(example))
+
+
 def source(example):
-    return example / SOURCES.get(example.name, "test.cyd")
+    return Path(project(example).main_path)
+
+
+def model(example):
+    return project(example).target
 
 
 def tape(example):
@@ -59,25 +59,18 @@ def sjasmplus():
 
 
 def build(example, asm):
-    src = source(example)
-    args = [sys.executable, str(CYDC)]
-    for flag, name in (("-img", "IMAGES"), ("-trk", "TRACKS")):
-        if (example / name).is_dir():
-            args += [flag, name]
-    if (example / "SFX.asm").is_file():
-        args += ["-sfx", "SFX.asm"]
-    if (example / "tokens.json").is_file():
-        args += ["-t", "tokens.json"]
+    proj = project(example)
+    if not Path(proj.path("tokens")).is_file():
+        proj.values["tokens"] = ""  # don't leave a new tokens.json in the example
+    args = [sys.executable, str(CYDC)] + cyd_project.compiler_args(proj, proj.target)
     with tempfile.TemporaryDirectory() as out:
-        args += [MODELS.get(example.name, "48k"), src.name, str(asm), out]
-        r = subprocess.run(args, cwd=example, capture_output=True, text=True)
+        args += [proj.target, proj.main_path, str(asm), out]
+        r = subprocess.run(args, cwd=proj.root, capture_output=True, text=True)
         # A tape name has 10 characters at most, so the compiler may shorten it.
         built = list(Path(out).glob("*.tap"))
         if r.returncode != 0 or len(built) != 1:
             sys.exit(f"{example.name}: compilation failed\n{r.stdout}{r.stderr}")
         shutil.copyfile(built[0], tape(example))
-    # (The compressed images go to the output folder's cyd_cache, not next to
-    # the .scr files: nothing to clean in the example.)
 
 
 def main(names):
@@ -89,7 +82,7 @@ def main(names):
             sys.exit(f"unknown examples: {', '.join(sorted(unknown))}")
         todo = [e for e in todo if e.name in names]
     for example in todo:
-        print(f"{example.name}: {MODELS.get(example.name, '48k')} -> "
+        print(f"{example.name}: {model(example)} -> "
               f"{tape(example).relative_to(REPO).as_posix()}", flush=True)
         build(example, asm)
 

@@ -83,7 +83,7 @@ class TestExampleTaps(unittest.TestCase):
                 self.assertTrue(tap.is_file(), f"no {tap.name}: run tools/build_example_taps.py")
                 header = tap_blocks(tap)[0]
                 self.assertEqual(header[:2], b"\x00\x00", "first block is not a BASIC header")
-                model = bet.MODELS.get(example.name, "48k")
+                model = bet.model(example)
                 self.assertEqual(struct.unpack_from("<H", header, 12)[0], LOADER_LENGTH[model],
                                  f"not a {model} tape")
 
@@ -93,7 +93,7 @@ class TestExampleTaps(unittest.TestCase):
 
         def check(job):
             port, example = job
-            machine = MACHINE_BY_MODEL[bet.MODELS.get(example.name, "48k")]
+            machine = MACHINE_BY_MODEL[bet.model(example)]
             return example.name, runs(bet.tape(example), machine, port)
 
         with ThreadPoolExecutor(4) as pool:

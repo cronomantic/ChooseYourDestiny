@@ -123,17 +123,17 @@ ahí, en lugar de tener que estar en la raíz de la instalación (`CYD_HOME`).
 - **Raíz y distribución:** se quitan `test.cyd`, `tokens.json` y los
   `readme.txt` de `IMAGES/` y `TRACKS/`.
 
-## 7. Propuestas sin confirmar
+## 7. Propuestas confirmadas (5 nov 2026)
 
-- `make_adventure.py --new CARPETA`, para crear un proyecto mínimo sin la GUI.
-- Que `make_adv` acepte el proyecto como argumento. En Windows permitiría
-  arrastrar la carpeta sobre el script.
-- Cuando un `INCLUDE "lib/x.cyd"` antiguo no se encuentra, sugerir
-  `INCLUDE LIB "x.cyd"`.
-- Una pantalla de bienvenida en la GUI cuando no hay ningún proyecto abierto.
-- Cómo encuentra el compilador `CYD_HOME`: por la variable de entorno o, si no
-  existe, subiendo de carpeta hasta la que tenga `lib/` y `version.txt`.
-- El `Makefile` de desarrollo: adaptarlo o retirarlo.
+- `make_adventure.py --new CARPETA`: crea un proyecto mínimo sin la GUI.
+- `make_adv` acepta el proyecto como argumento (en Windows, arrastrar la
+  carpeta o el `.cyd` sobre el script); la variable `PROJECT=` se mantiene.
+- Pantalla de bienvenida en la GUI cuando no hay ningún proyecto abierto.
+- Cuando un `INCLUDE "lib/x.cyd"` antiguo no se encuentra y `x.cyd` está en
+  las librerías, el error sugiere `INCLUDE LIB "x.cyd"`.
+- El compilador encuentra `CYD_HOME` por la variable de entorno o subiendo
+  hasta `lib/` + `version.txt` (hecho).
+- El `Makefile` de desarrollo se adapta para recibir la carpeta del proyecto.
 
 ## 8. Fallos encontrados (independientes de este diseño) — ARREGLADOS
 

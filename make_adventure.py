@@ -35,12 +35,14 @@ import subprocess
 # Import i18n from dist/cydc or src/cydc/cydc depending on location
 try:
     from cydc.cyd_i18n import setup_i18n, _
+    from cydc import cyd_project
 except ImportError:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'dist'))
     from cydc.cyd_i18n import setup_i18n, _
+    from cydc import cyd_project
 
 
-def run_exec(exec_path, parameter_list=[], capture_output=False):
+def run_exec(exec_path, parameter_list=[], capture_output=False, cwd=None):
     """_summary_
 
     Args:
@@ -69,6 +71,7 @@ def run_exec(exec_path, parameter_list=[], capture_output=False):
             capture_output=capture_output,
             universal_newlines=capture_output,
             env=env,
+            cwd=cwd,
         )
     except subprocess.CalledProcessError as exc:
         raise OSError from exc
@@ -121,8 +124,61 @@ def pause_value(value):
     return value
 
 
+class _TrackedStore(argparse._StoreAction):
+    """A store action that notes the option was given: those win over the
+    project's cyd_project.ini, the defaults don't."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        namespace.__dict__.setdefault("_given", set()).add(self.dest)
+
+
+class _TrackedStoreTrue(argparse._StoreTrueAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        namespace.__dict__.setdefault("_given", set()).add(self.dest)
+
+
+# Options that set a key of the project (dest -> key).
+_PATH_OPTIONS = {
+    "output_path": "output", "images_path": "images", "tracks_path": "tracks",
+    "sfx_asm_file": "sfx", "load_scr_file": "load_scr", "tokens_file": "tokens",
+    "charset_file": "charset",
+}
+_VALUE_OPTIONS = {
+    "image_lines": "image_lines", "min_length": "min_length", "max_length": "max_length",
+    "superset_limit": "superset_limit", "max_errors": "max_errors",
+    "token_format": "token_format", "pause_after_load": "pause_after_load",
+}
+_FLAG_OPTIONS = {
+    "use_wyz_tracker": "use_wyz", "slice_texts": "slice_texts",
+    "trim_interpreter": "trim_interpreter", "dead_code_elimination": "dead_code_elimination",
+    "show_bytecode": "show_bytecode", "no_strict_colons": "no_strict_colons",
+    "disk_720": "disk_720", "autoboot": "autoboot", "debug_stack": "debug_stack",
+    "debug_errors": "debug_errors", "keep_temp": "keep_temp",
+}
+_NO_WARN_OPTIONS = {
+    "no_warn_unused": "warn_unused", "no_warn_gosub": "warn_gosub",
+    "no_warn_shared_vars": "warn_shared_vars",
+}
+
+
+def project_error_message(e):
+    """The message for a cyd_project.ProjectError."""
+    messages = {
+        "not_a_folder": _("ERROR: Not a valid path:"),
+        "not_a_project": _("ERROR: Not a project folder or a .cyd file:"),
+        "no_main": _("ERROR: The project doesn't say its main .cyd file (main in cyd_project.ini) and there isn't exactly one in its folder:"),
+        "bad_target": _("ERROR: Unknown target:"),
+        "bad_number": _("ERROR: Invalid number in cyd_project.ini:"),
+        "already_a_project": _("ERROR: There is already a project in"),
+        "file_exists": _("ERROR: The file already exists:"),
+    }
+    return f"{messages.get(e.code, 'ERROR:')} {e.detail}"
+
+
 def main():
-    version = "1.0.0"
+    version = "2.0.0"
     program = "Make Adventure " + version
     exec = "make_adventure"
 
@@ -141,18 +197,27 @@ def main():
     if os.name == "nt":
         python_path = os.path.join(dist_path, "python", "python.exe")
         sjasmplus_path = os.path.join(tools_path, "sjasmplus.exe")
-        # mkp3fs_path = os.path.join(tools_path, "mkp3fs.exe")
     else:
         python_path = "/usr/bin/python"
         sjasmplus_path = os.path.join(external_path, "sjasmplus")
         sjasmplus_path = os.path.join(sjasmplus_path, "sjasmplus")
-        # mkp3fs_path = os.path.join(external_path, "taptools-1.1.1")
-        # mkp3fs_path = os.path.join(mkp3fs_path, "mkp3fs")
     cydc_path = os.path.join(dist_path, "cydc_cli.py")
 
     #########################################################
 
-    arg_parser = argparse.ArgumentParser(sys.argv[0], description=program)
+    arg_parser = argparse.ArgumentParser(
+        sys.argv[0],
+        description=program,
+        epilog=_(
+            "The project is a folder with the game (and its cyd_project.ini, if it "
+            "has one), or the game's main .cyd file. The target, if not given, is "
+            "the project's."
+        ),
+    )
+    # Options given win over the project's settings; their defaults don't.
+    arg_parser.register("action", None, _TrackedStore)
+    arg_parser.register("action", "store", _TrackedStore)
+    arg_parser.register("action", "store_true", _TrackedStoreTrue)
 
     arg_parser.add_argument(
         "--lang",
@@ -161,57 +226,81 @@ def main():
         default=None,
     )
     arg_parser.add_argument(
+        "--new",
+        metavar=_("FOLDER"),
+        help=_("make a new project in FOLDER (a short game, IMAGES, TRACKS and its cyd_project.ini) and exit"),
+    )
+    arg_parser.add_argument(
+        "--describe",
+        action="store_true",
+        default=False,
+        help=_("print the project's root, main file, name, target and output folder as KEY=value lines, and exit (for the make_adv scripts)"),
+    )
+    arg_parser.add_argument(
         "-n",
         "--name",
         metavar=_("NAME"),
         help=_("Name of the adventure"),
-        default="test",
     )
     arg_parser.add_argument(
         "-o",
         "--output-path",
-        type=dir_path,
         metavar=_("OUTPUT_PATH"),
         help=_("Output path to files"),
-        default=curr_path,
     )
     arg_parser.add_argument(
         "-img",
         "--images-path",
         type=dir_path,
         help=_("path to the directory with the SCR files"),
-        default=os.path.join(curr_path, "IMAGES"),
     )
     arg_parser.add_argument(
         "-trk",
         "--tracks-path",
         type=dir_path,
         help=_("path to the directory with the music tracks"),
-        default=os.path.join(curr_path, "TRACKS"),
     )
     arg_parser.add_argument(
         "-sfx",
         "--sfx-asm-file",
         help=_("path to the asm file generated by beepfx"),
-        default=os.path.join(curr_path, "SFX.ASM"),
     )
     arg_parser.add_argument(
         "-scr",
         "--load-scr-file",
         help=_("path to the SCR file used as Loading screen"),
-        default=os.path.join(curr_path, "IMAGES", "LOAD.scr"),
     )
     arg_parser.add_argument(
         "-tok",
         "--tokens-file",
         help=_("path to the token json file"),
-        default=os.path.join(curr_path, "tokens.json"),
     )
     arg_parser.add_argument(
         "-chr",
         "--charset-file",
         help=_("path to the charset json file"),
-        default=os.path.join(curr_path, "charset.json"),
+    )
+    arg_parser.add_argument(
+        "-I",
+        "--include-path",
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("another folder for INCLUDE, after the project root (can be repeated)"),
+    )
+    arg_parser.add_argument(
+        "--lib-path",
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("a folder for INCLUDE LIB, before the bundled lib/ (can be repeated)"),
+    )
+    arg_parser.add_argument(
+        "--import-path",
+        action="append",
+        default=[],
+        metavar=_("FOLDER"),
+        help=_("another folder for IMPORT, after the script's folder (can be repeated)"),
     )
     arg_parser.add_argument(
         "-wyz",
@@ -269,7 +358,6 @@ def main():
         help=_("limit for the superset search heuristic (default: %(default)d)"),
         default=100,
     )
-    # token_group = arg_parser.add_mutually_exclusive_group()
     arg_parser.add_argument(
         "-T",
         "--export-tokens-file",
@@ -384,6 +472,16 @@ def main():
         help=_("make GOSUB and RETURN check the call stack at runtime (for debugging)"),
     )
     arg_parser.add_argument(
+        "--keep-temp",
+        action="store_true",
+        default=False,
+        help=_(
+            "keep the intermediate files (cyd.asm, cyd.sym, the listing...) in the "
+            "cyd_tmp folder of the output folder; without it they are removed "
+            "when the build ends well"
+        ),
+    )
+    arg_parser.add_argument(
         "-pause",
         "--pause-after-load",
         type=pause_value,
@@ -405,22 +503,28 @@ def main():
         default=False,
         help=_("[esxdos] also emit AUTOBOOT.BAS + ESXDOS.CFG for SD autoboot"),
     )
-    ##
     arg_parser.add_argument(
-        "model",
-        choices=["48k", "128k", "plus3", "esxdos", "mld", "mld128"],
-        help=_("Model of spectrum to target (mld/mld128 are EXPERIMENTAL)"),
-        type=str.lower,
-        default="plus3",
+        "--compiler",
+        metavar=_("CYDC_PATH"),
+        type=file_path,
+        help=_("the compiler to run instead of dist/cydc_cli.py (for development: src/cydc/cydc/cydc.py)"),
     )
-
     arg_parser.add_argument(
-        "sjasmplus_path",
-        nargs="?",
+        "--sjasmplus",
         metavar=_("SJASMPLUS_PATH"),
         type=file_path,
         help=_("path to sjasmplus executable"),
         default=None,  # the bundled one; checked below, --check doesn't need it
+    )
+    ##
+    arg_parser.add_argument(
+        "items",
+        nargs="*",
+        metavar=_("TARGET / PROJECT"),
+        help=_(
+            "the target ({targets}; mld/mld128 are EXPERIMENTAL) and the project "
+            "(its folder or its main .cyd file), in any order"
+        ).format(targets=", ".join(cyd_project.TARGETS)),
     )
 
     try:
@@ -429,125 +533,115 @@ def main():
         sys.exit(_("ERROR: File not found:") + f"{f1}")
     except NotADirectoryError as f2:
         sys.exit(_("ERROR: Not a valid path:") + f"{f2}")
+    given = getattr(args, "_given", set())
 
-    if args.sjasmplus_path is None and not args.check:
+    # --new: a project to start with
+    if args.new:
+        target = next((i.lower() for i in args.items if i.lower() in cyd_project.TARGETS), "128k")
         try:
-            args.sjasmplus_path = file_path(sjasmplus_path)
-        except FileNotFoundError as f1:
-            sys.exit(_("ERROR: File not found:") + f"{f1}")
+            project = cyd_project.new_project(args.new, args.name, target)
+        except cyd_project.ProjectError as e:
+            sys.exit(project_error_message(e))
+        print(_("New project in {root}: {main}").format(root=project.root, main=project.main))
+        sys.exit(0)
 
-    input_file = os.path.join(curr_path, f"{args.name}.cyd")
-    if not os.path.isfile(input_file):
-        sys.exit(_("ERROR: Input file does not exists."))
+    # The target and the project, in any order
+    target = None
+    project_arg = None
+    for item in args.items:
+        if item.lower() in cyd_project.TARGETS and target is None:
+            target = item.lower()
+        elif project_arg is None:
+            project_arg = item
+        else:
+            arg_parser.error(_("too many arguments: {item}").format(item=item))
+    if project_arg is None:
+        sys.exit(_(
+            "ERROR: No project given. Give the folder of your game (or its main "
+            ".cyd file); to start one, use --new FOLDER. A game made with an older "
+            "version, in CYD's own folder, has to be moved to a folder of its own "
+            "(see the manual, \"Migrating a game from an older version\")."
+        ))
+    try:
+        project = cyd_project.find(project_arg)
+        if cyd_project.is_install_root(project.root, curr_path):
+            sys.exit(_(
+                "ERROR: CYD's own folder can't be a project: move the game to a "
+                "folder of its own (see the manual, \"Migrating a game from an "
+                "older version\")."
+            ))
 
-    # Setting parameters
-    cydc_params = ["-img", f"{args.images_path}", "-trk", f"{args.tracks_path}"]
+        # What was given here wins over the project's settings.
+        if "name" in given:
+            project.values["name"] = args.name
+        for dest, key in _PATH_OPTIONS.items():
+            if dest in given:
+                project.values[key] = os.path.abspath(getattr(args, dest))
+        for dest, key in _VALUE_OPTIONS.items():
+            if dest in given:
+                project.values[key] = str(getattr(args, dest))
+        for dest, key in _FLAG_OPTIONS.items():
+            if dest in given:
+                project.values[key] = "yes"
+        for dest, key in _NO_WARN_OPTIONS.items():
+            if dest in given:
+                project.values[key] = "no"
+        for dest, key in (("include_path", "include_paths"), ("lib_path", "lib_paths"),
+                          ("import_path", "import_paths")):
+            extra = [os.path.abspath(p) for p in getattr(args, dest)]
+            if extra:
+                project.values[key] = ";".join([project.get(key)] + extra).strip(";")
+        if target is None:
+            target = project.target
 
-    # Tokens: -t/-T given go straight to the compiler; otherwise the tokens
-    # file is imported if it exists, or else created.
-    if args.import_tokens_file or args.export_tokens_file:
-        if args.import_tokens_file:
-            cydc_params = ["-t", f"{args.import_tokens_file}"] + cydc_params
-        if args.export_tokens_file:
-            cydc_params = ["-T", f"{args.export_tokens_file}"] + cydc_params
-    elif not os.path.isfile(args.tokens_file):
-        cydc_params = ["-T", f"{args.tokens_file}"] + cydc_params
-    else:
-        cydc_params = ["-t", f"{args.tokens_file}"] + cydc_params
+        if args.describe:
+            for key, value in (("ROOT", project.root), ("MAIN", project.main_path),
+                               ("NAME", project.name), ("TARGET", target),
+                               ("OUTPUT", project.path("output")),
+                               ("BACKUP", project.get("backup"))):
+                print(f"{key}={value}")
+            sys.exit(0)
 
-    # Character set: -c given, else the charset file if it exists; -C exports.
-    if args.import_charset:
-        cydc_params = ["-c", f"{args.import_charset}"] + cydc_params
-    elif os.path.isfile(args.charset_file):
-        cydc_params = ["-c", f"{args.charset_file}"] + cydc_params
-    if args.export_charset:
-        cydc_params = ["-C", f"{args.export_charset}"] + cydc_params
+        if not os.path.isfile(project.main_path):
+            sys.exit(_("ERROR: Input file does not exists.") + f" {project.main_path}")
 
-    if os.path.isfile(args.sfx_asm_file):
-        cydc_params = ["-sfx", f"{args.sfx_asm_file}"] + cydc_params
+        # Tokens and character set given here, instead of the project's.
+        extra_params = []
+        if args.import_tokens_file or args.export_tokens_file:
+            project.values["tokens"] = ""
+            if args.import_tokens_file:
+                extra_params += ["-t", os.path.abspath(args.import_tokens_file)]
+            if args.export_tokens_file:
+                extra_params += ["-T", os.path.abspath(args.export_tokens_file)]
+        if args.import_charset:
+            project.values["charset"] = os.path.abspath(args.import_charset)
+        if args.export_charset:
+            extra_params += ["-C", os.path.abspath(args.export_charset)]
+        extra_params += ["-v"] * args.verbose
 
-    if os.path.isfile(args.load_scr_file):
-        cydc_params = ["-scr", f"{args.load_scr_file}"] + cydc_params
+        cydc_params = cyd_project.compiler_args(project, target, check=args.check)
+    except cyd_project.ProjectError as e:
+        sys.exit(project_error_message(e))
 
-    if args.min_length:
-        cydc_params = ["-l", f"{args.min_length}"] + cydc_params
-
-    if args.max_length:
-        cydc_params = ["-L", f"{args.max_length}"] + cydc_params
-
-    if args.superset_limit:
-        cydc_params = ["-s", f"{args.superset_limit}"] + cydc_params
-
-    if args.verbose:
-        cydc_params = ["-v"] + cydc_params
-
-    if args.slice_texts:
-        cydc_params = ["-S"] + cydc_params
-
-    if args.trim_interpreter:
-        cydc_params = ["-trim"] + cydc_params
-
-    if args.dead_code_elimination:
-        cydc_params = ["-dce"] + cydc_params
-
-    if args.show_bytecode:
-        cydc_params = ["-code"] + cydc_params
-
-    if args.no_strict_colons:
-        cydc_params = ["--no-strict-colons"] + cydc_params
-
-    if args.max_errors:
-        cydc_params = ["--max-errors", f"{args.max_errors}"] + cydc_params
-
-    if args.pause_after_load:
-        cydc_params = ["-pause", f"{args.pause_after_load}"] + cydc_params
-
-    if args.disk_720:
-        cydc_params = ["-720"] + cydc_params
-
-    if args.autoboot:
-        cydc_params = ["-autoboot"] + cydc_params
-
-    if args.use_wyz_tracker:
-        cydc_params = ["-wyz"] + cydc_params
-
-    if args.image_lines:
-        cydc_params = ["-il", f"{args.image_lines}"] + cydc_params
-
-    if args.token_format != "auto":
-        cydc_params = ["--token-format", args.token_format] + cydc_params
-
-    if args.no_warn_unused:
-        cydc_params = ["--no-warn-unused"] + cydc_params
-
-    if args.no_warn_gosub:
-        cydc_params = ["--no-warn-gosub"] + cydc_params
-
-    if args.no_warn_shared_vars:
-        cydc_params = ["--no-warn-shared-vars"] + cydc_params
-
-    if args.debug_stack:
-        cydc_params = ["--debug-stack"] + cydc_params
-
-    if args.debug_errors:
-        cydc_params = ["--debug-errors"] + cydc_params
-
-    if args.check:
-        cydc_params = ["--check"] + cydc_params
-
-    cydc_params = [cydc_path] + cydc_params
-    cydc_params += [args.model, input_file]
+    if args.compiler:
+        # Run with this Python: the embedded one in dist/ doesn't put the
+        # script's folder on the path, as src/cydc/cydc/cydc.py needs.
+        cydc_path = os.path.abspath(args.compiler)
+        python_path = sys.executable
+    cydc_params = [cydc_path] + cydc_params + extra_params + [target, project.main_path]
     if not args.check:  # --check assembles nothing and writes no files
-        cydc_params += [
-            args.sjasmplus_path,
-            # args.mkp3fs_path,
-            args.output_path,
-        ]
+        if args.sjasmplus is None:
+            try:
+                args.sjasmplus = file_path(sjasmplus_path)
+            except FileNotFoundError as f1:
+                sys.exit(_("ERROR: File not found:") + f"{f1}")
+        output_path = project.path("output")
+        os.makedirs(output_path, exist_ok=True)
+        cydc_params += [os.path.abspath(args.sjasmplus), output_path]
 
     try:
         print(_("Compiling the script..."))
-        #print(cydc_params)
-        run_exec(python_path, cydc_params)
+        run_exec(python_path, cydc_params, cwd=project.root)
     except OSError as os1:
         err = _("ERROR: Error running CYDC.") + str(os1)
         sys.exit(err)

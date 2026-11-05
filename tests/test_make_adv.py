@@ -74,8 +74,17 @@ def new_folder(test):
     return wd
 
 
-def make_project(wd, target, zesarux_path=None):
-    """A project in wd that compiles GAME for target with RUN_EMULATOR=internal."""
+PROJECT = "juego"  # the project's folder, in the CYD folder (wd)
+
+
+def output_folder(wd):
+    return Path(wd) / PROJECT / "OUTPUT"
+
+
+def make_project(wd, target, zesarux_path=None, project_var=PROJECT):
+    """A CYD folder in wd (the real make_adventure.py and dist/) with a project
+    in wd/juego that compiles GAME for target, and its script with
+    RUN_EMULATOR=internal and PROJECT=project_var."""
     wd = Path(wd)
     shutil.copy(REPO / "make_adventure.py", wd)
     _link_dir(wd / "dist", REPO / "dist")
@@ -87,9 +96,13 @@ def make_project(wd, target, zesarux_path=None):
     else:  # where make_adventure.py looks for it
         (wd / "external" / "sjasmplus").mkdir(parents=True)
         os.symlink(find_sjasmplus(), wd / "external" / "sjasmplus" / "sjasmplus")
-    (wd / f"{GAME}.cyd").write_text(SOURCE, encoding="utf-8")
+    game = wd / PROJECT
+    game.mkdir()
+    (game / f"{GAME}.cyd").write_text(SOURCE, encoding="utf-8")
+    (game / "cyd_project.ini").write_text(
+        f"[project]\nname = {GAME}\nmain = {GAME}.cyd\ntarget = {target}\n", encoding="utf-8")
 
-    config = {"GAME": GAME, "TARGET": target, "RUN_EMULATOR": "internal",
+    config = {"PROJECT": project_var, "RUN_EMULATOR": "internal",
               "ZESARUX_PATH": zesarux_path or ""}
     text = (REPO / SCRIPT).read_text(encoding="utf-8")
     for name, value in config.items():
@@ -121,13 +134,13 @@ def fake_zesarux(folder, record):
     return exe
 
 
-def run_script(wd):
-    """Run the script in wd: (exit code, output). The output goes through a
-    file: the emulator it leaves running would keep a pipe open. The script
-    goes by its whole path: with NoDefaultCurrentDirectoryInExePath set, cmd
-    doesn't look for it in the current folder."""
+def run_script(wd, *args):
+    """Run the script in wd (with args): (exit code, output). The output goes
+    through a file: the emulator it leaves running would keep a pipe open. The
+    script goes by its whole path: with NoDefaultCurrentDirectoryInExePath
+    set, cmd doesn't look for it in the current folder."""
     script = str(Path(wd) / SCRIPT)
-    cmd = ["cmd", "/c", script] if WINDOWS else ["bash", script]
+    cmd = (["cmd", "/c", script] if WINDOWS else ["bash", script]) + list(args)
     with tempfile.TemporaryFile() as out:
         code = subprocess.run(cmd, cwd=wd, stdout=out, stderr=subprocess.STDOUT,
                               stdin=subprocess.DEVNULL,  # PAUSE after a failure
@@ -182,7 +195,7 @@ class TestInternalEmulator(unittest.TestCase):
     def test_plus3_newest_zesarux_and_the_cut_name(self):
         wd, output, exe, folder, args = self.run_target("plus3")
         self.assertTrue(same_path(exe, wd / "tools" / "ZEsarUX-13.0" / EXE), output)
-        game = wd / "aventura.DSK"
+        game = output_folder(wd) / "aventura.DSK"
         if WINDOWS:
             self.assertIn("--machine P341", args)
             self.assertTrue(same_path(re.findall(r'"([^"]+)"', args)[-1], game), args)
@@ -195,19 +208,21 @@ class TestInternalEmulator(unittest.TestCase):
         if WINDOWS:
             self.assertIn("--machine 128k --enable-divmmc --enable-esxdos-handler", args)
             sd, game = re.findall(r'"([^"]+)"', args)[-2:]
-            self.assertTrue(same_path(sd, wd), args)
-            self.assertTrue(same_path(game, wd / "aventura.TAP"), args)
+            self.assertTrue(same_path(sd, output_folder(wd)), args)
+            self.assertTrue(same_path(game, output_folder(wd) / "aventura.TAP"), args)
         else:
             self.assertEqual(args, BASE_ARGS + [
                 "--machine", "128k", "--enable-divmmc", "--enable-esxdos-handler",
-                "--esxdos-root-dir", str(wd), str(wd / "aventura.tap")])
+                "--esxdos-root-dir", str(output_folder(wd)),
+                str(output_folder(wd) / "aventura.tap")])
 
     def test_tools_zesarux_first(self):
         wd, output, exe, folder, args = self.run_target(
             "48k", folders=("ZEsarUX-13.0", "zesarux"))
         self.assertTrue(same_path(exe, wd / "tools" / "zesarux" / EXE), output)
         if not WINDOWS:
-            self.assertEqual(args, BASE_ARGS + ["--machine", "48k", str(wd / "aventurala.tap")])
+            self.assertEqual(args, BASE_ARGS + ["--machine", "48k",
+                                                str(output_folder(wd) / "aventurala.tap")])
 
     def test_without_zesarux_it_warns(self):
         wd = new_folder(self)
@@ -220,6 +235,23 @@ class TestInternalEmulator(unittest.TestCase):
         self.assertIn("Warning: ZEsarUX not found", output)
         self.assertIsNone(launch_line(output))
 
+    def test_project_as_argument(self):
+        """The project given to the script (as when it is dragged onto
+        make_adv.cmd), with a target instead of the project's."""
+        wd = new_folder(self)
+        make_project(wd, "48k", zesarux_path=str(wd / "nowhere" / EXE), project_var="")
+        code, output = run_script(wd, str(wd / PROJECT), "128k")
+        self.assertEqual(code, 0, output)
+        self.assertIn("Target: 128k", output)
+        self.assertTrue((output_folder(wd) / "aventurala.tap").is_file(), output)
+
+    def test_without_a_project_it_says_how(self):
+        wd = new_folder(self)
+        make_project(wd, "48k", project_var="")
+        code, output = run_script(wd)
+        self.assertNotEqual(code, 0)
+        self.assertIn("ERROR: No project given.", output)
+
 
 @unittest.skipUnless(find_sjasmplus() if not WINDOWS else (REPO / "tools" / "sjasmplus.exe").is_file(),
                      "sjasmplus not available")
@@ -228,7 +260,7 @@ class TestTokenAndCharsetOptions(unittest.TestCase):
     them and drop them, always importing or creating tokens.json)."""
 
     def run_make_adventure(self, wd, *options):
-        cmd = [sys.executable, str(wd / "make_adventure.py"), "-n", GAME, *options, "48k"]
+        cmd = [sys.executable, str(wd / "make_adventure.py"), *options, "48k", PROJECT]
         result = subprocess.run(cmd, cwd=wd, capture_output=True, text=True,
                                 encoding="utf-8", errors="replace", timeout=300,
                                 env={**os.environ, "LANGUAGE": "en", "CYD_LANG": "en"})
@@ -241,17 +273,17 @@ class TestTokenAndCharsetOptions(unittest.TestCase):
         self.assertTrue((wd / "mis_tokens.json").is_file())
         self.assertTrue((wd / "mi_charset.json").is_file())
         # -T given: the automatic tokens.json is neither imported nor created.
-        self.assertFalse((wd / "tokens.json").exists())
+        self.assertFalse((wd / PROJECT / "tokens.json").exists())
 
     def test_import_options_reach_the_compiler(self):
         wd = new_folder(self)
         make_project(wd, "48k")
         self.run_make_adventure(wd, "-T", "mis_tokens.json", "-C", "mi_charset.json")
         self.run_make_adventure(wd, "-t", "mis_tokens.json", "-c", "mi_charset.json")
-        self.assertFalse((wd / "tokens.json").exists())
-        # Without them, the automatic tokens.json as before.
+        self.assertFalse((wd / PROJECT / "tokens.json").exists())
+        # Without them, the project's tokens.json, created the first time.
         self.run_make_adventure(wd)
-        self.assertTrue((wd / "tokens.json").is_file())
+        self.assertTrue((wd / PROJECT / "tokens.json").is_file())
 
 
 @unittest.skipIf(WINDOWS, "make_adv.sh")

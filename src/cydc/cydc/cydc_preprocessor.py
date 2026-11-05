@@ -210,8 +210,15 @@ class CydcPreprocessor:
                 include_file,
             )
         what = "Library file" if is_lib else "Include file"
+        hint = ""
+        if not is_lib:
+            # A game from an older version: INCLUDE "lib/x.cyd" or
+            # "../../lib/x.cyd" for a library that INCLUDE LIB finds.
+            base = os.path.basename(include_file)
+            if any(os.path.isfile(os.path.join(d, base)) for d in self.lib_paths):
+                hint = f'. Did you mean INCLUDE LIB "{base}"?'
         raise PreprocessorError(
-            f"{what} not found: {include_file} (searched in: {', '.join(seen)})",
+            f"{what} not found: {include_file} (searched in: {', '.join(seen)}){hint}",
             include_file,
         )
 

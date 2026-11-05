@@ -3,12 +3,16 @@
 # ===============================================================================
 #  ChooseYourDestiny - Adventure Builder Script (Linux/macOS/BSD/Unix)
 # ===============================================================================
-#  This script compiles a .cyd adventure file into a TAP, DSK, or MLD file
-#  for the ZX Spectrum 48k, 128k, +3, esxDOS (divMMC) or Dandanator MLD target.
+#  This script compiles a project (a folder with a game, and its
+#  cyd_project.ini) into a TAP, DSK, or MLD file for the ZX Spectrum 48k,
+#  128k, +3, esxDOS (divMMC) or Dandanator MLD target.
 #
-#  Usage: ./make_adv.sh [options]
-#  
-#  Configuration is done by editing the variables below.
+#  Usage: ./make_adv.sh [PROJECT] [TARGET]
+#
+#  PROJECT is the folder of the game, or its main .cyd file; without it, the
+#  PROJECT variable below. TARGET, if given, is used instead of the project's.
+#  The game's settings (target, image lines, loading screen...) are in its
+#  cyd_project.ini; the variables below are for this computer.
 # ===============================================================================
 
 set -e  # Exit on error
@@ -17,25 +21,20 @@ set -e  # Exit on error
 #  CONFIGURATION SECTION - Edit these variables as needed
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Name of the game (without .cyd extension)
-GAME="test"
-# This name will be used for:
-#   - The source file to compile: ${GAME}.cyd
-#   - The output file: ${GAME}.tap, ${GAME}.DSK, or ${GAME}.MLD (the compiler
-#     cuts the name to 10 characters on tape and to 8 on the other targets)
+# The project to compile when none is given: the folder of the game (or its
+# main .cyd file). Relative to this script's folder, or absolute.
+PROJECT=""
 
-# Target platform: 48k, 128k (for TAP), plus3 (for DSK), esxdos (TAP + DAT for
-# the SD card), mld, or mld128 (for MLD)
-TARGET="128k"
+# Target platform, instead of the project's: 48k, 128k (for TAP), plus3 (for
+# DSK), esxdos (TAP + DAT for the SD card), mld, or mld128 (for MLD). Empty:
+# the project's.
+TARGET=""
 
-# Number of screen lines to use when compressing SCR files (default: 192)
-# Use 192 for full screen, or less for partial screen images
-IMGLINES="192"
+# Name of the game, instead of the project's (empty: the project's). The
+# compiler cuts it to 10 characters on tape and to 8 on the other targets.
+GAME=""
 
-# Path to the loading screen SCR file
-LOAD_SCR="./IMAGES/LOAD.scr"
-
-# Extra parameters for the CYD compiler (optional)
+# Extra parameters for make_adventure.py (optional)
 # Example: --verbose for more output
 CYDC_EXTRA_PARAMS=""
 
@@ -58,8 +57,9 @@ CUSTOM_EMULATOR_CMD="fuse \${OUTPUT_FILE}"
 # tools/build_emu_tools.sh leaves it), then on the PATH.
 ZESARUX_PATH=""
 
-# Backup the .cyd source file after compilation (yes/no)
-BACKUP_CYD="no"
+# Backup the main .cyd file after compilation, to the project's BACKUP folder
+# (yes/no; empty: the project's "backup" setting)
+BACKUP_CYD=""
 
 # Maximum number of backup files to keep (0 = unlimited)
 # When this limit is reached, oldest backups are deleted
@@ -78,14 +78,28 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-echo "==============================================================================="
-echo " ChooseYourDestiny Adventure Builder"
-echo "==============================================================================="
-echo " Game: ${GAME}"
-echo " Target: ${TARGET}"
-echo " Loading screen: ${LOAD_SCR}"
-echo "==============================================================================="
-echo ""
+# Arguments: the project and the target, in any order.
+for ARG in "$@"; do
+    case "${ARG,,}" in
+        48k|128k|plus3|esxdos|mld|mld128) TARGET="${ARG,,}" ;;
+        *) PROJECT="${ARG}" ;;
+    esac
+done
+
+if [ -z "${PROJECT}" ]; then
+    echo "ERROR: No project given."
+    echo ""
+    echo "Usage: ./make_adv.sh PROJECT [TARGET]  (the folder of the game, or its"
+    echo "main .cyd file), or set the PROJECT variable in this script. To start a"
+    echo "project: python3 make_adventure.py --new FOLDER"
+    echo ""
+    exit 1
+fi
+# A relative PROJECT variable is from this script's folder (an argument, from
+# where the script is run).
+if [ $# -eq 0 ] && [[ "${PROJECT}" != /* ]]; then
+    PROJECT="${SCRIPT_DIR}/${PROJECT}"
+fi
 
 # Check if Python 3 is available
 PYTHON=""
@@ -109,22 +123,36 @@ if [ -z "$PYTHON" ]; then
     exit 1
 fi
 
-# Check if source file exists
-if [ ! -f "${SCRIPT_DIR}/${GAME}.cyd" ]; then
-    echo "ERROR: Source file not found: ${GAME}.cyd"
-    echo ""
-    echo "Please create your adventure file or edit the GAME variable in this script."
-    echo ""
-    exit 1
-fi
+# The project as make_adventure.py sees it: ROOT, MAIN, NAME, TARGET, OUTPUT
+# and BACKUP.
+NAME_PARAMS=()
+[ -n "${GAME}" ] && NAME_PARAMS=(-n "${GAME}")
+DESCRIPTION="$("$PYTHON" "${SCRIPT_DIR}/make_adventure.py" --describe "${NAME_PARAMS[@]}" "${PROJECT}" ${TARGET})" || exit 1
+while IFS='=' read -r KEY VALUE; do
+    VALUE="${VALUE%$'\r'}"  # a Windows Python ends its lines with \r\n
+    case "${KEY}" in
+        ROOT|MAIN|NAME|TARGET|OUTPUT|BACKUP) printf -v "CYD_${KEY}" '%s' "${VALUE}" ;;
+    esac
+done <<< "${DESCRIPTION}"
+GAME="${CYD_NAME}"
+TARGET="${CYD_TARGET}"
+[ -z "${BACKUP_CYD}" ] && BACKUP_CYD="${CYD_BACKUP}"
 
-# Compile the adventure
-echo "Compiling ${GAME}.cyd..."
+echo "==============================================================================="
+echo " ChooseYourDestiny Adventure Builder"
+echo "==============================================================================="
+echo " Project: ${CYD_ROOT}"
+echo " Game: ${GAME}"
+echo " Target: ${TARGET}"
+echo "==============================================================================="
 echo ""
 
-cd "${SCRIPT_DIR}"
+# Compile the adventure
+echo "Compiling $(basename "${CYD_MAIN}")..."
+echo ""
+
 RETVAL=0  # set -e would leave before the message below
-$PYTHON "${SCRIPT_DIR}/make_adventure.py" -n "${GAME}" ${CYDC_EXTRA_PARAMS} -il "${IMGLINES}" -scr "${LOAD_SCR}" "${TARGET}" || RETVAL=$?
+$PYTHON "${SCRIPT_DIR}/make_adventure.py" ${CYDC_EXTRA_PARAMS} "${NAME_PARAMS[@]}" "${PROJECT}" "${TARGET}" || RETVAL=$?
 
 if [ $RETVAL -ne 0 ]; then
     echo ""
@@ -141,8 +169,8 @@ echo "==========================================================================
 echo " SUCCESS! Adventure compiled successfully."
 echo "==============================================================================="
 
-# Determine output file: the compiler cuts the name (10 characters on tape,
-# 8 on the other targets) and writes .tap in lowercase.
+# Determine output file, in the output folder: the compiler cuts the name (10
+# characters on tape, 8 on the other targets) and writes .tap in lowercase.
 case "${TARGET}" in
     plus3)      EXT_GLOB="[dD][sS][kK]" ;;
     mld|mld128) EXT_GLOB="[mM][lL][dD]" ;;
@@ -150,7 +178,7 @@ case "${TARGET}" in
 esac
 OUTPUT_FILE=""
 for NAME in "${GAME}" "${GAME:0:10}" "${GAME:0:8}"; do
-    for FILE in "${SCRIPT_DIR}/${NAME}".${EXT_GLOB}; do
+    for FILE in "${CYD_OUTPUT}/${NAME}".${EXT_GLOB}; do
         if [ -z "${OUTPUT_FILE}" ] && [ -f "${FILE}" ]; then
             OUTPUT_FILE="${FILE}"
         fi
@@ -161,31 +189,30 @@ done
 if [ "${BACKUP_CYD}" == "yes" ]; then
     echo ""
     echo "Creating backup..."
-    
-    mkdir -p "${SCRIPT_DIR}/BACKUP"
-    
+
+    BACKUP_DIR="${CYD_ROOT}/BACKUP"
+    mkdir -p "${BACKUP_DIR}"
+
     # Generate timestamp for backup filename
     TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-    BACKUP_FILE="${SCRIPT_DIR}/BACKUP/${GAME}_${TIMESTAMP}.cyd"
-    
-    cp "${SCRIPT_DIR}/${GAME}.cyd" "${BACKUP_FILE}"
-    
-    if [ $? -eq 0 ]; then
+    BACKUP_FILE="${BACKUP_DIR}/${GAME}_${TIMESTAMP}.cyd"
+
+    if cp "${CYD_MAIN}" "${BACKUP_FILE}"; then
         echo "Backup created: BACKUP/${GAME}_${TIMESTAMP}.cyd"
     else
         echo "Warning: Could not create backup."
     fi
-    
+
     # Delete old backups if limit is set
     if [ ${BACKUP_MAX_FILES} -gt 0 ]; then
-        BACKUP_COUNT=$(ls -1 "${SCRIPT_DIR}/BACKUP/${GAME}_"*.cyd 2>/dev/null | wc -l)
-        
+        BACKUP_COUNT=$(ls -1 "${BACKUP_DIR}/${GAME}_"*.cyd 2>/dev/null | wc -l)
+
         if [ ${BACKUP_COUNT} -gt ${BACKUP_MAX_FILES} ]; then
             echo "Rotating backups (keeping ${BACKUP_MAX_FILES} most recent)..."
-            
+
             TO_DELETE=$((BACKUP_COUNT - BACKUP_MAX_FILES))
-            ls -1t "${SCRIPT_DIR}/BACKUP/${GAME}_"*.cyd | tail -n ${TO_DELETE} | xargs rm -f
-            
+            ls -1t "${BACKUP_DIR}/${GAME}_"*.cyd | tail -n ${TO_DELETE} | xargs -d '\n' rm -f
+
             echo "Deleted ${TO_DELETE} old backup(s)."
         fi
     fi
@@ -243,9 +270,9 @@ if [ "${RUN_EMULATOR}" == "internal" ]; then
                         --forcevisiblehotkeys --forceconfirmyes --nowelcomemessage
                         --cpuspeed 100 --machine "${MACHINE}")
         if [ "${TARGET}" == "esxdos" ]; then
-            # The .tap bootstrap loads the .DAT from the SD card: this folder.
+            # The .tap bootstrap loads the .DAT from the SD card: the output folder.
             ZESARUX_PARAMS+=(--enable-divmmc --enable-esxdos-handler
-                             --esxdos-root-dir "${SCRIPT_DIR}")
+                             --esxdos-root-dir "${CYD_OUTPUT}")
         fi
         echo "Launching ZEsarUX: ${ZESARUX} ${ZESARUX_PARAMS[*]} ${OUTPUT_FILE}"
         # From its own folder, where its ROMs are.
@@ -254,10 +281,10 @@ if [ "${RUN_EMULATOR}" == "internal" ]; then
 elif [ "${RUN_EMULATOR}" == "custom" ]; then
     echo ""
     echo "Launching with custom emulator..."
-    
+
     # Expand variables in custom command
     CMD=$(eval echo "${CUSTOM_EMULATOR_CMD}")
-    
+
     if eval ${CMD}; then
         echo "Emulator launched successfully."
     else

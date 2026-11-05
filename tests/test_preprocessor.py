@@ -594,6 +594,13 @@ class TestSearchPaths(unittest.TestCase):
             self._run(main)
         self.assertIn("Library file not found: strings.cyd", str(ctx.exception))
 
+    def test_old_library_include_suggests_include_lib(self):
+        self._write("libs/strings.cyd", "[[\nCONST S = 1\n]]")
+        main = self._write("proyecto/main.cyd", '[[\nINCLUDE "lib/strings.cyd"\n]]')
+        with self.assertRaises(PreprocessorError) as ctx:
+            self._run(main)
+        self.assertIn('Did you mean INCLUDE LIB "strings.cyd"?', str(ctx.exception))
+
     def test_library_paths_in_order(self):
         self._write("extra/strings.cyd", "[[\nCONST PRIMERO = 1\n]]")
         self._write("libs/strings.cyd", "[[\nCONST SEGUNDO = 1\n]]")
