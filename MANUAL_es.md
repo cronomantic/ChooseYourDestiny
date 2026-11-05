@@ -236,6 +236,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
               [-T EXPORT-TOKENS_FILE] [-t IMPORT-TOKENS-FILE] [-C EXPORT-CHARSET]
               [-c IMPORT-CHARSET] [-S] [-n NAME] [-img IMAGES_PATH] [-trk TRACKS_PATH]
               [-sfx SFX_ASM_FILE] [-scr LOAD_SCR_FILE] [-v] [-V] [-trim] [-dce] [-code]
+              [--project-root FOLDER] [-I FOLDER] [--lib-path FOLDER] [--import-path FOLDER]
               [--no-strict-colons] [--max-errors MAX_ERRORS] [--check] [--no-warn-unused]
               [--no-warn-gosub] [--no-warn-shared-vars] [--debug-stack] [--debug-errors]
               [--token-format {auto,flat,nested}]
@@ -258,6 +259,10 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-img IMAGES_PATH**: Ruta al directorio con las imágenes de la aventura.
 - **\-trk TRACKS_PATH**: Ruta al directorio con los ficheros PT3 de música AY o ficheros de WyzTracker.
 - **\-sfx SFX_ASM_FILE**: Ruta a un fichero ensamblador generado por BeepFx.
+- **\-\-project-root CARPETA**: Carpeta raíz del proyecto (por defecto, la del guion). Un `INCLUDE` que no está junto a su fichero se busca aquí (ver *Directiva INCLUDE*).
+- **\-I CARPETA**, **\-\-include-path CARPETA**: Otra carpeta donde busca `INCLUDE`, después de la raíz del proyecto. Se puede repetir.
+- **\-\-lib-path CARPETA**: Una carpeta donde busca `INCLUDE LIB`, antes de la `lib/` incluida. Se puede repetir.
+- **\-\-import-path CARPETA**: Otra carpeta donde busca `IMPORT`, después de la del guion. Se puede repetir.
 - **\-v**: Modo verboso, da más información del proceso.
 - **\-V**: Indica la versión del programa.
 - **\-trim**: Elimina el código de aquellos comandos que no se usen en la aventura para reducir el tamaño del intérprete.
@@ -266,7 +271,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-no-strict-colons**: Permite sintaxis antigua sin separadores `:` entre sentencias en una misma línea.
 - **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
 - **\-\-check**: Solo comprueba si el script tiene errores (de sintaxis, de símbolos y los del generador de código, como un `RESTORE` sin `DATA` detrás), sin ensamblarlo ni generar ficheros, así que no hacen falta `SJASMPLUS_PATH` ni `OUTPUT_PATH`. Es mucho más rápido que compilar, porque no busca abreviaturas. Termina con código 0 si no hay errores y 1 si los hay. No comprueba si la aventura cabe en memoria ni si existen las imágenes o la música.
-- **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del script, así que las librerías incluidas desde fuera no avisan de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
+- **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del proyecto, y nunca para las carpetas de librerías (la `lib/` incluida y las de `--lib-path`), así que una librería no avisa de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
 - **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-no-warn-shared-vars**: No avisa de las variables que un fichero declara y otro fichero usa con otro nombre, por su número (`SET 205 TO ...`) o desde otra variable (`SET v TO {...}` pasándose de `v`). Es la forma de pisar sin darse cuenta las variables de una librería, como las 200..211 de `sprites.cyd`. Reutilizar una variable con varios nombres dentro de un mismo fichero no avisa, ni usarla por su nombre desde cualquier fichero. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
@@ -479,8 +484,11 @@ El compilador permite dividir aventuras grandes en varios archivos fuente usando
 **Reglas y comportamiento:**
 - `INCLUDE` se procesa en tiempo de compilación por el preprocesador.
 - La directiva debe estar dentro de bloques de código `[[ ]]`.
-- Las rutas relativas se resuelven respecto al archivo que contiene la directiva.
+- `INCLUDE "ruta"` busca el archivo, por este orden: junto al archivo que contiene la directiva; en la carpeta raíz del proyecto (la del guion principal, o la indicada con `--project-root`); y en las carpetas indicadas con `-I`. Así, un archivo de cualquier subcarpeta puede escribir `INCLUDE "comun/vars.cyd"` desde la raíz.
+- `INCLUDE LIB "ruta"` incluye una **librería**: solo busca en las carpetas de librerías, primero las indicadas con `--lib-path` y después la `lib/` incluida. Un archivo tuyo que se llame igual que una librería nunca la sustituye.
+- Una ruta absoluta se usa tal cual.
 - Se admiten inclusiones anidadas hasta 20 niveles.
+- La misma librería incluida dos veces con `INCLUDE LIB` (por ejemplo, por tu programa y por otra librería) solo se incluye la primera vez. Cualquier otro archivo incluido dos veces es un error, que indica dónde se incluyó antes.
 - Las inclusiones circulares se detectan y se reportan como error.
 - Un archivo incluido puede incluir otros archivos.
 
@@ -490,7 +498,7 @@ El compilador permite dividir aventuras grandes en varios archivos fuente usando
 
 El proyecto trae en el directorio `lib/` un conjunto de **librerías escritas en el
 propio lenguaje CYD** (no modifican la máquina virtual ni añaden dependencias).
-Son colecciones de subrutinas que se incorporan a tu programa con `INCLUDE` y se
+Son colecciones de subrutinas que se incorporan a tu programa con `INCLUDE LIB` y se
 invocan con `GOSUB`. Cada librería se **auto-salta** sus rutinas (un `GOTO`
 interno al principio), así que puedes incluirla al comienzo de tu guion sin que el
 flujo de ejecución caiga dentro de las subrutinas: solo se ejecutan cuando las
@@ -498,8 +506,8 @@ llamas con `GOSUB`.
 
 ```cyd
 [[
-    INCLUDE "../../lib/math16_32.cyd"
-    INCLUDE "../../lib/strings.cyd"
+    INCLUDE LIB "math16_32.cyd"
+    INCLUDE LIB "strings.cyd"
     ... tu programa ...
 ]]
 ```
@@ -550,7 +558,7 @@ en `examples/math_library`.
 
 ```cyd
 [[
-    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE LIB "math16_32.cyd"
     SET mlA0 TO {226, 4}       /* A = 1250 */
     SET mlB0 TO {32, 3}        /* B = 800  */
     GOSUB mul1632              /* C = 1000000 (sin desbordar) */
@@ -581,7 +589,7 @@ buffer), `stLen` (capacidad en caracteres) y, para copiar o comparar, `stB2`
 
 ```cyd
 [[
-    INCLUDE "../../lib/strings.cyd"
+    INCLUDE LIB "strings.cyd"
     SET stBase TO 0 : SET stLen TO 16
     GOSUB strInput
 ]]Hola, [[ GOSUB strPrint ]]!
@@ -624,7 +632,7 @@ se recorta. Parámetros (variables 200..211):
 
 ```cyd
 [[
-    INCLUDE "../../lib/sprites.cyd"
+    INCLUDE LIB "sprites.cyd"
     PICTURE 1 : DISPLAY 1        /* el escenario, en pantalla */
     PICTURE 2                    /* la hoja de sprites, al buffer (no se ve) */
     SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
@@ -668,7 +676,7 @@ comparten variables y etiquetas.
 
 ```cyd
 [[
-    INCLUDE "../../lib/sprites_px.cyd"
+    INCLUDE LIB "sprites_px.cyd"
     PICTURE 1 : DISPLAY 1
     PICTURE 2
     SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
@@ -708,8 +716,9 @@ Intervienen dos palabras clave:
 
 - **`IMPORT nombre FROM "fichero.asm"`** registra una rutina nativa bajo `nombre`.
   Es una declaración de compilación (como `DECLARE` o `CONST`, **no** como
-  `INCLUDE`, que incluye fuente CYD). Una ruta relativa se resuelve respecto a la
-  carpeta de tu guion `.cyd`.
+  `INCLUDE`, que incluye fuente CYD). Una ruta relativa se busca junto al `.cyd`
+  que contiene el `IMPORT`, después junto a tu guion `.cyd` principal y por último
+  en las carpetas indicadas con `--import-path`.
 - **`CALL nombre`** ejecuta la rutina. Piénsalo como el equivalente nativo de
   `GOSUB`: `GOSUB etiqueta` llama a una subrutina escrita en CYD, `CALL nombre`
   llama a una escrita en Z80.

@@ -9,8 +9,8 @@
    entrada por teclado (strInput) es interactiva (no se beneficia del nativo) y
    se queda en CYD. La interfaz GOSUB no cambia. Verificada en emulador.
 
-   USO: incluye este fichero al PRINCIPIO de tu programa con la directiva de
-   inclusion del preprocesador (ver el manual, seccion INCLUDE). Se auto-salta
+   USO: incluye este fichero al PRINCIPIO de tu programa con
+   INCLUDE LIB "strings.cyd" (ver el manual, seccion INCLUDE). Se auto-salta
    las rutinas (GOTO interno); solo se ejecutan cuando las llamas con GOSUB.
 
    Una cadena es un rango de variables consecutivas con codigos de caracter,

@@ -1497,7 +1497,8 @@ ENDIF]]
 
 - **Case-insensitive:** `INCLUDE`, `include`, and `Include` all work
 - **Quotes:** Both `"file.cyd"` and `'file.cyd'` are supported
-- **Relative paths:** Paths are resolved relative to the file containing the `INCLUDE`
+- **Relative paths:** A path is looked for next to the file containing the `INCLUDE`, and if it isn't there, from the project's root folder (the folder of the main script). So `chapters/chapter1.cyd` could also write `INCLUDE "config/variables.cyd"`
+- **Libraries:** `INCLUDE LIB "strings.cyd"` includes one of the bundled libraries from wherever your adventure is (see the next section)
 - **Nested includes:** Files can include other files (up to 20 levels deep)
 - **Comments in CYD:** Use `/* */` for comments (`/* Load utilities */`). While the `INCLUDE` pattern will ignore text after the filename, relying on this is not recommended.
 - **Error detection:** Circular includes (A includes B, B includes A) are detected automatically
@@ -1524,7 +1525,7 @@ ENDIF]]
 
 The `lib/` directory ships several **libraries written in the CYD language
 itself**: collections of ready-to-use subroutines that do not modify the engine.
-You add them with `INCLUDE` and call them with `GOSUB`. Each library **skips over
+You add them with `INCLUDE LIB` and call them with `GOSUB`. Each library **skips over
 itself** (an internal `GOTO`), so you just include it at the start of your
 program; execution continues with your code and the routines only run when you
 call them.
@@ -1551,7 +1552,7 @@ loaded byte by byte with the multiple assignment `SET reg TO {low_byte, ...}`.
 
 ```cyd
 [[
-    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE LIB "math16_32.cyd"
     PAPER 0 : INK 7 : CLEAR
 
     /* enemies (1250) * points (800) = 1,000,000, without overflow */
@@ -1578,7 +1579,7 @@ need to tell it where the buffer is (`stBase`) and its capacity (`stLen`);
 
 ```cyd
 [[
-    INCLUDE "../../lib/strings.cyd"
+    INCLUDE LIB "strings.cyd"
     PAPER 0 : INK 7 : CLEAR
 
     SET stBase TO 0 : SET stLen TO 16   /* buffer in variables 0..15 */
@@ -1844,7 +1845,7 @@ To draw a sprite, we tell the library where the sprite and its mask are in the b
 
 ```
 [[
-    INCLUDE "../../lib/sprites.cyd"
+    INCLUDE LIB "sprites.cyd"
     PICTURE 0 : DISPLAY 1    /* the scene, on screen */
     PICTURE 1                /* the sprite sheet, into the buffer (not shown) */
     SET sprX TO 0 : SET sprY TO 0       /* the sprite on the sheet */

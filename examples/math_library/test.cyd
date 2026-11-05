@@ -2,7 +2,7 @@
     /* Libreria de aritmetica de 16/32 bits (lib/math16_32.cyd). El nucleo es
        ensamblador Z80 nativo, pero se usa igual: carga los registros y GOSUB.
        Nota: print destruye A, B y C, asi que imprime al final de cada calculo. */
-    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE LIB "math16_32.cyd"
 
     PAPER 0 : INK 7 : BORDER 0 : BRIGHT 1 : CLEAR
 

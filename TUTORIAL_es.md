@@ -1517,7 +1517,8 @@ ENDIF]]
 
 - **No distingue mayúsculas:** `INCLUDE`, `include` e `Include` funcionan igual
 - **Comillas:** Se admiten tanto `"archivo.cyd"` como `'archivo.cyd'`
-- **Rutas relativas:** Las rutas se resuelven relativas al archivo que contiene el `INCLUDE`
+- **Rutas relativas:** Una ruta se busca junto al archivo que contiene el `INCLUDE` y, si no está ahí, desde la carpeta raíz del proyecto (la del guion principal). Así, `capitulos/capitulo1.cyd` también podría escribir `INCLUDE "config/variables.cyd"`
+- **Librerías:** `INCLUDE LIB "strings.cyd"` incluye una de las librerías que vienen con CYD, esté donde esté tu aventura (ver la siguiente sección)
 - **Inclusiones anidadas:** Los archivos pueden incluir otros archivos (hasta 20 niveles de profundidad)
 - **Comentarios en CYD:** Utiliza `/* */` para comentarios (`/* Cargar utilidades */`). Aunque el patrón de `INCLUDE` ignorará texto después del nombre de archivo, no se recomienda depender de esto.
 - **Detección de errores:** Las inclusiones circulares (A incluye B, B incluye A) se detectan automáticamente
@@ -1544,7 +1545,7 @@ ENDIF]]
 
 El proyecto trae en el directorio `lib/` varias **librerías escritas en el propio
 lenguaje CYD**: colecciones de subrutinas listas para usar que no modifican el
-motor. Se incorporan con `INCLUDE` y se llaman con `GOSUB`. Cada librería se
+motor. Se incorporan con `INCLUDE LIB` y se llaman con `GOSUB`. Cada librería se
 **auto-salta** sus rutinas (un `GOTO` interno), así que basta con incluirla al
 principio de tu programa; el flujo continúa con tu código y las rutinas solo se
 ejecutan cuando las llamas.
@@ -1572,7 +1573,7 @@ asignación múltiple `SET reg TO {byte_bajo, ...}`.
 
 ```cyd
 [[
-    INCLUDE "../../lib/math16_32.cyd"
+    INCLUDE LIB "math16_32.cyd"
     PAPER 0 : INK 7 : CLEAR
 
     /* enemigos (1250) * puntos (800) = 1.000.000, sin desbordar */
@@ -1599,7 +1600,7 @@ encarga del cursor, del borrado con DELETE y de terminar con ENTER.
 
 ```cyd
 [[
-    INCLUDE "../../lib/strings.cyd"
+    INCLUDE LIB "strings.cyd"
     PAPER 0 : INK 7 : CLEAR
 
     SET stBase TO 0 : SET stLen TO 16   /* buffer en las variables 0..15 */
@@ -1864,7 +1865,7 @@ Para pintar un sprite, le decimos a la librería dónde están el sprite y su m�
 
 ```
 [[
-    INCLUDE "../../lib/sprites.cyd"
+    INCLUDE LIB "sprites.cyd"
     PICTURE 0 : DISPLAY 1    /* el escenario, en pantalla */
     PICTURE 1                /* la hoja de sprites, al buffer (no se ve) */
     SET sprX TO 0 : SET sprY TO 0       /* el sprite en la hoja */

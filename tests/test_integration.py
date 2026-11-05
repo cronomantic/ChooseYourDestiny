@@ -373,7 +373,9 @@ class TestExamplesRegression(unittest.TestCase):
     def setUp(self):
         """Initialize preprocessor and parser for each test."""
         from cydc_preprocessor import CydcPreprocessor
-        self.preprocessor = CydcPreprocessor()
+        # INCLUDE LIB looks in CYD's lib/, as the compiler does.
+        self.preprocessor = CydcPreprocessor(
+            lib_paths=[str(Path(__file__).parent.parent / "lib")])
         self.parser = CydcParser(strict_colon_mode=True)  # Use default strict mode
         self.parser.build()
 

@@ -10,7 +10,7 @@
    - Cada uno guarda su fondo en su hueco (sprSlot 0 y 1), y se restauran en el
      orden contrario al que se guardaron. */
 
-INCLUDE "../../lib/sprites_px.cyd"
+INCLUDE LIB "sprites_px.cyd"
 
 DECLARE 0 AS manX      /* X del personaje en pixeles */
 DECLARE 1 AS frame     /* su fotograma, 0..3 */

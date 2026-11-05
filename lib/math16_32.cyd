@@ -8,8 +8,8 @@
    las rutinas publicas siguen siendo GOSUB-ables (envoltorios que llaman al
    bloque nativo). Verificado en emulador contra un oraculo (ver tests).
 
-   USO: incluye este fichero al PRINCIPIO de tu programa con la directiva de
-   inclusion del preprocesador (ver el manual, seccion INCLUDE). Se auto-salta
+   USO: incluye este fichero al PRINCIPIO de tu programa con
+   INCLUDE LIB "math16_32.cyd" (ver el manual, seccion INCLUDE). Se auto-salta
    las rutinas (GOTO interno), asi que el flujo continua con tu codigo; las
    rutinas solo se ejecutan cuando las llamas con GOSUB.
 

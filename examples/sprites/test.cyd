@@ -10,7 +10,7 @@
      paso se restauran en el orden contrario al que se guardaron, asi el fondo
      queda bien aunque se crucen. */
 
-INCLUDE "../../lib/sprites.cyd"
+INCLUDE LIB "sprites.cyd"
 
 DECLARE 0 AS manX      /* columna del personaje */
 DECLARE 1 AS frame     /* su fotograma, 0..3 */

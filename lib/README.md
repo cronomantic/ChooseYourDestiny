@@ -2,15 +2,16 @@
 
 Rutinas reutilizables escritas **en CYD** (no tocan la máquina virtual ni añaden
 dependencias). Se distribuyen como ficheros `.cyd` que incluyes en tu programa
-con la directiva `INCLUDE` del preprocesador. Cada librería se **auto-salta** sus
+con `INCLUDE LIB "nombre.cyd"`, que las busca en esta carpeta `lib/` estés donde
+estés (ver el manual, sección INCLUDE). Cada librería se **auto-salta** sus
 rutinas (un `GOTO` interno al principio), así que puedes incluirla al comienzo de
 tu guion sin que el flujo caiga dentro de las subrutinas: solo se ejecutan cuando
 las llamas con `GOSUB`.
 
 ```
 [[
-    INCLUDE "../../lib/math16_32.cyd"
-    INCLUDE "../../lib/strings.cyd"
+    INCLUDE LIB "math16_32.cyd"
+    INCLUDE LIB "strings.cyd"
     ... tu programa ...
 ]]
 ```
@@ -137,7 +138,7 @@ se recorta. Parámetros (variables 200..211):
 
 ```cyd
 [[
-    INCLUDE "../../lib/sprites.cyd"
+    INCLUDE LIB "sprites.cyd"
     PICTURE 1 : DISPLAY 1        /* el escenario, en pantalla */
     PICTURE 2                    /* la hoja de sprites, al buffer (no se ve) */
     SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
@@ -188,7 +189,7 @@ comparten variables y etiquetas.
 
 ```cyd
 [[
-    INCLUDE "../../lib/sprites_px.cyd"
+    INCLUDE LIB "sprites_px.cyd"
     PICTURE 1 : DISPLAY 1
     PICTURE 2
     SET sprX TO 0 : SET sprY TO 0 : SET sprW TO 2 : SET sprH TO 3
