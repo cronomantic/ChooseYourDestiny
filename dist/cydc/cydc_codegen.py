@@ -203,8 +203,14 @@ class CydcCodegen(object):
         self._cur_loc = getattr(statement, "loc", None)
 
     def _fail(self, msg):
+        """Stop with msg. With the statement's place: "ERROR [CODEGEN]
+        file.cyd:12: msg", the place first as in the other messages."""
         if self._cur_loc:
-            msg = self._("{msg} (at {loc})").format(msg=msg, loc=self._cur_loc)
+            for prefix in (self._("ERROR:"), "ERROR:"):
+                if msg.startswith(prefix):
+                    msg = msg[len(prefix):].lstrip()
+                    break
+            msg = "ERROR [CODEGEN] " + self._("{loc}: {msg}").format(msg=msg, loc=self._cur_loc)
         sys.exit(msg)
 
     @staticmethod
@@ -829,8 +835,7 @@ class CydcCodegen(object):
                     f, of = self._loc_file(loc), self._loc_file(oloc)
                     if f and of and f != of:
                         warnings.append(self._(
-                            "Variable {num} is '{name}' in {file}, and at {loc} it is "
-                            "declared again as '{other}': both share it"
+                            "{loc}: Variable {num} is '{name}' in {file}, and here it is declared again as '{other}': both share it"
                         ).format(num=num, name=name, file=f, loc=oloc, other=other))
         # Used from another file by its number, or reached from another name
         # (SET v TO {...} or a wide value that runs past v). Reaching it from a
@@ -854,13 +859,11 @@ class CydcCodegen(object):
                 seen.add(key)
                 if via is None:
                     msg = self._(
-                        "Variable {num} is '{name}' in {file}, and at {loc} it is used "
-                        "by its number"
+                        "{loc}: Variable {num} is '{name}' in {file}, and here it is used by its number"
                     )
                 else:
                     msg = self._(
-                        "Variable {num} is '{name}' in {file}, and at {loc} it is "
-                        "reached from '{via}'"
+                        "{loc}: Variable {num} is '{name}' in {file}, and here it is reached from '{via}'"
                     )
                 warnings.append(msg.format(num=num, name=name, file=dfile, loc=loc, via=via))
         return warnings

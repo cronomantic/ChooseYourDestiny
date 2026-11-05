@@ -43,30 +43,30 @@ def check(main, files=None, *options):
             env={**os.environ, "CYD_LANG": "en", "LANGUAGE": "en"},
         )
         assert r.returncode == 0, r.stdout + r.stderr
-        return [line.split("]: ", 1)[1] for line in r.stdout.splitlines()
-                if line.startswith("WARNING [CODEGEN]: Variable ")]
+        return [line.split("] ", 1)[1] for line in r.stdout.splitlines()
+                if line.startswith("WARNING [CODEGEN] ") and ": Variable " in line]
 
 
 class TestSharedVariables(unittest.TestCase):
     def test_declared_again_under_another_name(self):
         main = '[[ INCLUDE "lib/l.cyd"\nDECLARE 201 AS lives\nSET lives TO 3\nGOSUB libRun ]]'
         self.assertEqual(check(main, {"lib/l.cyd": LIB}), [
-            "Variable 201 is 'libB' in l.cyd, and at main.cyd:2 it is declared again "
-            "as 'lives': both share it",
+            "main.cyd:2: Variable 201 is 'libB' in lib/l.cyd, and here it is declared "
+            "again as 'lives': both share it",
         ])
 
     def test_used_by_its_number(self):
         main = '[[ INCLUDE "lib/l.cyd"\nSET 202 TO 1\nSET 3 TO @202\nGOSUB libRun ]]'
         # Once per file and variable, at the first place it is used.
         self.assertEqual(check(main, {"lib/l.cyd": LIB}), [
-            "Variable 202 is 'libC' in l.cyd, and at main.cyd:2 it is used by its number",
+            "main.cyd:2: Variable 202 is 'libC' in lib/l.cyd, and here it is used by its number",
         ])
 
     def test_reached_from_another_name(self):
         main = ('[[ INCLUDE "lib/l.cyd"\nDECLARE 198 AS buf\n'
                 "SET buf TO {1, 2, 3}\nGOSUB libRun ]]")
         self.assertEqual(check(main, {"lib/l.cyd": LIB}), [
-            "Variable 200 is 'libA' in l.cyd, and at main.cyd:3 it is reached from 'buf'",
+            "main.cyd:3: Variable 200 is 'libA' in lib/l.cyd, and here it is reached from 'buf'",
         ])
 
     def test_reuse_within_one_file_is_fine(self):

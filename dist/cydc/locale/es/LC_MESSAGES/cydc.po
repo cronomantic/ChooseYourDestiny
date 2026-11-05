@@ -1036,336 +1036,336 @@ msgid "end of input"
 msgstr "fin de la entrada"
 
 #: src/cydc/cydc/cydc_parser.py:746
-msgid "Invalid opening code token in {loc}"
-msgstr "Token de código de apertura no válido en {loc}"
+msgid "{loc}: Invalid opening code token"
+msgstr "{loc}: Token de código de apertura no válido"
 
 #: src/cydc/cydc/cydc_parser.py:887
-msgid "Syntax error on RANDOMIZE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando RANDOMIZE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on RANDOMIZE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando RANDOMIZE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:909
-msgid "Syntax error on BACKSPACE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando BACKSPACE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on BACKSPACE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando BACKSPACE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:931
-msgid "Syntax error on NEWLINE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando NEWLINE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on NEWLINE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando NEWLINE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:2135
-msgid "Syntax error on SWAP at {loc}: expected two variables 'SWAP a, b' (or indirect 'SWAP [a], [b]')."
-msgstr "Error de sintaxis en SWAP en {loc}: se esperaban dos variables 'SWAP a, b' (o indirectas 'SWAP [a], [b]')."
+msgid "{loc}: Syntax error on SWAP: expected two variables 'SWAP a, b' (or indirect 'SWAP [a], [b]')."
+msgstr "{loc}: Error de sintaxis en SWAP: se esperaban dos variables 'SWAP a, b' (o indirectas 'SWAP [a], [b]')."
 
 #: src/cydc/cydc/cydc_parser.py:2222
-msgid "Wide constants (WORD/DWORD/string) need a direct destination, not an indirect [..] one, at {loc}."
-msgstr "Las constantes anchas (WORD/DWORD/cadena) necesitan un destino directo, no uno indirecto [..], en {loc}."
+msgid "{loc}: Wide constants (WORD/DWORD/string) need a direct destination, not an indirect [..] one."
+msgstr "{loc}: Las constantes anchas (WORD/DWORD/cadena) necesitan un destino directo, no uno indirecto [..]."
 
 #: src/cydc/cydc/cydc_parser.py:3057
-msgid "Syntax error at {}: unexpected {}"
-msgstr "Error de sintaxis en {}: no se esperaba {}"
+msgid "{}: Syntax error: unexpected {}"
+msgstr "{}: Error de sintaxis: no se esperaba {}"
 
 #: src/cydc/cydc/cydc_parser.py:407
-msgid "FOR STEP cannot be 0 at {loc}."
-msgstr "El STEP de FOR no puede ser 0 en {loc}."
+msgid "{loc}: FOR STEP cannot be 0."
+msgstr "{loc}: El STEP de FOR no puede ser 0."
 
 #: src/cydc/cydc/cydc_parser.py:412
-msgid "FOR STEP {step} out of range (1..255 in magnitude) at {loc}."
-msgstr "STEP {step} de FOR fuera de rango (1..255 en valor absoluto) en {loc}."
+msgid "{loc}: FOR STEP {step} out of range (1..255 in magnitude)."
+msgstr "{loc}: STEP {step} de FOR fuera de rango (1..255 en valor absoluto)."
 
 #: src/cydc/cydc/cydc_parser.py:420
-msgid "NEXT variable '{nxt}' does not match FOR variable '{var}' at {loc}."
-msgstr "La variable '{nxt}' de NEXT no coincide con la variable '{var}' de FOR en {loc}."
+msgid "{loc}: NEXT variable '{nxt}' does not match FOR variable '{var}'."
+msgstr "{loc}: La variable '{nxt}' de NEXT no coincide con la variable '{var}' de FOR."
 
 #: src/cydc/cydc/cydc_parser.py:814
-msgid "Syntax error on GOTO at {loc}, missing identifier."
-msgstr "Error de sintaxis en GOTO en {loc}, falta identificador."
+msgid "{loc}: Syntax error on GOTO: missing identifier."
+msgstr "{loc}: Error de sintaxis en GOTO: falta identificador."
 
 #: src/cydc/cydc/cydc_parser.py:818
-msgid "Syntax error on GOTO at {loc}, invalid identifier."
-msgstr "Error de sintaxis en GOTO en {loc}, identificador no válido."
+msgid "{loc}: Syntax error on GOTO: invalid identifier."
+msgstr "{loc}: Error de sintaxis en GOTO: identificador no válido."
 
 #: src/cydc/cydc/cydc_parser.py:836
-msgid "Syntax error on GOSUB at {loc}, missing identifier."
-msgstr "Error de sintaxis en GOSUB en {loc}, falta identificador."
+msgid "{loc}: Syntax error on GOSUB: missing identifier."
+msgstr "{loc}: Error de sintaxis en GOSUB: falta identificador."
 
 #: src/cydc/cydc/cydc_parser.py:840
-msgid "Syntax error on GOSUB at {loc}, invalid identifier."
-msgstr "Error de sintaxis en GOSUB en {loc}, identificador no válido."
+msgid "{loc}: Syntax error on GOSUB: invalid identifier."
+msgstr "{loc}: Error de sintaxis en GOSUB: identificador no válido."
 
 #: src/cydc/cydc/cydc_parser.py:858
-msgid "Syntax error on LABEL at {loc}, missing identifier."
-msgstr "Error de sintaxis en LABEL en {loc}, falta identificador."
+msgid "{loc}: Syntax error on LABEL: missing identifier."
+msgstr "{loc}: Error de sintaxis en LABEL: falta identificador."
 
 #: src/cydc/cydc/cydc_parser.py:863
-msgid "Syntax error on LABEL at {loc}, invalid identifier."
-msgstr "Error de sintaxis en LABEL en {loc}, identificador no válido."
+msgid "{loc}: Syntax error on LABEL: invalid identifier."
+msgstr "{loc}: Error de sintaxis en LABEL: identificador no válido."
 
 #: src/cydc/cydc/cydc_parser.py:952
-msgid "Syntax error on TAB command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando TAB en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on TAB command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando TAB: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:957
-msgid "Syntax error on TAB command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando TAB en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on TAB command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando TAB: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:978
-msgid "Syntax error on PAGEPAUSE command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PAGEPAUSE en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PAGEPAUSE command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PAGEPAUSE: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:983
-msgid "Syntax error on PAGEPAUSE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PAGEPAUSE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PAGEPAUSE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PAGEPAUSE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1002
-msgid "Syntax error on CHAR command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando CHAR en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on CHAR command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando CHAR: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1007
-msgid "Syntax error on CHAR command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando CHAR en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on CHAR command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando CHAR: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1026
-msgid "Syntax error on PRINT command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PRINT en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PRINT command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PRINT: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1031
-msgid "Syntax error on PRINT command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PRINT en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PRINT command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PRINT: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1050
-msgid "Syntax error on INK command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando INK en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on INK command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando INK: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1055
-msgid "Syntax error on INK command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando INK en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on INK command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando INK: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1074
-msgid "Syntax error on PAPER command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PAPER en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PAPER command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PAPER: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1079
-msgid "Syntax error on PAPER command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PAPER en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PAPER command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PAPER: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1098
-msgid "Syntax error on BORDER command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando BORDER en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on BORDER command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando BORDER: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1103
-msgid "Syntax error on BORDER command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando BORDER en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on BORDER command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando BORDER: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1122
-msgid "Syntax error on BRIGHT command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando BRIGHT en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on BRIGHT command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando BRIGHT: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1127
-msgid "Syntax error on BRIGHT command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando BRIGHT en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on BRIGHT command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando BRIGHT: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1146
-msgid "Syntax error on FLASH command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando FLASH en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on FLASH command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando FLASH: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1151
-msgid "Syntax error on FLASH command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando FLASH en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on FLASH command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando FLASH: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1170
-msgid "Syntax error on SFX command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando SFX en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on SFX command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando SFX: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1175
-msgid "Syntax error on SFX command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando SFX en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on SFX command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando SFX: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1194
-msgid "Syntax error on DISPLAY command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando DISPLAY en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on DISPLAY command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando DISPLAY: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1199
-msgid "Syntax error on DISPLAY command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando DISPLAY en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on DISPLAY command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando DISPLAY: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1218
-msgid "Syntax error on PICTURE command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PICTURE en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PICTURE command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PICTURE: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1223
-msgid "Syntax error on PICTURE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PICTURE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PICTURE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PICTURE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1242
-msgid "Syntax error on TRACK command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando TRACK en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on TRACK command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando TRACK: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1247
-msgid "Syntax error on TRACK command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando TRACK en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on TRACK command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando TRACK: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1266
-msgid "Syntax error on PLAY command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PLAY en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PLAY command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PLAY: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1271
-msgid "Syntax error on PLAY command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PLAY en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PLAY command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PLAY: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1290
-msgid "Syntax error on LOOP command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando LOOP en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on LOOP command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando LOOP: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1295
-msgid "Syntax error on LOOP command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando LOOP en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on LOOP command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando LOOP: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1317
-msgid "Syntax error on LOAD command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando LOAD en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on LOAD command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando LOAD: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1322
-msgid "Syntax error on LOAD command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando LOAD en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on LOAD command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando LOAD: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1343
-msgid "Syntax error on WAIT command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando WAIT en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on WAIT command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando WAIT: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1348
-msgid "Syntax error on WAIT command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando WAIT en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on WAIT command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando WAIT: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1369
-msgid "Syntax error on PAUSE command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando PAUSE en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on PAUSE command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando PAUSE: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1374
-msgid "Syntax error on PAUSE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando PAUSE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on PAUSE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando PAUSE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1395
-msgid "Syntax error on TYPERATE command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando TYPERATE en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on TYPERATE command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando TYPERATE: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1400
-msgid "Syntax error on TYPERATE command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando TYPERATE en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on TYPERATE command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando TYPERATE: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1421
-msgid "Syntax error on WINDOW command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando WINDOW en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on WINDOW command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando WINDOW: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1426
-msgid "Syntax error on WINDOW command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando WINDOW en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on WINDOW command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando WINDOW: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:1447
-msgid "Syntax error on CHARSET command at {loc}, it has no argument."
-msgstr "Error de sintaxis en el comando CHARSET en {loc}, no tiene argumento."
+msgid "{loc}: Syntax error on CHARSET command: it has no argument."
+msgstr "{loc}: Error de sintaxis en el comando CHARSET: no tiene argumento."
 
 #: src/cydc/cydc/cydc_parser.py:1452
-msgid "Syntax error on CHARSET command at {loc}, invalid expression."
-msgstr "Error de sintaxis en el comando CHARSET en {loc}, expresión no válida."
+msgid "{loc}: Syntax error on CHARSET command: invalid expression."
+msgstr "{loc}: Error de sintaxis en el comando CHARSET: expresión no válida."
 
 #: src/cydc/cydc/cydc_parser.py:3062
-msgid "Syntax error at {}"
-msgstr "Error de sintaxis en {}"
+msgid "{}: Syntax error"
+msgstr "{}: Error de sintaxis"
 
 #: src/cydc/cydc/cydc_parser.py:3179
-msgid "Invalid array size on {loc}"
-msgstr "Tamaño de array no válido en {loc}"
+msgid "{loc}: Invalid array size"
+msgstr "{loc}: Tamaño de array no válido"
 
 #: src/cydc/cydc/cydc_parser.py:3186
-msgid "Invalid byte value {val} on {loc}"
-msgstr "Valor de byte no válido {val} en {loc}"
+msgid "{loc}: Invalid byte value {val}"
+msgstr "{loc}: Valor de byte no válido {val}"
 
 #: src/cydc/cydc/cydc_parser.py:3193
-msgid "Invalid word value {val} on {loc}"
-msgstr "Valor de word no válido {val} en {loc}"
+msgid "{loc}: Invalid word value {val}"
+msgstr "{loc}: Valor de word no válido {val}"
 
 #: src/cydc/cydc/cydc_parser.py:3070
-msgid "Syntax error at {}: Missing ENDIF for IF"
-msgstr "Error de sintaxis en {}: falta ENDIF para IF"
+msgid "{}: Syntax error: missing ENDIF for IF"
+msgstr "{}: Error de sintaxis: falta ENDIF para IF"
 
 #: src/cydc/cydc/cydc_parser.py:3392
-msgid "Label '{symbol}' on {loc} was already declared before."
-msgstr "La etiqueta '{symbol}' en {loc} ya se había declarado antes."
+msgid "{loc}: Label '{symbol}' was already declared before."
+msgstr "{loc}: La etiqueta '{symbol}' ya se había declarado antes."
 
 #: src/cydc/cydc/cydc_parser.py:3425
-msgid "Symbol '{symbol}' on {loc} is used as {used_type} but was already used as {previous_type}."
-msgstr "El símbolo '{symbol}' en {loc} se usa como {used_type}, pero ya se había usado como {previous_type}."
+msgid "{loc}: Symbol '{symbol}' is used as {used_type} but was already used as {previous_type}."
+msgstr "{loc}: El símbolo '{symbol}' se usa como {used_type}, pero ya se había usado como {previous_type}."
 
 #: src/cydc/cydc/cydc_parser.py:756
-msgid "Invalid character '{err[2]}' (\\u{codepoint:04x}) in {loc} and position {err[1]}"
-msgstr "Carácter no válido '{err[2]}' (\\u{codepoint:04x}) en {loc}, posición {err[1]}"
+msgid "{loc}: Invalid character '{err[2]}' (\\u{codepoint:04x}) at position {err[1]}"
+msgstr "{loc}: Carácter no válido '{err[2]}' (\\u{codepoint:04x}) en la posición {err[1]}"
 
 #: src/cydc/cydc/cydc_parser.py:1995
-msgid "Symbol at {loc} invalid"
-msgstr "Símbolo no válido en {loc}"
+msgid "{loc}: Symbol invalid"
+msgstr "{loc}: Símbolo no válido"
 
 #: src/cydc/cydc/cydc_parser.py:3074
-msgid "Syntax error at {}: Missing WEND for WHILE"
-msgstr "Error de sintaxis en {}: falta WEND para WHILE"
+msgid "{}: Syntax error: missing WEND for WHILE"
+msgstr "{}: Error de sintaxis: falta WEND para WHILE"
 
 #: src/cydc/cydc/cydc_parser.py:3396
-msgid "Variable '{symbol}' on {loc} was already declared before."
-msgstr "La variable '{symbol}' en {loc} ya se había declarado antes."
+msgid "{loc}: Variable '{symbol}' was already declared before."
+msgstr "{loc}: La variable '{symbol}' ya se había declarado antes."
 
 #: src/cydc/cydc/cydc_parser.py:3442
-msgid "Label '{symbol}' on {lines_str} is not declared."
-msgstr "La etiqueta '{symbol}' en {lines_str} no está declarada."
+msgid "{loc}: Label '{symbol}' is not declared."
+msgstr "{loc}: La etiqueta '{symbol}' no está declarada."
 
 #: src/cydc/cydc/cydc_parser.py:3466
-msgid "Symbol '{symbol}' on {lines_str} is used as {used_type} but was already declared as {previous_type} on {decl_loc}."
-msgstr "El símbolo '{symbol}' en {lines_str} se usa como {used_type}, pero ya estaba declarado como {previous_type} en {decl_loc}."
+msgid "{loc}: Symbol '{symbol}' is used as {used_type} but was already declared as {previous_type} at {decl_loc}."
+msgstr "{loc}: El símbolo '{symbol}' se usa como {used_type}, pero ya estaba declarado como {previous_type} en {decl_loc}."
 
 #: src/cydc/cydc/cydc_parser.py:204
-msgid "Colon required between statements on same line ({loc})"
-msgstr "Se necesitan dos puntos entre instrucciones en la misma línea ({loc})"
+msgid "{loc}: Colon required between statements on same line"
+msgstr "{loc}: Se necesitan dos puntos entre instrucciones en la misma línea"
 
 #: src/cydc/cydc/cydc_parser.py:1962
-msgid "Data array '{p[2]}' at {loc} must have defined a size or have initialization data."
-msgstr "El array de datos '{p[2]}' en {loc} debe tener un tamaño definido o datos de inicialización."
+msgid "{loc}: Data array '{p[2]}' must have defined a size or have initialization data."
+msgstr "{loc}: El array de datos '{p[2]}' debe tener un tamaño definido o datos de inicialización."
 
 #: src/cydc/cydc/cydc_parser.py:3078
-msgid "Syntax error at {}: Missing UNTIL for DO"
-msgstr "Error de sintaxis en {}: falta UNTIL para DO"
+msgid "{}: Syntax error: missing UNTIL for DO"
+msgstr "{}: Error de sintaxis: falta UNTIL para DO"
 
 #: src/cydc/cydc/cydc_parser.py:3144
-msgid "Lexer error: {} '{}' at {}."
-msgstr "Error léxico: {} '{}' en {}."
+msgid "{2}: Lexer error: {0} '{1}'."
+msgstr "{2}: Error léxico: {0} '{1}'."
 
 #: src/cydc/cydc/cydc_parser.py:3152
-msgid "Lexer error: {} at {}."
-msgstr "Error léxico: {} en {}."
+msgid "{1}: Lexer error: {0}."
+msgstr "{1}: Error léxico: {0}."
 
 #: src/cydc/cydc/cydc_parser.py:3400
-msgid "Constant '{symbol}' on {loc} was already declared before."
-msgstr "La constante '{symbol}' en {loc} ya se había declarado antes."
+msgid "{loc}: Constant '{symbol}' was already declared before."
+msgstr "{loc}: La constante '{symbol}' ya se había declarado antes."
 
 #: src/cydc/cydc/cydc_parser.py:3446
-msgid "Variable '{symbol}' on {lines_str} is not declared."
-msgstr "La variable '{symbol}' en {lines_str} no está declarada."
+msgid "{loc}: Variable '{symbol}' is not declared."
+msgstr "{loc}: La variable '{symbol}' no está declarada."
 
 #: src/cydc/cydc/cydc_parser.py:3404
-msgid "Data array '{symbol}' on {loc} was already declared before."
-msgstr "El array de datos '{symbol}' en {loc} ya se había declarado antes."
+msgid "{loc}: Data array '{symbol}' was already declared before."
+msgstr "{loc}: El array de datos '{symbol}' ya se había declarado antes."
 
 #: src/cydc/cydc/cydc_parser.py:3408
-msgid "Symbol '{symbol}' on {loc} was already declared before."
-msgstr "El símbolo '{symbol}' en {loc} ya se había declarado antes."
+msgid "{loc}: Symbol '{symbol}' was already declared before."
+msgstr "{loc}: El símbolo '{symbol}' ya se había declarado antes."
 
 #: src/cydc/cydc/cydc_parser.py:3450
-msgid "Constant '{symbol}' on {lines_str} is not declared."
-msgstr "La constante '{symbol}' en {lines_str} no está declarada."
+msgid "{loc}: Constant '{symbol}' is not declared."
+msgstr "{loc}: La constante '{symbol}' no está declarada."
 
 #: src/cydc/cydc/cydc_parser.py:3454
-msgid "Data array '{symbol}' on {lines_str} is not declared."
-msgstr "El array de datos '{symbol}' en {lines_str} no está declarado."
+msgid "{loc}: Data array '{symbol}' is not declared."
+msgstr "{loc}: El array de datos '{symbol}' no está declarado."
 
 #: src/cydc/cydc/cydc_parser.py:3458
-msgid "Symbol '{symbol}' on {lines_str} is not declared."
-msgstr "El símbolo '{symbol}' en {lines_str} no está declarado."
+msgid "{loc}: Symbol '{symbol}' is not declared."
+msgstr "{loc}: El símbolo '{symbol}' no está declarado."
 
 #: src/cydc/cydc/cydc_codegen.py:433
 msgid "ERROR: Constant expression value {stack[0]} must not be negative!"
@@ -1614,20 +1614,20 @@ msgid "line {}"
 msgstr "línea {}"
 
 #: src/cydc/cydc/cydc_codegen.py:196
-msgid "{msg} (at {loc})"
-msgstr "{msg} (en {loc})"
+msgid "{loc}: {msg}"
+msgstr "{loc}: {msg}"
 
 #: src/cydc/cydc/cydc_parser.py:3536
-msgid "Label '{symbol}' on {loc} is never used."
-msgstr "La etiqueta '{symbol}' en {loc} no se usa nunca."
+msgid "{loc}: Label '{symbol}' is never used."
+msgstr "{loc}: La etiqueta '{symbol}' no se usa nunca."
 
 #: src/cydc/cydc/cydc_parser.py:3537
-msgid "Variable '{symbol}' on {loc} is never used."
-msgstr "La variable '{symbol}' en {loc} no se usa nunca."
+msgid "{loc}: Variable '{symbol}' is never used."
+msgstr "{loc}: La variable '{symbol}' no se usa nunca."
 
 #: src/cydc/cydc/cydc_parser.py:3538
-msgid "Data array '{symbol}' on {loc} is never used."
-msgstr "El array de datos '{symbol}' en {loc} no se usa nunca."
+msgid "{loc}: Data array '{symbol}' is never used."
+msgstr "{loc}: El array de datos '{symbol}' no se usa nunca."
 
 #: src/cydc/cydc/cydc.py:346
 msgid "only check the script for errors, without assembling it (SJASMPLUS_PATH and OUTPUT_PATH are not needed)"
@@ -1683,16 +1683,16 @@ msgid "don't warn when a variable declared in one file (such as a library's) is 
 msgstr "no avisar cuando una variable declarada en un fichero (como las de una librería) se usa desde otro fichero con otro nombre o por su número"
 
 #: src/cydc/cydc/cydc_codegen.py
-msgid "Variable {num} is '{name}' in {file}, and at {loc} it is declared again as '{other}': both share it"
-msgstr "La variable {num} es '{name}' en {file}, y en {loc} se declara otra vez como '{other}': las dos la comparten"
+msgid "{loc}: Variable {num} is '{name}' in {file}, and here it is declared again as '{other}': both share it"
+msgstr "{loc}: La variable {num} es '{name}' en {file}, y aquí se declara otra vez como '{other}': las dos la comparten"
 
 #: src/cydc/cydc/cydc_codegen.py
-msgid "Variable {num} is '{name}' in {file}, and at {loc} it is used by its number"
-msgstr "La variable {num} es '{name}' en {file}, y en {loc} se usa por su número"
+msgid "{loc}: Variable {num} is '{name}' in {file}, and here it is used by its number"
+msgstr "{loc}: La variable {num} es '{name}' en {file}, y aquí se usa por su número"
 
 #: src/cydc/cydc/cydc_codegen.py
-msgid "Variable {num} is '{name}' in {file}, and at {loc} it is reached from '{via}'"
-msgstr "La variable {num} es '{name}' en {file}, y en {loc} se llega a ella desde '{via}'"
+msgid "{loc}: Variable {num} is '{name}' in {file}, and here it is reached from '{via}'"
+msgstr "{loc}: La variable {num} es '{name}' en {file}, y aquí se llega a ella desde '{via}'"
 
 #: src/cydc/cydc/cydc_codegen.py
 msgid "make GOSUB and RETURN check the call stack at runtime and stop with a system error when it overflows or is empty (for debugging, adds a few bytes)"

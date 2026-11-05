@@ -41,9 +41,9 @@ class TestUnusedSymbolWarnings(unittest.TestCase):
             "DIM table(2)\nSET used TO 1 ]]"
         )
         self.assertEqual(warnings, [
-            "Variable 'idle' on line 2 is never used.",
-            "Label 'spare' on line 3 is never used.",
-            "Data array 'table' on line 4 is never used.",
+            "line 2: Variable 'idle' is never used.",
+            "line 3: Label 'spare' is never used.",
+            "line 4: Data array 'table' is never used.",
         ])
 
     def test_used_symbols_and_constants_do_not_warn(self):
@@ -59,7 +59,7 @@ class TestUnusedSymbolWarnings(unittest.TestCase):
             2: SourceLocation("lib.cyd", 1, os.path.abspath(os.path.join("lib", "lib.cyd"))),
         })
         warnings = self._warnings("[[ LABEL mine ]]\n[[ LABEL routine ]]", project)
-        self.assertEqual(warnings, ["Label 'mine' on main.cyd:1 is never used."])
+        self.assertEqual(warnings, ["main.cyd:1: Label 'mine' is never used."])
 
     def test_symbols_from_library_folders_are_skipped_inside_the_project(self):
         project = os.path.abspath("game")
@@ -70,7 +70,7 @@ class TestUnusedSymbolWarnings(unittest.TestCase):
         })
         self.parser.parse(input="[[ LABEL mine ]]\n[[ LABEL routine ]]")
         warnings = self.parser.unused_symbol_warnings(project, exclude_dirs=[libs])
-        self.assertEqual(warnings, ["Label 'mine' on main.cyd:1 is never used."])
+        self.assertEqual(warnings, ["main.cyd:1: Label 'mine' is never used."])
 
 
 class TestCheckMode(unittest.TestCase):
@@ -88,7 +88,7 @@ class TestCheckMode(unittest.TestCase):
     def test_valid_script_passes_without_sjasmplus(self):
         r = self._run("Hi\n[[ DECLARE 0 AS spare ]]", "--check")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertIn("WARNING [PARSER]: Variable 'spare' on main.cyd:2 is never used.", r.stdout)
+        self.assertIn("WARNING [PARSER] main.cyd:2: Variable 'spare' is never used.", r.stdout)
         self.assertIn("No errors found", r.stdout)
 
     def test_no_warn_unused(self):
@@ -99,13 +99,13 @@ class TestCheckMode(unittest.TestCase):
     def test_parser_error_fails(self):
         r = self._run("[[ GOTO nowhere ]]", "--check")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("Label 'nowhere' on main.cyd:1 is not declared.", r.stdout)
+        self.assertIn("ERROR [PARSER] main.cyd:1: Label 'nowhere' is not declared.", r.stdout)
 
     def test_code_generator_error_fails(self):
         r = self._run("[[ LABEL tail ]]\n[[ RESTORE tail ]]", "--check")
         self.assertEqual(r.returncode, 1)
         self.assertIn("RESTORE tail", r.stderr)
-        self.assertIn("(at main.cyd:2)", r.stderr)
+        self.assertIn("ERROR [CODEGEN] main.cyd:2: RESTORE tail", r.stderr)
 
     def test_assembler_paths_required_without_check(self):
         r = self._run("Hi")

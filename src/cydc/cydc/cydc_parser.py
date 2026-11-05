@@ -76,6 +76,8 @@ class CydcParser(object):
         self.max_errors = max(1, int(max_errors))
         self.max_errors_reached = False
         self.line_map = None  # Maps preprocessed line numbers to original source locations
+        # The project's root: messages name the files relative to it.
+        self.project_root = None
         import builtins
         self._ = gettext.gettext if gettext is not None else builtins.__dict__.get('_', lambda x: x)
 
@@ -109,14 +111,27 @@ class CydcParser(object):
         """
         if self.line_map and line_num in self.line_map:
             loc = self.line_map[line_num]
-            return f"{loc.filename}:{loc.line_num}"
+            return f"{self._display_path(loc)}:{loc.line_num}"
         # Past the last mapped line (the text after the last newline of a
         # file): the same file, counting on from its closest line.
         before = [n for n in (self.line_map or ()) if n < line_num]
         if before:
             loc = self.line_map[max(before)]
-            return f"{loc.filename}:{loc.line_num + line_num - max(before)}"
+            return f"{self._display_path(loc)}:{loc.line_num + line_num - max(before)}"
         return self._("line {}").format(line_num)
+
+    def _display_path(self, loc):
+        """A file as the messages name it: relative to the project's root, with
+        "/" (and "../" for one outside it); absolute only when there is no
+        relative path (another drive). Without a root, its name."""
+        path = getattr(loc, "path", None)
+        if not path or not self.project_root:
+            return loc.filename
+        try:
+            rel = os.path.relpath(path, self.project_root)
+        except ValueError:  # another drive
+            rel = os.path.abspath(path)
+        return rel.replace(os.sep, "/")
 
     def _source_path(self, line_num):
         """The real path of the file a preprocessed line comes from (as
@@ -264,7 +279,7 @@ class CydcParser(object):
                     if p.slice[1].lineno == p.slice[2].lineno:
                         # Only report error if they're actually on the same line
                         loc = self._format_error_location(p.lineno(2))
-                        self.errors.append(self._("Colon required between statements on same line ({loc})").format(loc=loc))
+                        self.errors.append(self._("{loc}: Colon required between statements on same line").format(loc=loc))
         
         p[0] = p[1]
         if not p[0]:
@@ -468,13 +483,13 @@ class CydcParser(object):
 
         if step == 0:
             loc = self._format_error_location(step_lineno)
-            self.errors.append(self._("FOR STEP cannot be 0 at {loc}.").format(loc=loc))
+            self.errors.append(self._("{loc}: FOR STEP cannot be 0.").format(loc=loc))
             p[0] = None
             return
         if abs(step) not in range(1, 256):
             loc = self._format_error_location(step_lineno)
             self.errors.append(self._(
-                "FOR STEP {step} out of range (1..255 in magnitude) at {loc}."
+                "{loc}: FOR STEP {step} out of range (1..255 in magnitude)."
             ).format(step=step, loc=loc))
             p[0] = None
             return
@@ -482,7 +497,7 @@ class CydcParser(object):
         if nxt is not None and nxt != var:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "NEXT variable '{nxt}' does not match FOR variable '{var}' at {loc}."
+                "{loc}: NEXT variable '{nxt}' does not match FOR variable '{var}'."
             ).format(nxt=nxt, var=var, loc=loc))
             p[0] = None
             return
@@ -807,7 +822,7 @@ class CydcParser(object):
     def p_text_statement_close_error(self, p):
         "text_statement : ERROR_CLOSE_TEXT"
         loc = self._format_error_location(p[1])
-        self.errors.append(self._("Invalid opening code token in {loc}").format(loc=loc))
+        self.errors.append(self._("{loc}: Invalid opening code token").format(loc=loc))
         p[0] = None
 
     def p_text_statement_text_error(self, p):
@@ -818,7 +833,7 @@ class CydcParser(object):
                 for err in t[1]:
                     loc = self._format_error_location(err[0])
                     self.errors.append(self._(
-                        "Invalid character '{err[2]}' (\\u{codepoint:04x}) in {loc} and position {err[1]}"
+                        "{loc}: Invalid character '{err[2]}' (\\u{codepoint:04x}) at position {err[1]}"
                     ).format(err=err, codepoint=ord(err[2]), loc=loc))
             else:
                 self.errors.append(self._("Undefined codification error"))
@@ -876,11 +891,11 @@ class CydcParser(object):
         loc = self._format_error_location(p.lineno(1))
         if len(p) != 3:
             self.errors.append(self._(
-                "Syntax error on GOTO at {loc}, missing identifier."
+                "{loc}: Syntax error on GOTO: missing identifier."
             ).format(loc=loc))
         else:
             self.errors.append(self._(
-                "Syntax error on GOTO at {loc}, invalid identifier."
+                "{loc}: Syntax error on GOTO: invalid identifier."
             ).format(loc=loc))
 
     def p_statement_gosub(self, p):
@@ -898,11 +913,11 @@ class CydcParser(object):
         loc = self._format_error_location(p.lineno(1))
         if len(p) != 3:
             self.errors.append(self._(
-                "Syntax error on GOSUB at {loc}, missing identifier."
+                "{loc}: Syntax error on GOSUB: missing identifier."
             ).format(loc=loc))
         else:
             self.errors.append(self._(
-                "Syntax error on GOSUB at {loc}, invalid identifier."
+                "{loc}: Syntax error on GOSUB: invalid identifier."
             ).format(loc=loc))
 
     def p_statement_label(self, p):
@@ -920,12 +935,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LABEL at {loc}, missing identifier."
+                "{loc}: Syntax error on LABEL: missing identifier."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LABEL at {loc}, invalid identifier."
+                "{loc}: Syntax error on LABEL: invalid identifier."
             ).format(loc=loc))
 
     def p_statement_randomize(self, p):
@@ -949,7 +964,7 @@ class CydcParser(object):
         "statement : RANDOMIZE error"
         loc = self._format_error_location(p.lineno(1))
         self.errors.append(self._(
-            "Syntax error on RANDOMIZE command at {loc}, invalid expression."
+            "{loc}: Syntax error on RANDOMIZE command: invalid expression."
         ).format(loc=loc))
 
     def p_statement_backspace(self, p):
@@ -971,7 +986,7 @@ class CydcParser(object):
         "statement : BACKSPACE error"
         loc = self._format_error_location(p.lineno(1))
         self.errors.append(self._(
-            "Syntax error on BACKSPACE command at {loc}, invalid expression."
+            "{loc}: Syntax error on BACKSPACE command: invalid expression."
         ).format(loc=loc))
 
     def p_statement_newline(self, p):
@@ -993,7 +1008,7 @@ class CydcParser(object):
         "statement : NEWLINE error"
         loc = self._format_error_location(p.lineno(1))
         self.errors.append(self._(
-            "Syntax error on NEWLINE command at {loc}, invalid expression."
+            "{loc}: Syntax error on NEWLINE command: invalid expression."
         ).format(loc=loc))
 
     def p_statement_tab(self, p):
@@ -1014,12 +1029,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TAB command at {loc}, it has no argument."
+                "{loc}: Syntax error on TAB command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TAB command at {loc}, invalid expression."
+                "{loc}: Syntax error on TAB command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_page_pause(self, p):
@@ -1040,12 +1055,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAGEPAUSE command at {loc}, it has no argument."
+                "{loc}: Syntax error on PAGEPAUSE command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAGEPAUSE command at {loc}, invalid expression."
+                "{loc}: Syntax error on PAGEPAUSE command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_char(self, p):
@@ -1064,12 +1079,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on CHAR command at {loc}, it has no argument."
+                "{loc}: Syntax error on CHAR command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on CHAR command at {loc}, invalid expression."
+                "{loc}: Syntax error on CHAR command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_print(self, p):
@@ -1088,12 +1103,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PRINT command at {loc}, it has no argument."
+                "{loc}: Syntax error on PRINT command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PRINT command at {loc}, invalid expression."
+                "{loc}: Syntax error on PRINT command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_ink(self, p):
@@ -1112,12 +1127,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on INK command at {loc}, it has no argument."
+                "{loc}: Syntax error on INK command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on INK command at {loc}, invalid expression."
+                "{loc}: Syntax error on INK command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_paper(self, p):
@@ -1136,12 +1151,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAPER command at {loc}, it has no argument."
+                "{loc}: Syntax error on PAPER command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAPER command at {loc}, invalid expression."
+                "{loc}: Syntax error on PAPER command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_border(self, p):
@@ -1160,12 +1175,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on BORDER command at {loc}, it has no argument."
+                "{loc}: Syntax error on BORDER command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on BORDER command at {loc}, invalid expression."
+                "{loc}: Syntax error on BORDER command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_bright(self, p):
@@ -1184,12 +1199,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on BRIGHT command at {loc}, it has no argument."
+                "{loc}: Syntax error on BRIGHT command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on BRIGHT command at {loc}, invalid expression."
+                "{loc}: Syntax error on BRIGHT command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_flash(self, p):
@@ -1208,12 +1223,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on FLASH command at {loc}, it has no argument."
+                "{loc}: Syntax error on FLASH command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on FLASH command at {loc}, invalid expression."
+                "{loc}: Syntax error on FLASH command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_sfx(self, p):
@@ -1232,12 +1247,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on SFX command at {loc}, it has no argument."
+                "{loc}: Syntax error on SFX command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on SFX command at {loc}, invalid expression."
+                "{loc}: Syntax error on SFX command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_display(self, p):
@@ -1256,12 +1271,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on DISPLAY command at {loc}, it has no argument."
+                "{loc}: Syntax error on DISPLAY command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on DISPLAY command at {loc}, invalid expression."
+                "{loc}: Syntax error on DISPLAY command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_picture(self, p):
@@ -1280,12 +1295,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PICTURE command at {loc}, it has no argument."
+                "{loc}: Syntax error on PICTURE command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PICTURE command at {loc}, invalid expression."
+                "{loc}: Syntax error on PICTURE command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_track(self, p):
@@ -1304,12 +1319,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TRACK command at {loc}, it has no argument."
+                "{loc}: Syntax error on TRACK command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TRACK command at {loc}, invalid expression."
+                "{loc}: Syntax error on TRACK command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_play(self, p):
@@ -1328,12 +1343,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PLAY command at {loc}, it has no argument."
+                "{loc}: Syntax error on PLAY command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PLAY command at {loc}, invalid expression."
+                "{loc}: Syntax error on PLAY command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_loop(self, p):
@@ -1352,12 +1367,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LOOP command at {loc}, it has no argument."
+                "{loc}: Syntax error on LOOP command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LOOP command at {loc}, invalid expression."
+                "{loc}: Syntax error on LOOP command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_load(self, p):
@@ -1379,12 +1394,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LOAD command at {loc}, it has no argument."
+                "{loc}: Syntax error on LOAD command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on LOAD command at {loc}, invalid expression."
+                "{loc}: Syntax error on LOAD command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_wait(self, p):
@@ -1405,12 +1420,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on WAIT command at {loc}, it has no argument."
+                "{loc}: Syntax error on WAIT command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on WAIT command at {loc}, invalid expression."
+                "{loc}: Syntax error on WAIT command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_pause(self, p):
@@ -1431,12 +1446,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAUSE command at {loc}, it has no argument."
+                "{loc}: Syntax error on PAUSE command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on PAUSE command at {loc}, invalid expression."
+                "{loc}: Syntax error on PAUSE command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_typerate(self, p):
@@ -1457,12 +1472,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TYPERATE command at {loc}, it has no argument."
+                "{loc}: Syntax error on TYPERATE command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on TYPERATE command at {loc}, invalid expression."
+                "{loc}: Syntax error on TYPERATE command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_window(self, p):
@@ -1483,12 +1498,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on WINDOW command at {loc}, it has no argument."
+                "{loc}: Syntax error on WINDOW command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on WINDOW command at {loc}, invalid expression."
+                "{loc}: Syntax error on WINDOW command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_charset(self, p):
@@ -1509,12 +1524,12 @@ class CydcParser(object):
         if len(p) != 3:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on CHARSET command at {loc}, it has no argument."
+                "{loc}: Syntax error on CHARSET command: it has no argument."
             ).format(loc=loc))
         else:
             loc = self._format_error_location(p.lineno(1))
             self.errors.append(self._(
-                "Syntax error on CHARSET command at {loc}, invalid expression."
+                "{loc}: Syntax error on CHARSET command: invalid expression."
             ).format(loc=loc))
 
     def p_statement_blit(self, p):
@@ -2035,7 +2050,7 @@ class CydcParser(object):
         elif len(p) == 5 and self._declare_symbol(p[2], SymbolType.ARRAY, p.lineno(2)):
             loc = self._format_error_location(p.lineno(2))
             self.errors.append(self._(
-                "Data array '{p[2]}' at {loc} must have defined a size or have initialization data."
+                "{loc}: Data array '{p[2]}' must have defined a size or have initialization data."
             ).format(p=p, loc=loc))
             p[0] = None
         else:
@@ -2067,7 +2082,7 @@ class CydcParser(object):
             elif p[6] == "-=":
                 p[0].append(("SUB",))
             else:
-                self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(6))))
+                self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(6))))
             p[0] += array_index
             p[0].append(("POP_VAL_ARRAY", p[2], 0, 0))
         else:
@@ -2145,7 +2160,7 @@ class CydcParser(object):
             elif p[5] == "-=":
                 p[0].append(("SUB",))
             else:
-                self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(5))))
+                self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(5))))
             p[0].append(("POP_SET_DI", ("VARIABLE", p[3], 0)))
 
     def p_statement_inc_dec_dir(self, p):
@@ -2168,7 +2183,7 @@ class CydcParser(object):
             elif p[3] == "-=":
                 p[0].append(("SUB",))
             else:
-                self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(3))))
+                self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(3))))
             p[0].append(("POP_SET", ("VARIABLE", p[2], 0)))
 
     def p_statement_swap(self, p):
@@ -2208,8 +2223,7 @@ class CydcParser(object):
         """
         loc = self._format_error_location(p.lineno(1))
         self.errors.append(self._(
-            "Syntax error on SWAP at {loc}: expected two variables "
-            "'SWAP a, b' (or indirect 'SWAP [a], [b]')."
+            "{loc}: Syntax error on SWAP: expected two variables 'SWAP a, b' (or indirect 'SWAP [a], [b]')."
         ).format(loc=loc))
 
     def p_statement_set_ind(self, p):
@@ -2295,8 +2309,7 @@ class CydcParser(object):
         # instead of the generic "unexpected WORD" syntax error.
         loc = self._format_error_location(p.lineno(1))
         self.errors.append(self._(
-            "Wide constants (WORD/DWORD/string) need a direct destination, not an "
-            "indirect [..] one, at {loc}."
+            "{loc}: Wide constants (WORD/DWORD/string) need a direct destination, not an indirect [..] one."
         ).format(loc=loc))
         p[0] = None
 
@@ -2539,7 +2552,7 @@ class CydcParser(object):
         elif p[2] == ">":
             p[0].append(("CP_MT",))
         else:
-            self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(2))))
+            self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(2))))
 
     def p_varexpression_binop(self, p):
         """
@@ -2575,7 +2588,7 @@ class CydcParser(object):
             elif p[2] == ">>":
                 p[0].append(("SHIFT_R",))
             else:
-                self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(2))))
+                self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(2))))
 
     def p_varexpression_min(self, p):
         """
@@ -3073,7 +3086,7 @@ class CydcParser(object):
         elif p[2] == ">>":
             p[0] = p[1] >> p[3]
         else:
-            self.errors.append(self._("Symbol at {loc} invalid").format(loc=self._format_error_location(p.lineno(2))))
+            self.errors.append(self._("{loc}: Symbol invalid").format(loc=self._format_error_location(p.lineno(2))))
 
     def p_expression_group(self, p):
         "expression : LPAREN expression RPAREN"
@@ -3140,12 +3153,17 @@ class CydcParser(object):
     def p_error(self, p):
         if isinstance(p, lex.LexToken) or isinstance(p, yacc.YaccSymbol):
             loc = self._format_error_location(p.lineno)
-            msg = self._("Syntax error at {}: unexpected {}").format(
+            # Its column, when the token knows where it is.
+            pos = getattr(p, "lexpos", None)
+            data = getattr(getattr(self.lexer, "lexer", None), "lexdata", None)
+            if isinstance(pos, int) and data is not None and ":" in loc:
+                loc = f"{loc}:{pos - data.rfind(chr(10), 0, pos)}"
+            msg = self._("{}: Syntax error: unexpected {}").format(
                 loc, self._describe_token(p)
             )
         elif isinstance(p, yacc.YaccProduction):
             loc = self._format_error_location(p.lineno(0))
-            msg = self._("Syntax error at {}").format(loc)
+            msg = self._("{}: Syntax error").format(loc)
         else:
             tok_type_stack = [xx.type for xx in self.parser.symstack][1:]
             if self.debug:
@@ -3153,15 +3171,15 @@ class CydcParser(object):
             if tok_type_stack.count("IF") != tok_type_stack.count("ENDIF"):
                 pos_if = tok_type_stack.index("IF") + 1
                 loc = self._format_error_location(self.parser.symstack[pos_if].lineno)
-                msg = self._("Syntax error at {}: Missing ENDIF for IF").format(loc)
+                msg = self._("{}: Syntax error: missing ENDIF for IF").format(loc)
             elif tok_type_stack.count("WHILE") != tok_type_stack.count("WEND"):
                 pos_while = tok_type_stack.index("WHILE") + 1
                 loc = self._format_error_location(self.parser.symstack[pos_while].lineno)
-                msg = self._("Syntax error at {}: Missing WEND for WHILE").format(loc)
+                msg = self._("{}: Syntax error: missing WEND for WHILE").format(loc)
             elif tok_type_stack.count("DO") != tok_type_stack.count("UNTIL"):
                 pos_while = tok_type_stack.index("DO") + 1
                 loc = self._format_error_location(self.parser.symstack[pos_while].lineno)
-                msg = self._("Syntax error at {}: Missing UNTIL for DO").format(loc)
+                msg = self._("{}: Syntax error: missing UNTIL for DO").format(loc)
             else:
                 msg = self._("Syntax error")
         self._append_error(msg)
@@ -3227,7 +3245,7 @@ class CydcParser(object):
                         location = f"{location}, col {column_num}"
                     if char:
                         self._append_error(
-                            self._("Lexer error: {} '{}' at {}.").format(
+                            self._("{2}: Lexer error: {0} '{1}'.").format(
                                 lexer_error.get("message", "Lexer error"),
                                 char,
                                 location,
@@ -3235,7 +3253,7 @@ class CydcParser(object):
                         )
                     else:
                         self._append_error(
-                            self._("Lexer error: {} at {}.").format(
+                            self._("{1}: Lexer error: {0}.").format(
                                 lexer_error.get("message", "Lexer error"),
                                 location,
                             )
@@ -3262,21 +3280,21 @@ class CydcParser(object):
     def _check_array(self, val, lineno):
         if not isinstance(val, list) or len(val) not in range(1, 256 + 1):
             loc = self._format_error_location(lineno)
-            self.errors.append(self._("Invalid array size on {loc}").format(loc=loc))
+            self.errors.append(self._("{loc}: Invalid array size").format(loc=loc))
             return False
         return True
 
     def _check_byte_value(self, val, lineno):
         if not isinstance(val, int) or val not in range(256):
             loc = self._format_error_location(lineno)
-            self.errors.append(self._("Invalid byte value {val} on {loc}").format(val=val, loc=loc))
+            self.errors.append(self._("{loc}: Invalid byte value {val}").format(val=val, loc=loc))
             return False
         return True
 
     def _check_word_value(self, val, lineno):
         if not isinstance(val, int) or val not in range(64 * 1024):
             loc = self._format_error_location(lineno)
-            self.errors.append(self._("Invalid word value {val} on {loc}").format(val=val, loc=loc))
+            self.errors.append(self._("{loc}: Invalid word value {val}").format(val=val, loc=loc))
             return False
         return True
 
@@ -3476,23 +3494,23 @@ class CydcParser(object):
             loc = self._format_error_location(lineno)
             if symbol_type == SymbolType.LABEL:
                 self.errors.append(self._(
-                    "Label '{symbol}' on {loc} was already declared before."
+                    "{loc}: Label '{symbol}' was already declared before."
                 ).format(symbol=symbol, loc=loc))
             elif symbol_type == SymbolType.VARIABLE:
                 self.errors.append(self._(
-                    "Variable '{symbol}' on {loc} was already declared before."
+                    "{loc}: Variable '{symbol}' was already declared before."
                 ).format(symbol=symbol, loc=loc))
             elif symbol_type == SymbolType.CONSTANT:
                 self.errors.append(self._(
-                    "Constant '{symbol}' on {loc} was already declared before."
+                    "{loc}: Constant '{symbol}' was already declared before."
                 ).format(symbol=symbol, loc=loc))
             elif symbol_type == SymbolType.ARRAY:
                 self.errors.append(self._(
-                    "Data array '{symbol}' on {loc} was already declared before."
+                    "{loc}: Data array '{symbol}' was already declared before."
                 ).format(symbol=symbol, loc=loc))
             else:
                 self.errors.append(self._(
-                    "Symbol '{symbol}' on {loc} was already declared before."
+                    "{loc}: Symbol '{symbol}' was already declared before."
                 ).format(symbol=symbol, loc=loc))
             return False
         else:
@@ -3509,9 +3527,7 @@ class CydcParser(object):
             else:
                 loc = self._format_error_location(lineno)
                 self.errors.append(self._(
-                    "Symbol '{symbol}' on {loc} is used as "
-                    "{used_type} but was already used as "
-                    "{previous_type}."
+                    "{loc}: Symbol '{symbol}' is used as {used_type} but was already used as {previous_type}."
                 ).format(
                     symbol=symbol,
                     loc=loc,
@@ -3524,47 +3540,38 @@ class CydcParser(object):
             return True
 
     def _check_symbols(self):
+        """Errors for the symbols used and not declared, or used as another
+        type than declared: one for each place it is used, so each says where."""
         res = True
+        not_declared = {
+            SymbolType.LABEL: "{loc}: Label '{symbol}' is not declared.",
+            SymbolType.VARIABLE: "{loc}: Variable '{symbol}' is not declared.",
+            SymbolType.CONSTANT: "{loc}: Constant '{symbol}' is not declared.",
+            SymbolType.ARRAY: "{loc}: Data array '{symbol}' is not declared.",
+        }
         for symbol in self.symbols_used.keys():
             symbol_type, lines = self.symbols_used[symbol]
-            lines_str = ", ".join([self._format_error_location(i) for i in lines])
+            places = list(dict.fromkeys(self._format_error_location(i) for i in lines))
             if symbol not in self.symbols.keys():
-                if symbol_type == SymbolType.LABEL:
-                    self.errors.append(self._(
-                        "Label '{symbol}' on {lines_str} is not declared."
-                    ).format(symbol=symbol, lines_str=lines_str))
-                elif symbol_type == SymbolType.VARIABLE:
-                    self.errors.append(self._(
-                        "Variable '{symbol}' on {lines_str} is not declared."
-                    ).format(symbol=symbol, lines_str=lines_str))
-                elif symbol_type == SymbolType.CONSTANT:
-                    self.errors.append(self._(
-                        "Constant '{symbol}' on {lines_str} is not declared."
-                    ).format(symbol=symbol, lines_str=lines_str))
-                elif symbol_type == SymbolType.ARRAY:
-                    self.errors.append(self._(
-                        "Data array '{symbol}' on {lines_str} is not declared."
-                    ).format(symbol=symbol, lines_str=lines_str))
-                else:
-                    self.errors.append(self._(
-                        "Symbol '{symbol}' on {lines_str} is not declared."
-                    ).format(symbol=symbol, lines_str=lines_str))
+                template = not_declared.get(symbol_type, "{loc}: Symbol '{symbol}' is not declared.")
+                for loc in places:
+                    self.errors.append(self._(template).format(symbol=symbol, loc=loc))
                 res = False
             else:
                 s = self.symbols[symbol]
                 if s[0] != symbol_type:
                     decl_loc = self._format_error_location(s[1])
-                    self.errors.append(self._(
-                        "Symbol '{symbol}' on {lines_str} is used as "
-                        "{used_type} but was already "
-                        "declared as {previous_type} on {decl_loc}."
-                    ).format(
-                        symbol=symbol,
-                        lines_str=lines_str,
-                        used_type=self._symbol_type_name(symbol_type),
-                        previous_type=self._symbol_type_name(s[0]),
-                        decl_loc=decl_loc,
-                    ))
+                    for loc in places:
+                        self.errors.append(self._(
+                            "{loc}: Symbol '{symbol}' is used as {used_type} but was "
+                            "already declared as {previous_type} at {decl_loc}."
+                        ).format(
+                            symbol=symbol,
+                            loc=loc,
+                            used_type=self._symbol_type_name(symbol_type),
+                            previous_type=self._symbol_type_name(s[0]),
+                            decl_loc=decl_loc,
+                        ))
                     res = False
         return res
 
@@ -3578,9 +3585,9 @@ class CydcParser(object):
         warn about the routines the game doesn't call. Nor do the ones in
         exclude_dirs (the library folders), even inside the project."""
         messages = {
-            SymbolType.LABEL: self._("Label '{symbol}' on {loc} is never used."),
-            SymbolType.VARIABLE: self._("Variable '{symbol}' on {loc} is never used."),
-            SymbolType.ARRAY: self._("Data array '{symbol}' on {loc} is never used."),
+            SymbolType.LABEL: self._("{loc}: Label '{symbol}' is never used."),
+            SymbolType.VARIABLE: self._("{loc}: Variable '{symbol}' is never used."),
+            SymbolType.ARRAY: self._("{loc}: Data array '{symbol}' is never used."),
         }
         root = os.path.abspath(project_dir) if project_dir else None
         excluded = [os.path.abspath(d) for d in exclude_dirs]

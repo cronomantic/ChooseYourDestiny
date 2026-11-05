@@ -93,12 +93,27 @@ def max_errors_value(value):
     return val
 
 
+# A message that starts with its place in the script: "file.cyd:12: ..." or
+# "file.cyd:12:5: ..." (the path, relative to the project, can have spaces).
+_LOCATED = re.compile(r"^(\S[^\n]*?\.cyd:\d+(?::\d+)?): ", re.IGNORECASE)
+
+
+def _message_line(level, stage, message):
+    """ "LEVEL [STAGE] file.cyd:12: message" for a message with its place,
+    as compilers write them (and editors read them); "LEVEL [STAGE]: message"
+    for one without."""
+    message = str(message)
+    if _LOCATED.match(message):
+        return f"{level} [{stage}] {message}"
+    return f"{level} [{stage}]: {message}"
+
+
 def emit_error(stage, message):
-    print(f"ERROR [{stage}]: {message}")
+    print(_message_line("ERROR", stage, message))
 
 
 def emit_warning(stage, message):
-    print(f"WARNING [{stage}]: {message}")
+    print(_message_line("WARNING", stage, message))
 
 
 def emit_codegen_warnings(codegen, args):
@@ -729,6 +744,7 @@ def main():
         max_errors=args.max_errors,
     )
     parser.set_line_map(line_map)  # Set line map for better error reporting
+    parser.project_root = project_root  # messages name files relative to it
     parser.build()
     code = parser.parse(input=text, verbose=(verbose >= 3))
     if verbose >= 2:

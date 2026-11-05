@@ -90,10 +90,18 @@ class TestHelpers(unittest.TestCase):
         self.assertIsNone(gui.classify_log_line("  Errors: 0"))
 
     def test_source_locations_in_messages(self):
-        text = "Variable 201 is 'libB' in l.cyd, and at main.cyd:2 it is declared"
-        self.assertEqual(gui.SOURCE_LOCATION_RE.search(text).groups(), ("main.cyd", "2"))
-        text = "Label 'nada' on lib/g.cyd:14 is not declared."
-        self.assertEqual(gui.SOURCE_LOCATION_RE.search(text).groups(), ("lib/g.cyd", "14"))
+        # The place a message starts with: its whole path, spaces and drive too.
+        text = "ERROR [PARSER] capitulos/cap 1.cyd:2:6: Syntax error: unexpected '123'"
+        self.assertEqual([m[2:] for m in gui.source_locations(text)], [("capitulos/cap 1.cyd", 2)])
+        text = "WARNING [CODEGEN] E:/juegos/mi juego/main.cyd:3: Variable 200 is 'libA' in lib/l.cyd"
+        self.assertEqual([m[2:] for m in gui.source_locations(text)],
+                         [("E:/juegos/mi juego/main.cyd", 3)])
+        # Others in its text.
+        text = "ERROR [PREPROCESSOR] e.cyd:3: File already included from e.cyd:2: k.cyd"
+        self.assertEqual([m[2:] for m in gui.source_locations(text)], [("e.cyd", 3), ("e.cyd", 2)])
+        # A place alone, as in the .map.
+        self.assertEqual(gui.BARE_LOCATION_RE.match("mi juego/main.cyd:12").groups(),
+                         ("mi juego/main.cyd", "12"))
 
     def test_debug_map_lookup(self):
         with tempfile.TemporaryDirectory() as wd:

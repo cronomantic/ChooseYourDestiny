@@ -326,6 +326,26 @@ def stream_exec(exec_path, parameter_list, on_line, language=None, cwd=None):
 
 # "game.cyd:12" in a compiler message: a place in the script.
 SOURCE_LOCATION_RE = re.compile(r"([^\s:()'\"]+\.cyd):(\d+)", re.IGNORECASE)
+# A compiler message with its place first: "ERROR [PARSER] dir/my game.cyd:12:5: ...".
+# The path (relative to the project, or absolute) can have spaces and a drive.
+MESSAGE_LOCATION_RE = re.compile(
+    r"^(?:ERROR|WARNING) \[\w+\] (\S[^\n]*?\.cyd):(\d+)(?::\d+)?: ", re.IGNORECASE)
+# A place alone, as the .map of --debug-errors has it: "dir/my game.cyd:12".
+BARE_LOCATION_RE = re.compile(r"^(.+?\.cyd):(\d+)", re.IGNORECASE)
+
+
+def source_locations(line):
+    """The places of the script in a line of the log: [(start, end, file,
+    line)]. The one a message starts with (its whole path, spaces and all),
+    and any other "file.cyd:12" in its text."""
+    found = []
+    m = MESSAGE_LOCATION_RE.match(line)
+    if m:
+        found.append((m.start(1), m.end(2), m.group(1), int(m.group(2))))
+    for m in SOURCE_LOCATION_RE.finditer(line):
+        if not any(a <= m.start() < b for a, b, _f, _l in found):
+            found.append((m.start(), m.end(), m.group(1), int(m.group(2))))
+    return sorted(found)
 
 
 def classify_log_line(line):
@@ -1777,11 +1797,12 @@ class MakeAdventureGUI:
         index = self.log.index(f"@{event.x},{event.y}")
         column = int(index.split(".")[1])
         line = self.log.get(f"{index} linestart", f"{index} lineend")
-        matches = list(SOURCE_LOCATION_RE.finditer(line))
+        matches = source_locations(line)
         if not matches:
             return None
-        match = next((m for m in matches if m.start() <= column <= m.end()), matches[0])
-        self._open_source(match.group(1), int(match.group(2)))
+        start, end, name, line_no = next(
+            (m for m in matches if m[0] <= column <= m[1]), matches[0])
+        self._open_source(name, line_no)
         return "break"  # don't select the word
 
     def _open_source(self, name, line, span=None):
@@ -1849,7 +1870,7 @@ class MakeAdventureGUI:
         if meaning:
             self._log(_("Error {number}: {meaning}").format(number=number, meaning=meaning),
                       "summary")
-        match = SOURCE_LOCATION_RE.search(loc)
+        match = BARE_LOCATION_RE.match(loc)
         if not match:  # past the last statement
             self._log(_("It happened when the program ended, after its last line."))
             return

@@ -180,6 +180,16 @@ class CydcPreprocessor:
                 filepath
             )
     
+    def _display(self, path):
+        """A file as the messages name it: relative to the project's root,
+        with "/" ("../" outside it, absolute on another drive)."""
+        if not path or not os.path.isabs(path) or not self._root:
+            return path
+        try:
+            return os.path.relpath(path, self._root).replace(os.sep, "/")
+        except ValueError:  # another drive
+            return path.replace(os.sep, "/")
+
     def _search_dirs(self, current_dir, is_lib):
         """The folders a relative INCLUDE (or INCLUDE LIB) looks in, in order."""
         if is_lib:
@@ -218,7 +228,7 @@ class CydcPreprocessor:
             if any(os.path.isfile(os.path.join(d, base)) for d in self.lib_paths):
                 hint = f'. Did you mean INCLUDE LIB "{base}"?'
         raise PreprocessorError(
-            f"{what} not found: {include_file} (searched in: {', '.join(seen)}){hint}",
+            f"{what} not found: {include_file} (searched in: {', '.join(self._display(d) or '.' for d in seen)}){hint}",
             include_file,
         )
 
@@ -297,7 +307,7 @@ class CydcPreprocessor:
         # included before through another chain is a repetition, not a cycle.
         if normalized_path in self._include_stack:
             raise PreprocessorError(
-                f"Circular include detected: {filepath}",
+                f"Circular include detected: {self._display(normalized_path)}",
                 normalized_path
             )
         if normalized_path in self.included_files:
@@ -306,9 +316,9 @@ class CydcPreprocessor:
             # skipped where the INCLUDE is.)
             first = self._included_from[normalized_path]
             if kind == "lib" and self._included_kind.get(normalized_path) == "plain":
-                message = f"File already included as a normal file from {first}: {filepath}"
+                message = f"File already included as a normal file from {first}: {self._display(normalized_path)}"
             else:
-                message = f"File already included from {first}: {filepath}"
+                message = f"File already included from {first}: {self._display(normalized_path)}"
             raise PreprocessorError(message, normalized_path)
 
         # Mark file as included
@@ -375,7 +385,7 @@ class CydcPreprocessor:
                         include_path,
                         depth + 1,
                         normalized_path,
-                        f"{display_name}:{line_num}",
+                        f"{self._display(normalized_path)}:{line_num}",
                         kind,
                     ))
 
@@ -399,14 +409,18 @@ class CydcPreprocessor:
                     result_lines.append((f"/* END INCLUDE: {include_file} */{close}{newline}", here))
 
                 except PreprocessorError as e:
-                    # Add context about where the include was found
-                    self._append_error(
-                        PreprocessorError(
-                            f"In file included from {display_name}:{line_num}: {e.message}",
-                            e.filename,
-                            e.line_num,
+                    if e.line_num is None:
+                        # Not found, repeated, a cycle: the place is this INCLUDE.
+                        self._append_error(PreprocessorError(e.message, normalized_path, line_num))
+                    else:
+                        # In the included file: its place, and where it was included.
+                        self._append_error(
+                            PreprocessorError(
+                                f"In file included from {self._display(normalized_path)}:{line_num}: {e.message}",
+                                e.filename,
+                                e.line_num,
+                            )
                         )
-                    )
                     continue
             else:
                 # Regular line, add it with its source location
@@ -459,6 +473,9 @@ class CydcPreprocessor:
             if len(self.errors) > self.max_errors:
                 self.errors = self.errors[: self.max_errors]
                 self.max_errors_reached = True
+            for e in self.errors + ([fatal_error] if fatal_error else []):
+                e.filename = self._display(e.filename)  # the place, as messages name it
+                e.args = (e._format_message(),)
             raise self.errors[0] if len(self.errors) > 0 else fatal_error
 
         # Build the output and line map

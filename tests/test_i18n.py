@@ -83,7 +83,7 @@ class TestSpanishParserErrors(unittest.TestCase):
     def test_error_is_translated_and_formatted(self):
         self.parser.parse(input="[[ GOTO nowhere ]]")
         self.assertEqual(
-            self.parser.errors, ["La etiqueta 'nowhere' en línea 1 no está declarada."]
+            self.parser.errors, ["línea 1: La etiqueta 'nowhere' no está declarada."]
         )
 
 
