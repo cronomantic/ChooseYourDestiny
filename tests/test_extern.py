@@ -22,6 +22,7 @@ from emu_harness import (  # noqa: E402
     run_in_zesarux,
     find_sjasmplus,
     build_mld_rom,
+    run_cyd_ex,
 )
 
 # Native routine body. The author writes only the body; CYD frames it with the
@@ -74,6 +75,14 @@ class TestExtern(unittest.TestCase):
     def test_import_call_plus3(self):
         """+3: same $7FFD-banked path as 128k, loaded from disk (DSK)."""
         self._roundtrip("plus3", "P341")
+
+    def test_import_call_esxdos(self):
+        """esxdos (divMMC): same $7FFD-banked path as 128k, loaded from the SD."""
+        f = run_cyd_ex(SRC, "esxdos", n_bytes=4, files={"nativo.asm": NATIVE},
+                       max_wait=35.0)
+        self.assertEqual(f[0], 42, "native routine did not write FLAGS+0 (DE=FLAGS)")
+        self.assertEqual(f[1], 99, "native routine did not write FLAGS+1")
+        self.assertEqual(f[2], 123, "interpreter did not resume after CALL")
 
     def _roundtrip_mld(self, model, machine):
         # MLD/Dandanator path: the native routine (nativo.asm, referenced by the

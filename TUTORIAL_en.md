@@ -25,9 +25,11 @@
   - [Loops](#loops)
   - [Text compression and abbreviations](#text-compression-and-abbreviations)
   - [Organizing Code with INCLUDE](#organizing-code-with-include)
+  - [Using the bundled libraries](#using-the-bundled-libraries)
   - [Workflow](#workflow)
   - [Side-scrolling menus](#side-scrolling-menus)
   - [Copying image fragments to screen](#copying-image-fragments-to-screen)
+  - [Masked sprites](#masked-sprites)
   - [Reading the keyboard, variable arrays and indirections](#reading-the-keyboard-variable-arrays-and-indirections)
     - [Indirection](#indirection)
     - [Reading the keyboard (INKEY)](#reading-the-keyboard-inkey)
@@ -39,6 +41,7 @@
   - [Wide constants (WORD, DWORD and strings)](#wide-constants-word-dword-and-strings)
   - [More conveniences: SELECT, ENUM, SWAP and literals](#more-conveniences-select-enum-swap-and-literals)
   - [Changing the character set](#changing-the-character-set)
+  - [Native routines (IMPORT / CALL)](#native-routines-import--call)
 
 ---
 
@@ -72,7 +75,7 @@ Then download the `ChooseYourDestiny.Linux_x64.zip` file from the [Releases](htt
 
 To start using the extension with Visual Studio Code, [download](https://github.com/cronomantic/chooseyourdestiny-highlighter/releases) the file chooseyourdestiny-highlighter-x.x.x.vsix from Releases. On VsCode, go to the extensions screen, and on the ... button, it will open a new menu. From that, select the Install from VSIX option and open the previous file.
 
-![Resaltador](assets/tut057.png)
+![Highlighter](assets/tut057.png)
 
 Otherwise, download this repository and copy the folder into the `<user home>/.vscode/extensions` folder and restart Code. If your Code installation is portable, it must be copied on the folder `data/extensions/` inside of the VSCode folder.
 
@@ -96,7 +99,7 @@ If you use another operating system, the process is similar:
 python3 make_adventure.py --new ../tutorial 48k
 ```
 
-This creates a folder called `tutorial` next to CYD's folder, with a short adventure to start from called `tutorial.cyd`, the folders `IMAGES` and `TRACKS`, and its `cyd_project.ini`. The `48k` at the end is the Spectrum model we are going to make the adventure for; we will talk about it later. You can also do this with the **New…** button of the GUI (see [GUI Compiler Alternative](#gui-compiler-alternative)), choosing `48k` as its target, or simply by creating the `tutorial` folder yourself, since `cyd_project.ini` is optional.
+This creates a folder called `tutorial` next to CYD's folder, with a short adventure to start from called `tutorial.cyd`, the folders `IMAGES` and `TRACKS`, and its `cyd_project.ini`. The `48k` at the end is the Spectrum model we are going to make the adventure for; we will talk about it later. You can also do this with the **New…** button of the GUI (see [GUI Compiler Alternative](#gui-compiler-alternative)), choosing `48k` as its target, or simply by creating the `tutorial` folder yourself, since `cyd_project.ini` is optional; mind you, without it the default model is `128k`, so you will have to give `48k` when building (we will see how in the chapter [Versions for the different Zx Spectrum models](#versions-for-the-different-zx-spectrum-models)).
 
 If you open `cyd_project.ini` with any text editor, you will see this:
 
@@ -185,7 +188,7 @@ Now we have put a command ahead of the text. If we compile and execute, we get t
 
 ![Screen 3](assets/tut003.png)
 
-With the CLEAR command we delete the printable area that, for the moment, is the full screen. As the screen is automatically deleted at the beginning of the interpreter, we will not see anything at the moment, but with this command we will have the clean screen to print from the beginning.You have a complete reference of the commands in the [Manual] (https://github.com/cronomantic/ChooseYourDestiny/blob/main/manual_es.md).
+With the CLEAR command we delete the printable area that, for the moment, is the full screen. As the screen is automatically deleted at the beginning of the interpreter, we will not see anything at the moment, but with this command we will have the clean screen to print from the beginning.You have a complete reference of the commands in the [manual](MANUAL_en.md).
 
 Now we are going to change the color of the text.For this we are going to use the INK N command, where n is a number from 0 to 7 that corresponds to the colors of the spectrum.By default it is white, so we are going to put it with a cyan color, which is number 5, which would be ink 5. We will put it before Clear, such as: like this:
 
@@ -263,9 +266,9 @@ But we don't want it to do that. We want it to start over again. To do this, cop
 
 When you compile and run it, it won't look very nice, but you'll notice that when you press the validate key, it doesn't reset, but rather clears the screen and prints the text and waits again.
 
-The two additions to the code are `LABEL beginning` and `GOTO beginning`. The first command is not really a command, but a label, which puts a marker at that point with an identifier named *beginning*; and the second tells the interpreter to jump to where the label *beginning* is located.
+The two additions to the code are `LABEL principio` and `GOTO principio`. The first command is not really a command, but a label, which puts a marker at that point with an identifier named *principio*; and the second tells the interpreter to jump to where the label *principio* is located.
 
-The result is that, when you press the validate key with WAITKEY, the `GOTO beginning` is found and jumps to where the label *beginning* is declared, which, being the beginning, what it does is re-execute all the subsequent commands and print the text *Hello World*, and wait with WAITKEY again... In short, we have made an infinite loop.
+The result is that, when you press the validate key with WAITKEY, the `GOTO principio` is found and jumps to where the label *principio* is declared, which, being the beginning, what it does is re-execute all the subsequent commands and print the text *Hello World*, and wait with WAITKEY again... In short, we have made an infinite loop.
 
 However, we can improve the example like this:
 
@@ -285,7 +288,7 @@ Now the label is declared just before the screen is cleared, and it will go ther
 
 The concept of labels and jumps is fundamental to understanding how to make a "Choose Your Own Adventure", since we will present options to the player, and depending on those options, we will go from one place to another in the text.
 
-An important detail is the format of the label identifiers. These can only be a **sequence of numbers and letters or the underscore character in a row, and must start with a letter.**. That is, `LABEL 1` or `LABEL La Etiqueta` are not valid, but `LABEL l1` or `LABEL LaEtiqueta` are. They are also case sensitive, meaning that they are **case sensitive**, so `LABEL Etiqueta` and `LABEL Etiqueta` are not the same label. And obviously, you cannot declare a label with the same name twice.
+An important detail is the format of the label identifiers. These can only be a **sequence of numbers and letters or the underscore character in a row, and must start with a letter. Accented letters and the ñ are not allowed**. That is, `LABEL 1` or `LABEL La Etiqueta` are not valid, but `LABEL l1` or `LABEL LaEtiqueta` are. They are also case sensitive, meaning that they are **case sensitive**, so `LABEL Etiqueta` and `LABEL etiqueta` are not the same label. And obviously, you cannot declare a label with the same name twice.
 
 On the other hand, commands are not case sensitive, meaning that `CLEAR`, `clear` or `Clear` are perfectly valid. However, I recommend capitalizing them to better distinguish them.
 
@@ -330,7 +333,7 @@ When compiling and running we have this:
 
 ![Options menu](assets/tut006.png)
 
-We are shown two options that we can choose with the **P** and **Q** keys and select one with **Space** or **Enter**.
+We are shown two options that we can choose with the **Q** and **A** keys and select one with **Space** or **Enter**.
 If we choose the first option, we get this:
 
 ![Select the first option](assets/tut007.png)
@@ -393,7 +396,7 @@ Where do you want to go?
 
 You will notice that after about 10 seconds, it has displayed *You are dead!!!*.
 
-What `CHOOSE IF WAIT 500 THEN GOTO Location3` does is the same as `CHOOSE`, activate the selection of options, but with the exception that it also performs a countdown, in this case from 500. If this countdown reaches zero without anything being selected, then the jump is made to the indicated label; in this case *Location3*.
+What `CHOOSE IF WAIT 500 THEN GOTO Localidad3` does is the same as `CHOOSE`, activate the selection of options, but with the exception that it also performs a countdown, in this case from 500. If this countdown reaches zero without anything being selected, then the jump is made to the indicated label; in this case *Localidad3*.
 The counter works based on the Spectrum frames, that is, 1/50 of a second, so 500/50 = 10 seconds. We will see this in the next chapter.
 
 Again, we could rewrite the previous code like this with the shortened form of the labels:
@@ -461,7 +464,7 @@ Done[[WAITKEY]]
 
 - `CHOOSE IF WAIT X THEN GOTO Y` has already been explained in the previous chapter. If the counter runs out before a menu option is selected, the indicated jump is made.
 
-Finally, let's talk about the `TYPERATE` command, which is a bit special compared to the rest of the wait commands. With this command we indicate the wait that occurs each time a character is printed. This wait is not adjusted to frames, but is a counter that depends on the speed of the processor (faster). The idea of ​​this command is to write in a slower and more gradual way, for certain "dramatic" situations.
+Finally, let's talk about the `TYPERATE` command, which is a bit special compared to the rest of the wait commands. With this command we indicate the wait that occurs each time a character is printed. This wait is not adjusted to frames, but is a counter that depends on the speed of the processor (faster). The idea of this command is to write in a slower and more gradual way, for certain "dramatic" situations.
 
 ```
 [[TYPERATE 100]]This prints slowly
@@ -581,11 +584,11 @@ Text below
 
 What happened here? If we examine the code, we see that before "Text below", there is a line break. So the cursor jumps to the next line and prints the "Text below", but after that we have `AT 5,0`, which means *move the cursor to column 5 and row 0*, that is, it goes back to the previous row and 5 positions to the right from the origin.
 
-With this we can now place text wherever we want. But we are missing something to fully control the layout of the text on the screen, and that is to define some margins. By default CYD prints the text in full screen, but we may want it to only print in a certain area so as not to "cover" images that we want to show. For this we have the command `MARGINS`, which allows us to indicate the "rectangle" or printing area of ​​the texts.
+With this we can now place text wherever we want. But we are missing something to fully control the layout of the text on the screen, and that is to define some margins. By default CYD prints the text in full screen, but we may want it to only print in a certain area so as not to "cover" images that we want to show. For this we have the command `MARGINS`, which allows us to indicate the "rectangle" or printing area of the texts.
 
 The format of the command is `MARGINS origin_col, origin_row, width, height`, where the parameters are the origin column and row of the print area and the corresponding width and height. By default, the engine starts as if the command `MARGINS 0, 0, 32, 24` had been executed, that is, the origin at the top left side of the screen and the size at the full screen.
 
-Now let's go back to the initial example of this chapter and put it in the lower area of ​​the screen:
+Now let's go back to the initial example of this chapter and put it in the lower area of the screen:
 
 ```
 [[ /* Set screen colors and clear it */
@@ -659,7 +662,7 @@ We can solve this by changing the color after the space:
 
 And now it's correct:
 
-![Color Clash evitado!](assets/tut016.png)
+![Color clash avoided!](assets/tut016.png)
 
 The author will need to make these small adjustments to improve the presentation of the text. If you want to avoid them completely, do not mix different colors within the same line.
 
@@ -667,9 +670,9 @@ The author will need to make these small adjustments to improve the presentation
 
 ## Images
 
-To make the adventure more attractive, it is possible to add images in SCR format, of Spectrum screens. These images will be compressed with the `CSC` utility, creating files with the same extension, which must be included in the final disk.
+To make the adventure more attractive, it is possible to add images in SCR format, of Spectrum screens. These images will be compressed, creating `CSC` files that will be included in the final program.
 
-The manual explains how `CSC` works, in case you want to do it manually. But the compiler automatically searches for and compresses the SCR files that are in the `IMAGES` folder of the project, so you will simply have to place the files there.
+The compiler automatically searches for and compresses the SCR files that are in the `IMAGES` folder of the project, so you will simply have to place the files there.
 
 We are going to use an image that we have as an example, called `ORIGIN1.SCR`, inside the `examples\test\IMAGES` folder of CYD. Copy it to the `IMAGES` folder of your project and rename it as `001.SCR`. And put the following code in `tutorial.cyd`:
 
@@ -692,7 +695,7 @@ I'm going to display the image.[[
 Done[[ WAITKEY: END ]]
 ```
 
-The compiler looks in the `IMAGES` folder for files named xxx.SCR, where the three x's are digits, and compresses them with `CSC` (it keeps the compressed images in the `cyd_cache` folder of the output folder, `OUTPUT`, so it only compresses an image again when it changes). On the disk they go as files with the extension `.CSC`, like `001.CSC`. The engine will search the disk for files with this name when asked to load images.
+The compiler looks in the `IMAGES` folder for files named xxx.SCR, where the three x's are digits, and compresses them (it keeps the compressed images in the `cyd_cache` folder of the output folder, `OUTPUT`, so it only compresses an image again when it changes). On the disk they go as files with the extension `.CSC`, like `001.CSC`. The engine will search the disk for files with this name when asked to load images in the case of the disk version. In the tape versions, they will be stored and decompressed in memory.
 
 Now we can launch the emulator. The first thing you will see is this:
 
@@ -708,7 +711,7 @@ With this we have the image loaded, but to display it, we have to use the `DISPL
 
 We can now display images, but there are a few things to clear up first. The first thing you might be wondering is... what is the 1 in DISPLAY for? As stated in the reference, the `DISPLAY` command needs a parameter indicating whether to display the image or not; if the value is zero, it does not display it, and if it is non-zero, it does. This may seem pointless, but it makes sense if used with variables, to cause the image to be displayed conditionally based on the value of a variable.
 
-Another thing you might be wondering is why are the commands to load the image and display it separate, instead of using a single command to do both? Well, the answer is a design decision for the disk version, since by separating the loading into a separate operation, we can control when it is done to, for example, load it when a chapter starts, and then display the image at the most opportune moment, since loading will stop the engine and pause the reading at an undesirable moment.
+Another thing you might be wondering is why are the commands to load the image and display it separate, instead of using a single command to do both? Well, the answer is a design decision for the disk version, since by separating the loading into a separate operation, we can control when it is done to, for example, load it when a chapter starts, and then display the image at the most opportune moment, since loading will stop the engine and pause the reading at an undesirable moment. Also, both on tape and on disk, the image has to be decompressed into a "buffer", which takes a bit of time that can cause a noticeable pause.
 
 For now, just remember that you first need `PICTURE 3`, to load the image `003.CSC`, for example, and then `DISPLAY 1` to display it. Note that we can only load one image at a time, so if we load another image, the one already loaded will be deleted, and a loaded image can be displayed as many times as we want. And you'll get a nice error if you try to load an image that doesn't exist on disk or in memory, or when displaying an image without loading it first.
 
@@ -768,6 +771,27 @@ Here we've used a random image, more specifically the loading screen from the *L
 
 For image management and taking into account these restrictions, it's important to plan in advance how and when we're going to display them.
 
+A couple of questions may arise: what if I want to crop the size of only one image? What if I want each image to have a different number of lines? Well, it is possible to define the number of lines for each file specifically. Let's imagine that we want to leave 62 lines for the file `000.SCR`, 40 lines for the file `001.SCR`, and the rest at 192. To do this, we would have to create a file called `images.json` in the `IMAGES` folder with the following:
+
+```json
+[
+  {
+    "id": 0,
+    "num_lines": 62,
+    "force_mirror": false
+  },
+  {
+    "id": 1,
+    "num_lines": 40,
+    "force_mirror": false
+  }
+]
+```
+
+When the compiler finds this JSON file, it will take the settings of the images indicated in it, and for the rest of the images it will use what we have set in `image_lines`. Thus, with a hypothetical image `003.SCR`, and if we have not changed `image_lines`, the 192 lines will be used, that is, the full image.
+
+Obviously, with the `num_lines` field we indicate the number of lines of each file, but you may wonder: what is `force_mirror` for? Well, what **CYD** will do is discard the right half of the image, and when it decompresses it into the screen buffer, it will draw the left half of the image in its place, but symmetrically, that is, mirrored, which in certain situations can mean significant savings.
+
 ---
 
 ## Sound effects (Beeper)
@@ -819,7 +843,7 @@ Let's give an example, put this as the code for the adventure:
 
 As you can see, with the `SFX` command, we can play any of the effects in the file by specifying its number as a parameter.
 
-A peculiarity of the SFX command is that, unlike images, if the SFX.BIN file is not on the disk, it will silently fail without giving an error and the sound effect will simply not be played.
+A peculiarity of the SFX command is that, unlike images, if no effects file was included (there was no `SFX.ASM` in the project's folder when compiling), it won't give an error: the command is simply ignored and the sound effect will not be played.
 
 ---
 
@@ -829,7 +853,7 @@ So far, we have only developed adventures for the original 48k Zx Spectrum, howe
 
 The available space will vary depending on the adventure and the extra resources to be used, since if music and sound effects are omitted, the size of the interpreter will be reduced, leaving more space for text and images. On average, you should expect to have about 96 Kb available on the 128K models and about 24 Kb on the 40K models. For this reason, the 48K version does not include support for AY melodies.
 
-To change the model, you simply have to change the `target` setting in the project's `cyd_project.ini` to the values `48k` or `128k` if you want to generate the TAPs for the corresponding models. For example, if we want to create a version of our tutorial for Spectrum 128k, with the image `000.scr` of the `IMAGES` folder as its loading screen:
+To change the model, you simply have to change the `target` setting in the project's `cyd_project.ini` to the values `48k` or `128k` if you want to generate the TAPs for the corresponding models (there are also `plus3` and `esxdos`, which we will see below, and the experimental `mld` and `mld128`). For example, if we want to create a version of our tutorial for Spectrum 128k, with the image `000.scr` of the `IMAGES` folder as its loading screen:
 
 ```ini
 [project]
@@ -850,6 +874,8 @@ image_lines = 192
 In the GUI, the **Target** you choose is saved in this same file. You can also give the model when building, without touching the file, and it will be used instead of the project's: `make_adv.cmd ..\tutorial 128k` or `./make_adv.sh ../tutorial 128k`.
 
 With the `plus3` model, the output format will be a disk image in DSK format.
+
+With the `esxdos` model, for divMMC/divIDE interfaces with an SD card, the result is not a single file, but several files that must be copied to the SD card; the manual explains which ones they are and where to put them.
 
 ---
 
@@ -873,7 +899,7 @@ One detail to keep in mind is that the effect of the `LOOP` command is specific 
 
 With what we already know, we could already make a relatively simple adventure based on options, like "Choose Your Own Adventure", but we can go further...
 
-The engine has 256 variables or flags of a byte, that is, 256 warehouses where we can store values ​​from 0 to 255. Each of these variables is identified in turn by a number from 0 to 255. Let's see it with an example:
+The engine has 256 variables or flags of a byte, that is, 256 warehouses where we can store values from 0 to 255. Each of these variables is identified in turn by a number from 0 to 255. Let's see it with an example:
 
 ```
 [[ /* Set screen colors and clear it */
@@ -949,7 +975,7 @@ What do you do?
 [[OPTION GOTO Suma1]]I take 1 gamusino.
 [[OPTION GOTO Resta1]]I drop 1 gamusino.
 [[
-   IF @0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Exit.
 [[
    #Escoger
@@ -975,7 +1001,7 @@ And the second, where is the exit option? We are going to catch gamusinos until 
 
 ![Conditionals](assets/tut028.png)
 
-Now we can exit! The secret is in the conditionals. If we look at the exit option, we see that before it there is `IF 0 <> 10 THEN GOTO Choose`, which means "If the variable zero is not equal to 10, jump to the 'Choose' label", which causes the "Exit" option to be skipped and not reflected in the menu until the value of the variable 0 is 10.
+Now we can exit! The secret is in the conditionals. If we look at the exit option, we see that before it there is `IF @0 <> 10 THEN GOTO Escoger ENDIF`, which means "If the variable zero is not equal to 10, jump to the 'Escoger' label", which causes the "Exit" option to be skipped and not reflected in the menu until the value of the variable 0 is 10.
 
 That is, with variables and conditions, we have the necessary tools to make menus of options or texts that vary depending on certain conditions and make our adventure more dynamic.
 
@@ -1001,7 +1027,7 @@ What do you do?
 [[OPTION GOTO Suma1]]I take 1 gamusino.
 [[OPTION GOTO Resta1]]I drop 1 gamusino.
 [[
-   IF 0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Exit.
 [[
    #Escoger
@@ -1034,7 +1060,7 @@ What do you do?
 [[OPTION GOTO Suma1]]I take 1 gamusino.
 [[OPTION GOTO Resta1]]I drop 1 gamusino.
 [[
-   IF 0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Exit.
 [[
    #Escoger
@@ -1072,7 +1098,7 @@ As always, let's see it with a simple example to understand it:
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]You have [[GOSUB ImprimirGamusimos]].
+   CLEAR]]You have [[GOSUB ImprimirGamusinos]].
 What do you do?
 
 [[OPTION GOTO Suma1]]I take 1 gamusino.
@@ -1088,11 +1114,11 @@ What do you do?
    SET NumGamusinos TO @NumGamusinos - 1
    GOTO Inicio
    #Final]]Thanks for playing!
-In the end you keep [[GOSUB ImprimirGamusimos]].[[
+In the end you keep [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Gamusino printing subroutine*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
 ```
 
 The Gamusinos example again... But this time we print the number of Gamusinos twice, when we choose an option and at the very end.
@@ -1102,12 +1128,12 @@ The Gamusinos example again... But this time we print the number of Gamusinos tw
 To do this we make a subroutine that performs this function:
 
 ```
-[[LABEL ImprimirGamusimos]]You have [[PRINT @0]] gamusinos[[RETURN]]
+[[LABEL ImprimirGamusinos]]You have [[PRINT @0]] gamusinos[[RETURN]]
 ```
 
-We declare a label called `PrintGamusinos` that serves as a jump point. Then we have the printout of the number of gamusinos, and then the `RETURN` command. We make the call with `GOSUB PrintGamusinos` at the two points where we want it to be executed.
+We declare a label called `ImprimirGamusinos` that serves as a jump point. Then we have the printout of the number of gamusinos, and then the `RETURN` command. We make the call with `GOSUB ImprimirGamusinos` at the two points where we want it to be executed.
 
-As I have already indicated, `GOSUB PrintGamusinos`, what it does is make a jump to the label `PrintGamusinos`, but with the exception that the point of the call to the subroutine is saved in the *stack*. Every subroutine must have a return point, that is, a completion point with which the engine is told to return to the point where we had left it, and that is done by the `RETURN` command, which recovers the last return point from the stack and jumps to that position.
+As I have already indicated, `GOSUB ImprimirGamusinos`, what it does is make a jump to the label `ImprimirGamusinos`, but with the exception that the point of the call to the subroutine is saved in the *stack*. Every subroutine must have a return point, that is, a completion point with which the engine is told to return to the point where we had left it, and that is done by the `RETURN` command, which recovers the last return point from the stack and jumps to that position.
 
 One thing to note is that the subroutine is at the end, after `END`. This is so that it is not executed without us calling it explicitly. Please note that the interpreter does not differentiate a subroutine from "normal" code, and if it reaches that point it will execute it and do an invalid `RETURN` at the end. Therefore, I recommend to avoid these situations, placing them at the end after an `END`, or using a `GOTO` before it to skip it in case you accidentally reach it.
 
@@ -1126,7 +1152,7 @@ Generally, the ideal time to call a subroutine is when you make a choice from a 
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]You have [[GOSUB ImprimirGamusimos]].
+   CLEAR]]You have [[GOSUB ImprimirGamusinos]].
 What do you do?
 
 [[OPTION GOSUB Suma1]]I take 1 gamusino.
@@ -1136,11 +1162,11 @@ What do you do?
    CHOOSE
    GOTO Inicio
    #Final]]Thanks for playing!
-In the end you keep [[GOSUB ImprimirGamusimos]].[[
+In the end you keep [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Gamusino printing subroutine*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Addition subroutine*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subtraction subroutine */
@@ -1164,7 +1190,7 @@ Copy the following into `tutorial.cyd`:
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]You have [[GOSUB ImprimirGamusimos]].
+   CLEAR]]You have [[GOSUB ImprimirGamusinos]].
 What do you do?
 
 [[OPTION GOSUB Suma1]]I take 1 gamusino.
@@ -1176,11 +1202,11 @@ What do you do?
    CHOOSE
    GOTO Inicio
    #Final]]Thanks for playing!
-In the end you keep [[GOSUB ImprimirGamusimos]].[[
+In the end you keep [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Gamusino printing subroutine*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Addition subroutine*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subtraction subroutine */
@@ -1211,7 +1237,7 @@ Now I am going to change to `IF @NumGamusinos = 10 THEN ... ELSE ... ENDIF`. Wha
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]You have [[GOSUB ImprimirGamusimos]].
+   CLEAR]]You have [[GOSUB ImprimirGamusinos]].
 What do you do?
 
 [[OPTION GOSUB Suma1]]I take 1 gamusino.
@@ -1227,11 +1253,11 @@ You have too many gamusinos
    CHOOSE
    GOTO Inicio
    #Final]]Thanks for playing!
-In the end you keep [[GOSUB ImprimirGamusimos]].[[
+In the end you keep [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Gamusino printing subroutine*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Addition subroutine*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subtraction subroutine */
@@ -1382,25 +1408,46 @@ The `IMAGES` and `TRACKS` folders, `SFX.ASM` and the rest of the game's files wo
 [[
 /* Load configuration */
 INCLUDE "config/variables.cyd"
-INCLUDE "config/settings.cyd"
+
+/* Skip the subroutines: they only run when called with GOSUB */
+GOTO Start
 
 /* Load common functions */
 INCLUDE "lib/common.cyd"
-]]
 
 #Start
-[[INCLUDE "chapters/intro.cyd"]]
-[[GOTO Chapter1]]
+INCLUDE "config/settings.cyd"
+INCLUDE "chapters/intro.cyd"
+GOTO Chapter1
 
 #Chapter1
-[[INCLUDE "chapters/chapter1.cyd"]]
+INCLUDE "chapters/chapter1.cyd"
 
 #Chapter2
-[[INCLUDE "chapters/chapter2.cyd"]]
+INCLUDE "chapters/chapter2.cyd"
 
 #TheEnd
-[[INCLUDE "chapters/ending.cyd"]]
-[[END]]
+INCLUDE "chapters/ending.cyd"
+END
+]]
+```
+
+Notice that the labels go inside the code block, as always: outside `[[ ]]`, `#Start` would be printed as text. Notice also the `GOTO Start` before including `lib/common.cyd`: the contents of an included file are placed right where the `INCLUDE` is, so, without that jump, execution would enter the first subroutine and reach a `RETURN` without having done any `GOSUB`.
+
+**config/variables.cyd** and **config/settings.cyd:**
+```cyd
+[[
+DECLARE 0 AS PlayerHealth
+DECLARE 1 AS PlayerGold
+]]
+```
+
+```cyd
+[[
+PAPER 0 : INK 7 : BORDER 0
+SET PlayerHealth TO 100
+SET PlayerGold TO 0
+]]
 ```
 
 ### Practical Example: Common Subroutines
@@ -1412,10 +1459,7 @@ Let's say you frequently show the player's status. Instead of repeating the code
 [[
 #ShowStatus
 INK 6
-PRINT "Health: "
-PRINT @PlayerHealth
-PRINT " | Gold: "
-PRINT @PlayerGold
+]]Health: [[PRINT @PlayerHealth]] | Gold: [[PRINT @PlayerGold
 INK 7
 NEWLINE
 RETURN
@@ -1423,44 +1467,47 @@ RETURN
 #GameOver
 CENTER
 INK 2
-PRINT "GAME OVER"
+]]GAME OVER[[
 INK 7
 NEWLINE : NEWLINE
-PRINT "Press any key to restart..."
+]]Press any key to restart...[[
 WAITKEY
 GOTO Start
 ]]
 ```
 
+Remember that `PRINT` only prints numbers (the value of an expression); texts are written as they are, outside `[[ ]]`. `GameOver` doesn't come back with `RETURN`, but jumps to `Start` to begin again, so it is called with `GOTO` instead of `GOSUB`.
+
 Then use it throughout your chapters:
 
 **chapters/chapter1.cyd:**
 ```cyd
-[[CLEAR]]
-You enter a dark corridor...
-[[NEWLINE]]
+[[CLEAR]]You enter a dark corridor...
 [[GOSUB ShowStatus]]
-
 [[OPTION GOTO Door1]]Open the left door
 [[OPTION GOTO Door2]]Open the right door
-[[CHOOSE]]
+[[CHOOSE
 
 #Door1
-You found treasure!
-[[SET @PlayerGold TO @PlayerGold + 50]]
-[[GOSUB ShowStatus]]
-[[GOTO Chapter2]]
+]]You found treasure!
+[[SET PlayerGold TO @PlayerGold + 50
+GOSUB ShowStatus
+WAITKEY
+GOTO Chapter2
 
 #Door2
-A trap! You lose health.
-[[SET @PlayerHealth TO @PlayerHealth - 20]]
-[[IF @PlayerHealth <= 0 THEN
-    GOSUB GameOver
-ELSE
-    GOSUB ShowStatus
-    GOTO Chapter2
-ENDIF]]
+]]A trap! You lose health.
+[[SET PlayerHealth TO @PlayerHealth - 20
+IF @PlayerHealth <= 0 THEN
+    GOTO GameOver
+ENDIF
+GOSUB ShowStatus
+WAITKEY
+GOTO Chapter2
+]]
 ```
+
+As in the rest of the tutorial, in `SET` the target variable goes without `@` (`SET PlayerGold TO ...`), and the `@` is only used to read its value (`@PlayerGold + 50`).
 
 ### Important Features
 
@@ -1469,7 +1516,7 @@ ENDIF]]
 - **Relative paths:** A path is looked for next to the file containing the `INCLUDE`, and if it isn't there, from the project's root folder (the folder of the main script). So `chapters/chapter1.cyd` could also write `INCLUDE "config/variables.cyd"`
 - **Libraries:** `INCLUDE LIB "strings.cyd"` includes one of the bundled libraries from wherever your adventure is (see the next section)
 - **Nested includes:** Files can include other files (up to 20 levels deep)
-- **Comments in CYD:** Use `/* */` for comments (`/* Load utilities */`). While the `INCLUDE` pattern will ignore text after the filename, relying on this is not recommended.
+- **Comments in CYD:** Use `/* */` for comments (`/* Load utilities */`), but on a line of their own: after the file name there can only be the `]]` that closes the code block, and anything else gives a syntax error. For the same reason, there can only be one `INCLUDE` per line.
 - **Error detection:** Circular includes (A includes B, B includes A) are detected automatically
 
 ### Benefits
@@ -1516,8 +1563,10 @@ of practical cases.
 
 CYD variables are 8-bit (0..255), so a large score overflows quickly. With
 `math16_32.cyd` we can compute it in 32 bits. Operands are loaded into "registers"
-(groups of consecutive variables); since literals are 8-bit, wide values are
-loaded byte by byte with the multiple assignment `SET reg TO {low_byte, ...}`.
+(groups of consecutive variables); wide values are loaded with `SET reg TO WORD n`
+(16 bits) or `SET reg TO DWORD n` (32 bits), explained in
+[Wide constants](#wide-constants-word-dword-and-strings), and a register is
+copied into another with the multiple assignment `SET reg TO {...}`.
 
 ```cyd
 [[
@@ -1525,13 +1574,13 @@ loaded byte by byte with the multiple assignment `SET reg TO {low_byte, ...}`.
     PAPER 0 : INK 7 : CLEAR
 
     /* enemies (1250) * points (800) = 1,000,000, without overflow */
-    SET mlA0 TO {226, 4}       /* A = 1250 */
-    SET mlB0 TO {32, 3}        /* B = 800  */
+    SET mlA0 TO WORD 1250      /* A = 1250 */
+    SET mlB0 TO WORD 800       /* B = 800  */
     GOSUB mul1632              /* C = A * B (32-bit result) */
 
     /* + bonus (234567) */
     SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* A = C */
-    SET mlB0 TO {71, 148, 3, 0}                /* B = 234567 */
+    SET mlB0 TO DWORD 234567                   /* B = 234567 */
     GOSUB add32                                /* A = 1234567 */
 ]]Total score: [[ GOSUB print32 ]][[
     WAITKEY : END
@@ -1689,6 +1738,7 @@ Let's see it, as always, with the following example:
     BRIGHT 1
     FLASH 0
     PAPER 0
+    MENUCONFIG 1,2
     CLEAR
 ]]Choose an option:
 
@@ -1697,7 +1747,7 @@ Let's see it, as always, with the following example:
 [[OPTION GOTO Opcion5]]Fifth option.   [[OPTION GOTO Opcion6]]Sixth option.
 
 [[
-    MENUCONFIG 1,2 : CHOOSE
+    CHOOSE
     LABEL Opcion1]]You chose option 1.[[
     GOTO Siguiente
     LABEL Opcion2]]You chose option 2.[[
@@ -1721,7 +1771,7 @@ The default behavior, which simulates the *vertical* behavior of previous versio
 
 Thus, if with `MENUCONFIG 0,1` we will have a vertical menu in one column, with `MENUCONFIG 1,0` we will have a horizontal menu in one row. With `MENUCONFIG 1,3` we will have a three-column menu, etc. But remember that `MENUCONFIG` does not indicate the arrangement of the options, we define that when we declare them, but the behavior of the buttons.
 
-In this case, it is better to try the example live and experiment on your own. Keep in mind that the pointer will never exceed the limits below zero, nor above the number of options in the list. Therefore, you should enter *reasonable* values ​​or the menu will not work well.
+In this case, it is better to try the example live and experiment on your own. Keep in mind that the pointer will never exceed the limits below zero, nor above the number of options in the list. Therefore, you should enter *reasonable* values or the menu will not work well.
 
 ---
 
@@ -1770,7 +1820,7 @@ In general, with `BLIT x_orig, y_orig, width, height AT x_dest, y_dest`, what we
 
 As final notes, three things to highlight:
 
-- Variables can only be used in the last two parameters, as is the case in this example. The parameters that define the rectangle to be cut are always fixed.
+- All the parameters accept variables or expressions, not only the last two as in this example: the rectangle to be cut can also be computed.
 - In all parameters, the unit is the 8x8 pixel character.
 - The implementation is slow due to its genericity, so if you are tempted to use them as "sprites", the results will be disappointing due to flickering. That is what the sprites library is for, covered in the [Masked sprites](#masked-sprites) section.
 
@@ -1780,20 +1830,22 @@ As of version 1.2.x, the compiler enforces **Strict Colon Mode by default**. Thi
 
 **Correct Syntax:**
 ```cyd
-SET x TO 10 : SET y TO 20 : PRINT "Values set"
+[[ SET 0 TO 10 : SET 1 TO 20 : PRINT @0 + @1 ]]
 ```
 
 **Incorrect Syntax (will fail):**
 ```cyd
-SET x TO 10 SET y TO 20 PRINT "Values set"
+[[ SET 0 TO 10 SET 1 TO 20 PRINT @0 + @1 ]]
 ```
 
 However, when statements are on separate lines, colons are **optional**:
 
 ```cyd
-SET x TO 10
-SET y TO 20
-PRINT "Values set"
+[[
+SET 0 TO 10
+SET 1 TO 20
+PRINT @0 + @1
+]]
 ```
 
 **Key points:**
@@ -2056,8 +2108,8 @@ So far I have used numerical names for variables. But how would we do it with va
 
 ```cyd
 [[
-DECLARE array AS 0
-DECLARE ptr AS 8
+DECLARE 0 AS array
+DECLARE 8 AS ptr
 
 SET ptr TO 0
 WHILE (@ptr < 8)
@@ -2071,8 +2123,8 @@ The previous example could work... but if we decide to move the array and its po
 
 ```cyd
 [[
-DECLARE array AS 0
-DECLARE ptr AS 8
+DECLARE 0 AS array
+DECLARE 8 AS ptr
 
 SET ptr TO @@array
 WHILE (@ptr < @@ptr)
@@ -2086,8 +2138,8 @@ You will notice that instead, we are using the variable names with two @ signs `
 
 ```cyd
 [[
-DECLARE array AS 8
-DECLARE ptr AS 16
+DECLARE 8 AS array
+DECLARE 16 AS ptr
 
 SET ptr TO @@array
 WHILE (@ptr < @@ptr)
@@ -2238,7 +2290,7 @@ Let's see an example:
 
 ![ARRAY1](assets/tut048.png)
 
-If you notice, we are treating `myArray(0)`, for example, as if it were a variable. It can be assigned and its values ​​collected.
+If you notice, we are treating `miArray(0)`, for example, as if it were a variable. It can be assigned and its values collected.
 
 But **be careful!**, arrays start counting from zero to the size we have defined in the array declaration minus one. If we try to access a position outside its range, we will get a type 7 error:
 
@@ -2286,7 +2338,7 @@ To avoid these situations, you have the `LASTPOS(array_name)` function that retu
 
 Arrays allow us to have tables of values, but initializing elements one by one can be cumbersome and inelegant.
 
-We can initialize array values ​​by declaring them in the following way:
+We can initialize array values by declaring them in the following way:
 
 ```cyd
 [[ DIM precios(5) = {10, 40, 100, 200, 250} ]]
@@ -2300,7 +2352,7 @@ In fact, we can save ourselves from indicating the size since it will be calcula
 
 Note that in this case the array will have the size of the number of elements that we have indicated **and no more**.
 
-Arrays cannot be resized and only accept values ​​between 0 and 255, in the same way as variables. The maximum size is 256 and the minimum is 0.
+Arrays cannot be resized and only accept values between 0 and 255, in the same way as variables. The maximum size is 256 and the minimum is 1.
 
 Let's look at one last example to consolidate concepts:
 
@@ -2373,7 +2425,7 @@ To walk the whole stream without running off the end we use the `DATAEND()` func
 
   WHILE (DATAEND() = 0)
     READ v
-    CHAR v          /* prints A, B, C */
+    CHAR @v         /* prints A, B, C */
   WEND
 ]]
 ```
@@ -2483,10 +2535,10 @@ Characters 127 through 143 (both inclusive and starting from zero) are special a
 
 - Character 127 is the character used when an option is not selected in a menu. (In red in the screenshot above)
 - Characters 128 through 135 form the animation cycle of a selected option in a menu. (Green in the screenshot above)
-- Characters 135 to 143 form the key wait indicator animation cycle. (Blue in the screenshot above)
+- Characters 136 to 143 form the key wait indicator animation cycle. (Blue in the screenshot above)
 
 Once we have this clear, what many of you will want is to change the animated icons to give them a personal touch.
-For this task we will need **ZxPaintbrush**. There is a copy included in the `Utiles` folder. We will also need the default font found in the `assets\default_charset.chr` file.
+For this task we will need **ZxPaintbrush**, a separate tool that is not bundled with CYD. We will also need the default font found in the `assets\default_charset.chr` file.
 
 We will copy the file to the folder of our project, rename it as `charset.chr` and open it with ZxPaintbrush and with this we will have this:
 
@@ -2560,7 +2612,7 @@ You write **only the body** of the routine (no `ORG`, no directives); the compil
     ret
 ```
 
-It works on all five targets (48K, 128K, +3, mld and mld128). There is a full, runnable example in `examples/import_demo`, and the detailed contract (ABI) reference in the manual, section **Native routines (IMPORT / CALL)**.
+It works on all targets (48K, 128K, +3, esxdos, mld and mld128). There is a full, runnable example in `examples/import_demo`, and the detailed contract (ABI) reference in the manual, section **Native routines (IMPORT / CALL)**.
 
 ### Writing the assembler inline (`ASM … ENDASM`)
 

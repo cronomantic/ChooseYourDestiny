@@ -25,9 +25,11 @@
   - [Bucles](#bucles)
   - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
   - [Organización del Código con INCLUDE](#organización-del-código-con-include)
+  - [Usando las librerías incluidas](#usando-las-librerías-incluidas)
   - [Flujo de trabajo](#flujo-de-trabajo)
   - [Menús con desplazamiento lateral](#menús-con-desplazamiento-lateral)
   - [Copia de fragmentos de imagen a pantalla](#copia-de-fragmentos-de-imagen-a-pantalla)
+  - [Sprites con máscara](#sprites-con-máscara)
   - [Leyendo el teclado, arrays de variables e indirecciones](#leyendo-el-teclado-arrays-de-variables-e-indirecciones)
     - [Indirección](#indirección)
     - [Lectura del teclado (INKEY)](#lectura-del-teclado-inkey)
@@ -39,6 +41,7 @@
   - [Constantes anchas (WORD, DWORD y cadenas)](#constantes-anchas-word-dword-y-cadenas)
   - [Más comodidades: SELECT, ENUM, SWAP y literales](#más-comodidades-select-enum-swap-y-literales)
   - [Alterar el juego de caracteres](#alterar-el-juego-de-caracteres)
+  - [Rutinas nativas (IMPORT / CALL)](#rutinas-nativas-import--call)
 
 ---
 
@@ -92,7 +95,7 @@ Si usas otro sistema operativo, el proceso es similar:
 python3 make_adventure.py --new ../tutorial 48k
 ```
 
-Esto crea una carpeta llamada `tutorial` junto a la carpeta de CYD, con una pequeña aventura de partida llamada `tutorial.cyd`, las carpetas `IMAGES` y `TRACKS`, y su `cyd_project.ini`. El `48k` del final es el modelo de Spectrum para el que vamos a hacer la aventura; ya hablaremos de ello más adelante. También puedes hacer esto con el botón **Nuevo…** de la GUI (ver [Alternativa Compilador GUI](#alternativa-compilador-gui)), eligiendo `48k` como objetivo, o simplemente creando tú mismo la carpeta `tutorial`, ya que `cyd_project.ini` es opcional.
+Esto crea una carpeta llamada `tutorial` junto a la carpeta de CYD, con una pequeña aventura de partida llamada `tutorial.cyd`, las carpetas `IMAGES` y `TRACKS`, y su `cyd_project.ini`. El `48k` del final es el modelo de Spectrum para el que vamos a hacer la aventura; ya hablaremos de ello más adelante. También puedes hacer esto con el botón **Nuevo…** de la GUI (ver [Alternativa Compilador GUI](#alternativa-compilador-gui)), eligiendo `48k` como objetivo, o simplemente creando tú mismo la carpeta `tutorial`, ya que `cyd_project.ini` es opcional; eso sí, sin él el modelo por defecto es `128k`, con lo que tendrás que indicar `48k` al compilar (lo veremos en el capítulo [Versiones para los diferentes modelos de Zx Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)).
 
 Si abres `cyd_project.ini` con cualquier editor de texto, verás esto:
 
@@ -327,7 +330,7 @@ Al compilar y ejecutar tenemos esto:
 
 ![Menú de opciones](assets/tut006.png)
 
-Nos aparecen dos opciones que podemos elegir con las teclas **P** y **Q** y seleccionar una con **Space** o **Enter**.
+Nos aparecen dos opciones que podemos elegir con las teclas **Q** y **A** y seleccionar una con **Space** o **Enter**.
 Si elegimos la primera opción, nos sale esto:
 
 ![PElegimos la primera opción](assets/tut007.png)
@@ -764,7 +767,7 @@ Y con esto ya está mejor:
 
 Aquí hemos usado una imagen al azar, más concretamente, la pantalla de carga de la *Aventura Original*. Pero si vamos a hacer este tipo de recortes con todas las imágenes, podemos cambiar el valor de `image_lines`, para que recorte las líneas que no queramos. Esto ahorrará espacio, y evitará que se sobrescriba la zona inferior de texto cuando carguemos una nueva imagen. Para la gestión de imágenes y teniendo en cuenta estas restricciones, es importante planificar de antemano cómo y cuándo las vamos a mostrar.
 
-Unas dudas que ten puede surgir: ¿y si quiero recortar el tamaño de sólo una imagen? ¿Y si quiero que cada imagen tenga un número de líneas diferente? Pues existe la posibilidad de definir el número de líneas para cada fichero específicamente. Imaginemos que queremos dejar 64 líneas para el fichero `001.SCR`, 40 líneas para el fichero `001.SCR`, y el resto a 192. Para ello habría que crear un fichero llamado `images.json` en la carpeta `IMAGES` con lo siguiente:
+Unas dudas que ten puede surgir: ¿y si quiero recortar el tamaño de sólo una imagen? ¿Y si quiero que cada imagen tenga un número de líneas diferente? Pues existe la posibilidad de definir el número de líneas para cada fichero específicamente. Imaginemos que queremos dejar 62 líneas para el fichero `000.SCR`, 40 líneas para el fichero `001.SCR`, y el resto a 192. Para ello habría que crear un fichero llamado `images.json` en la carpeta `IMAGES` con lo siguiente:
 
 ```json
 [
@@ -783,7 +786,7 @@ Unas dudas que ten puede surgir: ¿y si quiero recortar el tamaño de sólo una 
 
 Cuando el compilador encuentre este fichero JSON, tomará la configuración de las imágenes indicadas en éste y para el resto de imágenes se tomará lo que hayamos indicado en `image_lines`. De tal manera, con una supuesta imagen `003.SCR` y si no hemos cambiado `image_lines`, entoces se usarán las 192 líneas, es decir, la imagen completa.
 
-Obviamente, con el campo `num_lines` indicamos el número de línea de cada fichero, pero te preguntarás ¿para qué sirve `force_mirror`? Pues lo que hará **CYD** es descartar la parte derecha de la imágen y cuando la descomprima en el buffer de pantalla, copiará la parte derecha de la imagen en la parte izquierda, pero de forma simétrica, es decir espejada, lo cual puede suponer en ciertas situaciones un ahorro importante.
+Obviamente, con el campo `num_lines` indicamos el número de línea de cada fichero, pero te preguntarás ¿para qué sirve `force_mirror`? Pues lo que hará **CYD** es descartar la parte derecha de la imágen y cuando la descomprima en el buffer de pantalla, dibujará en su lugar la parte izquierda de la imagen, pero de forma simétrica, es decir espejada, lo cual puede suponer en ciertas situaciones un ahorro importante.
 
 ---
 
@@ -836,7 +839,7 @@ Vamos a poner un ejemplo, pon esto como código de la aventura:
 
 Como se puede ver, con el comando `SFX`, podemos reproducir cualquiera de los efectos del fichero indicando su número como parámetro.
 
-Una peculiaridad del comando SFX es que, al contrario que las imágenes, si el fichero SFX.BIN no se encuentra en el disco, fallará silenciosamente sin dar error y el efecto de sonido simplemente no se reproducirá.
+Una peculiaridad del comando SFX es que, al contrario que las imágenes, si no se ha incluido ningún fichero de efectos (no había `SFX.ASM` en la carpeta del proyecto al compilar), no dará error: el comando simplemente se ignora y el efecto de sonido no se reproducirá.
 
 ---
 
@@ -846,7 +849,7 @@ Hasta este momento, sólo hemos desarrollado aventuras para el Zx Spectrum origi
 
 El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del interprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 Kb disponibles en los modelos de 128K y unos 24 Kb en los modelos de 40K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
 
-Para cambiar el modelo, simplemente tienes que cambiar el ajuste `target` del `cyd_project.ini` del proyecto por los valores `48k` o `128k` si quieres generar los TAPs para los modelos correspondientes. Por ejemplo, si queremos crear una versión de nuestro tutorial para Spectrum 128k, con la imagen `000.scr` de la carpeta `IMAGES` como pantalla de carga:
+Para cambiar el modelo, simplemente tienes que cambiar el ajuste `target` del `cyd_project.ini` del proyecto por los valores `48k` o `128k` si quieres generar los TAPs para los modelos correspondientes (también existen `plus3` y `esxdos`, que vemos a continuación, y los experimentales `mld` y `mld128`). Por ejemplo, si queremos crear una versión de nuestro tutorial para Spectrum 128k, con la imagen `000.scr` de la carpeta `IMAGES` como pantalla de carga:
 
 ```ini
 [project]
@@ -867,6 +870,8 @@ image_lines = 192
 En la GUI, el **Objetivo** que elijas se guarda en este mismo fichero. También puedes indicar el modelo al compilar, sin tocar el fichero, y se usará en lugar del del proyecto: `make_adv.cmd ..\tutorial 128k` o `./make_adv.sh ../tutorial 128k`.
 
 Con el modelo `plus3`, el formato de salida será una imagen de disco en formato DSK.
+
+Con el modelo `esxdos`, para interfaces divMMC/divIDE con tarjeta SD, el resultado no es un único fichero, sino varios que hay que copiar a la tarjeta SD; el manual explica cuáles son y dónde ponerlos.
 
 ---
 
@@ -969,7 +974,7 @@ Necesitas 10 gamusinos para poder salir...
 [[OPTION GOTO Suma1]]Cojo 1 gamusino.
 [[OPTION GOTO Resta1]]Dejo 1 gamusino.
 [[
-   IF @0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Salir.
 [[
    #Escoger
@@ -995,7 +1000,7 @@ Y la segunda, ¿dónde está la opción de salir? Vamos a coger gamusinos hasta 
 
 ![Condicionales](assets/tut028.png)
 
-¡Ahora ya podemos salir! El secreto está en los condicionales. Si miramos en la opción de salir, vemos que antes hay `IF 0 <> 10 THEN GOTO Escoger`, lo que significa "Si la variable cero no es igual a 10, saltar a la etiqueta 'Escoger'", lo cual hace que se salte la opción de "Salir" y no se refleje en el menú hasta que el valor de la variable 0 sea 10.
+¡Ahora ya podemos salir! El secreto está en los condicionales. Si miramos en la opción de salir, vemos que antes hay `IF @0 <> 10 THEN GOTO Escoger ENDIF`, lo que significa "Si la variable cero no es igual a 10, saltar a la etiqueta 'Escoger'", lo cual hace que se salte la opción de "Salir" y no se refleje en el menú hasta que el valor de la variable 0 sea 10.
 
 Es decir, con las variables y las condiciones, tenemos las herramientas necesarias para hacer menús de opciones o textos que varíen dependiendo de ciertas condiciones y hacer nuestra aventura más dinámica.
 
@@ -1021,7 +1026,7 @@ Necesitas 10 gamusinos para poder salir...
 [[OPTION GOTO Suma1]]Cojo 1 gamusino.
 [[OPTION GOTO Resta1]]Dejo 1 gamusino.
 [[
-   IF 0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Salir.
 [[
    #Escoger
@@ -1054,7 +1059,7 @@ Necesitas 10 gamusinos para poder salir...
 [[OPTION GOTO Suma1]]Cojo 1 gamusino.
 [[OPTION GOTO Resta1]]Dejo 1 gamusino.
 [[
-   IF 0 <> 10 THEN GOTO Escoger
+   IF @0 <> 10 THEN GOTO Escoger ENDIF
    OPTION GOTO Final]]Salir.
 [[
    #Escoger
@@ -1092,7 +1097,7 @@ Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+   CLEAR]]Tienes [[GOSUB ImprimirGamusinos]].
 ¿Qué haces?
 
 [[OPTION GOTO Suma1]]Cojo 1 gamusino.
@@ -1108,11 +1113,11 @@ Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
    SET NumGamusinos TO @NumGamusinos - 1
    GOTO Inicio
    #Final]]¡Gracias por jugar!
-Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Subrutina de impresión de gamusinos*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
 ```
 
 El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del número de Gamusinos dos veces, cuando elegimos una opción y al final del todo.
@@ -1122,7 +1127,7 @@ El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del 
 Para ello hacemos una subrutina que realice esta función:
 
 ```
-[[LABEL ImprimirGamusimos]]Tienes [[PRINT @0]] gamusinos[[RETURN]]
+[[LABEL ImprimirGamusinos]]Tienes [[PRINT @0]] gamusinos[[RETURN]]
 ```
 
 Declaramos una etiqueta llamada `ImprimirGamusinos` que sirve de punto de salto. Luego tenemos la impresión del número de gamusinos, y luego el comando `RETURN`. La llamada la realizamos con `GOSUB ImprimirGamusinos` en los dos puntos donde queremos que se ejecute.
@@ -1146,7 +1151,7 @@ Por lo general, el momento idóneo para llamar a una subrutina es cuando se real
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+   CLEAR]]Tienes [[GOSUB ImprimirGamusinos]].
 ¿Qué haces?
 
 [[OPTION GOSUB Suma1]]Cojo 1 gamusino.
@@ -1156,11 +1161,11 @@ Por lo general, el momento idóneo para llamar a una subrutina es cuando se real
    CHOOSE
    GOTO Inicio
    #Final]]¡Gracias por jugar!
-Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Subrutina de impresión de gamusinos*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Subrutina de suma*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subrutina de resta */
@@ -1184,7 +1189,7 @@ Copia lo siguiente en `tutorial.cyd`:
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+   CLEAR]]Tienes [[GOSUB ImprimirGamusinos]].
 ¿Qué haces?
 
 [[OPTION GOSUB Suma1]]Cojo 1 gamusino.
@@ -1196,11 +1201,11 @@ Copia lo siguiente en `tutorial.cyd`:
    CHOOSE
    GOTO Inicio
    #Final]]¡Gracias por jugar!
-Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Subrutina de impresión de gamusinos*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Subrutina de suma*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subrutina de resta */
@@ -1231,7 +1236,7 @@ Ahora voy a cambiar a `IF @NumGamusinos = 10 THEN ... ELSE ... ENDIF`. Lo que ha
    DECLARE 0 AS NumGamusinos
    SET NumGamusinos TO 0
    #Inicio
-   CLEAR]]Tienes [[GOSUB ImprimirGamusimos]].
+   CLEAR]]Tienes [[GOSUB ImprimirGamusinos]].
 ¿Qué haces?
 
 [[OPTION GOSUB Suma1]]Cojo 1 gamusino.
@@ -1247,11 +1252,11 @@ Te sobran gamusinos
    CHOOSE
    GOTO Inicio
    #Final]]¡Gracias por jugar!
-Al final te quedas con [[GOSUB ImprimirGamusimos]].[[
+Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
    WAITKEY
    END
    /* Subrutina de impresión de gamusinos*/
-   #ImprimirGamusimos : PRINT @NumGamusinos]] gamusinos[[RETURN
+   #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN
    /* Subrutina de suma*/
    #Suma1 : SET NumGamusinos TO @NumGamusinos + 1 : RETURN
    /* Subrutina de resta */
@@ -1402,25 +1407,46 @@ Las carpetas `IMAGES` y `TRACKS`, `SFX.ASM` y el resto de ficheros del juego tam
 [[
 /* Cargar configuración */
 INCLUDE "config/variables.cyd"
-INCLUDE "config/ajustes.cyd"
+
+/* Saltar las subrutinas: solo se ejecutan cuando se llaman con GOSUB */
+GOTO Inicio
 
 /* Cargar funciones comunes */
 INCLUDE "lib/comunes.cyd"
-]]
 
 #Inicio
-[[INCLUDE "capitulos/intro.cyd"]]
-[[GOTO Capitulo1]]
+INCLUDE "config/ajustes.cyd"
+INCLUDE "capitulos/intro.cyd"
+GOTO Capitulo1
 
 #Capitulo1
-[[INCLUDE "capitulos/capitulo1.cyd"]]
+INCLUDE "capitulos/capitulo1.cyd"
 
 #Capitulo2
-[[INCLUDE "capitulos/capitulo2.cyd"]]
+INCLUDE "capitulos/capitulo2.cyd"
 
 #ElFinal
-[[INCLUDE "capitulos/final.cyd"]]
-[[END]]
+INCLUDE "capitulos/final.cyd"
+END
+]]
+```
+
+Fíjate en que las etiquetas van dentro del bloque de código, como siempre: fuera de `[[ ]]`, `#Inicio` se imprimiría como texto. Y fíjate también en el `GOTO Inicio` antes de incluir `lib/comunes.cyd`: el contenido de un fichero incluido se coloca justo donde está el `INCLUDE`, así que, sin ese salto, la ejecución entraría en la primera subrutina y llegaría a un `RETURN` sin haber hecho ningún `GOSUB`.
+
+**config/variables.cyd** y **config/ajustes.cyd:**
+```cyd
+[[
+DECLARE 0 AS SaludJugador
+DECLARE 1 AS OroJugador
+]]
+```
+
+```cyd
+[[
+PAPER 0 : INK 7 : BORDER 0
+SET SaludJugador TO 100
+SET OroJugador TO 0
+]]
 ```
 
 ### Ejemplo Práctico: Subrutinas Comunes
@@ -1432,10 +1458,7 @@ Digamos que muestras frecuentemente el estado del jugador. En lugar de repetir e
 [[
 #MostrarEstado
 INK 6
-PRINT "Salud: "
-PRINT @SaludJugador
-PRINT " | Oro: "
-PRINT @OroJugador
+]]Salud: [[PRINT @SaludJugador]] | Oro: [[PRINT @OroJugador
 INK 7
 NEWLINE
 RETURN
@@ -1443,44 +1466,47 @@ RETURN
 #JuegoTerminado
 CENTER
 INK 2
-PRINT "JUEGO TERMINADO"
+]]JUEGO TERMINADO[[
 INK 7
 NEWLINE : NEWLINE
-PRINT "Pulsa una tecla para reiniciar..."
+]]Pulsa una tecla para reiniciar...[[
 WAITKEY
 GOTO Inicio
 ]]
 ```
 
+Recuerda que `PRINT` sólo imprime números (el valor de una expresión); los textos se escriben tal cual, fuera de `[[ ]]`. `JuegoTerminado` no vuelve con `RETURN`, sino que salta a `Inicio` para empezar de nuevo, así que se llama con `GOTO` en lugar de con `GOSUB`.
+
 Luego úsalo en tus capítulos:
 
 **capitulos/capitulo1.cyd:**
 ```cyd
-[[CLEAR]]
-Entras en un corredor oscuro...
-[[NEWLINE]]
+[[CLEAR]]Entras en un corredor oscuro...
 [[GOSUB MostrarEstado]]
-
 [[OPTION GOTO Puerta1]]Abrir la puerta izquierda
 [[OPTION GOTO Puerta2]]Abrir la puerta derecha
-[[CHOOSE]]
+[[CHOOSE
 
 #Puerta1
-¡Has encontrado un tesoro!
-[[SET @OroJugador TO @OroJugador + 50]]
-[[GOSUB MostrarEstado]]
-[[GOTO Capitulo2]]
+]]¡Has encontrado un tesoro!
+[[SET OroJugador TO @OroJugador + 50
+GOSUB MostrarEstado
+WAITKEY
+GOTO Capitulo2
 
 #Puerta2
-¡Una trampa! Pierdes salud.
-[[SET @SaludJugador TO @SaludJugador - 20]]
-[[IF @SaludJugador <= 0 THEN
-    GOSUB JuegoTerminado
-ELSE
-    GOSUB MostrarEstado
-    GOTO Capitulo2
-ENDIF]]
+]]¡Una trampa! Pierdes salud.
+[[SET SaludJugador TO @SaludJugador - 20
+IF @SaludJugador <= 0 THEN
+    GOTO JuegoTerminado
+ENDIF
+GOSUB MostrarEstado
+WAITKEY
+GOTO Capitulo2
+]]
 ```
+
+Como en el resto del tutorial, en `SET` la variable de destino va sin `@` (`SET OroJugador TO ...`), y el `@` sólo se pone para leer su valor (`@OroJugador + 50`).
 
 ### Características Importantes
 
@@ -1489,7 +1515,7 @@ ENDIF]]
 - **Rutas relativas:** Una ruta se busca junto al archivo que contiene el `INCLUDE` y, si no está ahí, desde la carpeta raíz del proyecto (la del guion principal). Así, `capitulos/capitulo1.cyd` también podría escribir `INCLUDE "config/variables.cyd"`
 - **Librerías:** `INCLUDE LIB "strings.cyd"` incluye una de las librerías que vienen con CYD, esté donde esté tu aventura (ver la siguiente sección)
 - **Inclusiones anidadas:** Los archivos pueden incluir otros archivos (hasta 20 niveles de profundidad)
-- **Comentarios en CYD:** Utiliza `/* */` para comentarios (`/* Cargar utilidades */`). Aunque el patrón de `INCLUDE` ignorará texto después del nombre de archivo, no se recomienda depender de esto.
+- **Comentarios en CYD:** Utiliza `/* */` para comentarios (`/* Cargar utilidades */`), pero en su propia línea: detrás del nombre del archivo sólo puede ir el `]]` que cierra el bloque de código, y cualquier otra cosa dará un error de sintaxis. Por lo mismo, sólo puede haber un `INCLUDE` por línea.
 - **Detección de errores:** Las inclusiones circulares (A incluye B, B incluye A) se detectan automáticamente
 
 ### Beneficios
@@ -1536,9 +1562,10 @@ de casos prácticos.
 
 Las variables de CYD son de 8 bits (0..255), así que una puntuación grande se
 desborda enseguida. Con `math16_32.cyd` podemos calcularla en 32 bits. Los
-operandos se cargan en unos «registros» (grupos de variables consecutivas); como
-los literales son de 8 bits, los valores anchos se cargan byte a byte con la
-asignación múltiple `SET reg TO {byte_bajo, ...}`.
+operandos se cargan en unos «registros» (grupos de variables consecutivas); los
+valores anchos se cargan con `SET reg TO WORD n` (16 bits) o `SET reg TO DWORD n`
+(32 bits), que se explican en [Constantes anchas](#constantes-anchas-word-dword-y-cadenas),
+y un registro se copia en otro con la asignación múltiple `SET reg TO {...}`.
 
 ```cyd
 [[
@@ -1546,13 +1573,13 @@ asignación múltiple `SET reg TO {byte_bajo, ...}`.
     PAPER 0 : INK 7 : CLEAR
 
     /* enemigos (1250) * puntos (800) = 1.000.000, sin desbordar */
-    SET mlA0 TO {226, 4}       /* A = 1250 */
-    SET mlB0 TO {32, 3}        /* B = 800  */
+    SET mlA0 TO WORD 1250      /* A = 1250 */
+    SET mlB0 TO WORD 800       /* B = 800  */
     GOSUB mul1632              /* C = A * B (resultado de 32 bits) */
 
     /* + bonus (234567) */
     SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* A = C */
-    SET mlB0 TO {71, 148, 3, 0}                /* B = 234567 */
+    SET mlB0 TO DWORD 234567                   /* B = 234567 */
     GOSUB add32                                /* A = 1234567 */
 ]]Puntuacion total: [[ GOSUB print32 ]][[
     WAITKEY : END
@@ -1709,6 +1736,7 @@ Vamos a verlo, como siempre con el siguiente ejemplo:
     BRIGHT 1
     FLASH 0
     PAPER 0
+    MENUCONFIG 1,2
     CLEAR
 ]]Elige una opción:
 
@@ -1717,7 +1745,7 @@ Vamos a verlo, como siempre con el siguiente ejemplo:
 [[OPTION GOTO Opcion5]]Quinta opción.   [[OPTION GOTO Opcion6]]Sexta opción.
 
 [[
-    MENUCONFIG 1,2 : CHOOSE
+    CHOOSE
     LABEL Opcion1]]Has elegido la opción 1.[[
     GOTO Siguiente
     LABEL Opcion2]]Has elegido la opción 2.[[
@@ -1790,7 +1818,7 @@ En general, con `BLIT x_orig, y_orig, anchura, altura AT x_dest, y_dest`, lo que
 
 Como últimos apuntes, destacar tres cosas:
 
-- Sólo se pueden usar variables en los dos últimos parámetros, como es el caso de este ejemplo. Los parámetros que definen el rectángulo a recortar siempre son fijos.
+- Todos los parámetros admiten variables o expresiones, no sólo los dos últimos como en este ejemplo: también se puede calcular el rectángulo a recortar.
 - En todos los parámetros, la unidad es el carácter de 8x8 píxeles.
 - La implementación es lenta debido a su genericidad, con lo que si estás tentado de usarlos como "sprites", los resultados serán decepcionantes debido al parpadeo. Para eso está la librería de sprites, que veremos en la sección [Sprites con máscara](#sprites-con-máscara).
 
@@ -1800,20 +1828,22 @@ A partir de la versión 1.2.x, el compilador aplica el **Modo Colon Estricto de 
 
 **Sintaxis Correcta:**
 ```cyd
-SET x TO 10 : SET y TO 20 : PRINT "Valores asignados"
+[[ SET 0 TO 10 : SET 1 TO 20 : PRINT @0 + @1 ]]
 ```
 
 **Sintaxis Incorrecta (fallará):**
 ```cyd
-SET x TO 10 SET y TO 20 PRINT "Valores asignados"
+[[ SET 0 TO 10 SET 1 TO 20 PRINT @0 + @1 ]]
 ```
 
 Sin embargo, cuando las sentencias están en líneas separadas, los dos puntos son **opcionales**:
 
 ```cyd
-SET x TO 10
-SET y TO 20
-PRINT "Valores asignados"
+[[
+SET 0 TO 10
+SET 1 TO 20
+PRINT @0 + @1
+]]
 ```
 
 **Puntos clave:**
@@ -2076,8 +2106,8 @@ Hasta ahora he usado la denominación numérica de las variables. Pero, ¿cómo 
 
 ```cyd
 [[
-DECLARE array AS 0
-DECLARE ptr AS 8
+DECLARE 0 AS array
+DECLARE 8 AS ptr
 
 SET ptr TO 0
 WHILE (@ptr < 8)
@@ -2091,8 +2121,8 @@ El ejemplo anterior nos podría valer... pero si decidimos mover el array y su p
 
 ```cyd
 [[
-DECLARE array AS 0
-DECLARE ptr AS 8
+DECLARE 0 AS array
+DECLARE 8 AS ptr
 
 SET ptr TO @@array
 WHILE (@ptr < @@ptr)
@@ -2106,8 +2136,8 @@ Notarás que en su lugar, estamos usando los nombres de las variables con dos ar
 
 ```cyd
 [[
-DECLARE array AS 8
-DECLARE ptr AS 16
+DECLARE 8 AS array
+DECLARE 16 AS ptr
 
 SET ptr TO @@array
 WHILE (@ptr < @@ptr)
@@ -2320,7 +2350,7 @@ De hecho, podemos ahorrarnos indicar el tamaño ya que lo calculará a partir de
 
 Ten en cuenta que el array tendrá en este caso el tamaño del número de elementos que hayamos indicado **y no más**.
 
-Los arrays no se pueden re-dimensionar y sólo admiten valores entre 0 y 255, de la misma manera que las variables. El tamaño máximo es 256 y el mínimo 0.
+Los arrays no se pueden re-dimensionar y sólo admiten valores entre 0 y 255, de la misma manera que las variables. El tamaño máximo es 256 y el mínimo 1.
 
 Vamos a ver un último ejemplo para afianzar conceptos:
 
@@ -2393,7 +2423,7 @@ Para recorrer todo el flujo sin pasarnos usamos la función `DATAEND()`, que dev
 
   WHILE (DATAEND() = 0)
     READ v
-    CHAR v          /* imprime A, B, C */
+    CHAR @v         /* imprime A, B, C */
   WEND
 ]]
 ```
@@ -2503,10 +2533,10 @@ Los caracteres desde el 127 hasta el 143 (ambos incluidos y empezando a contar d
 
 - El carácter 127 es el carácter usado cuando una opción no está seleccionada en un menú. (En rojo en la captura anterior)
 - Los caracteres del 128 al 135 forman el ciclo de animación de una opción seleccionada en un menú. (En verde en la captura anterior)
-- Los caracteres del 135 al 143 forman el ciclo de animación del indicador de espera. (En azul en la captura anterior)
+- Los caracteres del 136 al 143 forman el ciclo de animación del indicador de espera. (En azul en la captura anterior)
 
 Una vez teniendo esto claro, lo que muchos de vosotros querréis es cambiar los iconos animados para darles un toque personal.
-Para esta tarea vamos a necesitar **ZxPaintbrush**. Hay una copia incluida en la carpeta `Utiles`. También necesitaremos la fuente por defecto que se encuentra en el fichero `assets\default_charset.chr`.
+Para esta tarea vamos a necesitar **ZxPaintbrush**, una herramienta aparte que no se incluye con CYD. También necesitaremos la fuente por defecto que se encuentra en el fichero `assets\default_charset.chr`.
 
 Copiaremos el fichero a la carpeta de nuestro proyecto, lo renombramos como `charset.chr` y lo abriremos con ZxPaintbrush y con lo que tendremos esto:
 
@@ -2580,7 +2610,7 @@ Tú escribes **solo el cuerpo** de la rutina (sin `ORG` ni directivas); el compi
     ret
 ```
 
-Funciona en los cinco targets (48K, 128K, +3, mld y mld128). Tienes un ejemplo completo y ejecutable en `examples/import_demo`, y la referencia detallada del contrato (ABI) en el manual, sección **Rutinas nativas (IMPORT / CALL)**.
+Funciona en todos los targets (48K, 128K, +3, esxdos, mld y mld128). Tienes un ejemplo completo y ejecutable en `examples/import_demo`, y la referencia detallada del contrato (ABI) en el manual, sección **Rutinas nativas (IMPORT / CALL)**.
 
 ### Escribir el ensamblador en el propio guion (`ASM … ENDASM`)
 
