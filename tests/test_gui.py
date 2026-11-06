@@ -35,9 +35,33 @@ from emu_harness import (  # noqa: E402
     _read_mem, _recv_until_prompt, compile_cyd, emulator_available,
 )
 
+def _import_gui():
+    """The GUI imports the `cydc` package (dist/cydc, or src/cydc/cydc), which
+    has no __init__.py. Other test modules put src/cydc/cydc itself in
+    sys.path, and then `cydc` is the compiler script cydc.py, which wins over
+    the package: the import failed and every GUI test was skipped when the
+    whole suite ran. Import it without those folders, then put sys.path and
+    sys.modules["cydc"] back as they were, so the tests that import the
+    compiler script as `cydc` still get it."""
+    compiler_dir = os.path.normcase(str(REPO / "src" / "cydc" / "cydc"))
+    saved_path = sys.path[:]
+    saved_cydc = sys.modules.pop("cydc", None)
+    try:
+        sys.path[:] = [p for p in sys.path
+                       if os.path.normcase(os.path.abspath(p or ".")) != compiler_dir]
+        import make_adventure_gui
+        return make_adventure_gui
+    finally:
+        sys.path[:] = saved_path
+        if saved_cydc is not None:
+            sys.modules["cydc"] = saved_cydc
+        else:
+            sys.modules.pop("cydc", None)
+
+
 try:
     import tkinter as tk
-    import make_adventure_gui as gui
+    gui = _import_gui()
 except ImportError:  # a Python without tkinter
     gui = None
 
