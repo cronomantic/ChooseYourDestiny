@@ -330,6 +330,10 @@ repositorio (`MANUAL_*.md`, `TUTORIAL_*.md` y las imágenes de `assets/`).
 paquetes llevan siempre los PDF al día y la Release los publica también sueltos.
 Los PDF de `documentation/` en el repositorio solo sirven para empaquetar a mano.
 
+**Notas de la versión:** si existe `doc/release/<tag>.md` (por ejemplo
+`doc/release/v1.7.0.md`), la Release lo usa como texto, seguido de la lista de
+cambios que genera GitHub. Hay que escribirlo y commitearlo antes de subir el tag.
+
 ---
 
 ### build_example_taps.py

@@ -7,6 +7,8 @@ name: Release packages
 #   Markdown with Pandoc; both packages include them.
 # - On a version tag (v*): build the Windows and Linux packages and publish
 #   them, and the PDFs, as assets of a GitHub Release for that tag.
+#   Its notes are doc/release/<tag>.md, if it exists, followed by GitHub's
+#   automatic list of changes.
 # - Manually (workflow_dispatch): build the same packages and expose them as
 #   downloadable artifacts, without creating a Release (handy for testing).
 #
@@ -94,6 +96,19 @@ jobs:
       contents: write
 
     steps:
+      # Hand-written notes for this tag, if there are any (doc/release/vX.Y.Z.md):
+      # they go first, and GitHub's list of changes after them.
+      - name: Checkout (release notes)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: doc/release
+
+      - name: Release notes
+        id: notes
+        run: |
+          f="doc/release/${GITHUB_REF_NAME}.md"
+          if [ -f "$f" ]; then echo "body_path=$f" >> "$GITHUB_OUTPUT"; fi
+
       - name: Download all packages
         uses: actions/download-artifact@v4
         with:
@@ -106,4 +121,5 @@ jobs:
             artifacts/**/*.zip
             artifacts/**/*.pdf
           fail_on_unmatched_files: true
+          body_path: ${{ steps.notes.outputs.body_path }}
           generate_release_notes: true
