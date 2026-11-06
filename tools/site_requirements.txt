@@ -1,5 +1,5 @@
 # To build the documentation site (tools/build_site.py). Only the docs
 # workflow installs them; CYD itself doesn't need them.
 mkdocs==1.6.1
-mkdocs-material==9.6.14
-pymdown-extensions==10.21.3
+mkdocs-material==9.8.0
+pymdown-extensions==12.3
