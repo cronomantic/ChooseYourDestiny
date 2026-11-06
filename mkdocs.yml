@@ -2,7 +2,7 @@
 # tutorials by tools/build_site.py, which copies them to build/site_docs and
 # runs MkDocs. Published by .github/workflows/docs.yml on each release.
 site_name: Choose Your Destiny
-site_description: Engine and compiler for making "choose your own adventure" games for the ZX Spectrum
+site_description: Engine and compiler for making “choose your own adventure” games for the ZX Spectrum
 site_url: https://cronomantic.github.io/ChooseYourDestiny/
 repo_url: https://github.com/cronomantic/ChooseYourDestiny
 repo_name: cronomantic/ChooseYourDestiny
@@ -13,6 +13,8 @@ site_dir: build/site
 
 theme:
   name: material
+  # Link previews (Open Graph) with assets/social_preview.png.
+  custom_dir: tools/site/overrides
   language: en
   logo: assets/cydlogo_2_gui.png
   favicon: assets/cydlogo_2_gui.png

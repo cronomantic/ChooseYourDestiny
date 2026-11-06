@@ -54,7 +54,7 @@ def prepare(source, out=SITE_DOCS):
     if out.exists():
         shutil.rmtree(out)
     (out / "assets").mkdir(parents=True)
-    wanted = {"assets/cydlogo_2_gui.png", "assets/cydlogo_2.png"}
+    wanted = {"assets/cydlogo_2_gui.png", "assets/cydlogo_2.png", "assets/social_preview.png"}
     for name in DOCS:
         text = (source / name).read_text(encoding="utf-8")
         (out / name).write_text(text, encoding="utf-8")
