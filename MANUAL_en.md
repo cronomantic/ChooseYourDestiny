@@ -461,7 +461,7 @@ When the `CHOOSE` command is reached, the interpreter will allow the user to cho
 When choosing an option, the interpreter will jump to the section of text where the corresponding label indicated in the option is found. Labels are declared with the `LABEL identifier` pseudo-command within the code, and when a jump to it is indicated, the interpreter will begin processing from the point where we have declared the label.
 In the example, if we choose option 1, the interpreter will jump to the point indicated in `LABEL location2`, which will print the text _"You did it!!!"_, and then go to `GOTO Final` which will make an unconditional jump to where `LABEL Final` is defined and ignore everything in between.
 
-Label identifiers only support alphanumeric characters (numbers and letters) and the underscore (`_`), must start with a letter and are case-sensitive (upper and lower case are distinguished), i.e. `LABEL Label` is not the same as `LABEL label`. Commands, on the other hand, are not case-sensitive, but for clarity, it is recommended to capitalize them.
+Label identifiers only support alphanumeric characters (numbers and letters) and the underscore (`_`), must start with a letter or an underscore (not a digit) and are case-sensitive (upper and lower case are distinguished), i.e. `LABEL Label` is not the same as `LABEL label`. Commands, on the other hand, are not case-sensitive, but for clarity, it is recommended to capitalize them.
 
 A shortened version of labels is also allowed by preceding the label identifier with the character `#`, so that `#MyLabel` is the same as `LABEL MyLabel`. With this, we could rewrite the previous code like this:
 
@@ -1437,7 +1437,7 @@ Ranges and repetition only make sense in **list** contexts (`DATA`, `DIM` initia
 
 Before describing the commands, let's briefly discuss the legend used:
 
-- **ID** is an identifier and is a string of numbers, letters or underscores. Accented letters and ñ are not allowed.
+- **ID** is an identifier and is a string of numbers, letters or underscores that starts with a letter or an underscore. Accented letters and ñ are not allowed.
 - **expression** is a numeric expression without variables. It is a decimal or hexadecimal number, but simple arithmetic operations are also allowed and will be calculated at compile time.
 - **varexpression**, numeric expression as described in its corresponding [section](#variables-and-numeric-expressions). It can contain variables with `@` and indirections.
 - **condexpression**, conditional expression as described in its corresponding [section](#flow-control-and-conditional-expressions). They consist of one or several comparisons with logical operations between them.

@@ -288,7 +288,7 @@ Now the label is declared just before the screen is cleared, and it will go ther
 
 The concept of labels and jumps is fundamental to understanding how to make a "Choose Your Own Adventure", since we will present options to the player, and depending on those options, we will go from one place to another in the text.
 
-An important detail is the format of the label identifiers. These can only be a **sequence of numbers and letters or the underscore character in a row, and must start with a letter. Accented letters and the ñ are not allowed**. That is, `LABEL 1` or `LABEL La Etiqueta` are not valid, but `LABEL l1` or `LABEL LaEtiqueta` are. They are also case sensitive, meaning that they are **case sensitive**, so `LABEL Etiqueta` and `LABEL etiqueta` are not the same label. And obviously, you cannot declare a label with the same name twice.
+An important detail is the format of the label identifiers. These can only be a **sequence of numbers and letters or the underscore character in a row, and must start with a letter or an underscore. Accented letters and the ñ are not allowed**. That is, `LABEL 1` or `LABEL La Etiqueta` are not valid, but `LABEL l1` or `LABEL LaEtiqueta` are. They are also case sensitive, meaning that they are **case sensitive**, so `LABEL Etiqueta` and `LABEL etiqueta` are not the same label. And obviously, you cannot declare a label with the same name twice.
 
 On the other hand, commands are not case sensitive, meaning that `CLEAR`, `clear` or `Clear` are perfectly valid. However, I recommend capitalizing them to better distinguish them.
 

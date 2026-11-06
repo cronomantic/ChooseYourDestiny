@@ -462,7 +462,7 @@ Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario e
 Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
 En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
 
-Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y el subrayado (`_`), deben empezar con una letra y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
+Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y el subrayado (`_`), deben empezar con una letra o un subrayado (no con una cifra) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
 También se permite una versión acortada de las etiquetas precediendo el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
 
@@ -1436,7 +1436,7 @@ Rangos y repetición solo tienen sentido en contextos de **lista** (`DATA`, inic
 
 Antes de describir los comandos, vamos a hablar resumidamente de la leyenda utilizada:
 
-- **ID** es un identificador y es una cadena de cifras, letras o subrayado. No se admiten letras acentuadas ni la ñ.
+- **ID** es un identificador y es una cadena de cifras, letras o subrayado que empieza por una letra o un subrayado. No se admiten letras acentuadas ni la ñ.
 - **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
 - **varexpression**, expresión numérica tal y como es descrita en su [sección](#variables-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
 - **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
