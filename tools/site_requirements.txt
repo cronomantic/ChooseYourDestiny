@@ -3,3 +3,8 @@
 mkdocs==1.6.1
 mkdocs-material==9.8.0
 pymdown-extensions==12.3
+# Also pinned because tools/mkdocs_hooks.py replaces internals of Markdown and
+# pymdown-extensions, and tools/cyd_pygments.py builds on Pygments: update them
+# only after building the site with the new versions.
+Markdown==3.11.3
+Pygments==2.21.0

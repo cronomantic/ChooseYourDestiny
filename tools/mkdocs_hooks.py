@@ -27,7 +27,9 @@ def github_slug(value, separator="-"):
     return value.replace(" ", separator)
 
 
-def github_unique(id, ids):
+def github_unique(id, ids, counters=None):
+    # `counters` (Markdown >= 3.11.3) is only a speed-up cache for repeated
+    # ids; the manuals are small, so it is not needed here.
     base, n = id, 0
     while id in ids or not id:
         n += 1
