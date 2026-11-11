@@ -212,6 +212,24 @@ def collect_deliverables(work_path, output_path):
             os.replace(os.path.join(work_path, name), os.path.join(output_path, name))
 
 
+def find_file_any_case(folder, name):
+    """folder/name, whatever the case of the name on the disk: Windows ignores
+    it and Linux/macOS do not, and a game must build the same everywhere (the
+    test example has TRACKS/000.pt3, the compiler asks for 000.PT3). The path
+    as asked for if there is no such file."""
+    path = os.path.join(folder, name)
+    if os.path.isfile(path):
+        return path
+    try:
+        entries = os.listdir(folder)
+    except OSError:
+        return path
+    for entry in entries:
+        if entry.lower() == name.lower() and os.path.isfile(os.path.join(folder, entry)):
+            return os.path.join(folder, entry)
+    return path
+
+
 def interpreter_too_big_message(model, size, limit, trimmed, parts):
     """The error for an interpreter that does not fit in its target, with what
     takes the room: the optional parts (sound effects, music player, text
@@ -908,7 +926,7 @@ def main():
 
     blocks = []
     if args.images_path is not None:
-        images_json_path = os.path.join(args.images_path, f"images.json")
+        images_json_path = find_file_any_case(args.images_path, "images.json")
         result, images_json, error_txt = get_image_config(images_json_path)
         if not result:
             sys.exit(_(error_txt))
@@ -920,8 +938,8 @@ def main():
         cache_path = os.path.join(final_output, CACHE_FOLDER)
         os.makedirs(cache_path, exist_ok=True)
         for i in range(256):
-            fpath = os.path.join(args.images_path, f"{i:03d}.scr")
-            given_csc = os.path.join(args.images_path, f"{i:03d}.csc")
+            fpath = find_file_any_case(args.images_path, f"{i:03d}.scr")
+            given_csc = find_file_any_case(args.images_path, f"{i:03d}.csc")
             if os.path.isfile(fpath):
                 scr_num_lines = args.image_lines
                 scr_force_mirror = False
@@ -973,12 +991,12 @@ def main():
             # Using WYZ tracker
             if verbose > 0:
                 print(_("Reading WyzTracker files..."))
-            fpath1 = os.path.join(args.tracks_path, f"instruments.asm")
+            fpath1 = find_file_any_case(args.tracks_path, "instruments.asm")
             if os.path.isfile(fpath1):
                 with open(fpath1, "r") as f:  # Load instruments data
                     wyz_instruments += f.read()
             for i in range(256):
-                fpath = os.path.join(args.tracks_path, f"{i:03d}.mus")
+                fpath = find_file_any_case(args.tracks_path, f"{i:03d}.mus")
                 if os.path.isfile(fpath):
                     b = None
                     with open(fpath, "rb") as f:  # Load track data
@@ -1004,7 +1022,7 @@ def main():
             if verbose > 0:
                 print(_("Reading PT3 files..."))
             for i in range(256):
-                fpath = os.path.join(args.tracks_path, f"{i:03d}.PT3")
+                fpath = find_file_any_case(args.tracks_path, f"{i:03d}.PT3")
                 if os.path.isfile(fpath):
                     with open(fpath, "rb") as f:
                         b = list(f.read())
