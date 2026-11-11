@@ -25,8 +25,10 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 import build_example_taps as bet  # noqa: E402
 
-# Length of the BASIC loader in the first block of the tape.
-LOADER_LENGTH = {"48k": 167, "128k": 211}
+# Only the 128K loader tests the RAM banks (TESTBANK128 in loadertape.asm):
+# ld a, $A5 / ld ($FFFF), a. The loader's length is no clue: its LOAD_TABLE grows
+# 5 bytes for every block the game loads.
+BANK_TEST = bytes([0x3E, 0xA5, 0x32, 0xFF, 0xFF])
 
 
 def tap_blocks(path):
@@ -84,8 +86,8 @@ class TestExampleTaps(unittest.TestCase):
                 header = tap_blocks(tap)[0]
                 self.assertEqual(header[:2], b"\x00\x00", "first block is not a BASIC header")
                 model = bet.model(example)
-                self.assertEqual(struct.unpack_from("<H", header, 12)[0], LOADER_LENGTH[model],
-                                 f"not a {model} tape")
+                loader = tap_blocks(tap)[1]
+                self.assertEqual(BANK_TEST in loader, model == "128k", f"not a {model} tape")
 
     @unittest.skipUnless(emulator_available(), "sjasmplus/ZEsarUX not available under tools/")
     def test_every_tap_runs(self):
