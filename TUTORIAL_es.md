@@ -28,6 +28,7 @@
   - [Usando las librerías incluidas](#usando-las-librerías-incluidas)
   - [Flujo de trabajo](#flujo-de-trabajo)
   - [Menús con desplazamiento lateral](#menús-con-desplazamiento-lateral)
+  - [Teclas y joystick de los menús](#teclas-y-joystick-de-los-menús)
   - [Copia de fragmentos de imagen a pantalla](#copia-de-fragmentos-de-imagen-a-pantalla)
   - [Sprites con máscara](#sprites-con-máscara)
   - [Leyendo el teclado, arrays de variables e indirecciones](#leyendo-el-teclado-arrays-de-variables-e-indirecciones)
@@ -1785,6 +1786,52 @@ El comportamiento por defecto, y que simula el comportamiento *vertical* de las 
 De esta manera, si con `MENUCONFIG 0,1` tendremos un menú vertical en una columna, con `MENUCONFIG 1,0` tendremos un menú horizontal en una fila. Con `MENUCONFIG 1,3` tendremos un menú a tres columnas, etc. Pero recuerda que `MENUCONFIG` no indica la disposición de las opciones, eso lo definimos nosotros al declararlas, sino el comportamiento de los botones.
 
 En este caso, es mejor que pruebes el ejemplo en vivo y experimentes por tu cuenta. Ten en cuenta que el puntero nunca superará los límites por debajo de cero, ni por encima del número de opciones de la lista. Por tanto, deberías introducir valores *razonables* o el menú no funcionará bien.
+
+---
+
+## Teclas y joystick de los menús
+
+Los menús se manejan con **Q**, **A**, **O** y **P**, y se selecciona con **ESPACIO**. Muchos juegos de Spectrum dejaban al jugador elegir sus teclas y su joystick, y CYD lo permite con dos comandos: `MENUKEY` cambia una tecla y `MENUJOY` elige un joystick.
+
+`MENUKEY` recibe la acción (0 arriba, 1 abajo, 2 izquierda, 3 derecha, 4 seleccionar) y la tecla, que es el código que devuelve `INKEY`. Para una pantalla de redefinir, lo más cómodo es preguntarle cada tecla al jugador con `INKEY(0)`, que espera a que pulse una:
+
+```
+[[
+    DECLARE 250 AS tmp
+    CLEAR
+    ]]Pulsa la tecla para ARRIBA: [[      LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
+    ]]Pulsa la tecla para ABAJO: [[       LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
+    ]]Pulsa la tecla para SELECCIONAR: [[ LET tmp = INKEY(0) : MENUKEY 4, @tmp : CHAR @tmp : NEWLINE
+    WAITKEY
+]]
+```
+
+La variable `tmp` solo hace falta mientras dura la pantalla: las teclas se guardan en el intérprete, no en las variables, así que no ocupan ninguna.
+
+Los joysticks Sinclair y de cursor son, para el Spectrum, teclas del teclado: el Sinclair del puerto 1 pulsa las teclas del 6 al 0, el del puerto 2 las del 1 al 5, y el de cursor las del 5 al 8 y el 0. Como usan las mismas teclas con significados distintos, el jugador tiene que decir cuál tiene, y eso es lo que hace `MENUJOY`:
+
+```
+[[
+    CLEAR
+    ]]¿Qué joystick tienes?
+[[
+    OPTION GOTO SinJoy   ]] Ninguno o Kempston
+[[
+    OPTION GOTO Sinclair ]] Sinclair
+[[
+    OPTION GOTO Cursor   ]] Cursor
+[[
+    CHOOSE
+#SinJoy
+    MENUJOY 0 : GOTO Principio
+#Sinclair
+    MENUJOY 1 : GOTO Principio
+#Cursor
+    MENUJOY 3 : GOTO Principio
+]]
+```
+
+El joystick elegido funciona a la vez que el teclado, y el Kempston no hace falta elegirlo: funciona siempre. Las teclas de cursor y **ENTER** también funcionan siempre, así que, aunque el jugador defina mal sus teclas, nunca se queda sin poder manejar el menú.
 
 ---
 

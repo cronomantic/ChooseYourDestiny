@@ -41,7 +41,7 @@ python examples/Delerict/make_images.py
 ## How to play
 
 Everything is done with menus. Move the cursor with `Q`, `A`, `O` and `P` and
-confirm with `Space`, `M` or `Enter`.
+confirm with `Space` or `Enter`.
 
 - The command menu is a 3×3 grid. The center option (`-<>-`) switches between
   its three pages: actions, more actions (including the inventory) and options

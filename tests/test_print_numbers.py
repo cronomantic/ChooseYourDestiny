@@ -23,6 +23,11 @@ TEXT = START + "SET vida TO 100 ]]100[[" + END
 AFTER = {
     "a sum that overflows": "SET x TO 200 : SET x TO @x + 100",
     "RANDOM": "SET x TO RANDOM(10)",
+    # POP_CONFIG (doc/dev/MENU_KEYS_DESIGN.md): an opcode added later, which
+    # must leave the next one as the others do.
+    "MENUKEY": "MENUKEY 0, 'q'",
+    "MENUJOY": "MENUJOY 1",
+    "MENUKEY out of range": "SET x TO 200 : MENUKEY @x, 'q'",
 }
 
 

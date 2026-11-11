@@ -406,13 +406,23 @@ OP_PUSH_INKEY:
     jp EXEC_LOOP
     ENDIF
 
-    IFNDEF UNUSED_OP_SET_KEMPSTON
-OP_SET_KEMPSTON:
-    ld d, HIGH FLAGS
-    ld e, (hl)
-    inc hl
-    call KEMPSTON   
-    ld (de), a
+    IFNDEF UNUSED_OP_POP_CONFIG
+; Writes an engine setting (MENUJOY, MENUKEY): the value is on top of the stack,
+; the setting under it. A setting out of range is ignored (CONFIG in inkey.asm).
+OP_POP_CONFIG:
+    ld a, (ix+1)                ; setting
+    cp CONFIG_SIZE
+    jr nc, 1f
+    ld e, a
+    ld d, 0
+    ex de, hl
+    ld bc, CONFIG
+    add hl, bc
+    ld a, (ix+0)                ; value
+    ld (hl), a
+    ex de, hl
+1:  inc ix
+    inc ix
     jp EXEC_LOOP
     ENDIF
 
@@ -3831,10 +3841,10 @@ OPCODES:
     IFDEF UNUSED_OP_PUSH_LEN_ARRAY
     DW ERROR_NOP
     ENDIF
-    IFNDEF UNUSED_OP_SET_KEMPSTON
-    DW OP_SET_KEMPSTON
+    IFNDEF UNUSED_OP_POP_CONFIG
+    DW OP_POP_CONFIG
     ENDIF
-    IFDEF UNUSED_OP_SET_KEMPSTON
+    IFDEF UNUSED_OP_POP_CONFIG
     DW ERROR_NOP
     ENDIF
     IFNDEF UNUSED_OP_PUSH_KEMPSTON

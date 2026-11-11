@@ -216,17 +216,17 @@ K_DECODE_RAM:
     add a,$4F
     ret
 .K_E_LET:
-    ld hl,KEYTABLE_B
+    ld hl,KEYTABLE_B-'A'   ; indexed by the key's code, as the ROM's (letters)
     inc b
     jr z,.K_LOOK_UP
-    ld hl,KEYTABLE_C
+    ld hl,KEYTABLE_C-'A'   ; indexed by the key's code, as the ROM's (letters)
 .K_LOOK_UP:
     ld d,$00
     add hl,de
     ld a,(hl)
     ret
 .K_KLC_LET:
-    ld hl,KEYTABLE_E
+    ld hl,KEYTABLE_E-'A'   ; indexed by the key's code, as the ROM's (letters)
     bit 0,b
     jr z,.K_LOOK_UP
     bit 3,d
@@ -246,7 +246,7 @@ K_DECODE_RAM:
     dec c
     jp m,.K_KLC_DGT
     jr nz,.K_GRA_DGT
-    ld hl,KEYTABLE_F
+    ld hl,KEYTABLE_F-'0'   ; indexed by the key's code, as the ROM's (digits)
     bit 5,b
     jr z,.K_LOOK_UP
     cp '8'
@@ -263,7 +263,7 @@ K_DECODE_RAM:
     add a,$FE
     ret
 .K_GRA_DGT:
-    ld hl,KEYTABLE_D
+    ld hl,KEYTABLE_D-'0'   ; indexed by the key's code, as the ROM's (digits)
     cp '9'
     jr z,.K_LOOK_UP
     cp '0'
@@ -278,7 +278,7 @@ K_DECODE_RAM:
     inc b
     ret z
     bit 5,b
-    ld hl,KEYTABLE_D
+    ld hl,KEYTABLE_D-'0'   ; indexed by the key's code, as the ROM's (digits)
     jr nz,.K_LOOK_UP
     sub $10
     cp $22
@@ -371,69 +371,110 @@ KEYPRESS_FIRE  EQU %00010000
 
 INKEY_MENU:
     push bc
-    xor a
-    ld c, a
+    ld c, 0
     call INKEY
-.right:
-    cp $09  ; cursor right
-    jr z, .right_ok
-    cp 'p'
-    jr nz, .left
-.right_ok:
-    ld b, a
-    ld a, c
-    or KEYPRESS_RIGHT
-    ld c, a
-    ld a, b
-.left:
-    cp $08  ; cursor left
-    jr z, .left_ok
-    cp 'o'
-    jr nz, .down
-.left_ok:
-    ld b, a
-    ld a, c
-    or KEYPRESS_LEFT
-    ld c, a
-    ld a, b
-.down:
-    cp $0A  ; cursor down
-    jr z, .down_ok
-    cp 'a'
-    jr nz, .up
-.down_ok:
-    ld b, a
-    ld a, c
-    or KEYPRESS_DOWN
-    ld c, a
-    ld a, b
-.up:
-    cp $0B  ; cursor up
-    jr z, .up_ok
-    cp 'q'
-    jr nz, .selected
-.up_ok:
-    ld b, a
-    ld a, c
-    or KEYPRESS_UP
-    ld c, a
-    ld a, b
-.selected:
-    cp ' '
-    jr z, .selected_ok
-    cp 'm'
-    jr z, .selected_ok
+    or a
+    jr z, .kempston
+    ; Always: the cursor keys (CAPS SHIFT + 5..8) and ENTER
+    ld b, KEYPRESS_RIGHT
+    cp $09
+    jr z, .key
+    ld b, KEYPRESS_LEFT
+    cp $08
+    jr z, .key
+    ld b, KEYPRESS_DOWN
+    cp $0A
+    jr z, .key
+    ld b, KEYPRESS_UP
+    cp $0B
+    jr z, .key
+    ld b, KEYPRESS_FIRE
     cp 13
+    jr z, .key
+    IFNDEF UNUSED_OP_POP_CONFIG
+    ; The keys MENUKEY set, and those of the joystick MENUJOY chose
+    push de
+    push hl
+    ld hl, CONFIG_MENU_KEYS
+    call MENU_KEYS_MATCH
+    ld b, a
+    ld a, (CONFIG_MENU_JOY)
+    dec a                       ; 1..3 -> 0..2; 0 (none) -> $FF
+    cp 3
+    jr nc, .no_joy
+    ld e, a
+    add a, a
+    add a, a
+    add a, e
+    ld e, a
+    ld d, 0
+    ld hl, JOY_KEYS
+    add hl, de                  ; JOY_KEYS + 5 * (type - 1)
+    ld a, b
+    call MENU_KEYS_MATCH
+.no_joy:
+    pop hl
+    pop de
+    jr .kempston
+    ELSE
+    ; The default keys: Q, A, O, P and SPACE
+    ld b, KEYPRESS_UP
+    cp 'q'
+    jr z, .key
+    ld b, KEYPRESS_DOWN
+    cp 'a'
+    jr z, .key
+    ld b, KEYPRESS_LEFT
+    cp 'o'
+    jr z, .key
+    ld b, KEYPRESS_RIGHT
+    cp 'p'
+    jr z, .key
+    ld b, KEYPRESS_FIRE
+    cp ' '
     jr nz, .kempston
-.selected_ok:
-    ld a, KEYPRESS_FIRE
-    or c
-    ld c, a
+    ENDIF
+.key:
+    ld c, b
 .kempston:
     call KEMPSTON
     or c
     pop bc
     ret
+
+    IFNDEF UNUSED_OP_POP_CONFIG
+; A = key (not 0), HL -> 5 keys (up, down, left, right, select): ORs into C the
+; masks of the ones that match. Keeps A; uses B, DE, HL.
+MENU_KEYS_MATCH:
+    ld de, MENU_MASKS
+    ld b, 5
+1:  cp (hl)
+    jr nz, 2f
+    ld a, (de)
+    or c
+    ld c, a
+    ld a, (hl)                  ; the key again
+2:  inc hl
+    inc de
+    djnz 1b
+    ret
+
+; The engine settings POP_CONFIG writes (MENUJOY, MENUKEY), in RAM.
+; See doc/dev/MENU_KEYS_DESIGN.md.
+CONFIG:
+CONFIG_MENU_JOY:
+    DB 0                        ; 0 none, 1 Sinclair 1, 2 Sinclair 2, 3 cursor
+CONFIG_MENU_KEYS:
+    DB 'q', 'a', 'o', 'p', ' '  ; up, down, left, right, select
+CONFIG_SIZE EQU $ - CONFIG
+
+MENU_MASKS:
+    DB KEYPRESS_UP, KEYPRESS_DOWN, KEYPRESS_LEFT, KEYPRESS_RIGHT, KEYPRESS_FIRE
+JOY_KEYS:
+    DB '9', '8', '6', '7', '0'  ; Sinclair 1
+    DB '4', '3', '1', '2', '5'  ; Sinclair 2
+    DB '7', '6', '5', '8', '0'  ; cursor
+    ENDIF
 
 KEMPSTON:
     ld a, (KEMPSTON_VALUE)

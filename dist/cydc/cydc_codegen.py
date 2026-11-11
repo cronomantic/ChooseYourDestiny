@@ -152,7 +152,7 @@ class CydcCodegen(object):
         "PUSH_VAL_ARRAY": 0x7A,
         "POP_VAL_ARRAY": 0x7B,
         "PUSH_LEN_ARRAY": 0x7C,
-        "SET_KEMPSTON": 0x7D,
+        "POP_CONFIG": 0x7D,
         "PUSH_KEMPSTON": 0x7E,
         "EXTERN": 0x7F,
     }
@@ -788,12 +788,33 @@ class CydcCodegen(object):
                             v = self._eval_const_raw(c[1], constants)
                             self._check_wide_fits(v, c[3])
                             c = (v >> (8 * c[2])) & 0xFF
+                        elif (
+                            len(c) == 3
+                            and c[0] == "CONSTANT_SETTING"
+                            and isinstance(c[1], list)
+                        ):  # constant MENUKEY action / MENUJOY type -> POP_CONFIG setting
+                            c = self._config_setting(
+                                self.constant_expression_calculation(c[1], constants, False),
+                                c[2],
+                            )
                     tup += (c,)
             code.append(self._keep_loc(tup, instruction))
         self._cur_loc = None
         self.externs = externs
         self.extern_exports = extern_exports
         return (code, variables, constants)
+
+    def _config_setting(self, value, statement):
+        """A constant MENUKEY action or MENUJOY type, checked and turned into the
+        operand POP_CONFIG gets: the action's setting (1..5) or the type itself.
+        See doc/dev/MENU_KEYS_DESIGN.md."""
+        if statement == "MENUKEY":
+            if not 0 <= value <= 4:
+                self._fail(self._("ERROR: MENUKEY action must be between 0 and 4."))
+            return value + 1
+        if not 0 <= value <= 3:
+            self._fail(self._("ERROR: MENUJOY type must be between 0 and 3."))
+        return value
 
     def _record_var_use(self, var, disp, variables):
         """Note an access to a variable (a name or a number) for
@@ -940,9 +961,8 @@ class CydcCodegen(object):
                     elif c[0] == "PUSH_INKEY":
                         c = ("INKEY", next[1], c[1])
                         skip = True
-                    elif c[0] == "PUSH_KEMPSTON":
-                        c = ("SET_KEMPSTON", next[1])
-                        skip = True
+                    # PUSH_KEMPSTON + POP_SET is not fused: its opcode (0x7D)
+                    # is POP_CONFIG now (see doc/dev/MENU_KEYS_DESIGN.md).
                     elif c[0] == "PUSH_XPOS":
                         c = ("SET_XPOS", next[1])
                         skip = True

@@ -724,13 +724,9 @@ WAIT_NEXT_PAGE:
     ld de, (POS_X)
     ;inc d
 .loop:
-    call INKEY
-    cp 13
-    jr z, .keyp
-    cp ' '
-    jr z, .keyp
-    cp 'm'
-    jr z, .keyp
+    call INKEY_MENU             ; the select key, ENTER or the joystick's fire
+    and KEYPRESS_FIRE
+    jr nz, .keyp
 
     ld a, (CYCLE_OPTION)
     push de
@@ -743,7 +739,7 @@ WAIT_NEXT_PAGE:
     pop de
     jr .loop
 .keyp:
-    call INKEY
+    call INKEY_MENU             ; wait until it is released
     or a
     jr nz, .keyp
     call CLEAR_LINE

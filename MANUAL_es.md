@@ -101,6 +101,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [MENUCONFIG varexpression, varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression-varexpression)
     - [MENUCONFIG varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression)
     - [MENUCONFIG varexpression, varexpression](#menuconfig-varexpression-varexpression)
+    - [MENUKEY varexpression, varexpression](#menukey-varexpression-varexpression)
+    - [MENUJOY varexpression](#menujoy-varexpression)
     - [CHAR varexpression](#char-varexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
@@ -436,7 +438,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
-Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 32 a la vez), y que puede elegir con las teclas `Q` y `A` o los cursores arriba y abajo (en horizontal, con `O` y `P` o los cursores izquierda y derecha, si se configura con [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), y seleccionar con `SPACE`, `M` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú.
+Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 32 a la vez), y que puede elegir con las teclas `Q` y `A` o los cursores arriba y abajo (en horizontal, con `O` y `P` o los cursores izquierda y derecha, si se configura con [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), y seleccionar con `SPACE` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú. El juego puede cambiar estas teclas y aceptar un joystick Sinclair o de cursor con [MENUKEY](#menukey-varexpression-varexpression) y [MENUJOY](#menujoy-varexpression).
 De nuevo, este es un ejemplo autoexplicativo:
 
 ```cyd
@@ -1652,7 +1654,7 @@ Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que
 
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
 La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. También se pueden usar las direcciones correspondientes del joystick Kempston y las teclas del cursor.
-Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, solo tiene configurado un desplazamiento vertical con las teclas **Q** y **A** o **arriba** y **abajo** en el joystick Kempston o teclas de cursor. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
+Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, solo tiene configurado un desplazamiento vertical con las teclas **Q** y **A** o **arriba** y **abajo** en el joystick Kempston o teclas de cursor. Las teclas se pueden cambiar con [MENUKEY](#menukey-varexpression-varexpression), y [MENUJOY](#menujoy-varexpression) añade un joystick Sinclair o de cursor. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
 Recuerda que si se borra la pantalla antes de este comando, perderás las opciones y dará un error de sistema.
 
@@ -1704,6 +1706,64 @@ Si se omite el cuarto parámetro, `MENUCONFIG x,y,d` equivale a `MENUCONFIG x,y,
 ### MENUCONFIG varexpression, varexpression
 
 Si se omiten el tercer y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
+
+### MENUKEY varexpression, varexpression
+
+Cambia la tecla de una acción de los menús. El primer parámetro es la acción y el segundo, la tecla:
+
+| Acción | Qué hace | Tecla al arrancar |
+|--------|----------|-------------------|
+| 0 | arriba | `Q` |
+| 1 | abajo | `A` |
+| 2 | izquierda | `O` |
+| 3 | derecha | `P` |
+| 4 | seleccionar | `SPACE` |
+
+La tecla es el código que devuelve `INKEY`, así que la forma natural de redefinirla es preguntársela al jugador con `INKEY(0)`. Con 0, la acción se queda sin tecla. La tecla anterior deja de funcionar.
+
+Afecta a todo lo que espera al jugador: los menús de `CHOOSE`, `WAITKEY`, `PAUSE` y la pausa de página. Además de las teclas que se configuren, siempre funcionan las teclas de cursor, `ENTER` para seleccionar y el joystick Kempston, así que el jugador nunca se queda sin poder manejar el menú.
+
+Una acción fuera de 0 a 4 es un error de compilación si es una constante; si se calcula al ejecutar, la sentencia no hace nada.
+
+La configuración vive en el intérprete, no en las variables: no ocupa ninguna, no se graba con la partida (`SAVE`, `RAMSAVE`) y el guion no puede leerla. Vuelve a las teclas de arranque al cargar el programa de nuevo.
+
+```
+[[
+    /* tmp es una variable temporal cualquiera */
+    ]]Arriba: [[ LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
+    ]]Abajo: [[  LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
+]]
+```
+
+### MENUJOY varexpression
+
+Elige el joystick que va por el teclado, que funciona a la vez que las teclas de [MENUKEY](#menukey-varexpression-varexpression):
+
+| Tipo | Joystick | Arriba | Abajo | Izquierda | Derecha | Disparo |
+|------|----------|--------|-------|-----------|---------|---------|
+| 0 | ninguno (al arrancar) | | | | | |
+| 1 | Sinclair, puerto 1 | `9` | `8` | `6` | `7` | `0` |
+| 2 | Sinclair, puerto 2 | `4` | `3` | `1` | `2` | `5` |
+| 3 | cursor (Protek, AGF) | `7` | `6` | `5` | `8` | `0` |
+
+Para el Spectrum, estos joysticks son teclas del teclado, y los dos tipos usan las mismas teclas con significados distintos: por eso hay que elegir uno. El Kempston no necesita `MENUJOY`: se lee aparte y funciona siempre.
+
+Un tipo fuera de 0 a 3 es un error de compilación si es una constante; si se calcula al ejecutar, cuenta como 0. Igual que `MENUKEY`, no ocupa variables ni se graba con la partida.
+
+```
+[[
+    OPTION GOTO SinJoy   ]]Teclado o Kempston[[
+    OPTION GOTO Sinclair ]]Sinclair[[
+    OPTION GOTO Cursor   ]]Cursor[[
+    CHOOSE
+#SinJoy
+    MENUJOY 0 : GOTO Menu
+#Sinclair
+    MENUJOY 1 : GOTO Menu
+#Cursor
+    MENUJOY 3 : GOTO Menu
+]]
+```
 
 ### CHAR varexpression
 

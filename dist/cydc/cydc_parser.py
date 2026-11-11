@@ -1756,6 +1756,45 @@ class CydcParser(object):
         else:
             p[0] = None
 
+    # Engine settings written by POP_CONFIG (value on top of the setting number).
+    # Setting 0 is the joystick that goes through the keyboard; 1..5 are the menu
+    # keys (up, down, left, right, select). See doc/dev/MENU_KEYS_DESIGN.md.
+    CONFIG_MENU_JOY = 0
+    CONFIG_MENU_KEYS = 1
+
+    @staticmethod
+    def _as_list(e):
+        return e if isinstance(e, list) else [e]
+
+    @staticmethod
+    def _constant_seq(e):
+        """The postfix sequence of an expression that is a constant, or None."""
+        if isinstance(e, list) and len(e) == 1:
+            e = e[0]
+        if (isinstance(e, tuple) and len(e) == 2 and e[0] == "PUSH_D"
+                and isinstance(e[1], tuple) and len(e[1]) == 2
+                and e[1][0] == "CONSTANT" and isinstance(e[1][1], list)):
+            return e[1][1]
+        return None
+
+    def p_statement_menukey(self, p):
+        "statement : MENUKEY varexpression COMMA varexpression"
+        seq = self._constant_seq(p[2])
+        if seq is not None:
+            # The code generator checks it (0..4) and adds the 1.
+            p[0] = [("PUSH_D", ("CONSTANT_SETTING", seq, "MENUKEY"))]
+        else:
+            # The VM saturates, so any action >= 5 lands past the last setting
+            # and POP_CONFIG ignores it instead of writing the joystick type.
+            p[0] = self._as_list(p[2]) + [("PUSH_D", self.CONFIG_MENU_KEYS), ("ADD",)]
+        p[0] += self._as_list(p[4]) + [("POP_CONFIG",)]
+
+    def p_statement_menujoy(self, p):
+        "statement : MENUJOY varexpression"
+        seq = self._constant_seq(p[2])
+        kind = p[2] if seq is None else ("PUSH_D", ("CONSTANT_SETTING", seq, "MENUJOY"))
+        p[0] = [("PUSH_D", self.CONFIG_MENU_JOY)] + self._as_list(kind) + [("POP_CONFIG",)]
+
     def p_statement_save(self, p):
         """
         statement : SAVE varexpression COMMA variableID COMMA constexpression

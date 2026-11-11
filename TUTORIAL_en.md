@@ -28,6 +28,7 @@
   - [Using the bundled libraries](#using-the-bundled-libraries)
   - [Workflow](#workflow)
   - [Side-scrolling menus](#side-scrolling-menus)
+  - [Menu keys and joystick](#menu-keys-and-joystick)
   - [Copying image fragments to screen](#copying-image-fragments-to-screen)
   - [Masked sprites](#masked-sprites)
   - [Reading the keyboard, variable arrays and indirections](#reading-the-keyboard-variable-arrays-and-indirections)
@@ -1787,6 +1788,52 @@ The default behavior, which simulates the *vertical* behavior of previous versio
 Thus, just as `MENUCONFIG 0,1` gives us a vertical menu in one column, `MENUCONFIG 1,0` gives us a horizontal menu in one row. With `MENUCONFIG 1,3` we will have a three-column menu, etc. But remember that `MENUCONFIG` indicates not the arrangement of the options (we define that when we declare them) but the behavior of the keys.
 
 In this case, it is better to try the example live and experiment on your own. Keep in mind that the pointer will never go below zero or above the number of options in the list. Therefore, you should enter *reasonable* values or the menu will not work well.
+
+---
+
+## Menu keys and joystick
+
+Menus are used with **Q**, **A**, **O** and **P**, and you select with **SPACE**. Many Spectrum games let the player choose their keys and their joystick, and CYD allows it with two commands: `MENUKEY` changes a key and `MENUJOY` chooses a joystick.
+
+`MENUKEY` takes the action (0 up, 1 down, 2 left, 3 right, 4 select) and the key, which is the code `INKEY` returns. For a redefine screen, the easiest way is to ask the player for each key with `INKEY(0)`, which waits for one to be pressed:
+
+```
+[[
+    DECLARE 250 AS tmp
+    CLEAR
+    ]]Press the key for UP: [[     LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
+    ]]Press the key for DOWN: [[   LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
+    ]]Press the key for SELECT: [[ LET tmp = INKEY(0) : MENUKEY 4, @tmp : CHAR @tmp : NEWLINE
+    WAITKEY
+]]
+```
+
+The variable `tmp` is only needed while the screen lasts: the keys are kept in the interpreter, not in the variables, so they take none.
+
+To the Spectrum, Sinclair and cursor joysticks are keys of the keyboard: the Sinclair on port 1 presses the keys 6 to 0, the one on port 2 the keys 1 to 5, and the cursor joystick the keys 5 to 8 and 0. As they use the same keys with different meanings, the player has to say which one they have, and that is what `MENUJOY` does:
+
+```
+[[
+    CLEAR
+    ]]Which joystick do you have?
+[[
+    OPTION GOTO NoJoy    ]] None or Kempston
+[[
+    OPTION GOTO Sinclair ]] Sinclair
+[[
+    OPTION GOTO Cursor   ]] Cursor
+[[
+    CHOOSE
+#NoJoy
+    MENUJOY 0 : GOTO Start
+#Sinclair
+    MENUJOY 1 : GOTO Start
+#Cursor
+    MENUJOY 3 : GOTO Start
+]]
+```
+
+The chosen joystick works at the same time as the keyboard, and the Kempston does not need to be chosen: it always works. The cursor keys and **ENTER** always work too, so even if the player sets up their keys badly, they can never be left unable to use the menu.
 
 ---
 

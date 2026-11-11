@@ -193,7 +193,7 @@ def _pc(s):
 
 def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
                    machine="48k", dandanator_rom=None, esxdos_root=None,
-                   extra_reads=(), keys=()):
+                   extra_reads=(), keys=(), joystick=None):
     """Load+run headless, return FLAGS[0:n_bytes] once the run is stable.
 
     ``machine`` picks the ZEsarUX model ("48k", "128k", "p3", ...); use it to
@@ -216,6 +216,13 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     interpreter is executing and the program has written some FLAG, so a program
     that presses keys must SET a flag before its menu. Without that wait the delay
     counted from the load, and on a slow run the key arrived before the menu.
+    The key can also be ``("joy", mask)``: the emulated joystick held for a moment
+    (mask FUDLR: 16 fire, 8 up, 4 down, 2 left, 1 right).
+    Or ``("ports", "18 hex digits")``: keys held together, as ZRCP's
+    set-ui-io-ports takes them (8 keyboard rows, 0 = pressed, then the joystick).
+
+    ``joystick`` is ZEsarUX's ``--joystickemulated`` type ("Kempston",
+    "Sinclair 1", "Sinclair 2", "Cursor", ...); its default is "Cursor&Shift".
     """
     zes = find_zesarux()
     if not zes:
@@ -228,6 +235,8 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
     if esxdos_root is not None:
         args += ["--enable-divmmc", "--enable-esxdos-handler",
                  "--esxdos-root-dir", os.path.abspath(esxdos_root)]
+    if joystick is not None:
+        args += ["--joystickemulated", joystick]
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         s = None
@@ -253,7 +262,13 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
                 time.sleep(0.25)
         for delay, key in keys:
             time.sleep(delay)
-            _cmd(s, f"send-keys-ascii 300 {key}")
+            if isinstance(key, tuple) and key[0] in ("joy", "ports"):
+                ports = (f"ffffffffffffffff{key[1]:02x}" if key[0] == "joy" else key[1])
+                _cmd(s, f"set-ui-io-ports {ports}")
+                time.sleep(0.4)
+                _cmd(s, "set-ui-io-ports ffffffffffffffff00")
+            else:
+                _cmd(s, f"send-keys-ascii 300 {key}")
 
         # Poll until the interpreter is running (PC in $8000+) and FLAGS is stable.
         prev = None
@@ -286,7 +301,7 @@ def run_in_zesarux(tap_path, flags_addr, n_bytes=16, port=10000, max_wait=25.0,
             proc.kill()
 
 
-def build_mld_rom(source, model, workdir):
+def build_mld_rom(source, model, workdir, extra_args=()):
     """Compile ``source`` to a ``.MLD`` (``model`` = "mld" or "mld128") and pack it
     into a 512 KB Dandanator ROM with ``mld2rom.py`` (Python-pure; the firmware is
     vendored under external/dandanator-mini/, no base ROM needed). Returns
@@ -296,7 +311,7 @@ def build_mld_rom(source, model, workdir):
         raise RuntimeError("sjasmplus not found under tools/")
     (Path(workdir) / "test.cyd").write_text(source, encoding="utf-8")
     proc = subprocess.run(
-        [sys.executable, str(CYDC), "-v", "--keep-temp", model, "test.cyd", sj, "."],
+        [sys.executable, str(CYDC), "-v", "--keep-temp", *extra_args, model, "test.cyd", sj, "."],
         cwd=workdir, capture_output=True, text=True, timeout=180,
     )
     if proc.returncode != 0:
@@ -324,7 +339,8 @@ def build_mld_rom(source, model, workdir):
     return str(rom), flags_addr
 
 
-def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
+def run_cyd(source, model="48k", n_bytes=16, max_wait=None, keys=(), joystick=None,
+            port=10000, extra_args=()):
     """Compile ``source`` for ``model``, run it headless in ZEsarUX, return the
     first ``n_bytes`` of FLAGS.
 
@@ -334,15 +350,17 @@ def run_cyd(source, model="48k", n_bytes=16, max_wait=None):
     machine = MACHINE_BY_MODEL.get(model, "48k")
     with tempfile.TemporaryDirectory(prefix="cyd_emu_") as wd:
         if model in ("mld", "mld128"):
-            rom, flags_addr = build_mld_rom(source, model, wd)
+            rom, flags_addr = build_mld_rom(source, model, wd, extra_args)
             return run_in_zesarux(None, flags_addr, n_bytes=n_bytes,
                                   max_wait=max_wait or 35.0, machine=machine,
-                                  dandanator_rom=rom)
-        tap, flags_addr = compile_cyd(source, model, wd)
+                                  dandanator_rom=rom, keys=keys, joystick=joystick,
+                                  port=port)
+        tap, flags_addr = compile_cyd(source, model, wd, extra_args=extra_args)
         esxdos_root = wd if model == "esxdos" else None
         return run_in_zesarux(tap, flags_addr, n_bytes=n_bytes,
                               max_wait=max_wait or 25.0, machine=machine,
-                              esxdos_root=esxdos_root)
+                              esxdos_root=esxdos_root, keys=keys, joystick=joystick,
+                              port=port)
 
 
 def run_cyd_ex(source, model="esxdos", n_bytes=16, max_wait=None,

@@ -172,6 +172,8 @@ class CydcLexer(object):
         "MAX": "MAX",
         "BLIT": "BLIT",
         "MENUCONFIG": "MENUCONFIG",
+        "MENUKEY": "MENUKEY",
+        "MENUJOY": "MENUJOY",
         "ISDISK": "ISDISK",
         "BACKSPACE": "BACKSPACE",
         "LOAD": "LOAD",

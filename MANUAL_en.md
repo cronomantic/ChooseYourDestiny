@@ -101,6 +101,8 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [MENUCONFIG varexpression, varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression-varexpression)
     - [MENUCONFIG varexpression, varexpression, varexpression](#menuconfig-varexpression-varexpression-varexpression)
     - [MENUCONFIG varexpression, varexpression](#menuconfig-varexpression-varexpression)
+    - [MENUKEY varexpression, varexpression](#menukey-varexpression-varexpression)
+    - [MENUJOY varexpression](#menujoy-varexpression)
     - [CHAR varexpression](#char-varexpression)
     - [REPCHAR expression, expression](#repchar-expression-expression)
     - [TAB expression](#tab-expression)
@@ -435,7 +437,7 @@ This is text again but white, and watch out for the line break that precedes it!
 
 The interpreter runs through the text from the beginning, printing it on the screen if it is "printable text." When a complete word does not fit on the rest of the line, it prints it on the next line. And if it does not fit on the rest of the screen, a wait is generated and the user is asked to press the confirmation key to clear the section of text and continue printing (this last behavior is optional).
 
-When the interpreter detects commands, it executes them sequentially, unless it encounters jumps. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 32 at a time), which can be chosen with the `Q` and `A` keys or the up and down cursor keys (horizontally, with `O` and `P` or the left and right cursor keys, if set up with [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), and selected with `SPACE`, `M` or `ENTER`. It supports a Kempston joystick too.
+When the interpreter detects commands, it executes them sequentially, unless it encounters jumps. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 32 at a time), which can be chosen with the `Q` and `A` keys or the up and down cursor keys (horizontally, with `O` and `P` or the left and right cursor keys, if set up with [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), and selected with `SPACE` or `ENTER`. It supports a Kempston joystick too. The game can change these keys and accept a Sinclair or cursor joystick with [MENUKEY](#menukey-varexpression-varexpression) and [MENUJOY](#menujoy-varexpression).
 Again, this is a self-explanatory example:
 
 ```cyd
@@ -1654,7 +1656,7 @@ Stops execution and allows the player to select one of the options currently on 
 
 Selection is made with the **O** and **P** keys for horizontal movement and **Q** and **A** for vertical movement. The corresponding directions on the Kempston joystick and the cursor keys can also be used.
 
-When these keys are pressed, a pointer moves over the list of options, incrementing or decrementing the selected option according to the current configuration (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical movement is configured with the **Q** and **A** keys or **up** and **down** on the Kempston joystick or cursor keys. It is the user's responsibility to place the option points on the screen in a manner consistent with the configured menu movement.
+When these keys are pressed, a pointer moves over the list of options, incrementing or decrementing the selected option according to the current configuration (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical movement is configured with the **Q** and **A** keys or **up** and **down** on the Kempston joystick or cursor keys. The keys can be changed with [MENUKEY](#menukey-varexpression-varexpression), and [MENUJOY](#menujoy-varexpression) adds a Sinclair or cursor joystick. It is the user's responsibility to place the option points on the screen in a manner consistent with the configured menu movement.
 
 Remember that if you clear the screen before this command, you will lose the options and a system error will be given.
 
@@ -1706,6 +1708,64 @@ If the fourth parameter is omitted, `MENUCONFIG x,y,d` is equivalent to `MENUCON
 ### MENUCONFIG varexpression, varexpression
 
 If the third and fourth parameters are omitted, `MENUCONFIG x,y` is equivalent to `MENUCONFIG x,y,0,1`.
+
+### MENUKEY varexpression, varexpression
+
+Changes the key of a menu action. The first parameter is the action and the second one, the key:
+
+| Action | What it does | Key at start |
+|--------|--------------|--------------|
+| 0 | up | `Q` |
+| 1 | down | `A` |
+| 2 | left | `O` |
+| 3 | right | `P` |
+| 4 | select | `SPACE` |
+
+The key is the code `INKEY` returns, so the natural way to redefine it is to ask the player for it with `INKEY(0)`. With 0, the action is left without a key. The previous key stops working.
+
+It affects everything that waits for the player: the `CHOOSE` menus, `WAITKEY`, `PAUSE` and the page pause. Besides the keys set up, the cursor keys, `ENTER` to select and the Kempston joystick always work, so the player can never be left unable to use the menu.
+
+An action outside 0 to 4 is a compile error if it is a constant; if it is calculated at run time, the statement does nothing.
+
+The setting lives in the interpreter, not in the variables: it takes none, it is not saved with the game (`SAVE`, `RAMSAVE`) and the script cannot read it. It goes back to the keys at start when the program is loaded again.
+
+```
+[[
+    /* tmp is any temporary variable */
+    ]]Up: [[   LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
+    ]]Down: [[ LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
+]]
+```
+
+### MENUJOY varexpression
+
+Chooses the joystick that goes through the keyboard, which works at the same time as the keys of [MENUKEY](#menukey-varexpression-varexpression):
+
+| Type | Joystick | Up | Down | Left | Right | Fire |
+|------|----------|----|------|------|-------|------|
+| 0 | none (at start) | | | | | |
+| 1 | Sinclair, port 1 | `9` | `8` | `6` | `7` | `0` |
+| 2 | Sinclair, port 2 | `4` | `3` | `1` | `2` | `5` |
+| 3 | cursor (Protek, AGF) | `7` | `6` | `5` | `8` | `0` |
+
+To the Spectrum, these joysticks are keys of the keyboard, and both types use the same keys with different meanings: that is why one has to be chosen. The Kempston joystick needs no `MENUJOY`: it is read separately and always works.
+
+A type outside 0 to 3 is a compile error if it is a constant; if it is calculated at run time, it counts as 0. Like `MENUKEY`, it takes no variables and is not saved with the game.
+
+```
+[[
+    OPTION GOTO NoJoy    ]]Keyboard or Kempston[[
+    OPTION GOTO Sinclair ]]Sinclair[[
+    OPTION GOTO Cursor   ]]Cursor[[
+    CHOOSE
+#NoJoy
+    MENUJOY 0 : GOTO Menu
+#Sinclair
+    MENUJOY 1 : GOTO Menu
+#Cursor
+    MENUJOY 3 : GOTO Menu
+]]
+```
 
 ### CHAR varexpression
 
