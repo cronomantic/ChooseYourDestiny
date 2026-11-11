@@ -66,6 +66,7 @@ setup_i18n("mld2rom_gui", locale_dir=os.path.join(_HERE, "locale"))
 
 import dan_romgen  # noqa: E402  (pure-Python Dandanator ROM assembler)
 import mld2rom      # noqa: E402  (MLD parsing + validation)
+from gui_icon import init_window_icon, set_app_id  # noqa: E402  (the window icon)
 
 VERSION = "1.0.0"
 TITLE = "CYD Dandanator ROM Builder " + VERSION
@@ -426,7 +427,9 @@ class RomBuilderApp:
 
 
 def main():
+    set_app_id("Cronomantic.ChooseYourDestiny.MLD2ROM")
     root = tk.Tk()
+    init_window_icon(root, _HERE)
     RomBuilderApp(root)
     root.mainloop()
 

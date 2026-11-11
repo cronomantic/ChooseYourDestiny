@@ -185,6 +185,7 @@ def get_common_files():
         "documentation/en/TUTORIAL_en.pdf",
         "make_adventure_gui.py",
         "mld2rom_gui.py",
+        "gui_icon.py",
     ]
 
 

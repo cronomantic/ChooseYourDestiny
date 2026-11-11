@@ -89,6 +89,8 @@ except ImportError:
     from cydc.cyd_i18n import setup_i18n, get_available_languages, set_language, get_language, _
     from cydc import cyd_project
 
+from gui_icon import init_window_icon, set_app_id, set_windows_icon  # the window icon
+
 
 # ── Internationalisation ──────────────────────────────────────────────────────
 _LOCALE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "locale")
@@ -634,59 +636,6 @@ class Tooltip:
         if self._tip is not None:
             self._tip.destroy()
             self._tip = None
-
-
-# ── Window icon ───────────────────────────────────────────────────────────────
-# assets/cyd_icon_<size>.png and assets/cyd_icon.ico (tools/make_gui_icons.py):
-# the red "CYD" letters for the small sizes, the whole logo for the large ones.
-
-ICON_SIZES = (16, 24, 32, 48, 64, 128)
-_window_icon = {"ico": None, "photos": [], "handles": []}
-
-
-def init_window_icon(root, curr_path):
-    """Give the application its icon: every PNG size to Tk (the default of all
-    its windows), which is what Linux and macOS use."""
-    assets = os.path.join(curr_path, "assets")
-    paths = [os.path.join(assets, f"cyd_icon_{size}.png") for size in ICON_SIZES]
-    try:
-        _window_icon["photos"] = [tk.PhotoImage(file=p) for p in paths if os.path.isfile(p)]
-        if _window_icon["photos"]:
-            root.iconphoto(True, *_window_icon["photos"])
-    except Exception:
-        pass  # Non‑critical – skip silently
-    ico = os.path.join(assets, "cyd_icon.ico")
-    _window_icon["ico"] = ico if os.path.isfile(ico) else None
-    set_windows_icon(root)
-
-
-def set_windows_icon(window):
-    """On Windows, Tk makes the small icon (the title bar) out of a large image,
-    whatever images it gets: ask Windows for each size of the .ico instead, the
-    small one for the title bar and the big one for the taskbar and Alt+Tab."""
-    if sys.platform != "win32" or not _window_icon["ico"]:
-        return
-    try:
-        import ctypes
-        from ctypes import wintypes
-        user32 = ctypes.windll.user32
-        user32.LoadImageW.restype = wintypes.HANDLE
-        user32.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
-                                      ctypes.c_int, ctypes.c_int, wintypes.UINT]
-        user32.SendMessageW.restype = ctypes.c_ssize_t
-        user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM,
-                                        wintypes.LPARAM]
-        window.update_idletasks()
-        hwnd = int(window.wm_frame(), 16)
-        # (ICON_SMALL, SM_CXSMICON), (ICON_BIG, SM_CXICON)
-        for which, metric in ((0, 49), (1, 11)):
-            size = user32.GetSystemMetrics(metric)
-            handle = user32.LoadImageW(None, _window_icon["ico"], 1, size, size, 0x10)
-            if handle:  # IMAGE_ICON, LR_LOADFROMFILE; kept alive while the GUI runs
-                _window_icon["handles"].append(handle)
-                user32.SendMessageW(hwnd, 0x80, which, handle)  # WM_SETICON
-    except Exception:
-        pass  # Non‑critical – skip silently
 
 
 class SourceViewer(tk.Toplevel):
@@ -2175,16 +2124,7 @@ def main():
         print(_("ERROR: Python 3 is required."))
         sys.exit(1)
 
-    # On Windows, an application of its own for the taskbar: otherwise it groups
-    # the window with python.exe and shows Python's icon instead of CYD's.
-    if sys.platform == "win32":
-        try:
-            import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "Cronomantic.ChooseYourDestiny.GUI")
-        except Exception:
-            pass  # Non‑critical – skip silently
-
+    set_app_id("Cronomantic.ChooseYourDestiny.GUI")
     root = tk.Tk()
 
     # Attempt a native look on each platform
