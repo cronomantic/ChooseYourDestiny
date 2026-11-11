@@ -35,5 +35,5 @@ the routine, and reads the byte back from variable 2. See the manual section
 **"Native routines (IMPORT / CALL)"** for the full ABI and the important safety
 notes — native code is an advanced, use-at-your-own-risk feature.
 
-Supported targets: 48K, 128K and +3. (This particular demo checks a 48K ROM byte,
-so its `IF` branch is written for the 48K model.)
+Native routines work on every target. This particular demo checks a 48K ROM byte,
+so its `IF` branch is written for the 48K model.

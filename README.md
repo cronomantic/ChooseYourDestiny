@@ -8,13 +8,13 @@ An environment for creating "Choose Your Own Adventure" stories, gamebooks, inte
 
 Using a simple, BASIC-inspired markup language, you can add interactivity and effects, with the ability to place menus and images anywhere on the screen. You can also add sound effects for the beeper based on Shiru's [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) player, and melodies for the AY chip using Vortex Tracker or WyzTracker module players.
 
-Thanks to its image and text compression systems, the Spectrum's limited memory can be fully utilized to give your creations greater durability and content.
+Thanks to its image and text compression systems, the Spectrum's limited memory can be fully utilized to give your creations more length and content.
 
 The system consists of a compiler that transforms the source code and associated resources into a TAP or DSK file, where the interpretable code and compressed text and graphics data are stored, as well as an efficient interpreter to execute them.
 
 Besides tape (48K/128K) and +3 disk, the compiler can also target divMMC/esxDOS SD cards, and — experimentally — the Dandanator cartridge.
 
-More information is available in the [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/) and a [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_en/) to learn step by step. All information can be found in the [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). To make writing code easier, there is also a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
+More information is available in the [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/) and a [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_en/) to learn step by step. To make writing code easier, there is also a [highlighter](https://github.com/cronomantic/chooseyourdestiny-highlighter) for VSCode.
 
 The [credits](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/#acknowledgements) and [license](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/#licenses) are detailed in the corresponding sections of the [manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_en/).
 
@@ -26,13 +26,13 @@ Entorno para crear historias de tipo "Elige Tu Propia Aventura", librojuegos y a
 
 Mediante un lenguaje sencillo de marcas, inspirado en BASIC, se puede añadir interactividad y efectos, con capacidad para situar menús e imágenes en cualquier punto de la pantalla. También se pueden añadir efectos de sonido para el "beeper" basados en el reproductor [BeepFx](http://shiru.untergrund.net/files/beepfx.zip) de Shiru y melodías para el chip AY mediante reproductores de módulos de Vortex Tracker o WyzTracker.
 
-Gracias a sus sistemas de compresión de imágenes y texto, la relativa escasa memoria del Spectrum se puede aprovechar a máximo para dar más durabilidad y contenido a tus creaciones.
+Gracias a sus sistemas de compresión de imágenes y texto, la relativamente escasa memoria del Spectrum se puede aprovechar al máximo para dar más duración y contenido a tus creaciones.
 
-El sistema consiste en un compilador que transforma el código fuente y los recursos asociados en un fichero TAP o DSK, donde se almacenan el código intepretable y los datos de texto y gráficos comprimidos, además de un eficiente intérprete para ejecutar los mismos.
+El sistema consiste en un compilador que transforma el código fuente y los recursos asociados en un fichero TAP o DSK, donde se almacenan el código interpretable y los datos de texto y gráficos comprimidos, además de un eficiente intérprete para ejecutar los mismos.
 
 Además de cinta (48K/128K) y disco +3, el compilador también puede generar para tarjetas SD divMMC/esxDOS y —de forma experimental— el cartucho Dandanator.
 
-Más información en el [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/) y dispones de un [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_es/) para aprender paso a paso. Toda información la podrás obtener en la [wiki](https://github.com/cronomantic/ChooseYourDestiny/wiki). Para escribir el código más fácilmente, dispones también de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
+Más información en el [Manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/) y dispones de un [tutorial](https://cronomantic.github.io/ChooseYourDestiny/TUTORIAL_es/) para aprender paso a paso. Para escribir el código más fácilmente, dispones también de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter) para VSCode.
 
 Los [créditos](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/#referencias-y-agradecimientos) y [licencia](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/#licencias) se detallan en las correspondientes secciones del [manual](https://cronomantic.github.io/ChooseYourDestiny/MANUAL_es/).
 

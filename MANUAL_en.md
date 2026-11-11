@@ -1,22 +1,22 @@
-# Choose Your Destiny Manual
+# Choose Your Destiny manual
 
 ![logo](assets/cydlogo_2_small.png)
 
-The program is a compiler and interpreter to run "Choose Your Own Adventure" type stories or choice-based adventures and game books, for the Spectrum 48, 128, +2 and +3.
+The program is a compiler and interpreter to run "Choose Your Own Adventure" type stories or choice-based adventures and gamebooks, for the Spectrum 48, 128, +2 and +3.
 
 It consists of a virtual machine that interprets commands found in the text to perform the different interactive actions and a compiler that is responsible for translating the adventure from a BASIC-like language, with which the adventure script is written, to a file interpretable by the engine.
 
-In addition, it can also display compressed images stored on the same disk, as well as sound effects based on Shiru's BeepFX, PT3-type melodies created with Vortex Tracker or melodies created with WyzTracker 2.0.
+In addition, it can also display compressed images stored on the same disk, as well as sound effects based on Shiru's BeepFx, PT3-type melodies created with Vortex Tracker or melodies created with WyzTracker 2.0.
 
-- [Choose Your Destiny Manual](#choose-your-destiny-manual)
-  - [Requirements and Installation](#requirements-and-installation)
-    - [Windows Installation](#windows-installation)
-    - [Linux, BSDs and UNIX-like Installation](#linux-bsds-and-unix-like-installation)
-  - [CYDC (Compiler)](#cydc-compiler)
-  - [CYD Character Set Converter](#cyd-character-set-converter)
-  - [Basic Syntax](#basic-syntax)
-    - [Strict Colon Mode (Syntax Enforcement)](#strict-colon-mode-syntax-enforcement)
-    - [INCLUDE Directive (Multi-file Projects)](#include-directive-multi-file-projects)
+- [Choose Your Destiny manual](#choose-your-destiny-manual)
+  - [Requirements and installation](#requirements-and-installation)
+    - [Windows installation](#windows-installation)
+    - [Linux, BSDs and UNIX-like installation](#linux-bsds-and-unix-like-installation)
+  - [CYDC (compiler)](#cydc-compiler)
+  - [CYD character set converter](#cyd-character-set-converter)
+  - [Basic syntax](#basic-syntax)
+    - [Strict colon mode (syntax enforcement)](#strict-colon-mode-syntax-enforcement)
+    - [INCLUDE directive (multi-file projects)](#include-directive-multi-file-projects)
   - [Bundled libraries](#bundled-libraries)
     - [`math16_32.cyd` — 16- and 32-bit arithmetic](#math16_32cyd--16--and-32-bit-arithmetic)
     - [`strings.cyd` — text strings](#stringscyd--text-strings)
@@ -33,7 +33,7 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [Calling engine services (`CYD_SYSCALL`)](#calling-engine-services-cyd_syscall)
     - [Unused routines](#unused-routines)
     - [Supported targets](#supported-targets)
-  - [Variables and Numeric Expressions](#variables-and-numeric-expressions)
+  - [Variables and numeric expressions](#variables-and-numeric-expressions)
   - [Flow control and conditional expressions](#flow-control-and-conditional-expressions)
   - [Assignments and indirection](#assignments-and-indirection)
   - [Constants](#constants)
@@ -163,42 +163,42 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [LASTPOS(ID)](#lastposid)
   - [Images](#images)
   - [Sound effects](#sound-effects)
-  - [Vortex Tracker Music](#vortex-tracker-music)
-  - [WyzTracker Music](#wyztracker-music)
+  - [Vortex Tracker music](#vortex-tracker-music)
+  - [WyzTracker music](#wyztracker-music)
   - [How to generate an adventure](#how-to-generate-an-adventure)
     - [Projects](#projects)
       - [`cyd_project.ini`](#cyd_projectini)
     - [make\_adventure.py (CLI helper)](#make_adventurepy-cli-helper)
     - [Windows version](#windows-version)
-    - [GUI Compiler (make\_adventure\_gui)](#gui-compiler-make_adventure_gui)
+    - [GUI compiler (make\_adventure\_gui)](#gui-compiler-make_adventure_gui)
     - [Linux, BSDs and Unices version](#linux-bsds-and-unices-version)
     - [Migrating a game from an older version](#migrating-a-game-from-an-older-version)
   - [Examples](#examples)
-    - [Basic Examples](#basic-examples)
-      - [`examples\test` - Engine Introduction](#examplestest---engine-introduction)
-      - [`examples\multicolumn_menu` - Multi-column Menus](#examplesmulticolumn_menu---multi-column-menus)
-      - [`examples\guess_the_number` - Guessing Game](#examplesguess_the_number---guessing-game)
-      - [`examples\input_test` - Keyboard Input and Arrays](#examplesinput_test---keyboard-input-and-arrays)
+    - [Basic examples](#basic-examples)
+      - [`examples\test` - Engine introduction](#examplestest---engine-introduction)
+      - [`examples\multicolumn_menu` - Multi-column menus](#examplesmulticolumn_menu---multi-column-menus)
+      - [`examples\guess_the_number` - Guessing game](#examplesguess_the_number---guessing-game)
+      - [`examples\input_test` - Keyboard input and arrays](#examplesinput_test---keyboard-input-and-arrays)
       - [`examples\math_library` - 16/32-bit arithmetic](#examplesmath_library---1632-bit-arithmetic)
       - [`examples\strings_library` - Text strings](#examplesstrings_library---text-strings)
-      - [`examples\windows` - Multiple Windows](#exampleswindows---multiple-windows)
-    - [Intermediate Examples](#intermediate-examples)
-      - [`examples\ETPA_ejemplo` - "Choose Your Own Adventure" Book](#examplesetpa_ejemplo---choose-your-own-adventure-book)
-      - [`examples\include_demo` - Multi-file Organization](#examplesinclude_demo---multi-file-organization)
+      - [`examples\windows` - Multiple windows](#exampleswindows---multiple-windows)
+    - [Intermediate examples](#intermediate-examples)
+      - [`examples\ETPA_ejemplo` - "Choose Your Own Adventure" book](#examplesetpa_ejemplo---choose-your-own-adventure-book)
+      - [`examples\include_demo` - Multi-file organization](#examplesinclude_demo---multi-file-organization)
       - [`examples\import_demo` - Native routines (IMPORT / CALL)](#examplesimport_demo---native-routines-import--call)
-      - [`examples\inline_asm` - Inline assembler (ASM / EXPORTS / USES / CYD\_CALL)](#examplesinline_asm---inline-assembler-asm--exports--uses--cyd_call)
-    - [Advanced Graphics Examples](#advanced-graphics-examples)
+      - [`examples\inline_asm` - Inline assembly (ASM / EXPORTS / USES / CYD\_CALL)](#examplesinline_asm---inline-assembly-asm--exports--uses--cyd_call)
+    - [Advanced graphics examples](#advanced-graphics-examples)
       - [`examples\blit` - Introduction to BLIT](#examplesblit---introduction-to-blit)
-      - [`examples\blit_island` - Advanced Graphics](#examplesblit_island---advanced-graphics)
-      - [`examples\sprites` - Masked Sprites](#examplessprites---masked-sprites)
-      - [`examples\sprites_px` - Sprites with Pixel X](#examplessprites_px---sprites-with-pixel-x)
-      - [`examples\Rocky_Horror_Show` - Character Animation](#examplesrocky_horror_show---character-animation)
-      - [`examples\CYD_presents` - Complex Visual Effects](#examplescyd_presents---complex-visual-effects)
-      - [`examples\Golden_Axe_select_character` - Dynamic Selection with Colors](#examplesgolden_axe_select_character---dynamic-selection-with-colors)
-    - [Complete Project Examples](#complete-project-examples)
-      - [`examples\SCUMM_16` - SCUMM/LucasArts-style Interface](#examplesscumm_16---scummlucasarts-style-interface)
-      - [`examples\Delerict` - Complete Adventure with Custom Engine](#examplesdelerict---complete-adventure-with-custom-engine)
-    - [How to Use the Examples](#how-to-use-the-examples)
+      - [`examples\blit_island` - Advanced graphics](#examplesblit_island---advanced-graphics)
+      - [`examples\sprites` - Masked sprites](#examplessprites---masked-sprites)
+      - [`examples\sprites_px` - Sprites with pixel X](#examplessprites_px---sprites-with-pixel-x)
+      - [`examples\Rocky_Horror_Show` - Character animation](#examplesrocky_horror_show---character-animation)
+      - [`examples\CYD_presents` - Complex visual effects](#examplescyd_presents---complex-visual-effects)
+      - [`examples\Golden_Axe_select_character` - Dynamic selection with colors](#examplesgolden_axe_select_character---dynamic-selection-with-colors)
+    - [Complete project examples](#complete-project-examples)
+      - [`examples\SCUMM_16` - SCUMM/LucasArts-style interface](#examplesscumm_16---scummlucasarts-style-interface)
+      - [`examples\Delerict` - Complete adventure with custom engine](#examplesdelerict---complete-adventure-with-custom-engine)
+    - [How to use the examples](#how-to-use-the-examples)
   - [Character set](#character-set)
   - [Error codes](#error-codes)
   - [Acknowledgements](#acknowledgements)
@@ -206,39 +206,39 @@ In addition, it can also display compressed images stored on the same disk, as w
 
 ---
 
-## Requirements and Installation
+## Requirements and installation
 
 These are the external requirements for the tool:
 
 - [Python 3.11 or higher](https://www.python.org/)
-- [SjAsmPlus 1.20.3 or higher](http://z00m128.github.io/sjasmplus/documentation.html)
+- [SjASMPlus 1.20.3 or higher](http://z00m128.github.io/sjasmplus/documentation.html)
 - ZIP file decompressor
 
 If you upgrade from an older version, it is recommended NOT to overwrite it: rename the directory of the old version and unzip the new one. Your games don't have to be copied, because each one is a [project](#projects) in its own folder. If your game was made with version 1.6.6 or earlier, in CYD's own folder, see [Migrating a game from an older version](#migrating-a-game-from-an-older-version).
 
 Here are the more detailed instructions for each operating system:
 
-### Windows Installation
+### Windows installation
 
 Installation is easy, just unzip the corresponding ZIP file downloaded from the [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) section of the repository. In this case, everything is included in the package. Windows 10 or higher, 64-bit version is required (32-bit not supported).
 
-### Linux, BSDs and UNIX-like Installation
+### Linux, BSDs and UNIX-like installation
 
 For these systems, the requirements are:
 
-- GNU/Linux / Unix / macOS / BSD with BASH-compatible shell.
+- GNU/Linux / Unix / macOS / BSD with a BASH-compatible shell.
 - Python 3.11 or higher
-- All common system programs (grep, cat, etc...).
-- All programs required to compile C programs on the system (libc, libstdc++, g++, GNU make, etc...).
+- All common system programs (grep, cat, etc.).
+- All programs required to compile C programs on the system (libc, libstdc++, g++, GNU make, etc.).
 - Autotools (autoconf, automake, aclocals...).
 - wget
 - git
 
-These requirements are needed to compile `SjAsmPlus`. There is no binary distribution of this tool for UNIX-compatible systems, so you need to compile it directly.
+These requirements are needed to compile `SjASMPlus`. There is no binary distribution of this tool for UNIX-compatible systems, so you need to compile it directly.
 
-Due to the heterodox nature of the different distributions, it is impossible for me to give detailed instructions for installing the requirements in each particular case, so knowledge is required on the part of the user to do so.
+Due to the diversity of distributions, it is impossible for me to give detailed instructions for installing the requirements in each particular case, so some knowledge is required on the part of the user to do so.
 
-The first thing to do is to clone the engine repository to any location you think is convenient and recursively to download the dependencies:
+The first thing to do is to clone the engine repository to any location you think is convenient and to download the dependencies recursively:
 
 ```bash
 git clone --recursive https://github.com/cronomantic/ChooseYourDestiny.git
@@ -254,16 +254,16 @@ make
 cd ..
 ```
 
-And with this we have the dependencies ready. As a last step, we must put the compilation script as executable:
+And with this we have the dependencies ready. As a last step, we must make the compilation script executable:
 
 ```bash
 cd ../..
 chmod a+x make_adv.sh
 ```
 
-And with this you could already use the tool in Linux.
+You can now use the tool on Linux.
 
-## CYDC (Compiler)
+## CYDC (compiler)
 
 This program is the compiler that translates the adventure text into a TAP or DSK file. In addition to compiling the adventure into a file that can be interpreted by the engine, it performs a search for the best abbreviations to reduce the size of the text.
 
@@ -290,12 +290,12 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-C EXPORT-CHARSET**: Export the 6x8 character set used by default in JSON format.
 - **\-c IMPORT-CHARSET**: Import the character set to be used in JSON format.
 - **\-S**: If a compressed text fragment does not fit in a bank, it is split into two between the current bank and the next one with this option activated. Otherwise, the fragment is moved to the next bank.
-- **\-n NAME**: Name to use for the output file (name for the TAP or DSK file), if not defined it will be the same as the input file.
+- **\-n NAME**: Name to use for the output file (name for the TAP or DSK file); if not defined, it will be the same as the input file.
 - **\-scr LOAD_SCR_FILE**: Path to an SCR file with the loading screen to use.
 - **\-img IMAGES_PATH**: Path to the directory with the adventure images.
 - **\-trk TRACKS_PATH**: Path to the directory with the PT3 AY music files or WyzTracker files.
-- **\-sfx SFX_ASM_FILE**: Path to an assembler file generated by BeepFx.
-- **\-\-project-root FOLDER**: The project's root folder (by default, the folder of the script). An `INCLUDE` that is not found next to its file is looked for here (see *INCLUDE Directive*).
+- **\-sfx SFX_ASM_FILE**: Path to an assembly file generated by BeepFx.
+- **\-\-project-root FOLDER**: The project's root folder (by default, the folder of the script). An `INCLUDE` that is not found next to its file is looked for here (see *INCLUDE directive*).
 - **\-I FOLDER**, **\-\-include-path FOLDER**: Another folder where `INCLUDE` looks, after the project root. It can be repeated.
 - **\-\-lib-path FOLDER**: A folder where `INCLUDE LIB` looks, before the bundled `lib/`. It can be repeated.
 - **\-\-import-path FOLDER**: Another folder where `IMPORT` looks, after the script's folder. It can be repeated.
@@ -313,16 +313,16 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-\-debug-stack**: For debugging. The interpreter checks the `GOSUB` stack at runtime: a `RETURN` with no `GOSUB` pending gives system error 9, and a `GOSUB` that would fill the stack gives error 10, instead of hanging or resetting the Spectrum. It adds about 30 bytes to the interpreter and a little work to each `GOSUB` and `RETURN`, so leave it out of the final build.
 - **\-\-keep-temp**: Keep the intermediate files of the build (`cyd.asm`, `cyd.sym`, the listing with `-v`, and the +3 `DISK` and `.BIN`) in the `cyd_tmp` folder of the output folder. Without it, the output folder only gets what the build delivers (the `.tap`, `.DSK`, `.MLD`, or the esxdos SD files), and `cyd_tmp` is removed when the build ends well; if it fails, `cyd_tmp` stays and the compiler says where it is.
 - **\-\-debug-errors**: For debugging. When a system error happens, the message also says at which instruction, and the compiler writes a `.map` file next to the game that turns it into a file and a line (see [Error codes](#error-codes)). Without this option the interpreter doesn't change; with it, the instructions that can't fail run just as fast, so it is only worth leaving out for the bytes.
-- **\-pause**: Number of seconds of pause after finishing the loading process, can be aborted with any keypress.
+- **\-pause**: Number of seconds of pause after finishing the loading process; it can be aborted with any keypress.
 - **\-wyz**: Use WyzTracker music type instead of Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Number of lines to use in image files (default 192).
-- **\-720**: If using the Plus3 format, a 720 KB disk image will be used instead of the standard 180 KB size.
-- **\-autoboot**, **\-\-autoboot**: [esxdos] Also emit `AUTOBOOT.BAS` + `ESXDOS.CFG` so the game cold-boots from the SD card (see the ESXDOS note below).
+- **\-720**: If using the +3 format, a 720 KB disk image will be used instead of the standard 180 KB size.
+- **\-autoboot**, **\-\-autoboot**: [esxdos] Also emit `AUTOBOOT.BAS` + `ESXDOS.CFG` so the game cold-boots from the SD card (see the esxDOS note below).
 
 -**{48k,128k,plus3,mld,mld128,esxdos}**: Spectrum model to be used:
   -- **48k**: Version for tape in TAP format, does not include the PT3 or WyzTracker player and everything is loaded at once. It depends on the size of the available memory.
   -- **128k**: Version for tape in TAP format, everything is loaded at once in the memory banks and depends on the size of the available memory.
-  -- **plus3**: This version will generate a DSK file to run on Spectrum+3. Resources are loaded dynamically as needed and depends on the size on disk.
+  -- **plus3**: This version will generate a DSK file to run on Spectrum +3. Resources are loaded dynamically as needed and capacity depends on the disk size.
   -- **mld** (EXPERIMENTAL): Generates an `.MLD` file for the **Dandanator Mini** cartridge in 48K mode. Text, images and bytecode are read directly from the cartridge slots (no RAM banking and no music playback), spanning several Dandanator slots (up to ~256 KB of content). It uses the cartridge save system.
   -- **mld128** (EXPERIMENTAL): Generates an `.MLD` file for **Dandanator Mini** targeting Spectrum 128K. Because everything else (text/images/bytecode) is read from the cartridge slots, the RAM banks are reserved for what must live in RAM: **music** (PT3/WyzTracker, which plays from RAM) and the **`DIM` arrays** (which must be writable; they are placed in dedicated RAM banks that never collide with the music). Spans many Dandanator slots (up to ~480 KB of content). Known limitation: if music, arrays and content together force all RAM banks to be used, compilation aborts with a clear error.
   -- **esxdos**: Version for **divMMC/divIDE interfaces with an SD card** (esxDOS), targeting Spectrum 128K. It works like `plus3` (resources loaded dynamically on demand from files), but accessing the SD through the esxDOS API (`RST $08`) instead of the +3 disk. Unlike the other targets it **does not produce a single file**, but a set of files to copy onto the SD (see the note below). It includes the `-autoboot` option.
@@ -352,7 +352,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > `mld2rom_gui.sh`), to build the ROM with more options: game name, menu font,
 > background graphic, menu texts, autoboot and border effect.
 
-> **Note on ESXDOS (output files and their location on the SD card).** Unlike the
+> **Note on esxDOS (output files and their location on the SD card).** Unlike the
 > other targets, the `esxdos` target **does not produce a single file** but a set of
 > files in `OUTPUT_PATH` that must be copied onto the SD card:
 >
@@ -373,7 +373,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > copy `AUTOBOOT.BAS` to **`/SYS/`** on the SD, set **`AutoBoot=1`** in
 > **`/SYS/CONFIG/ESXDOS.CFG`** (use the generated `ESXDOS.CFG`, or edit your own), and
 > place `NAME.DAT` and the media in the SD root. Verified on real hardware (divMMC,
-> esxDOS 0.8.9); the esxDOS cold-boot is not emulable, so it cannot be tested in the
+> esxDOS 0.8.9); the esxDOS cold boot cannot be emulated, so it cannot be tested in the
 > emulator.
 
 The compiler is a program written in Python, so it requires the Python environment installed. For convenience, the distribution includes an embedded Python package and a batch script called `cydc.cmd` to launch it from the command line.
@@ -382,7 +382,7 @@ The compiler is a program written in Python, so it requires the Python environme
 
 You must also specify a destination directory to store the files resulting from the compilation.
 
-Optionally, you can specify the paths to directories containing the compressed images in `scr` format, which will be included on the resulting tape or disk. The same applies to `PT3` files. Both file types must be named with 3-digit numbers, from 0 to 255, such as `000.scr`, `001.scr`, `002.PT3`, and so on. The directories containing both files will be indicated with the `-img` and `-`trk` parameters, respectively.
+Optionally, you can specify the paths to directories containing the compressed images in `scr` format, which will be included on the resulting tape or disk. The same applies to `PT3` files. Both file types must be named with 3-digit numbers, from 0 to 255, such as `000.scr`, `001.scr`, `002.PT3`, and so on. The directories containing both files will be indicated with the `-img` and `-trk` parameters, respectively.
 
 The images will be compressed into a `CSC` file. The screens can be full, or the number of horizontal lines can be limited to save memory. It also detects mirrored (symmetrical) images along the vertical axis, so it only stores half of the image. You can even force this behavior and discard the right side of the image to save space. More details on how this works are found in the [Images](#images) section.
 
@@ -392,12 +392,12 @@ You can add sound effects generated with Shiru's BeepFx application. To use them
 
 ---
 
-## CYD Character Set Converter
+## CYD character set converter
 
 This utility allows you to convert character sets in `.chr`, `.ch8`, `.ch6` and `.ch4` format into a compiler-usable file in JSON format. These formats are editable with ZxPaintbrush.
 
 ```batch
-cyd_chr_conv.py [-h] [-w WITDH_LOW] [-W WITDH_UP] [-v] [-V] charset.chr charset.json
+cyd_chr_conv.py [-h] [-w WIDTH_LOW] [-W WIDTH_HIGH] [-v] [-V] charset.chr charset.json
 ```
 
 Supported parameters:
@@ -415,11 +415,11 @@ Note that characters 127 to 143 are special, as they are used for cursors and wi
 
 ---
 
-## Basic Syntax
+## Basic syntax
 
 Commands for the interpreter are enclosed within two pairs of brackets, open and closed respectively. Any text outside of this is considered "printable text", including spaces and line breaks, and will be presented as such by the interpreter. Commands are separated from each other by line breaks or colons if they are on the same line.
 
-Comments within code are delimited by `/*` and `*/`, everything in between is considered a comment.
+Comments within code are delimited by `/*` and `*/`; everything in between is considered a comment.
 
 This is a self-explanatory, abbreviated example of the syntax:
 
@@ -433,9 +433,9 @@ INK 7: PAPER 0
 This is text again but white, and watch out for the line break that precedes it!
 ```
 
-The interpreter runs through the text from the beginning, printing it on the screen if it is "printable text." When a complete word does not fit on the rest of the line, it prints it on the next line. And if it does not fit on the rest of the screen, a wait is generated and the user is asked to press the confirmation key to delete the section of text and continue printing (this last behavior is optional).
+The interpreter runs through the text from the beginning, printing it on the screen if it is "printable text." When a complete word does not fit on the rest of the line, it prints it on the next line. And if it does not fit on the rest of the screen, a wait is generated and the user is asked to press the confirmation key to clear the section of text and continue printing (this last behavior is optional).
 
-When the interpreter detects commands, it executes them sequentially, unless it encounters breaks. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 32 at a time), which can be chosen with the `Q` and `A` keys or the up and down cursor keys (horizontally, with `O` and `P` or the left and right cursor keys, if set up with [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), and selected with `SPACE`, `M` or `ENTER`. It supports a Kempston joystick too.
+When the interpreter detects commands, it executes them sequentially, unless it encounters jumps. Commands allow you to introduce programmable logic into the text to make it dynamic and varied according to certain conditions. The most common and powerful is to ask the player to choose from a series of options (up to a limit of 32 at a time), which can be chosen with the `Q` and `A` keys or the up and down cursor keys (horizontally, with `O` and `P` or the left and right cursor keys, if set up with [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), and selected with `SPACE`, `M` or `ENTER`. It supports a Kempston joystick too.
 Again, this is a self-explanatory example:
 
 ```cyd
@@ -455,18 +455,18 @@ LABEL Location1]]You are in location 1. Where do you want to go?
 [[ LABEL Final : WAITKEY: END ]]
 ```
 
-The `OPTION GOTO label` command will generate a selection point at the point where the command has been reached.
+The `OPTION GOTO label` command will generate an option point at the position where the command has been reached.
 When the `CHOOSE` command is reached, the interpreter will allow the user to choose from one of the option points that have been accumulated on the screen up to that point. A maximum of 32 are allowed.
 
 When choosing an option, the interpreter will jump to the section of text where the corresponding label indicated in the option is found. Labels are declared with the `LABEL identifier` pseudo-command within the code, and when a jump to it is indicated, the interpreter will begin processing from the point where we have declared the label.
-In the example, if we choose option 1, the interpreter will jump to the point indicated in `LABEL location2`, which will print the text _"You did it!!!"_, and then go to `GOTO Final` which will make an unconditional jump to where `LABEL Final` is defined and ignore everything in between.
+In the example, if we choose option 1, the interpreter will jump to the point indicated in `LABEL Location2`, which will print the text _"You did it!!!"_, and then go to `GOTO Final` which will make an unconditional jump to where `LABEL Final` is defined and ignore everything in between.
 
 Label identifiers only support alphanumeric characters (numbers and letters) and the underscore (`_`), must start with a letter or an underscore (not a digit) and are case-sensitive (upper and lower case are distinguished), i.e. `LABEL Label` is not the same as `LABEL label`. Commands, on the other hand, are not case-sensitive, but for clarity, it is recommended to capitalize them.
 
 A shortened version of labels is also allowed by preceding the label identifier with the character `#`, so that `#MyLabel` is the same as `LABEL MyLabel`. With this, we could rewrite the previous code like this:
 
 ```cyd
-[[ /* Commands that set screen colors and delete them */
+[[ /* Commands that set screen colors and clear the screen */
 PAPER 0 /* Background color to zero (black) */
 INK 7 /* Ink color (white) */
 BORDER 0 /* Border color (black) */
@@ -484,9 +484,9 @@ LABEL Location1]]You are in location 1. Where do you want to go?
 
 The available commands are described in their corresponding [section](#list-of-commands).
 
-### Strict Colon Mode (Syntax Enforcement)
+### Strict colon mode (syntax enforcement)
 
-As of version 1.2.x, the compiler enforces **Strict Colon Mode by default**. This means that when multiple code statements are placed on the same line within `[[ ]]` blocks, they **must** be separated by colons (`:`)
+As of version 1.2.x, the compiler enforces **Strict Colon Mode by default**. This means that when multiple code statements are placed on the same line within `[[ ]]` blocks, they **must** be separated by colons (`:`).
 
 **Correct syntax** (Strict Colon Mode enabled - DEFAULT):
 ```cyd
@@ -509,7 +509,7 @@ cydc_cli.py --no-strict-colons 48k input.cyd sjasmplus output
 - Colons are optional with the `--no-strict-colons` flag for backwards compatibility
 - This change improves code readability and prevents parsing ambiguities
 
-### INCLUDE Directive (Multi-file Projects)
+### INCLUDE directive (multi-file projects)
 
 The compiler supports splitting large adventures into multiple source files using `INCLUDE`.
 
@@ -534,8 +534,8 @@ The compiler supports splitting large adventures into multiple source files usin
 ## Bundled libraries
 
 The `lib/` directory ships a set of **libraries written in the CYD language
-itself**, with their core in native Z80 assembler (`ASM` blocks, see
-[Native routines](#native-routines-import--call)); they do not modify the virtual machine nor add dependencies. They are
+itself**, with their core in native Z80 assembly (`ASM` blocks, see
+[Native routines](#native-routines-import--call)); they do not modify the virtual machine or add dependencies. They are
 collections of subroutines that you add to your program with `INCLUDE LIB` and call
 with `GOSUB`. Each library **skips over itself** (an internal `GOTO` at the top),
 so you can include it at the start of your script without execution falling into
@@ -655,7 +655,7 @@ right or bottom of the screen is clipped. Parameters (variables 200..211):
 | `sprMX`, `sprMY` | its mask's corner in the buffer |
 | `sprDX`, `sprDY` | position on screen, in characters |
 | `sprPY` | pixels added to `sprDY` |
-| `sprAttr` | 0: the screen's colours don't change; 1: the sprite puts its colours in the cells where its mask isn't empty (with `sprPY`, in the cell where most of it falls) |
+| `sprAttr` | 0: the screen's colors don't change; 1: the sprite puts its colors in the cells where its mask isn't empty (with `sprPY`, in the cell where most of it falls) |
 | `sprSlot` | `sprSave` / `sprRestore` slot (0..3) |
 | `sprErr` | 1: what `sprSave` had to save doesn't fit in the slot; 2: no such slot |
 
@@ -703,7 +703,7 @@ The sprite and its horizontal position are measured in characters;
 `sprites_px.cyd` is the same library with one more variable, `sprPX` (212): the
 pixels added to `sprDX`. Everything else (routines, parameters and slots) works the
 same. To move a sprite pixel by pixel horizontally, leave `sprDX` at 0 and use
-`sprPX` as the X in pixels (0..255). With `sprAttr` at 1, the colours go to the
+`sprPX` as the X in pixels (0..255). With `sprAttr` at 1, the colors go to the
 column where most of each cell falls.
 
 It is a separate library because pixel X has a cost. When it doesn't fall on a
@@ -740,7 +740,7 @@ from your script.
 
 > **Advanced, use at your own risk.** This runs your own native code with no
 > sandbox: a bug in the routine can hang or crash the machine, exactly like the
-> BeepFX or WyzTracker code you already trust. If you are not comfortable with
+> BeepFx or WyzTracker code you already trust. If you are not comfortable with
 > Z80 assembly, you do not need this feature.
 
 Two keywords are involved:
@@ -838,12 +838,12 @@ You don't always want a separate file. You can write the body **directly in the
 ```
 
 - The body is taken **verbatim**: `;` comments, labels, `0x…` numbers… all go to
-  sjasmplus without CYD interpreting them. You may **indent the block** however you
+  SjASMPlus without CYD interpreting them. You may **indent the block** however you
   like to line it up with the `[[ ]]`: CYD moves label (and `EQU`) lines to column 0
   for you; just keep the instructions indented more than the labels.
 - The **same ABI** applies as with `IMPORT` (entered with `DE = FLAGS`, ends in
   `RET`) and the same `CALL`. `ASM … ENDASM` is just an `IMPORT` with the body
-  inline. If sjasmplus reports an error, CYD remaps it to your **`.cyd` line**.
+  inline. If SjASMPlus reports an error, CYD remaps it to your **`.cyd` line**.
 
 ### Blocks with several entry points (`EXPORTS`)
 
@@ -984,7 +984,7 @@ Available services (a small set to start with; it will grow):
 
 | Service | In / out |
 |---|---|
-| `SVC_PRINT_CHAR` | `E` = character — prints it at the cursor (advances it, honours ink/paper/window) |
+| `SVC_PRINT_CHAR` | `E` = character — prints it at the cursor (advances it, honors ink/paper/window) |
 | `SVC_WAIT_KEY` | waits for a key → `A` = code |
 | `SVC_INKEY` | reads a key without waiting → `A` = code (`0` if none) |
 
@@ -1008,17 +1008,17 @@ There is an example with `ASM`, `EXPORTS`, arrays and `CYD_CALL` in
 Native routines work on **all six targets** (48K, 128K, +3, esxdos, mld and mld128). On the
 128K, +3, esxdos and mld128 the routine is placed in a paged RAM bank and the engine pages it in
 around the `CALL` automatically. On the strict 48K **mld** (Dandanator, no banks) the
-routine is copied from flash to resident RAM at boot —just like a `DIM` array— and runs
+routine is copied from flash to resident RAM at boot — just like a `DIM` array — and runs
 from there, so it also supports self-modifying routines or ones with their own `DEFS`
 scratch. If it does not fit in the resident RAM, compilation aborts with a clear error.
 
 ---
 
-## Variables and Numeric Expressions
+## Variables and numeric expressions
 
 Numeric constant values can be expressed in base 10 by default, in hexadecimal with the prefix `0x`, or in binary with the prefix `0b`. For example, `240` would be decimal, `0xF0` in hexadecimal, and `0b11110000` in binary.
 
-There are 256 one-byte containers (from 0 to 255) available to the programmer to store values, perform operations, and compare them. They constitute the state of the program. From this point on, they may be called variables, flags, or "variables" interchangeably throughout this document.
+There are 256 one-byte containers (from 0 to 255) available to the programmer to store values, perform operations, and compare them. They constitute the state of the program. From this point on, they may be called variables or flags interchangeably throughout this document.
 
 To refer to a variable in a numeric expression, the number must be preceded by the `@` character. But it is possible to give a meaningful name to variables using the `DECLARE` command as follows:
 
@@ -1063,9 +1063,9 @@ LET variable2 = @variable2 - (@variable + 2) /* Allows parentheses */
 ]]
 ```
 
-As you can see, a variable can be assigned the value of a mathematical expression composed of numbers, functions and variables. As already indicated, variables within a numeric expression, that is, the right side of an assignment **must always be preceded by the `@` character**.
+As you can see, a variable can be assigned the value of a mathematical expression composed of numbers, functions and variables. As already indicated, variables within a numeric expression, that is, the right side of an assignment, **must always be preceded by the `@` character**.
 
-The available operands are:
+The available operators are:
 
 - Addition: `SET variable TO @variable + 2`
 - Subtraction: `SET variable TO @variable - 2`
@@ -1082,7 +1082,7 @@ Additionally, `LET` supports shorthand operators to modify a variable in place:
 
 These also work with indirection and arrays: `LET [variable] += 1` and `LET myArray(0) += 1`.
 
-The result of a numeric expression cannot be greater than 255 (1 byte) or less than zero (negative numbers are not supported). If both limits are exceeded when performing the operations, the result will be adjusted to the corresponding limit, that is, if an addition exceeds 255, it will be adjusted to 255 and a subtraction that gives a result less than zero will be set to zero.
+The result of a numeric expression cannot be greater than 255 (1 byte) or less than zero (negative numbers are not supported). If either limit is exceeded when performing the operations, the result will be adjusted to the corresponding limit, that is, if an addition exceeds 255, it will be adjusted to 255 and a subtraction that gives a result less than zero will be set to zero.
 
 One thing to note is that binary operators are not the same as the logical operators of conditional expressions described below. An **&** is not the same as an **AND**. Binary operators perform the corresponding operations on the bits of the variable.
 
@@ -1095,7 +1095,7 @@ INK @7
 ]]
 ```
 
-The first command will set the text color to white (color 7), while the second will set the text color to the value contained in the variable number 7. Combining all of the above, you could do:
+The first command will set the text color to white (color 7), while the second will set the text color to the value contained in variable number 7. Combining all of the above, you could do:
 
 ```cyd
 [[
@@ -1111,15 +1111,15 @@ Finally, there are a number of special commands called **functions**. These comm
 - **RANDOM(expression)**: Returns a random number between 0 and the value specified in **expression**.
 - **RANDOM()**: Returns a random number between 0 and 255. This is equivalent to `RANDOM(255)`.
 - **RANDOM(expression,expression)**: Returns a random number between the value indicated in the first parameter and the second, both inclusive.
-- **INKEY()** Waits until a key is pressed and returns the code of the key pressed. (Only for keyboard).
-- **KEMPSTON()** Returns the buttons pressed on a Kempston joystick connected to the Spectrum.
-- **MIN(varexpression,varexpression)**: Limits the value of the first parameter to the minimum indicated by the second. That is, if parameter 1 is less than parameter 2, parameter 2 is returned, otherwise 1 is returned.
-- **MAX(varexpression,varexpression)**: Limits the value of the first parameter to the maximum indicated by the second. That is, if parameter 1 is greater than parameter 2, parameter 2 is returned, otherwise 1 is returned.
+- **INKEY()**: Waits until a key is pressed and returns the code of the key pressed. (Only for keyboard).
+- **KEMPSTON()**: Returns the buttons pressed on a Kempston joystick connected to the Spectrum.
+- **MIN(varexpression,varexpression)**: Limits the value of the first parameter to the minimum indicated by the second. That is, if parameter 1 is less than parameter 2, parameter 2 is returned; otherwise, parameter 1 is returned.
+- **MAX(varexpression,varexpression)**: Limits the value of the first parameter to the maximum indicated by the second. That is, if parameter 1 is greater than parameter 2, parameter 2 is returned; otherwise, parameter 1 is returned.
 - **YPOS()**: Returns the current row the cursor is on in 8x8 coordinates.
-- **XPOS()**: Returns the current column the cursor is on in 8x8 coordinates (Due to the nature of variable width font, the returned value will be the 8x8 column where the cursor is currently located).
+- **XPOS()**: Returns the current column the cursor is on in 8x8 coordinates (due to the nature of the variable-width font, the returned value will be the 8x8 column where the cursor is currently located).
 - **LASTPOS(ID)**: Returns the index of the last position in the given array.
 
-So, for example `SET variable_no TO RANDOM(6)`, assigns to the variable _variable_no_ a random number from 0 to 6. And in the same way, we can operate with them: `SET variable_no TO RANDOM(6) + @var + 1`
+So, for example, `SET variable_no TO RANDOM(6)` assigns to the variable _variable_no_ a random number from 0 to 6. And in the same way, we can operate with them: `SET variable_no TO RANDOM(6) + @var + 1`
 
 ---
 
@@ -1133,11 +1133,11 @@ Jumps to the label _ID_.
 
 - **GOSUB ID**
 
-Subroutine jump, jumps to the label _ID_, but returns execution to the next instruction to the `GOSUB` as soon as it finds a `RETURN` command.
+Subroutine jump, jumps to the label _ID_, but returns execution to the instruction after the `GOSUB` as soon as it finds a `RETURN` command.
 
 - **RETURN**
 
-Returns to the point after the subroutine call, see `GOSUB`
+Returns to the point after the subroutine call (see `GOSUB`).
 
 - **IF condexpression THEN ... ENDIF**
 
@@ -1145,19 +1145,19 @@ If the conditional expression _condexpression_ is true, the text is printed and 
 
 - **IF condexpression THEN ... ELSE ... ENDIF**
 
-If the conditional expression _condexpression_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the text is printed and the commands from `ELSE` to `ENDIF` are executed
+If the conditional expression _condexpression_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the text is printed and the commands from `ELSE` to `ENDIF` are executed.
 
 - **IF condexpression THEN ... ELSEIF condexpression THEN [... ELSEIF condexpression THEN] ... ELSE ... ENDIF**
 
-If the conditional expression _condexpression1_ evaluates to true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Multiple `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
+If the conditional expression _condexpression1_ evaluates to true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked and, if it is true, the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Multiple `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
 
 - **WHILE (condexpression) ... WEND**
 
-The text and commands up to `WEND` are repeated repeatedly as long as the condition _condexpression_ evaluates to true. Evaluation is performed at the beginning of each iteration.
+The text and commands up to `WEND` are repeated as long as the condition _condexpression_ evaluates to true. Evaluation is performed at the beginning of each iteration.
 
 - **DO ... UNTIL (condexpression)**
 
-The text and commands from `DO` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
+The text and commands from `DO` to `UNTIL` are repeated as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
 
 - **FOR variable = start TO end [STEP step] ... NEXT [variable]**
 
@@ -1177,7 +1177,7 @@ NEXT
 
 The counter is a **byte** (0..255). The loop is internally protected against byte overflow, so `FOR i = 0 TO 255` and `FOR i = 10 TO 0 STEP -1` work correctly (they do not become infinite loops). Do keep in mind, though, that the limits must fit in a byte.
 
-As you can see, many of these functions are executed depending on whether a condition is met. For example:
+As you can see, many of these commands are executed depending on whether a condition is met. For example:
 
 ```cyd
 [[IF @var = 0 THEN GOTO jump ENDIF]]
@@ -1216,14 +1216,14 @@ We have already seen assignments and numerical expressions in [their section](#v
 
 Indirection is done by putting a numerical expression in single brackets, for example `[@var+1]`. What we are trying to say is that **we are going to refer to the variable or variables with the number calculated by the numerical expression enclosed in brackets**. Let's see it with examples:
 
-- `SET var to [2+2]`: indicates that we are going to assign to _var_ the content of the variable 2+2, that is, 4. This is equivalent to `SET var TO @4`, but it allows us to strengthen the concept.
-- `SET var TO [@index]`: this is where the utility really comes into play, since we are indicating that we are saving in _var_ the content of the variable whose number corresponds to the content of the variable _index_. That is, we can dynamically change the variable to which we make the assignment.
-- `SET var TO [@index+2]`: indirection supports any numeric expression, this means that we save in _var_ the content of the variable that corresponds to the content of _index_ plus two.
-- `SET [var] TO 0`: Indirection can also be used on the left-hand side, and in this case, numeric expressions are not supported, only the number or the variable identifier if it has been declared. This means "assign zero to the variable whose index corresponds to the content of the variable _var_.
-- `INK [@var]`: Indirection is also supported by those commands that admit numeric expressions.
+- `SET var to [2+2]`: indicates that we are going to assign to _var_ the content of the variable 2+2, that is, 4. This is equivalent to `SET var TO @4`, but it allows us to reinforce the idea.
+- `SET var TO [@index]`: this is where it really becomes useful, since we are indicating that we are saving in _var_ the content of the variable whose number corresponds to the content of the variable _index_. That is, we can dynamically change the variable to which we make the assignment.
+- `SET var TO [@index+2]`: indirection supports any numeric expression; this means that we save in _var_ the content of the variable that corresponds to the content of _index_ plus two.
+- `SET [var] TO 0`: Indirection can also be used on the left-hand side, and in this case, numeric expressions are not supported, only the number or the variable identifier if it has been declared. This means "assign zero to the variable whose index corresponds to the content of the variable _var_."
+- `INK [@var]`: Indirection is also supported by those commands that accept numeric expressions.
 - `SET [@@var] TO 0`: For completeness, since we operate with pointers, using `@@` we have the complementary operation to indirection, that is, it returns the index number of a given variable, so in the example, the operation would be equivalent to `SET var TO 0`.
 
-If we use numeric indicators with variables (e.g. `@0`) it is not very useful. Its real utility lies in using it with variable identifiers, such that if we have:
+Using plain numbers with variables (e.g. `@0`) is not very useful. Its real use is with variable identifiers, such that if we have:
 
 ```cyd
 [[
@@ -1231,7 +1231,7 @@ DECLARE 20 AS var : DECLARE 10 AS index: SET index TO @@var : SET [index] TO 0
 ]]
 ```
 
-We see that this allows us to initialize variables that we are going to use. to be used for indirection with the identifier of another variable.
+We see that this allows us to initialize variables to be used for indirection with the identifier of another variable.
 
 Indirection is a powerful tool that allows us to implement arrays in variables, but be careful, we only have 256! Also, we must not confuse them with the arrays described in the next section, which are of a different nature.
 
@@ -1278,7 +1278,7 @@ The name of the constant cannot match that of another variable, label or any of 
 
 ## Arrays or "sequences"
 
-In the previous section we have described the use of indirection to use variables as an array, but `CYD` also has an alternative way of creating data arrays using the `DIM` command, such that with `DIM name(size)` we declare an array with name `name` and size `size`. The size of an array cannot be greater than 256 nor be zero. We access each of the elements of the array with the nomenclature `name(pos)`, where `pos` is the position number of the element to be accessed within the array, starting from zero. Let's see it with examples:
+In the previous section we have described the use of indirection to use variables as an array, but `CYD` also has an alternative way of creating data arrays using the `DIM` command, such that with `DIM name(size)` we declare an array with name `name` and size `size`. The size of an array cannot be zero or greater than 256. We access each of the elements of the array with the notation `name(pos)`, where `pos` is the position number of the element to be accessed within the array, starting from zero. Let's see it with examples:
 
 ```cyd
 [[
@@ -1324,7 +1324,7 @@ DIM myArray() /* This would give an error */
 ]]
 ```
 
-This type of arrays have a series of limitations that must be taken into account when using them. The most obvious one is that they cannot have more than 256 elements and are one-dimensional and cannot be resized.
+This type of array has a series of limitations that must be taken into account when using them. The most obvious one is that they cannot have more than 256 elements, are one-dimensional and cannot be resized.
 
 Another limitation is that you cannot save or retrieve data from these arrays using `SAVE` and `LOAD` directly. The only option is to move the array data to or from variables and perform save or retrieve operations on them.
 
@@ -1332,7 +1332,7 @@ Finally, if you modify the data in an array, you cannot retrieve the original va
 
 ## Immutable data (`DATA` / `READ` / `RESTORE` / `DATAEND()`)
 
-When you need a **read-only** block of data (tables, maps, byte-by-byte packed text, sequences…), `CYD` offers the `DATA` mechanism, analogous to BASIC's. Unlike `DIM` arrays —which are writable and limited to 256 elements—, `DATA` is **immutable** and forms a **single global stream** that can be up to **16 KB** (over 16000 elements). Since it is never modified, it takes **0 bytes of RAM on Dandanator/MLD** (it is read straight from flash).
+When you need a **read-only** block of data (tables, maps, byte-by-byte packed text, sequences…), `CYD` offers the `DATA` mechanism, analogous to BASIC's. Unlike `DIM` arrays — which are writable and limited to 256 elements — `DATA` is **immutable** and forms a **single global stream** that can be up to **16 KB** (over 16000 elements). Since it is never modified, it takes **0 bytes of RAM on Dandanator/MLD** (it is read straight from flash).
 
 Each `DATA` statement appends its bytes, in source order, to that global stream. They are read sequentially with `READ`, which uses the same bare destination as `SET`/`LET`:
 
@@ -1389,7 +1389,7 @@ Things to keep in mind:
 
 ## Wide constants (`WORD` / `DWORD` / strings)
 
-`CYD` works with bytes, but you often need to place **16-bit** (0..65535) or **32-bit** (compatible with the `math16_32` library) values in memory, or the character codes of a **string**. That is what wide constants are for: values the compiler expands into a **fixed sequence of consecutive bytes in _little-endian_ order** (low byte first). Everything happens at compile time: they add **no runtime**.
+`CYD` works with bytes, but you often need to place **16-bit** (0..65535) or **32-bit** (compatible with the `math16_32` library) values in memory, or the character codes of a **string**. That is what wide constants are for: values the compiler expands into a **fixed sequence of consecutive bytes in _little-endian_ order** (low byte first). Everything happens at compile time: they add **no runtime cost**.
 
 They can be used in three places: in `DATA`, in a `DIM` initializer and in `LET`/`SET` of a variable.
 
@@ -1406,7 +1406,7 @@ They can be used in three places: in `DATA`, in a `DIM` initializer and in `LET`
 
 Arrays stay **byte by byte** (_byte-flat_): there is no "wide" access to an array; you recompose the value yourself by reading the bytes you need (with `math16_32` if you are going to operate on it).
 
-In `LET`/`SET`, the width is **always** set by the keyword (`WORD`/`DWORD`) or the string; the bytes are written into the destination variable and the following consecutive ones. There is **no auto-detection** here (the number of variables used must be known at compile time, so a `LET v = 1000` without a marker would still be 1 byte and would error for not fitting):
+In `LET`/`SET`, the width is **always** set by the keyword (`WORD`/`DWORD`) or the string; the bytes are written into the destination variable and the following consecutive ones. There is **no auto-detection** here (the number of variables used must be known at compile time, so a `LET v = 1000` without a marker would still be 1 byte and would give an error because it does not fit):
 
 ```cyd
 [[
@@ -1423,7 +1423,7 @@ Only a **direct** destination is allowed (known consecutive indices): the `LET [
 
 ## Handy literals (character, ranges, repetition)
 
-To avoid memorizing codes or writing long sequences by hand, `CYD` offers several literals the compiler expands at compile time (0 runtime):
+To avoid memorizing codes or writing long sequences by hand, `CYD` offers several literals the compiler expands at compile time (no runtime cost):
 
 - **Character literal `'A'`** -> the **glyph code** of the character. Valid anywhere a number goes (`DATA`, `DIM`, `LET`, expressions, `CASE`...). E.g. `LET key = 'A'` is the same as `LET key = 65`.
 - **Ranges `{a..b}`** -> the byte sequence `a, a+1, ..., b` (or descending if `a > b`). The bounds are byte constants and accept characters: `'A'..'Z'`. E.g. `DIM count() = { 1..8 }`.
@@ -1440,7 +1440,7 @@ Before describing the commands, let's briefly discuss the legend used:
 - **ID** is an identifier and is a string of numbers, letters or underscores that starts with a letter or an underscore. Accented letters and ñ are not allowed.
 - **expression** is a numeric expression without variables. It is a decimal or hexadecimal number, but simple arithmetic operations are also allowed and will be calculated at compile time.
 - **varexpression**, numeric expression as described in its corresponding [section](#variables-and-numeric-expressions). It can contain variables with `@` and indirections.
-- **condexpression**, conditional expression as described in its corresponding [section](#flow-control-and-conditional-expressions). They consist of one or several comparisons with logical operations between them.
+- **condexpression**, conditional expression as described in its corresponding [section](#flow-control-and-conditional-expressions). It consists of one or several comparisons with logical operations between them.
 - **varID**, variable identifier, can be an _expression_ if we use its numeric index or an _ID_ if we have declared it like this with `DECLARE`.
 
 ---
@@ -1453,7 +1453,7 @@ Compile-time directive that inserts another `.cyd` file in the current source. I
 
 ### LABEL ID
 
-Declare the label labelId at this point. All jumps with reference to this label will direct execution to this point.
+Declares the label _ID_ at this point. All jumps with reference to this label will direct execution to this point.
 
 ### #ID
 
@@ -1461,15 +1461,15 @@ Shortened version for declaring the label _ID_, such that `#LabelId` is the same
 
 ### DECLARE expression AS ID
 
-Declare the identifier _ID_ as a symbol representing the variable _expression_ instead.
+Declares the identifier _ID_ as a symbol representing the variable _expression_ instead.
 
 ### CONST ID = expression
 
-Declare the constant _ID_ with the value of _expression_.
+Declares the constant _ID_ with the value of _expression_.
 
 ### DIM ID(expression)
 
-Create an array named _ID_ with as many elements as indicated by _expression_. The number of elements cannot exceed 256.
+Creates an array named _ID_ with as many elements as indicated by _expression_. The number of elements cannot exceed 256.
 
 ### DIM ID(expression) = {expression, expression...}
 
@@ -1501,7 +1501,7 @@ Returns `1` if the data stream cursor has reached the end, `0` otherwise.
 
 ### GOTO ID
 
-Jump to the _ID_ label.
+Jumps to the _ID_ label.
 
 ### GOSUB ID
 
@@ -1512,13 +1512,13 @@ The interpreter keeps the return address on a stack with room for about 250 nest
 - A subroutine must always end with `RETURN`. If it leaves with `GOTO` (for example, going back to the location), its return address stays on the stack; repeated a few hundred times, the stack runs into the variables' memory and the game hangs or resets.
 - A subroutine must only be reached with `GOSUB`, `OPTION GOSUB` or the `THEN GOSUB` of `CHOOSE`. If it is entered with `GOTO`, or by running into it from the code above (for example, by including a file of subroutines at the top without a `GOTO` that skips them), its `RETURN` has nowhere to return to.
 
-It also warns about a `GOSUB` to a label that never reaches a `RETURN`, such as a `CHOOSE IF WAIT ... THEN GOSUB` to an ordinary place of the game: that needs `GOTO`. Each warning shows up even when the script has another mistake of this kind, so you don't need to fix one to see the next.
+The compiler also warns about a `GOSUB` to a label that never reaches a `RETURN`, such as a `CHOOSE IF WAIT ... THEN GOSUB` to an ordinary place of the game: that needs `GOTO`. Each warning shows up even when the script has another mistake of this kind, so you don't need to fix one to see the next.
 
 The compiler follows the program's flow and warns about both cases (`WARNING [CODEGEN]`) with the line where they happen; `--no-warn-gosub` turns this off. To check it at runtime as well, build with `--debug-stack` (see [Error codes](#error-codes)).
 
 ### RETURN
 
-Returns to the point after the subroutine call, see `GOSUB`. If no `GOSUB` is pending, the result is unpredictable.
+Returns to the point after the subroutine call (see `GOSUB`). If no `GOSUB` is pending, the result is unpredictable.
 
 ### IF condexpression THEN ... ENDIF
 
@@ -1530,15 +1530,15 @@ If the conditional expression _condexpression_ is true, the text is printed and 
 
 ### IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF
 
-If the conditional expression _condexpression1_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked, in which case the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Several `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
+If the conditional expression _condexpression1_ is true, the text is printed and the commands from `THEN` to `ELSE` are executed. Otherwise, the conditional expression _condexpression2_ is checked and, if it is true, the text is printed and the commands from `ELSEIF` to the `ELSE` or another `ELSEIF` are executed. Several `ELSEIF`s can be chained together until a final `ELSE` clause is reached, which is executed if none of the previous conditions have been met.
 
 ### WHILE (condexpression) ... WEND
 
-Text and commands up to `WEND` are repeated repeatedly as long as the _condexpression_ condition evaluates to true. Evaluation is performed at the beginning of each iteration.
+Text and commands up to `WEND` are repeated as long as the _condexpression_ condition evaluates to true. Evaluation is performed at the beginning of each iteration.
 
 ### DO ... UNTIL (condexpression)
 
-Text and commands from `DO` to `UNTIL` are repeated repeatedly as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
+Text and commands from `DO` to `UNTIL` are repeated as long as the _condexpression_ condition evaluates to false. Evaluation is performed at the end of each iteration.
 
 ### SELECT varexpression ... CASE value[,value...] ... [CASE ELSE ...] ENDSELECT
 
@@ -1630,15 +1630,15 @@ Sets the print cursor to the center of the line.
 
 ### WAITKEY
 
-Waits for the OK key to continue, displaying an animated wait icon. Ideal for separating paragraphs or screens.
+Waits for the confirmation key to continue, displaying an animated wait icon. Ideal for separating paragraphs or screens.
 
 ### OPTION GOTO ID
 
-Creates a choice point that the user can select (see `CHOOSE`). If the choice is confirmed, it jumps to the _ID_ label. If the screen is cleared, the choice point is deleted, and a maximum of 32 are allowed on a screen. Choice points are accumulated in the order they are declared in a list that is traversed according to the keystrokes pressed, and in the same order in which the choice points were declared. If it is the selected option in the menu, the value returned by `OPTIONVAL()` is its position within the list of menu options.
+Creates an option point that the user can select (see `CHOOSE`). If the choice is confirmed, it jumps to the _ID_ label. If the screen is cleared, the option point is deleted, and a maximum of 32 are allowed on a screen. Option points are accumulated, in the order they are declared, in a list that is traversed according to the keys pressed. If it is the selected option in the menu, the value returned by `OPTIONVAL()` is its position within the list of menu options.
 
 ### OPTION GOSUB ID
 
-Creates a choice point that the user can select (see `CHOOSE`). If this option is confirmed, it jumps to label _ID_, returning after the `CHOOSE` when it encounters a `RETURN`. If the screen is cleared, the choice point is deleted, and a maximum of 32 are allowed on a screen. Choice points are accumulated in the order they are declared in a list that is traversed according to the keystrokes used, and in the same order in which the choice points were declared. If it is the selected option in the menu, the value returned by `OPTIONVAL()` is its position within the list of menu options.
+Creates an option point that the user can select (see `CHOOSE`). If this option is confirmed, it jumps to label _ID_, returning after the `CHOOSE` when it encounters a `RETURN`. If the screen is cleared, the option point is deleted, and a maximum of 32 are allowed on a screen. Option points are accumulated, in the order they are declared, in a list that is traversed according to the keys pressed. If it is the selected option in the menu, the value returned by `OPTIONVAL()` is its position within the list of menu options.
 
 ### OPTION VALUE(varexpression) GOTO ID
 
@@ -1652,15 +1652,15 @@ Works the same as `OPTION GOSUB ID`, but we assign it a specific value that will
 
 Stops execution and allows the player to select one of the options currently on the screen. It will jump to the label indicated in the corresponding option.
 
-Selection is made with the **O** and **P** keys for horizontal scrolling and **Q** and **A** for vertical scrolling. The corresponding directions on the Kempston joystick and the cursor keys can also be used.
+Selection is made with the **O** and **P** keys for horizontal movement and **Q** and **A** for vertical movement. The corresponding directions on the Kempston joystick and the cursor keys can also be used.
 
-When these keys are pressed, a pointer moves over the list of options, incrementing or decrementing them according to the current configuration (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical scrolling is configured with the **Q** and **A** keys or **up** and **down** on the Kempston joystick or cursor keys. It is the user's responsibility to place the option points on the screen in a manner consistent with the configured menu movement.
+When these keys are pressed, a pointer moves over the list of options, incrementing or decrementing the selected option according to the current configuration (see [MENUCONFIG](#menuconfig-varexpression-varexpression)). By default, only vertical movement is configured with the **Q** and **A** keys or **up** and **down** on the Kempston joystick or cursor keys. It is the user's responsibility to place the option points on the screen in a manner consistent with the configured menu movement.
 
 Remember that if you clear the screen before this command, you will lose the options and a system error will be given.
 
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
-It works exactly the same as `CHOOSE`, but with the exception that a timeout is declared, which if it expires without selecting any option, it jumps to the _ID_ label.
+It works exactly the same as `CHOOSE`, but with the exception that a timeout is set; if it expires with no option selected, execution jumps to the _ID_ label.
 The timeout has a maximum of 65535 (16 bits).
 
 ### CHOOSE IF WAIT expression THEN GOSUB ID
@@ -1669,7 +1669,7 @@ The same, but when the time runs out it makes a subroutine jump to the _ID_ labe
 
 ### CHOOSE IF CHANGED THEN GOSUB ID
 
-It works exactly the same as `CHOOSE`, but a subroutine jump is made to the _ID_ label each time the option is changed. Therefore, it is recommended that a `RETURN` is made as soon as possible to avoid slowness. To know the chosen option and the total number of options in our menu, we can use the `OPTIONSEL()` and `NUMOPTIONS` functions respectively.
+It works exactly the same as `CHOOSE`, but a subroutine jump is made to the _ID_ label each time the option is changed. Therefore, the routine should `RETURN` as soon as possible to avoid slowness. To know the chosen option and the total number of options in our menu, we can use the `OPTIONSEL()` and `NUMOPTIONS()` functions respectively.
 
 ### OPTIONSEL()
 
@@ -1681,7 +1681,7 @@ _Function_ that returns the number of options in the currently active menu. If w
 
 ### OPTIONVAL()
 
-_Function_ that returns the value assigned to the option selected and accepted in the menu, it is only updated when an option is chosen and the menu is exited.
+_Function_ that returns the value assigned to the option selected and accepted in the menu; it is only updated when an option is chosen and the menu is exited.
 
 ### CLEAROPTIONS
 
@@ -1691,8 +1691,8 @@ Deletes the options stored in the menu.
 
 Configures the options menu. The parameters that can be configured are the following:
 
-- The first parameter determines the increment or decrement of the selected option number when we press **P** and **O** respectively (or the left and right cursor keys or the joystick).
-- The second parameter determines the increment or decrement of the selected option number when we press **A** and **Q** respectively (or the up and down cursor keys or the joystick).
+- The first parameter determines the increment or decrement of the selected option number when we press **P** and **O** respectively (or the right and left cursor keys or the joystick).
+- The second parameter determines the increment or decrement of the selected option number when we press **A** and **Q** respectively (or the down and up cursor keys or the joystick).
 - The third parameter is the option that will be selected at the beginning when the menu is started with `CHOOSE`. The default value is zero (the first option registered).
 - The fourth parameter, if zero, does not show the selection icon and if non-zero, does.
 
@@ -1713,7 +1713,7 @@ Prints the character indicated by its corresponding number.
 
 ### REPCHAR expression, expression
 
-Prints the character indicated in the first parameter as many times as the number indicated in the second parameter. Both values have a size of 1 byte, that is, val from 0 to 255. Also, if the number of times is zero, the character will be repeated 256 times instead of none.
+Prints the character indicated in the first parameter as many times as the number indicated in the second parameter. Both values have a size of 1 byte, that is, values from 0 to 255. Also, if the number of times is zero, the character will be repeated 256 times instead of none.
 
 ### TAB expression
 
@@ -1749,7 +1749,7 @@ Turns flashing on or off (0 off, 1 on).
 
 ### NEWLINE expression
 
-Prints newlines equal to the number specified in the parameter (0 is 256)
+Prints as many newlines as specified in the parameter (0 means 256).
 
 ### NEWLINE
 
@@ -1757,8 +1757,8 @@ Equivalent to `NEWLINE 1`.
 
 ### BACKSPACE expression
 
-Moves the print cursor back by the number of positions specified in the parameter (0 is 256), deleting the character at the new position and replacing it with a space. The character size used is the space (number 32).
-Note that if characters of different sizes than the space are used, this operation will not work properly.
+Moves the print cursor back by the number of positions specified in the parameter (0 means 256), deleting the character at the new position and replacing it with a space. The width used is that of the space character (number 32).
+Note that if characters of a different width from the space are used, this operation will not work properly.
 
 ### BACKSPACE
 
@@ -1777,13 +1777,13 @@ The image is not displayed, which allows control over when the file is loaded.
 ### DISPLAY varexpression
 
 Displays the current content of the buffer on the screen.
-The parameter indicates whether or not the image is displayed; a value of 0 does not display it, and a value other than zero indicates yes.
+The parameter indicates whether or not the image is displayed; a value of 0 does not display it, and any other value displays it.
 As many lines as have been defined in the corresponding image are displayed and the screen content will be overwritten.
 
 ### BLIT varexpression, varexpression, varexpression, varexpression AT varexpression, varexpression
 
 Copies a part of the image loaded in the buffer to the screen.
-We define with the parameters a rectangle within the buffer that will be copied to the screen from the indicated position.
+The parameters define a rectangle within the buffer that will be copied to the screen from the indicated position.
 
 The parameters, in order, are:
 
@@ -1842,21 +1842,21 @@ Positions are assumed to be 8x8 character size.
 
 ### FILLATTR varexpression, varexpression, varexpression, varexpression, varexpression
 
-We fill a rectangle on the screen with a given attribute value. The pixels are not altered.
+Fills a rectangle on the screen with a given attribute value. The pixels are not altered.
 The parameters, in order, are:
 
 - Column of origin of the rectangle to be filled.
 - Row of origin of the rectangle to be filled.
 - Width of the rectangle to be filled.
 - Height of the rectangle to be filled.
-- Value of attributes in Spectrum screen format, that is, a byte with bits in FBPPPIII format (F = Flash, B = Brightness, P = Paper, I = Ink).
+- Value of attributes in Spectrum screen format, that is, a byte with bits in FBPPPIII format (F = Flash, B = Bright, P = Paper, I = Ink).
 
 ### PUTATTR varexpression, varexpression AT varexpression, varexpression
 
-We put the attributes of an 8x8 character on the screen with given values. The pixels are not altered.
+Sets the attributes of an 8x8 character on the screen to given values. The pixels are not altered.
 The parameters, in order, are:
 
-- Value of attributes in Spectrum screen format, that is, a byte with bits in FBPPPIII format (F = Flash, B = Brightness, P = Paper, I = Ink).
+- Value of attributes in Spectrum screen format, that is, a byte with bits in FBPPPIII format (F = Flash, B = Bright, P = Paper, I = Ink).
 - Mask to be applied to the attributes already existing on the screen. If the bit is zero, we keep the one on the screen, and if it is one we use the new value.
 - Column of the 8x8 character.
 - Row of the 8x8 character.
@@ -1914,11 +1914,11 @@ _Function_ that returns the code of the key pressed. If the parameter is zero, i
 
 ### INKEY()
 
-_Function_ that waits until a key is pressed and returns the code of the key pressed. It is equivalent to `INKEY(0)`
+_Function_ that waits until a key is pressed and returns the code of the key pressed. It is equivalent to `INKEY(0)`.
 
 ### KEMPSTON()
 
-_Function_ that returns the keys pressed on a connected Kempston joystick. The following bits will be set to one if the corresponding button is pressed:
+_Function_ that returns the buttons pressed on a connected Kempston joystick. The following bits will be set to one if the corresponding button is pressed:
 
 - Bit 0 = Right.
 - Bit 1 = Left.
@@ -1928,11 +1928,11 @@ _Function_ that returns the keys pressed on a connected Kempston joystick. The f
 
 ### MIN(varexpression,varexpression)
 
-_Function_ that limits the value of the first parameter to the minimum indicated by the second. That is, if parameter 1 is less than parameter 2, parameter 2 is returned, otherwise 1 is returned.
+_Function_ that limits the value of the first parameter to the minimum indicated by the second. That is, if parameter 1 is less than parameter 2, parameter 2 is returned; otherwise, parameter 1 is returned.
 
 ### MAX(varexpression,varexpression)
 
-_Function_ that limits the value of the first parameter to the maximum indicated by the second. That is, if parameter 1 is greater than parameter 2, parameter 2 is returned, otherwise 1 is returned.
+_Function_ that limits the value of the first parameter to the maximum indicated by the second. That is, if parameter 1 is greater than parameter 2, parameter 2 is returned; otherwise, parameter 1 is returned.
 
 ### YPOS()
 
@@ -1940,12 +1940,12 @@ _Function_ that returns the current row in which the cursor is located in 8x8 co
 
 ### XPOS()
 
-_Function_ that returns the current column where the cursor is located in 8x8 coordinates (Due to the nature of the variable width font, the value returned will be the 8x8 column where the cursor is currently located.)
+_Function_ that returns the current column where the cursor is located in 8x8 coordinates (due to the nature of the variable-width font, the value returned will be the 8x8 column where the cursor is currently located).
 
 ### WINDOW expression
 
 Switches to the "window" indicated by the parameter and supports up to 8 windows (from 0 to 7). By default, the initial window is 0.
-CYD "windows" are a screen area defined by their original position, width, height, cursor position, and current attributes. This allows you to have different independent text areas on screen simultaneously without having to keep changing margins and cursor position to move from one area to another. Note that if windows overlap, the content of a window is not preserved if it is overwritten by another window.
+A CYD "window" is a screen area defined by its origin position, width, height, cursor position, and current attributes. This allows you to have different independent text areas on screen simultaneously without having to keep changing margins and cursor position to move from one area to another. Note that if windows overlap, the content of a window is not preserved if it is overwritten by another window.
 
 ### CHARSET expression
 
@@ -1961,7 +1961,7 @@ This is equivalent to `RANDOMIZE 0`, which loads the random number generator wit
 
 ### TRACK varexpression
 
-Loads the Vortex Tracker file into memory as a parameter. For example, if 3 is specified, it will load the music track from file `003.PT3` (or `003.mus` when using WyzTracker). If a track was previously loaded, it will be overwritten.
+Loads into memory the Vortex Tracker file given as the parameter. For example, if 3 is specified, it will load the music track from file `003.PT3` (or `003.mus` when using WyzTracker). If a track was previously loaded, it will be overwritten.
 
 ### PLAY varexpression
 
@@ -1974,7 +1974,7 @@ This command does not work with WyzTracker.
 
 ### RAMSAVE varID, expression
 
-Copies from the variable specified in the first parameter, as many variables as were specified in the second parameter (if zero, it is considered as 256) to temporary storage. Before copying, the temporary storage is filled with zeros, so that the variables not copied will have this value in the temporary storage.
+Copies from the variable specified in the first parameter, as many variables as were specified in the second parameter (if zero, it is treated as 256) to temporary storage. Before copying, the temporary storage is filled with zeros, so that the variables not copied will have this value in the temporary storage.
 
 ### RAMSAVE varID
 
@@ -1986,7 +1986,7 @@ This is the equivalent of `RAMSAVE 0, 0`, that is, it copies all the variables t
 
 ### RAMLOAD varID, expression
 
-This is the inverse operation of `RAMSAVE`. It copies from temporary storage to the variables, from the variable indicated in the first parameter and as many variables as those indicated in the second (if it is zero, it is considered as 256).
+This is the inverse operation of `RAMSAVE`. It copies from temporary storage to the variables, from the variable indicated in the first parameter and as many variables as those indicated in the second (if it is zero, it is treated as 256).
 
 ### RAMLOAD varID
 
@@ -1994,15 +1994,15 @@ This is the equivalent of `RAMLOAD varId, 0`, that is, it copies all the variabl
 
 ### RAMLOAD
 
-This is the equivalent of `RAMLOAD 0, 0`, that is, it copies all variables from the storage
+This is the equivalent of `RAMLOAD 0, 0`, that is, it copies all variables from the temporary storage.
 
 ### SAVE varexpression, varId, expression
 
-Saves a series of variables to tape or disk. The first parameter indicates the file number to save, the second parameter is the initial variable of the range of variables to save the file, and the third parameter is the number of variables to save in that range (if zero, it is considered 256).
+Saves a series of variables to tape or disk. The first parameter indicates the file number to save, the second parameter is the initial variable of the range of variables to save, and the third parameter is the number of variables to save in that range (if zero, it is treated as 256).
 Anything in the temporary storage that was loaded with `RAMSAVE` will be removed, since it will be used to store the file temporarily.
 
-- In the case of disk, the file with the indicated three-digit number and `.SAV` extension will be saved. For example, the file to load with 16 would be `016.SAV`. If the file already exists, it will be overwritten.
-- In the case of tape, it will be saved to tape. The system will immediately start saving, so the author is responsible for telling the user that he is going to record and that he has to put the cassette unit (or equivalent) to record. The process can be interrupted with the **BREAK** key.
+- In the case of disk, the file with the indicated three-digit number and `.SAV` extension will be saved. For example, the file for number 16 would be `016.SAV`. If the file already exists, it will be overwritten.
+- In the case of tape, it will be saved to tape. The system will immediately start saving, so the author is responsible for telling the player that recording is about to start and that they must set the cassette unit (or equivalent) to record. The process can be interrupted with the **BREAK** key.
 
 The result of the operation can be checked with the `SAVERESULT()` function.
 
@@ -2012,44 +2012,44 @@ This is the equivalent of `SAVE varexpression, varId, 0`, that is, it saves all 
 
 ### SAVE varexpression
 
-This is the equivalent of `SAVE varexpression, 0, 0`, that is, it saves all variables
+This is the equivalent of `SAVE varexpression, 0, 0`, that is, it saves all variables.
 
 ### LOAD varexpression
 
 Loads a series of variables from tape or disk. The parameter indicates the file number to load, and the range of variables that was indicated when saving the file will be loaded. Anything in the temporary storage that was loaded with `RAMSAVE` will be deleted, since it will be used to store the file temporarily.
 
-- In the case of disk, the file with the indicated three-digit number and `.SAV` extension will be loaded. For example, the file to be loaded with 16 would be `016.SAV`.
-- In the case of a tape, the first block without a header that is found will be loaded, so the user must advance the tape to the correct position. The system will immediately start loading, so the author is responsible for indicating to the user that it is going to load and that he has to put the cassette unit (or equivalent) to play. The process can be interrupted with the **BREAK** key.
+- In the case of disk, the file with the indicated three-digit number and `.SAV` extension will be loaded. For example, the file for number 16 would be `016.SAV`.
+- In the case of a tape, the first block without a header that is found will be loaded, so the user must advance the tape to the correct position. The system will immediately start loading, so the author is responsible for telling the player that loading is about to start and that they must set the cassette unit (or equivalent) to play. The process can be interrupted with the **BREAK** key.
 
-The result of the load can be consulted with the `SAVERESULT()` function.
+The result of the load can be checked with the `SAVERESULT()` function.
 
 ### SAVERESULT()
 
 _Function_ that returns the result of the last `SAVE` or `LOAD` operation. The possible values are the following:
 
-0. Correct result.
+0. Success.
 1. Error when loading/saving on tape/disk. In the case of a tape, operation interrupted with **BREAK**.
 2. The saved game does not correspond to the current game.
 3. The selected slot of the saved game does not correspond to the one requested.
 4. Error checking the saved game file.
 
-Any other value results in undefined results.
+Any other value should be treated as undefined.
 
 ### ISDISK()
 
-_Function_ that returns 1 if the target loads its resources (images, music, savegames) from a filesystem —that is, the Plus3 disk or the ESXDOS SD card— and 0 otherwise (tape or Dandanator cartridge, where resources are resident in memory). Useful for the adventure to know whether media is loaded on demand.
+_Function_ that returns 1 if the target loads its resources (images, music, savegames) from a filesystem — that is, the +3 disk or the esxDOS SD card — and 0 otherwise (tape or Dandanator cartridge, where resources are resident in memory). Useful for the adventure to know whether media is loaded on demand.
 
 ### LASTPOS(ID)
 
-_Function_ that returns the last accessible position of the given array. For all purposes, the size of the array minus 1.
+_Function_ that returns the last accessible position of the given array. In effect, the size of the array minus 1.
 
 ## Images
 
-The engine supports a maximum of 256 images, plus whatever fits on disk or memory. They must be named with a 3-digit number, corresponding to the image number that will be invoked from the program. For example, image 0 should be called `000.scr`, image 1 `001.scr`, and so on up to 255. Images must be in the Spectrum display format.
+The engine supports a maximum of 256 images, subject to what fits on disk or in memory. They must be named with a 3-digit number, corresponding to the image number that will be invoked from the program. For example, image 0 should be called `000.scr`, image 1 `001.scr`, and so on up to 255. Images must be in the Spectrum display format.
 
 To display images, the compiler compresses the SCR format files from the Spectrum display into compressed files with a `csc` extension. The compression process can be lengthy, so the compiler keeps the compressed images in the `cyd_cache` folder of the output folder, and only compresses an image again when its `scr` file changes or when it has to be compressed differently (another number of lines, or another symmetry setting). The images folder is only read: a `csc` file you put there without its `scr` is used as an image already compressed.
 
-You can configure the number of horizontal lines to display in the image using the corresponding parameter in the compiler to further reduce the size. Additionally, if it detects that the right half of the image is mirrored by the left half, it discards the right half to further reduce the size, although we can force this behavior with any image. To do this, create a file called `images.json` in the images directory.
+You can configure the number of horizontal lines to display in the image using the corresponding parameter in the compiler to further reduce the size. Additionally, if the compiler detects that the right half of the image is a mirror image of the left half, it discards the right half to further reduce the size, although we can force this behavior with any image. To do this, create a file called `images.json` in the images directory.
 
 The structure of the `images.json` file is as follows:
 
@@ -2074,11 +2074,11 @@ It is a list of records with the following fields:
 - `num_lines`: Indicates the number of lines to include in the compressed file. The minimum is 1 and the maximum (full screen) is 192.
 - `force_mirror`: With a value of `true`, we force the image to be considered symmetrical. This will cause the right half of the image to be discarded, and when it is decompressed in memory, the mirrored left half will be drawn in its place. Otherwise, this field must be set to `false`.
 
-We must specify in the JSON as many records as images we want to define the behavior. Images not defined in the `images.json` file will be treated with normal behavior, which is to use the number of lines defined with the `-il` parameter, or 192 by default, and to use mirroring only for images detected as symmetrical.
+We must specify in the JSON as many records as images whose behavior we want to define. Images not defined in the `images.json` file will be treated with normal behavior, which is to use the number of lines defined with the `-il` parameter, or 192 by default, and to use mirroring only for images detected as symmetrical.
 
 There are two commands required to display an image: the `PICTURE n` command will load image number n into a buffer. That is, if you type `PICTURE 1`, it will load the `001.CSC` file into the buffer. Any operation on an image requires first loading it into the buffer. This is useful for controlling when the image should be loaded, as it will require waiting for the image to load from disk, in addition to allowing some time to decompress the image on both tape and disk. Therefore, it is recommended to run this command at an appropriate time, for example, at the start of a chapter. If we try to load an image that doesn't exist, we'll receive an error 1, and if we try to load an image whose file doesn't exist on disk, we'll generate a disk error 23.
 
-To display an image loaded into the buffer, we use `DISPLAY n`, where n must be non-zero to execute. The image displayed will be the last one loaded into the buffer (if it exists). The image starts painting from the top left corner of the screen, drawing the same number of lines as the file compression commands, overwriting everything previously on the screen.
+To display an image loaded into the buffer, we use `DISPLAY n`, where n must be non-zero to execute. The image displayed will be the last one loaded into the buffer (if it exists). The image starts painting from the top left corner of the screen, drawing as many lines as were specified when the file was compressed, overwriting everything previously on the screen.
 
 There is also an alternative method for displaying images: the `BLIT` command. This allows us to copy a fragment of the image onto the screen instead of the entire image, and also allows us to specify its position on the screen. The command format is `BLIT xo, yo, width, height AT xd, yd`, and you can find more details about it in its corresponding [section](#blit-varexpression-varexpression-varexpression-varexpression-at-varexpression-varexpression). `BLIT` is more versatile than `DISPLAY`, but it is also slower, and it also requires an image to be loaded into the image buffer with `PICTURE` beforehand, and it will overwrite anything that was on the screen at the drawing position.
 
@@ -2086,17 +2086,17 @@ There is also an alternative method for displaying images: the `BLIT` command. T
 
 ## Sound effects
 
-Adding sound effects with the beeper is very simple. To do this we have to create an effects bank with the BeepFx utility. We must export the effects file as an assembler file using the `File->Compile` option from the top menu. In the floating window that appears, we must make sure that we have `Assembly` and `Include Player Code` selected, the rest of the options are irrelevant, since the compiler will modify the source file to embed it in the interpreter.
+Adding sound effects with the beeper is very simple. To do this we have to create an effects bank with the BeepFx utility. We must export the effects file as an assembly file using the `File->Compile` option from the top menu. In the floating window that appears, we must make sure that we have `Assembly` and `Include Player Code` selected; the rest of the options are irrelevant, since the compiler will modify the source file to embed it in the interpreter.
 
 To invoke an effect, we use the command `SFX n`, where n is the number of the effect to be played. If this command is called without an effect file loaded, it will be ignored and execution will continue.
 
-It is not contemplated to call an effect number that does not exist in the included file, so it is the author's responsibility to take care of this, since the behavior in that case is unpredictable.
+Calling an effect number that does not exist in the included file is not handled, so it is the author's responsibility to take care of this, since the behavior in that case is unpredictable.
 
 ---
 
-## Vortex Tracker Music
+## Vortex Tracker music
 
-The `CYD` engine allows you to play music modules created with Vortex Tracker in `PT3` format. Its operation replicates the image loading mechanism; that is, modules must be named with three digits representing the track number that the player will load with the `TRACK` command. For example, if the player encounters the `TRACK 3` command, they will search for the track in the `003.PT3` file and load the module into memory for playback. Similarly, the maximum number of modules that can be loaded is 256 (from 0 to 255), and the module cannot exceed 16 kilobytes for tape and 8 kilobytes for Plus3.
+The `CYD` engine allows you to play music modules created with Vortex Tracker in `PT3` format. Its operation replicates the image loading mechanism; that is, modules must be named with three digits representing the track number that the interpreter will load with the `TRACK` command. For example, if the interpreter encounters the `TRACK 3` command, it will search for the track in the `003.PT3` file and load the module into memory for playback. Similarly, the maximum number of modules that can be loaded is 256 (from 0 to 255), and the module cannot exceed 16 KB for tape and 8 KB for +3.
 
 Once a module is loaded, it can be played with the `PLAY` command. As indicated in the command reference, if the parameter is non-zero, the module will be played; if it is equal to zero, playback will stop.
 
@@ -2104,9 +2104,9 @@ When the end of the module is reached, playback will automatically stop, but we 
 
 ---
 
-## WyzTracker Music
+## WyzTracker music
 
-`CYD` also allows you to play music modules created with WyzTracker v2.0. It works similarly to Vortex Tracker Melodies and images; module file names must be three-digit numbers from 0 to 255, so with `TRACK 3`, we would load the corresponding `003.mus` module.
+`CYD` also allows you to play music modules created with WyzTracker v2.0. It works similarly to Vortex Tracker melodies and images; module file names must be three-digit numbers from 0 to 255, so with `TRACK 3`, we would load the corresponding `003.mus` module.
 
 Once a module is loaded, it can be played with the `PLAY` command. As indicated in the command reference, if the parameter is non-zero, the module will play; and if it is equal to zero, playback will stop.
 
@@ -2115,7 +2115,7 @@ Unlike with Vortex Tracker modules, the `LOOP` command is not fully supported, a
 Due to the peculiarities of the WyzTracker format, several considerations must be taken into account that will affect the use of the engine with this music player:
 
 - All modules must share the same instruments. The instrument file must be named `instruments.asm` and must be stored with the module files in the `TRACKS` directory.
-- *The entire bank 1 of the Spectrum's memory will be reserved, where the player code, instruments, and melodies will be stored. This means that 16 KB less will be available for the tape version, and 8 KB less for the Plus3 version.
+- The entire bank 1 of the Spectrum's memory will be reserved, where the player code, instruments, and melodies will be stored. This means that 16 KB less will be available for the tape version, and 8 KB less for the +3 version.
 - The different melodies will be compressed to save space, and each time one is loaded, it will be decompressed into the remaining space in bank 1. The compiler will generate an error if any of the included melodies do not fit in this remaining space.
 - Sound effects are not supported.
 
@@ -2123,9 +2123,9 @@ Due to the peculiarities of the WyzTracker format, several considerations must b
 
 ## How to generate an adventure
 
-The first thing to do is to generate a script for the adventure using any text editor using the syntax described above. It is HIGHLY recommended to write the script before programming the logic, since it is important to have the text outlined beforehand to ensure proper compression (more details later).
+The first thing to do is to generate a script for the adventure in any text editor, using the syntax described above. It is HIGHLY recommended to write the script before programming the logic, since it is important to have the text outlined beforehand to ensure proper compression (more details later).
 
-It is important that the file is encoded in UTF-8, but it must be taken into account that characters over 128 will not be printed correctly and only the characters specific to Spanish are allowed, indicated in the [Character Set](#character-set) section, which will be converted to the codes indicated there.
+It is important that the file is encoded in UTF-8, but it must be taken into account that characters over 128 will not be printed correctly and only the characters specific to Spanish are allowed, indicated in the [Character set](#character-set) section, which will be converted to the codes indicated there.
 
 Once we have the adventure, we use the `CYDC` compiler to generate a DSK or TAP file. The compiler looks for the best abbreviations to compress the text as much as possible. The process can be very long depending on the size of the adventure. That is why it is important to have the adventure outlined beforehand, to carry out this process at the beginning. We will compile the file with the parameter `-T`, so that with `-T abbreviations.json`, for example, we will export the abbreviations found to the file _abbreviations.json_.
 
@@ -2143,13 +2143,13 @@ Each adventure lives in **its own folder: the project**. CYD's own folder (the o
 A project has:
 
 - The main script (for example `my_game.cyd`) and the files it includes with `INCLUDE`, which can be in subfolders.
-- `IMAGES/` with the images (`000.scr`, `001.scr`...; see [Images](#images)) and `TRACKS/` with the music (see [Vortex Tracker Music](#vortex-tracker-music)).
+- `IMAGES/` with the images (`000.scr`, `001.scr`...; see [Images](#images)) and `TRACKS/` with the music (see [Vortex Tracker music](#vortex-tracker-music)).
 - `SFX.ASM` with the sound effects, if any (see [Sound effects](#sound-effects)), and `IMAGES/LOAD.scr` with the loading screen, if any.
 - `tokens.json` with the abbreviations: it is created the first time the project is built. If you want to regenerate it (it's recommended to do so when you're running out of memory or are finishing the adventure), delete it and the next build will search for them again.
-- `charset.json` with the character set, if you want one other than the default one (see [CYD Character Set Converter](#cyd-character-set-converter)).
+- `charset.json` with the character set, if you want one other than the default one (see [CYD character set converter](#cyd-character-set-converter)).
 - `cyd_project.ini`, optional, with the project's settings.
 
-The compiled files go to the project's `OUTPUT/` folder: the `.tap`, the `.DSK`, the `.MLD`, or the files for the SD card with esxdos (and the `.map` with `--debug-errors`). The compiler makes its intermediate files in `OUTPUT/cyd_tmp/` and removes them when the build ends well (see `--keep-temp`), and it keeps the compressed images in `OUTPUT/cyd_cache/`, so it only compresses an image again when it changes. You can delete `OUTPUT/` at any time.
+The compiled files go to the project's `OUTPUT/` folder: the `.tap`, the `.DSK`, the `.MLD`, or the files for the SD card with esxDOS (and the `.map` with `--debug-errors`). The compiler makes its intermediate files in `OUTPUT/cyd_tmp/` and removes them when the build ends well (see `--keep-temp`), and it keeps the compressed images in `OUTPUT/cyd_cache/`, so it only compresses an image again when it changes. You can delete `OUTPUT/` at any time.
 
 To make a new project with a short game to start from, use the GUI's **New…** button or:
 
@@ -2309,7 +2309,7 @@ SET BACKUP_MAX_FILES=0
 ```
 
 - The variable `PROJECT` is the project that is compiled when the script is run without one (for example, with a double click).
-- The variable `TARGET` is the output system and format, if you want another than the project's:
+- The variable `TARGET` is the output system and format, if you want one other than the project's:
 -- 48k: Generates a TAP file for Spectrum 48K, without AY music support.
 -- 128k: Generates a TAP file for Spectrum 128K.
 -- plus3: Generates a DSK file for Spectrum +3, with higher capacity and dynamic loading of resources.
@@ -2325,9 +2325,9 @@ SET BACKUP_MAX_FILES=0
 - The variable `BACKUP_CYD` with the value `yes` makes a backup copy of the main script inside the project's `BACKUP` folder after each build. Each copy adds the date on which it was created to the file name. Empty, the project's `backup` setting is used.
 - The variable `BACKUP_MAX_FILES` limits how many backups are kept per game (`0` means unlimited).
 
-The script will produce a DSK or TAP file (depending on the target) in the project's output folder, that you can run with your favorite emulator. But if you want to speed up the work even more, if you download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_windows-<version>\`), with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
+The script will produce a DSK or TAP file (depending on the target) in the project's output folder, which you can run with your favorite emulator. To speed up the work even more, download [ZEsarUX](https://github.com/chernandezba/zesarux) and unpack it inside `.\tools\` (it ends up as `.\tools\ZEsarUX_windows-<version>\`): with `RUN_EMULATOR=internal` it will run automatically after compilation with the appropriate options.
 
-### GUI Compiler (make_adventure_gui)
+### GUI compiler (make_adventure_gui)
 
 For those who prefer a graphical interface instead of editing scripts or command lines, the **make_adventure_gui** tool provides a cross-platform GUI for compiling Choose Your Destiny adventures.
 
@@ -2357,7 +2357,7 @@ make_adventure_gui.cmd
 ./make_adventure_gui.sh
 ```
 
-**Language Selection:**
+**Language selection:**
 
 The GUI supports Spanish and English languages with automatic detection from your system locale. You can change the language at any time using the **Language** dropdown in the header - all UI text will update immediately. The language preference is saved and restored automatically.
 
@@ -2375,13 +2375,13 @@ export CYD_LANG=es
 ./make_adventure_gui.sh
 ```
 
-**Configurable Options:**
+**Configurable options:**
 
 | Category | Options |
 |----------|---------|
 | **Project** | Folder (New…, Open…, Recent), Main file, Game name, Target (48k/128k/plus3/mld/mld128/esxdos) |
 | **Paths** | The project's (relative to its folder): output folder, images, tracks, SFX file, loading screen, tokens file, character set, INCLUDE / INCLUDE LIB / IMPORT folders. This computer's: SjASMPlus executable |
-| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Keep the intermediate files, Strict colon compatibility, Pause-after-load, WyzTracker support, 720KB disk |
+| **Compiler** | Image display lines, Text abbreviation limits, Superset limit, Verbose mode, Slice texts between banks, Trim interpreter code, Show bytecode, Keep the intermediate files, Strict colon compatibility, Pause-after-load, WyzTracker support, 720 KB disk |
 | **Post-Build** | Run emulator after compilation, Backup the main script |
 | **Appearance** | Font size, Log font family/size, Log text/background colors |
 
@@ -2452,9 +2452,9 @@ Then build it with `make_adv.cmd FOLDER` (or dragging the folder onto `make_adv.
 
 A comprehensive set of examples is available to test the engine's capabilities and learn from them. Each example is designed to illustrate specific features of the CYD language, from basic concepts to advanced techniques.
 
-### Basic Examples
+### Basic examples
 
-#### `examples\test` - Engine Introduction
+#### `examples\test` - Engine introduction
 **Level:** Beginner | **Requirements:** ZX Spectrum 128K
 
 This is the perfect starting point. It demonstrates the fundamental concepts of the engine:
@@ -2466,7 +2466,7 @@ This is the perfect starting point. It demonstrates the fundamental concepts of 
 
 This example is an expanded version of the code shown in the [Syntax](#basic-syntax) section of the manual.
 
-#### `examples\multicolumn_menu` - Multi-column Menus
+#### `examples\multicolumn_menu` - Multi-column menus
 **Level:** Beginner
 
 Demonstrates how to organize options in multiple columns to create more compact and visually appealing menus:
@@ -2474,7 +2474,7 @@ Demonstrates how to organize options in multiple columns to create more compact 
 - **Visual layout:** Shows how to place options side-by-side instead of vertically.
 - **Use cases:** Ideal for games with many options, character selection, inventories, etc.
 
-#### `examples\guess_the_number` - Guessing Game
+#### `examples\guess_the_number` - Guessing game
 **Level:** Beginner-Intermediate
 
 A complete "guess the number" game that illustrates:
@@ -2485,7 +2485,7 @@ A complete "guess the number" game that illustrates:
 
 This example is excellent for learning how to create simple interactive games.
 
-#### `examples\input_test` - Keyboard Input and Arrays
+#### `examples\input_test` - Keyboard input and arrays
 **Level:** Intermediate
 
 Technical example showcasing advanced data handling features:
@@ -2515,7 +2515,7 @@ Shows how to use the `lib/strings.cyd` library for string input and handling:
 - **Printing and length:** Shows the string with `strPrint` and its length with `strLen`.
 - **Configurable buffer:** The author chooses where and how large the string is (`stBase`, `stLen`).
 
-#### `examples\windows` - Multiple Windows
+#### `examples\windows` - Multiple windows
 **Level:** Beginner-Intermediate
 
 Illustrates the window system for dividing the screen into different areas:
@@ -2524,9 +2524,9 @@ Illustrates the window system for dividing the screen into different areas:
 - **Window navigation:** Demonstrates how to switch between windows to print text in different areas.
 - **Use cases:** Useful for creating SCUMM-like interfaces, separating description from actions, displaying permanent stats, etc.
 
-### Intermediate Examples
+### Intermediate examples
 
-#### `examples\ETPA_ejemplo` - "Choose Your Own Adventure" Book
+#### `examples\ETPA_ejemplo` - "Choose Your Own Adventure" book
 **Level:** Intermediate | **Requirements:** Images in `IMAGES`
 
 Complete implementation of the first paragraphs of a "Choose Your Own Adventure" book (CYOA):
@@ -2537,9 +2537,9 @@ Complete implementation of the first paragraphs of a "Choose Your Own Adventure"
 - **Modular structure:** Organizes code with labels for each paragraph/section (`LABEL s1`, `LABEL s2`, etc.).
 - **Screen subroutines:** Uses `GOSUB Pantalla` to manage different presentation modes.
 
-This example is ideal for creating conversational adventures or interactive gamebooks.
+This example is ideal for creating text adventures or interactive gamebooks.
 
-#### `examples\include_demo` - Multi-file Organization
+#### `examples\include_demo` - Multi-file organization
 **Level:** Intermediate
 
 Demonstrates the use of the `INCLUDE` system to organize large projects:
@@ -2564,7 +2564,7 @@ Shows how to call a Z80 routine from a script with `IMPORT` / `CALL`:
 
 See the `examples\import_demo\README.md` file for more details.
 
-#### `examples\inline_asm` - Inline assembler (ASM / EXPORTS / USES / CYD_CALL)
+#### `examples\inline_asm` - Inline assembly (ASM / EXPORTS / USES / CYD_CALL)
 
 **Level:** Advanced
 
@@ -2578,7 +2578,7 @@ combine them into a small "library":
 
 See the `examples\inline_asm\README.md` file for more details.
 
-### Advanced Graphics Examples
+### Advanced graphics examples
 
 #### `examples\blit` - Introduction to BLIT
 **Level:** Intermediate | **Requirements:** Images in `IMAGES`
@@ -2588,7 +2588,7 @@ Introduction to the `BLIT` command for copying sprites and graphics:
 - **Rendering loop:** Combines `BLIT` with `WHILE` loops to fill the screen with a pattern.
 - **Fundamental concept:** Foundation for understanding animations and more complex graphics.
 
-#### `examples\blit_island` - Advanced Graphics
+#### `examples\blit_island` - Advanced graphics
 **Level:** Intermediate-Advanced
 
 More sophisticated example of `BLIT` usage:
@@ -2596,7 +2596,7 @@ More sophisticated example of `BLIT` usage:
 - **Optimization:** Demonstrates techniques for efficient drawing.
 - **Multiple sprites:** Management of several graphic elements on screen.
 
-#### `examples\sprites` - Masked Sprites
+#### `examples\sprites` - Masked sprites
 **Level:** Intermediate | **Requires:** Images in `IMAGES`
 
 Shows how to use the `lib/sprites.cyd` library: a walking character and a
@@ -2606,14 +2606,14 @@ bouncing ball over a night scene, without erasing it:
 - **Moving by characters and by pixels:** The character moves character by character and the ball goes up and down pixel by pixel (`sprPY`).
 - **Several save slots:** Each one saves its background in its own slot (`sprSlot`) and they are restored in reverse order, so the background stays right when they cross.
 
-#### `examples\sprites_px` - Sprites with Pixel X
+#### `examples\sprites_px` - Sprites with pixel X
 **Level:** Intermediate | **Requires:** Images in `IMAGES`
 
 The same scene with the `lib/sprites_px.cyd` library:
 - **Pixel X:** The character walks 2 pixels per step with `sprPX`, instead of character by character.
 - **Cost:** Shows the alternative that takes more memory and draws sprites that don't fall on a character boundary more slowly; if pixel X isn't needed, `lib/sprites.cyd` is enough.
 
-#### `examples\Rocky_Horror_Show` - Character Animation
+#### `examples\Rocky_Horror_Show` - Character animation
 **Level:** Advanced
 
 Implements an animated intro screen:
@@ -2621,39 +2621,39 @@ Implements an animated intro screen:
 - **Precise timing:** Combines `WAIT` with `BLIT` to control animation speed.
 - **Large sprites:** Handling larger characters on screen.
 
-#### `examples\CYD_presents` - Complex Visual Effects
+#### `examples\CYD_presents` - Complex visual effects
 **Level:** Advanced
 
-Example for visual effects:
-- **Presentation effects:** Implements Spectrum "demo scene" style animations.
+Example of visual effects:
+- **Presentation effects:** Implements Spectrum demoscene-style animations.
 - **Synchronization:** Coordinates multiple visual elements with music.
 - **Advanced techniques:** Combines `BLIT`, `WAIT`, `PICTURE`, and color effects.
 
 The series `blit` → `blit_island` → `Rocky_Horror_Show` → `CYD_presents` forms a natural progression for mastering graphics in CYD.
 
-#### `examples\Golden_Axe_select_character` - Dynamic Selection with Colors
+#### `examples\Golden_Axe_select_character` - Dynamic selection with colors
 **Level:** Advanced | **Requirements:** Images in `IMAGES`
 
 Recreates a Golden Axe-style character selection screen:
 - **Option change detection:** Uses `CHOOSE IF CHANGED THEN GOSUB` to execute code when the player moves the cursor.
-- **Dynamic color effects:** Uses `FILLATTR` to change color attributes of screen areas in real-time.
+- **Dynamic color effects:** Uses `FILLATTR` to change color attributes of screen areas in real time.
 - **Selection highlighting:** Illuminates the selected character with a blinking effect using loops.
-- **Fade out effects:** Implements a fade-out effect by dividing the screen into 4 sections with `FADEOUT`.
+- **Fade-out effects:** Implements a fade-out effect by dividing the screen into 4 sections with `FADEOUT`.
 - **Contextual information:** Displays descriptive text that changes based on the selected character.
 - **Helper functions:** `OPTIONSEL()` returns the index of the currently selected option.
 
 This example is perfect for creating visually appealing and interactive selection menus.
 
-### Complete Project Examples
+### Complete project examples
 
-#### `examples\SCUMM_16` - SCUMM/LucasArts-style Interface
+#### `examples\SCUMM_16` - SCUMM/LucasArts-style interface
 **Level:** Advanced
 
 Complete implementation of a SCUMM-style graphic adventure interface (like Monkey Island or Maniac Mansion):
 - **Multiple windows:** Divides the screen into graphics area, text area, and verb area.
 - **Verb menu:** Implements a 9-verb menu (3x3) at the bottom of the screen.
-- **Two-level system:** First level for selecting verb, second level for selecting object/direction.
-- **Sprite display:** Uses `BLIT` to copy location image and verbs.
+- **Two-level system:** First level for selecting a verb, second level for selecting an object/direction.
+- **Sprite display:** Uses `BLIT` to copy the location image and verbs.
 - **Object management:** Prints a list of visible objects in the location.
 - **Custom charset:** Loads a 4x8 character set for more compact text using `CHARSET 1`.
 - **Visual feedback:** Changes the color of the selected verb with `FILLATTR`.
@@ -2661,7 +2661,7 @@ Complete implementation of a SCUMM-style graphic adventure interface (like Monke
 
 This example is an excellent template for creating point-and-click graphic adventures.
 
-#### `examples\Delerict` - Complete Adventure with Custom Engine
+#### `examples\Delerict` - Complete adventure with custom engine
 **Level:** Advanced-Expert | **Requirements:** Images in `IMAGES`
 
 Skeleton of a complete space adventure with all necessary systems:
@@ -2683,13 +2683,13 @@ Skeleton of a complete space adventure with all necessary systems:
 
 This is the most complex example and serves as a foundation for creating traditional text adventures or hybrid (text + graphics) adventures. Studying this code is a masterclass in structured programming with CYD.
 
-### How to Use the Examples
+### How to use the examples
 
 **To test without compiling:**
 Each directory includes a precompiled `.tap` file that you can load directly into your favorite ZX Spectrum emulator.
 
 **To compile them yourself:**
-Each example is a [project](#projects): its `cyd_project.ini` says its main script and its target. Build it where it is, without copying anything:
+Each example is a [project](#projects): its `cyd_project.ini` specifies its main script and its target. Build it where it is, without copying anything:
 - Windows: `make_adv.cmd examples\test`, or drag the example's folder onto `make_adv.cmd`.
 - Linux/macOS: `./make_adv.sh examples/test`.
 - GUI: **Open…** and the example's folder.
@@ -2714,7 +2714,7 @@ It's recommended to study the examples in this order for a gradual learning curv
 
 ## Character set
 
-The engine supports a character set of 256 characters, with a height of 8 pixels and variable width size from 1 to 8 pixels. The default character set included is 6x8 in size, along with an alternative set of 4x8 size starting from character 144. This is the default character set, ordered from left to right and top to bottom:
+The engine supports a character set of 256 characters, with a height of 8 pixels and a variable width of 1 to 8 pixels. The default character set included is 6x8 in size, along with an alternative set of 4x8 size starting from character 144. This is the default character set, ordered from left to right and top to bottom:
 
 ![Default character set](assets/default_charset.png)
 
@@ -2739,7 +2739,7 @@ The characters correspond to standard ASCII, except for the Spanish characters, 
 | 'ü' | 30 | 158 |
 | 'Ü' | 31 | 159 |
 
-Characters 127 to 143 (starting from zero, both included) are special. They are used as icons in options, i.e. where an option appears when the `OPTION` command is processed, and as wait indicators with a `WAITKEY` or when changing pages if the `PAGEPAUSE` command is active.
+Characters 127 to 143 (starting from zero, both inclusive) are special. They are used as icons in options, i.e. where an option appears when the `OPTION` command is processed, and as wait indicators with a `WAITKEY` or when changing pages if the `PAGEPAUSE` command is active.
 
 - Character 127 is the character used when an option is not selected in a menu. (In red in the screenshot below)
 - Characters 128 to 135 form the animation cycle of an option selected in a menu. (In green in the screenshot below)
@@ -2747,7 +2747,7 @@ Characters 127 to 143 (starting from zero, both included) are special. They are 
 
 ![Special characters](assets/special_characters.png)
 
-The compiler has two parameters, `-c` to import a new character set, and `-C` to export the currently used character set, in case it can be used as a template or for customizations.
+The compiler has two parameters: `-c` to import a new character set, and `-C` to export the currently used character set, in case it can be used as a template or for customizations.
 
 This is the import/export format for the character set:
 
@@ -2755,25 +2755,25 @@ This is the import/export format for the character set:
 [{"Id": 0, "Character": [255, 128, ...], "Width":8}, {"Id": 1, "Character": [0, 1, ...], "Width":6}, ...]
 ```
 
-It is a JSON with an array of records with three fields:
+It is a JSON file with an array of records with three fields:
 
 - _Id_: character number from 0 to 255, which cannot be repeated.
 - _Character_: an array of 8 numbers that corresponds to the value of the bytes of the character and, therefore, there cannot be values greater than 255. Each byte corresponds to the pixels of each line of the character.
-- _Width_: an array with the width in pixels of the character (the values cannot be less than 1 or greater than 8). Since the size of each character line in the above field is 8, any extra pixels on the right will be discarded.
+- _Width_: the width in pixels of the character (the values cannot be less than 1 or greater than 8). Since the size of each character line in the above field is 8, any extra pixels on the right will be discarded.
 
-To make it easier to create an alternative character set, the [CYD Character Set Converter](#cyd-character-set-converter) or cyd_chr_conv tool has been included. This tool allows you to convert fonts in `.chr`, `.ch8`, `.ch6` and `.ch4` formats created with ZxPaintbrush into the aforementioned JSON format. In addition, in the `assets` directory of the distribution you can find the `default_charset.chr` file with the default font so you can edit and customize it with that program.
+To make it easier to create an alternative character set, the [CYD character set converter](#cyd-character-set-converter) or cyd_chr_conv tool has been included. This tool allows you to convert fonts in `.chr`, `.ch8`, `.ch6` and `.ch4` formats created with ZxPaintbrush into the aforementioned JSON format. In addition, in the `assets` directory of the distribution you can find the `default_charset.chr` file with the default font so you can edit and customize it with that program.
 
 ---
 
 ## Error codes
 
-The application may generate errors at runtime. There are two types of errors, disk errors and engine errors.
+The application may generate errors at runtime. There are two types of errors: disk errors and engine errors.
 
 Engine errors are, as their name indicates, errors that occur when the engine detects an anomalous situation. They are the following:
 
 - System Error 1: The accessed resource does not exist. This is because PICTURE or TRACK is being executed with an index that does not exist in the adventure, since the corresponding image or track was not loaded during compilation. Without `--debug-stack`, a `RETURN` without a prior `GOSUB` usually ends in this error too.
-- System Error 2: Too many options have been created, the limit of possible options has been exceeded.
-- System Error 3: There are no options available, a `CHOOSE` command has been launched without having any `OPTION` before.
+- System Error 2: Too many options have been created; the limit of possible options has been exceeded.
+- System Error 3: There are no options available; a `CHOOSE` command has been executed without having any `OPTION` before.
 - System Error 4: A character of the character set is more than 8 pixels wide.
 - System Error 5: There is no music module loaded to play.
 - System Error 6: Invalid instruction code.
@@ -2797,7 +2797,7 @@ Without `--debug-errors` the interpreter doesn't change. With it, each instructi
 
 Disk errors are errors that could be caused when the game engine accesses the disk or the storage card. They are shown on screen as `DISK ERROR No:` followed by the code, and they halt the game (unlike the recoverable `SAVE`/`LOAD` errors, which are queried with `SAVERESULT()`).
 
-On the **Plus3** target they correspond to +3DOS errors:
+On the **+3** target they correspond to +3DOS errors:
 
 - Disk Error 0: Drive not ready
 - Disk Error 1: Disk is write protected
@@ -2827,9 +2827,9 @@ On the **Plus3** target they correspond to +3DOS errors:
 - Disk Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
 - Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
-These errors appear when accessing the disk, when searching for more pieces of text, images, etc. If error 23 appears (File not found), it is usually because you have forgotten to include a necessary file on the disk. Other errors already indicate an error with the disk drive or the disk itself.
+These errors appear when accessing the disk, when searching for more pieces of text, images, etc. If error 23 appears (File not found), it is usually because you have forgotten to include a necessary file on the disk. Other errors indicate a problem with the disk drive or the disk itself.
 
-On the **ESXDOS** target (divMMC/divIDE interfaces with an SD card) they correspond to the esxDOS error codes:
+On the **esxDOS** target (divMMC/divIDE interfaces with an SD card) they correspond to the esxDOS error codes:
 
 - Disk Error 1: O.K. (no error)
 - Disk Error 2: Nonsense in esxDOS
@@ -2863,29 +2863,29 @@ On the **ESXDOS** target (divMMC/divIDE interfaces with an SD card) they corresp
 - Disk Error 30: Unknown filesystem
 - Disk Error 31: Device is busy
 
-For ESXDOS, the most common error is 5 (No such file or directory), which usually means you have forgotten to copy some required file onto the SD card (the `.CSC` image, the `.BIN` music, the `.SAV` save, or the game's own `.DAT` data file).
+For esxDOS, the most common error is 5 (No such file or directory), which usually means you have forgotten to copy some required file onto the SD card (the `.CSC` image, the `.BIN` music, the `.SAV` save, or the game's own `.DAT` data file).
 
 ---
 
 ## Acknowledgements
 
-- David Beazley by [PLY](https://github.com/dabeaz/ply)
+- David Beazley for [PLY](https://github.com/dabeaz/ply)
 - Einar Saukas for the compressor [ZX0](https://github.com/einar-saukas/ZX0) and ZX7.
 - Mokona for their version of the [ZX0 compressor for Python](https://gitea.zaclys.com/Mokona/pyZX0.git).
 - Sylvain Glaize for the decompressor version [ZX0 for Python](https://gitea.zaclys.com/Mokona/pyZX0).
-- DjMorgul for the abbreviation finder, adapted from [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
-- Shiru by [BeepFx](http://shiru.untergrund.net).
+- DjMorgul for the abbreviation finder, adapted from [Daad Reborn Tokenizer](https://github.com/daad-adventure-writer/DRT)
+- Shiru for [BeepFx](http://shiru.untergrund.net).
 - Seasip for mkp3fs from [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Sergey.V.Bulba](http://bulba.untergrund.net) for the Vortex Tracker player.
 - Augusto Ruiz for the [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer).
-- To the team behind the [sjasmplus](https://github.com/z00m128/sjasmplus) assembler.
+- The team behind the [SjASMPlus](https://github.com/z00m128/sjasmplus) assembler.
 - [Tranqui69](https://mastodon.social/@tranqui69) for the logo and support.
 - XimoKom, Javier Fopiani, and Fran Kapilla for their invaluable help testing the engine.
 - Pablo Martínez Merino for help with Linux testing and examples.
-- Sergio ThePoPe for getting me interested in Plus3.
-- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe), and [Javi Ortiz](https://twitter.com/tbrazil_speccy) for sharing the story.
-- To the AD Adventure Club [CAAD](https://caad.club) for their support.
-- To all the members of the [`Choose your Destiny` Telegram group](https://t.me/+aUfKiqBUc2FiNDhk).
+- Sergio ThePoPe for getting me interested in the +3.
+- [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe), and [Javi Ortiz](https://twitter.com/tbrazil_speccy) for spreading the word.
+- The AD Adventure Club [CAAD](https://caad.club) for their support.
+- All the members of the [`Choose your Destiny` Telegram group](https://t.me/+aUfKiqBUc2FiNDhk).
 
 ---
 
@@ -2911,13 +2911,13 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 - THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0) is licensed under a [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
+- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0) is licensed under a [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE) license.
 
 - The [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) is licensed under the [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE) license.
 
-- [PLY](https://github.com/dabeaz/ply) and the [WyzTracker player](https://github.com/AugustoRuiz/WYZPlayer) do not have specific licenses; a license similar to BSD or MIT is assumed.
+- [PLY](https://github.com/dabeaz/ply) is licensed under a [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/ply/yacc.py) license.
 
 - [BeepFx](http://shiru.untergrund.net) is licensed under the [WTFPL v.2](https://wtfpl2.com).
 
-In simple terms, this means that if you use this engine to make a game, you must always indicate on the loading screen or within the game itself that it was made with `CYD` or use one of the project logos (included in the `assets` directory). You must also do so on the download website if you distribute the game online, and on the box or media container if you distribute it physically. Aside from the above condition, the game you create **ALWAYS** remains your property and authorship; you can sell or distribute it without having to publish the source code or artwork.
+In simple terms, this means that if you use this engine to make a game, you must always indicate on the loading screen or within the game itself that it was made with `CYD` or use one of the project logos (included in the `assets` directory). You must also do so on the download website if you distribute the game online, and on the box or media container if you distribute it physically. Aside from the above condition, you **ALWAYS** remain the owner and author of the game you create; you can sell or distribute it without having to publish the source code or artwork.
 However, the tool is licensed under the AGPL, which means that if you modify it or create your own version, you are required to publish the code and indicate that it is based on this project.

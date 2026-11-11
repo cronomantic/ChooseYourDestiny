@@ -6,7 +6,7 @@
   - [Introducción](#introducción)
   - [Instalación](#instalación)
     - [Windows](#windows)
-    - [Linux, BSDs, etc. (Experimental)](#linux-bsds-etc-experimental)
+    - [Linux, BSDs, etc. (experimental)](#linux-bsds-etc-experimental)
     - [Resaltador para VSCode](#resaltador-para-vscode)
   - [Preparando nuestra primera aventura](#preparando-nuestra-primera-aventura)
   - [Formato del fichero fuente](#formato-del-fichero-fuente)
@@ -16,7 +16,7 @@
   - [Disposición del texto en pantalla](#disposición-del-texto-en-pantalla)
   - [Imágenes](#imágenes)
   - [Efectos de sonido (Beeper)](#efectos-de-sonido-beeper)
-  - [Versiones para los diferentes modelos de Zx Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)
+  - [Versiones para los diferentes modelos de ZX Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)
   - [Música (AY)](#música-ay)
   - [Variables](#variables)
   - [Declaración de variables](#declaración-de-variables)
@@ -24,7 +24,7 @@
   - [Ejecución condicional](#ejecución-condicional)
   - [Bucles](#bucles)
   - [Compresión de textos y abreviaturas](#compresión-de-textos-y-abreviaturas)
-  - [Organización del Código con INCLUDE](#organización-del-código-con-include)
+  - [Organización del código con INCLUDE](#organización-del-código-con-include)
   - [Usando las librerías incluidas](#usando-las-librerías-incluidas)
   - [Flujo de trabajo](#flujo-de-trabajo)
   - [Menús con desplazamiento lateral](#menús-con-desplazamiento-lateral)
@@ -33,7 +33,7 @@
   - [Leyendo el teclado, arrays de variables e indirecciones](#leyendo-el-teclado-arrays-de-variables-e-indirecciones)
     - [Indirección](#indirección)
     - [Lectura del teclado (INKEY)](#lectura-del-teclado-inkey)
-    - [Borrar carácteres y hacer saltos de línea (BACKSPACE y NEWLINE)](#borrar-carácteres-y-hacer-saltos-de-línea-backspace-y-newline)
+    - [Borrar caracteres y hacer saltos de línea (BACKSPACE y NEWLINE)](#borrar-caracteres-y-hacer-saltos-de-línea-backspace-y-newline)
   - [Usar el juego de caracteres alternativo](#usar-el-juego-de-caracteres-alternativo)
   - [Ventanas](#ventanas)
   - [Arrays o secuencias](#arrays-o-secuencias)
@@ -47,9 +47,9 @@
 
 ## Introducción
 
-**ChooseYourDestiny** (o **CYD** para abreviar) es una entorno que te permitirá crear la experiencia de los librojuegos en tu Spectrum. La herramienta consiste en un compilador que, mediante un lenguaje sencillo sobre un texto ya preparado, te permite añadir interactividad y efectos visuales y sonoros para "jugar" a este tipo de aventuras.
+**ChooseYourDestiny** (o **CYD** para abreviar) es un entorno que te permitirá crear la experiencia de los librojuegos en tu Spectrum. La herramienta consiste en un compilador que, mediante un lenguaje sencillo sobre un texto ya preparado, te permite añadir interactividad y efectos visuales y sonoros para "jugar" a este tipo de aventuras.
 
-A la hora de diseñar este tipo de herramientas hay diferentes aproximaciones. Se puede diseñar una herramienta sencilla, de fácil manejo y conprensión para cualquiera, pero a costa de reducir su flexibilidad. O se puede coger un compilador de un lenguaje general para Spectrum como **ZxBasic** de Boriel o **Z88DK**, donde ya se tiene que tener conceptos avanzados de la máquina y meterse, si fuese necesario, incluso con ensamblador. Para **CYD** decidí tomar una aproximación intermedia: un lenguaje de programación basado en marcas sencillo, pero lo suficientemente flexible para poder crear casi cualquier cosa que se desee, pero lo suficientemente simplificado para centrarte en los aspectos creativos en lugar de los técnicos.
+A la hora de diseñar este tipo de herramientas hay diferentes aproximaciones. Se puede diseñar una herramienta sencilla, de fácil manejo y comprensión para cualquiera, pero a costa de reducir su flexibilidad. O se puede coger un compilador de un lenguaje general para Spectrum como **ZxBasic** de Boriel o **Z88DK**, donde ya hay que tener conceptos avanzados de la máquina y meterse, si fuese necesario, incluso con ensamblador. Para **CYD** decidí tomar una aproximación intermedia: un lenguaje de programación basado en marcas sencillo, pero lo suficientemente flexible para poder crear casi cualquier cosa que se desee, pero lo suficientemente simplificado para centrarte en los aspectos creativos en lugar de los técnicos.
 
 Por ello, se ha creado este tutorial para introducir conceptos que te permitan comprender el funcionamiento y empezar a hacer tus propias aventuras. Este documento está en constante revisión y actualización pero puede estar un poco desfasado con respecto a la distribución de referencia, con lo que la referencia de información absoluta será siempre el manual, el cual siempre se actualiza con la herramienta. Recomiendo que siempre lo tengas a mano.
 
@@ -61,17 +61,17 @@ Con esto, espero que te sirva para crear aventuras que podamos disfrutar todos.
 
 ### Windows
 
-Para instalar en Windows 10 (64 bits) o superiores, descarga el archivo `ChooseYourDestiny.Win_x64.zip` de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada `CYD`, que puedes crear donde creas conveniente. El guion para montar aventuras se llama `make_adv.cmd`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos. Tus aventuras no irán en esta carpeta, sino cada una en una carpeta propia, como veremos en el siguiente capítulo.
+Para instalar en Windows 10 (64 bits) o superiores, descarga el fichero `ChooseYourDestiny.Win_x64.zip` de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada `CYD`, que puedes crear donde creas conveniente. El guion para montar aventuras se llama `make_adv.cmd`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos. Tus aventuras no irán en esta carpeta, sino cada una en una carpeta propia, como veremos en el siguiente capítulo.
 
-### Linux, BSDs, etc. (Experimental)
+### Linux, BSDs, etc. (experimental)
 
 Antes tienes que cumplir los prerrequisitos, para ello consulta la sección relevante del [manual](MANUAL_es.md).
 
-Luego descarga el archivo `ChooseYourDestiny.Linux_x64.zip` de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada `CYD`, que puedes crear donde creas conveniente. El guion para montar aventuras se llama `make_adv.sh`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos. Tus aventuras no irán en esta carpeta, sino cada una en una carpeta propia, como veremos en el siguiente capítulo.
+Luego descarga el fichero `ChooseYourDestiny.Linux_x64.zip` de la sección [Releases](https://github.com/cronomantic/ChooseYourDestiny/releases) del repositorio y descomprímelo en una carpeta llamada `CYD`, que puedes crear donde creas conveniente. El guion para montar aventuras se llama `make_adv.sh`, tendrás que ejecutarlo para compilar la aventura. Te recomiendo hacerlo desde la línea de comandos. Tus aventuras no irán en esta carpeta, sino cada una en una carpeta propia, como veremos en el siguiente capítulo.
 
 ### Resaltador para VSCode
 
-Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter/releases) el archivo `chooseyourdestiny-highlighter-x.x.x.vsix desde Releases`. En VsCode, ve a la pantalla de extensiones, y en el botón ..., se abrirá un nuevo menú. Desde ahí, selecciona la opción Instalar desde VSIX y abre el archivo anterior.
+Para escribir el código más fácilmente, dispones de un [resaltador](https://github.com/cronomantic/chooseyourdestiny-highlighter/releases): descarga el fichero `chooseyourdestiny-highlighter-x.x.x.vsix` desde Releases. En VSCode, ve a la pantalla de extensiones, y en el botón ..., se abrirá un nuevo menú. Desde ahí, selecciona la opción Instalar desde VSIX y abre el fichero anterior.
 
 ![Resaltador](assets/tut057.png)
 
@@ -95,7 +95,7 @@ Si usas otro sistema operativo, el proceso es similar:
 python3 make_adventure.py --new ../tutorial 48k
 ```
 
-Esto crea una carpeta llamada `tutorial` junto a la carpeta de CYD, con una pequeña aventura de partida llamada `tutorial.cyd`, las carpetas `IMAGES` y `TRACKS`, y su `cyd_project.ini`. El `48k` del final es el modelo de Spectrum para el que vamos a hacer la aventura; ya hablaremos de ello más adelante. También puedes hacer esto con el botón **Nuevo…** de la GUI (ver [Alternativa Compilador GUI](#alternativa-compilador-gui)), eligiendo `48k` como objetivo, o simplemente creando tú mismo la carpeta `tutorial`, ya que `cyd_project.ini` es opcional; eso sí, sin él el modelo por defecto es `128k`, con lo que tendrás que indicar `48k` al compilar (lo veremos en el capítulo [Versiones para los diferentes modelos de Zx Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)).
+Esto crea una carpeta llamada `tutorial` junto a la carpeta de CYD, con una pequeña aventura de partida llamada `tutorial.cyd`, las carpetas `IMAGES` y `TRACKS`, y su `cyd_project.ini`. El `48k` del final es el modelo de Spectrum para el que vamos a hacer la aventura; ya hablaremos de ello más adelante. También puedes hacer esto con el botón **Nuevo…** de la GUI (ver [Alternativa: compilador GUI](#alternativa-compilador-gui)), eligiendo `48k` como objetivo, o simplemente creando tú mismo la carpeta `tutorial`, ya que `cyd_project.ini` es opcional; eso sí, sin él el modelo por defecto es `128k`, con lo que tendrás que indicar `48k` al compilar (lo veremos en el capítulo [Versiones para los diferentes modelos de ZX Spectrum](#versiones-para-los-diferentes-modelos-de-zx-spectrum)).
 
 Si abres `cyd_project.ini` con cualquier editor de texto, verás esto:
 
@@ -144,7 +144,7 @@ Al lanzar el fichero TAP resultante con un emulador, sale esto:
 
 Vamos a analizar lo que sucede...
 
-Aparte de `name`, otro ajuste importante de `cyd_project.ini` es `target`, el cual indica el modelo de Spectrum y el tipo de archivo de salida a emplear. De momento usaremos el valor `48k`, que luego cambiaremos cuando deseemos características más avanzadas.
+Aparte de `name`, otro ajuste importante de `cyd_project.ini` es `target`, el cual indica el modelo de Spectrum y el tipo de fichero de salida a emplear. De momento usaremos el valor `48k`, que luego cambiaremos cuando deseemos características más avanzadas.
 
 Volviendo al código de la aventura, vemos que se pinta el texto *Hola Mundo* y después sale una especie de cursor. Si pulsamos la tecla `Enter` o `Space`, se reinicia el programa. Si volvemos al código:
 
@@ -154,7 +154,7 @@ Hola Mundo[[WAITKEY]]
 
 Hay dos partes diferenciadas, una es el *Hola Mundo*, y después *[[WAITKEY]]*. La segunda parte es un comando que se le manda al intérprete para que saque ese cursor animado y espere la pulsación de una tecla. Esto es la base fundamental para entender cómo funciona el compilador: **Todo lo que se encuentre entre `[[` y `]]` se considera código o comandos para el motor y todo lo que esté fuera se considera texto imprimible**.
 
-Para entender ésto mejor, vamos a hacer un experimento. Vamos a poner un salto de línea detrás de los dos corchetes abiertos, tal que así:
+Para entender esto mejor, vamos a hacer un experimento. Vamos a poner un salto de línea detrás de los dos corchetes abiertos, tal que así:
 
 ```
 Hola Mundo[[
@@ -197,7 +197,7 @@ El resultado es...
 ![Pantalla 4](assets/tut004.png)
 
 Pero el color es un poco apagado... ¡Vamos a darle brillo!
-Para ello usamos el comando BRIGHT 1, (de nuevo, mirar la referencia en el [manual](MANUAL_es.md)), de esta manera:
+Para ello usamos el comando BRIGHT 1 (de nuevo, mira la referencia en el [manual](MANUAL_es.md)), de esta manera:
 
 ```
 [[INK 5]][[BRIGHT 1]][[CLEAR]]Hola Mundo[[WAITKEY]]
@@ -263,7 +263,7 @@ Pero no queremos que haga eso. Queremos que vuelva a empezar de nuevo. Para ello
 
 Cuando compiles y ejecutes, no se verá muy bien, pero notarás que cuando pulses la tecla de validación, no se reinicia, sino que borra la pantalla y vuelve a imprimir el texto y hacer la espera.
 
-Los dos añadidos al código son `LABEL principio` y `GOTO principio`. El primer comando no es en realidad un comando, sino una etiqueta, que lo que hace es poner un marcador es ese punto con un identificador de nombre *principio*; y el segundo lo que hace es indicar al intérprete que salte hacia donde se encuentre la etiqueta *principio*.
+Los dos añadidos al código son `LABEL principio` y `GOTO principio`. El primer comando no es en realidad un comando, sino una etiqueta, que lo que hace es poner un marcador en ese punto con un identificador de nombre *principio*; y el segundo lo que hace es indicar al intérprete que salte hacia donde se encuentre la etiqueta *principio*.
 
 El resultado es que, al pulsar la tecla de validación con WAITKEY, se encuentra el `GOTO principio` y salta hacia donde está declarada la etiqueta *principio* que, al ser el comienzo, lo que hace es volver a ejecutar todos los comandos posteriores e imprimir el texto *Hola Mundo*, y esperar con WAITKEY de nuevo... En resumen, hemos hecho un bucle infinito.
 
@@ -285,9 +285,9 @@ Ahora la etiqueta está declarada justo antes del borrado de la pantalla, y all�
 
 El concepto de etiquetas y saltos es fundamental para comprender cómo hacer un "Elige tu propia aventura", ya que presentaremos opciones al jugador, y dependiendo de esas opciones, iremos de un lugar a otro del texto.
 
-Un importante detalle es el formato de los identificadores de etiquetas. Éstos sólo pueden ser una **secuencia de cifras y letras o el carácter de subrayado seguidos, y debe empezar por una letra o un subrayado. No se admiten acentos o la ñ**. Es decir, `LABEL 1` o `LABEL La Etiqueta` no son válidos, pero `LABEL l1` o `LABEL LaEtiqueta` sí lo son. Además son sensibles al caso, es decir, que **se distinguen mayúsculas y minúsculas**, con lo que `LABEL Etiqueta` y `LABEL etiqueta` no son la misma etiqueta. Y, obviamente, no se puede declarar una etiqueta con el mismo nombre dos veces.
+Un importante detalle es el formato de los identificadores de etiquetas. Estos solo pueden ser una **secuencia de cifras y letras o el carácter de subrayado seguidos, y deben empezar por una letra o un subrayado. No se admiten acentos o la ñ**. Es decir, `LABEL 1` o `LABEL La Etiqueta` no son válidos, pero `LABEL l1` o `LABEL LaEtiqueta` sí lo son. Además son sensibles al caso, es decir, que **se distinguen mayúsculas y minúsculas**, con lo que `LABEL Etiqueta` y `LABEL etiqueta` no son la misma etiqueta. Y, obviamente, no se puede declarar una etiqueta con el mismo nombre dos veces.
 
-Por el contrario, los comandos no son sensibles al caso, es decir, que `CLEAR`, `clear` ó `Clear`, son perfectamente válidos. Sin embargo, yo recomiendo ponerlos en mayúsculas para distinguirlos mejor.
+Por el contrario, los comandos no son sensibles al caso, es decir, que `CLEAR`, `clear` o `Clear` son perfectamente válidos. Sin embargo, yo recomiendo ponerlos en mayúsculas para distinguirlos mejor.
 
 A partir de la versión 0.5 se ha añadido una forma corta de declarar etiquetas, anteponiendo el carácter `#` al nombre de la etiqueta, con lo que `LABEL Etiqueta` puede escribirse como `#Etiqueta`. De tal manera, el ejemplo anterior lo podemos escribir así:
 
@@ -307,7 +307,7 @@ A partir de la versión 0.5 se ha añadido una forma corta de declarar etiquetas
 
 ## Opciones
 
-Las opciones es el punto más importante del motor. De nuevo, vamos a verlo con el ejemplo del manual:
+Las opciones son el punto más importante del motor. De nuevo, vamos a verlo con el ejemplo del manual:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -321,7 +321,7 @@ Las opciones es el punto más importante del motor. De nuevo, vamos a verlo con 
 [[ CHOOSE ]]
 [[ LABEL Localidad2 ]]¡¡¡Lo lograste!!!
 [[ GOTO Final ]]
-[[ LABEL Localidad3 ]]¡¡¡Estas muerto!!!
+[[ LABEL Localidad3 ]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ LABEL Final : WAITKEY: END ]]
 ```
@@ -356,7 +356,7 @@ Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción se
 [[ CHOOSE ]]
 [[ LABEL Localidad2 ]]¡¡¡Lo lograste!!!
 [[ GOTO Final ]]
-[[ LABEL Localidad3 ]]¡¡¡Estas muerto!!!
+[[ LABEL Localidad3 ]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ LABEL Final : WAITKEY: END ]]
 ```
@@ -365,9 +365,9 @@ Con el comando `OPTION GOTO etiqueta`, lo que hacemos es declarar una opción se
 
 Como se puede ver, hemos separado las opciones con saltos de línea y puesto dos espacios de sangrado por delante del comando `OPTION GOTO` y eso se refleja en el resultado final.
 
-Una vez declaradas las opciones, con el comando `CHOOSE`, activamos el menú, que nos permitirá elegir entre una de las opciones que ya estuviesen en pantalla. Cuando seleccionemos una, se saltará a la etiqueta indicada en el correspondiente `OPTION GOTO`. En el ejemplo, Si seleccionamos la primera opción, `OPTION GOTO Localidad2`, saltará a la etiqueta `LABEL Localidad2` e imprimirá *Lo lograste* y luego saltará a la etiqueta `LABEL Final`. El `GOTO Final` es necesario hacerlo, porque si no, nos imprimiría *¡¡¡Lo lograste!!!* y después *¡¡¡Estas muerto!!!*; el `GOTO` es necesario, en este caso, para evitar que se ejecute el resultado de la segunda opción.
+Una vez declaradas las opciones, con el comando `CHOOSE`, activamos el menú, que nos permitirá elegir entre una de las opciones que ya estuviesen en pantalla. Cuando seleccionemos una, se saltará a la etiqueta indicada en el correspondiente `OPTION GOTO`. En el ejemplo, si seleccionamos la primera opción, `OPTION GOTO Localidad2`, saltará a la etiqueta `LABEL Localidad2` e imprimirá *Lo lograste* y luego saltará a la etiqueta `LABEL Final`. El `GOTO Final` es necesario hacerlo, porque si no, nos imprimiría *¡¡¡Lo lograste!!!* y después *¡¡¡Estás muerto!!!*; el `GOTO` es necesario, en este caso, para evitar que se ejecute el resultado de la segunda opción.
 
-Como nota adicional con `CHOOSE`, sólo se permiten un máximo de 32 opciones y un mínimo de una (inútil, pero se permite). Fuera de ese rango el intérprete dará un error.
+Como nota adicional con `CHOOSE`, solo se permiten un máximo de 32 opciones y un mínimo de una (inútil, pero se permite). Fuera de ese rango el intérprete dará un error.
 
 También destacar que hay una variante de `CHOOSE` temporizada, compila y ejecuta esto sin seleccionar nada en el menú:
 
@@ -386,14 +386,14 @@ También destacar que hay una variante de `CHOOSE` temporizada, compila y ejecut
 [[ CHOOSE IF WAIT 500 THEN GOTO Localidad3]]
 [[ LABEL Localidad2 ]]¡¡¡Lo lograste!!!
 [[ GOTO Final ]]
-[[ LABEL Localidad3 ]]¡¡¡Estas muerto!!!
+[[ LABEL Localidad3 ]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ LABEL Final : WAITKEY: END ]]
 ```
 
-Te darás cuenta de que al pasar unos 10 segundos, ha mostrado *¡¡¡Estas muerto!!!*.
+Te darás cuenta de que al pasar unos 10 segundos, ha mostrado *¡¡¡Estás muerto!!!*.
 
-Lo que hace `CHOOSE IF WAIT 500 THEN GOTO Localidad3` es lo mismo que `CHOOSE`, activar la selección de opciones, pero con la salvedad que también realiza una cuenta atrás, en este caso desde 500. Si dicha cuenta atrás llega a cero sin seleccionarse nada, entonces se hace el salto a la etiqueta indicada; en este caso *Localidad3*.
+Lo que hace `CHOOSE IF WAIT 500 THEN GOTO Localidad3` es lo mismo que `CHOOSE`, activar la selección de opciones, pero con la salvedad de que también realiza una cuenta atrás, en este caso desde 500. Si dicha cuenta atrás llega a cero sin seleccionarse nada, entonces se hace el salto a la etiqueta indicada; en este caso *Localidad3*.
 El contador funciona en base a los fotogramas del Spectrum, es decir, 1/50 de segundo, con lo que 500/50 = 10 segundos. Esto lo veremos en el siguiente capítulo.
 
 De nuevo, el código anterior lo podríamos reescribir así con la forma acortada de las etiquetas:
@@ -413,14 +413,14 @@ De nuevo, el código anterior lo podríamos reescribir así con la forma acortad
 [[ CHOOSE IF WAIT 500 THEN GOTO Localidad3]]
 [[ #Localidad2 ]]¡¡¡Lo lograste!!!
 [[ GOTO Final ]]
-[[ #Localidad3 ]]¡¡¡Estas muerto!!!
+[[ #Localidad3 ]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ #Final : WAITKEY: END ]]
 ```
 
 A partir de este momento, usaré la forma abreviada para las etiquetas.
 
-Con esto ya tenemos las bases para hacer un "Elije tu propia aventura" básico. Pero todavía tenemos muchas más posibilidades que explorar...
+Con esto ya tenemos las bases para hacer un "Elige tu propia aventura" básico. Pero todavía tenemos muchas más posibilidades que explorar...
 
 ---
 
@@ -443,7 +443,7 @@ Sin embargo, hay una opción para que CYD haga esto por sí solo. El comportamie
 
 Además, también se dispone de esperas "temporizadas", siendo `CHOOSE IF WAIT X THEN GOTO Y` del capítulo anterior un ejemplo. Cuando se ejecutan, un contador se carga con el valor que se pasa como parámetro y se realiza una cuenta atrás hasta que el contador llega a cero. El contador se decrementa una vez cada fotograma del Spectrum, es decir, una vez cada 1/50 de segundo, o lo que es lo mismo, 50 veces por segundo. De tal manera que, si queremos esperar un segundo, tenemos que poner el contador a 50.
 
-Con ésto, ya tenemos lo necesario para conocer los comandos:
+Con esto, ya tenemos lo necesario para conocer los comandos:
 
 - Con el comando `WAIT`, se realiza una espera incondicional, es una detención hasta que se agote el contador.
 
@@ -452,16 +452,16 @@ Espera tres segundos[[WAIT 150]]
 Ya está[[WAITKEY]]
 ```
 
-- El comando `PAUSE` es una combinación de `WAITKEY` y `WAIT`, se realiza una espera hasta que se agote el contador ó el usuario pulse la tecla de confirmación, podríamos considerarlo un `WAITKEY` con caducidad.
+- El comando `PAUSE` es una combinación de `WAITKEY` y `WAIT`: se realiza una espera hasta que se agote el contador o el usuario pulse la tecla de confirmación; podríamos considerarlo un `WAITKEY` con caducidad.
 
 ```
 Espera tres segundos o pulsa una tecla[[PAUSE 150]]
 Ya está[[WAITKEY]]
 ```
 
-- `CHOOSE IF WAIT X THEN GOTO Y` ya ha sido explicado el en capítulo anterior, si se agota el contador antes de que se seleccione una opción del menú, se realiza el salto indicado.
+- `CHOOSE IF WAIT X THEN GOTO Y` ya ha sido explicado en el capítulo anterior: si se agota el contador antes de que se seleccione una opción del menú, se realiza el salto indicado.
 
-Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado con el resto de los comandos de espera. Con este comando indicamos la espera que se produce cada vez que se imprime un carácter. Ésta espera no está ajustada a los fotogramas, sino que es un contador que ya depende de la velocidad del procesador (más rápido). La idea de este comando es la de escribir de forma más pausada y paulatina, para ciertas situaciones "dramáticas".
+Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado con el resto de los comandos de espera. Con este comando indicamos la espera que se produce cada vez que se imprime un carácter. Esta espera no está ajustada a los fotogramas, sino que es un contador que ya depende de la velocidad del procesador (más rápido). La idea de este comando es la de escribir de forma más pausada y paulatina, para ciertas situaciones "dramáticas".
 
 ```
 [[TYPERATE 100]]Esto imprime lento
@@ -472,11 +472,11 @@ Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado 
 
 ## Disposición del texto en pantalla
 
-Una de las partes más importantes para el diseño de una aventura con CYD es ajustar la presentación del texto. CYD no "sabe" como presentar el texto. Como autores, tenemos que ayudarle.
+Una de las partes más importantes para el diseño de una aventura con CYD es ajustar la presentación del texto. CYD no "sabe" cómo presentar el texto. Como autores, tenemos que ayudarle.
 
 Podemos visualizar su comportamiento imaginando que en la pantalla hay un cursor invisible que va imprimiendo el texto de izquierda a derecha y de arriba a abajo. El motor siempre procura que las palabras no se dividan, de tal manera que si la siguiente palabra no cabe en lo que queda de línea, salta a la línea siguiente y la imprime allí. Se considera una palabra cualquier texto separado por espacios.
 
-Pongamos un texto tipo *Loren ipsum*, todo seguido, sin saltos de línea:
+Pongamos un texto tipo *Lorem ipsum*, todo seguido, sin saltos de línea:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -496,7 +496,7 @@ Puedes ver que las palabras que no caben en su renglón continúan en la línea 
 
 Cuando el cursor de impresión llega a la última línea y debe pasar a la siguiente, se borra la pantalla y sigue imprimiendo desde el origen de la pantalla, arriba a la izquierda; excepto si se usa el comando `PAGEPAUSE`, que genera una espera de confirmación antes de borrar la pantalla.
 
-Podemos maquetar la pantalla adecuadamente usando espacios y saltos de línea según convenga, pero si queremos hacer una sangría o tabulaciones, dispones del comando `TAB pos`, que imprime tantos espacios como los indicados en el parámetro:
+Podemos maquetar la pantalla adecuadamente usando espacios y saltos de línea según convenga, pero si queremos hacer una sangría o tabulaciones, disponemos del comando `TAB pos`, que imprime tantos espacios como los indicados en el parámetro:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -511,7 +511,7 @@ Podemos maquetar la pantalla adecuadamente usando espacios y saltos de línea se
 
 ![Ejemplo de TAB](assets/tut011.png)
 
-El comand `TAB` nos permite ahorrar memoria ya que, si queremos imprimir 10 espacios, consumirán más esos 10 espacios que usar el comando `TAB 10`.
+El comando `TAB` nos permite ahorrar memoria ya que, si queremos imprimir 10 espacios, consumirán más esos 10 espacios que usar el comando `TAB 10`.
 
 De la misma manera, tenemos el comando `REPCHAR` para imprimir cualquier carácter de forma repetida:
 
@@ -530,7 +530,7 @@ De la misma manera, tenemos el comando `REPCHAR` para imprimir cualquier caráct
 
 ![Ejemplo de REPCHAR](assets/tut033.png)
 
-Esto repite el carácter número 35 (la almohadilla), 10 veces. Y si queremos imprimirlo sólo una vez, tenemos el comando `CHAR`:
+Esto repite el carácter número 35 (la almohadilla), 10 veces. Y si queremos imprimirlo solo una vez, tenemos el comando `CHAR`:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -582,9 +582,9 @@ Texto abajo
 
 ¿Qué ha pasado aquí? Si examinamos el código, vemos que antes de "Texto abajo", hay un salto de línea. Con lo que el cursor salta a la línea siguiente e imprime el "Texto abajo", pero después tenemos `AT 5,0`, que significa *mueve el cursor a la columna 5 y fila 0*, es decir, que vuelve a la fila anterior y 5 posiciones a la derecha desde el origen.
 
-Con esto ya podemos colocar textos donde queramos. Pero nos falta algo para controlar del todo la disposición del texto en pantalla, y es definir unos márgenes. Por defecto **CYD** imprime el texto a pantalla completa, pero puede interesarnos que sólo imprima en cierta zona para no "tapar" imágenes que queramos mostrar. Para ello disponemos del comando `MARGINS`, que nos permite indicar el "rectángulo" o área de impresión de los textos.
+Con esto ya podemos colocar textos donde queramos. Pero nos falta algo para controlar del todo la disposición del texto en pantalla, y es definir unos márgenes. Por defecto **CYD** imprime el texto a pantalla completa, pero puede interesarnos que solo imprima en cierta zona para no "tapar" imágenes que queramos mostrar. Para ello disponemos del comando `MARGINS`, que nos permite indicar el "rectángulo" o área de impresión de los textos.
 
-El formato del comando es `MARGINS col_origen, fila_origen, ancho, alto`, donde los parámetros, son la columna y la fila origen del área de impresión y el correspondiente ancho y alto. Por defecto, el motor arranca como si se hubiese ejecutado el comando `MARGINS 0, 0, 32, 24`, es decir, el origen en lado izquierdo superior de la pantalla y el tamaño la pantalla completa.
+El formato del comando es `MARGINS col_origen, fila_origen, ancho, alto`, donde los parámetros son la columna y la fila origen del área de impresión y el correspondiente ancho y alto. Por defecto, el motor arranca como si se hubiese ejecutado el comando `MARGINS 0, 0, 32, 24`, es decir, el origen en el lado izquierdo superior de la pantalla y el tamaño, la pantalla completa.
 
 Vamos ahora a retomar el ejemplo inicial de este capítulo y vamos a ponerlo en la zona inferior de la pantalla:
 
@@ -628,7 +628,7 @@ Si no lo has visto, pues que las coordenadas de `AT` no son, en este caso, las c
 
 La pantalla del Spectrum tiene, de forma natural, 32 caracteres por línea, que es algo insuficiente para textos largos. **CYD** soporta fuentes de ancho variable y la que tiene por defecto usa caracteres de 6x8, lo que nos permite tener 42 caracteres por línea, pero esto ocasiona que no coincida con la rejilla de atributos del Spectrum, que es 8x8, y haya "colour clash" o choque de atributos.
 
-Por este motivo, `AT` y `MARGINS`, tienen un sistema de coordenadas basadas en caracteres de 8x8 píxeles, es decir, 32 columnas y 24 filas, contadas de 0 a 31 y 0 a 23 respectivamente.
+Por este motivo, `AT` y `MARGINS` tienen un sistema de coordenadas basadas en caracteres de 8x8 píxeles, es decir, 32 columnas y 24 filas, contadas de 0 a 31 y 0 a 23 respectivamente.
 
 Por último, vamos a ver un problema de choque de atributos con este ejemplo:
 
@@ -642,7 +642,7 @@ Por último, vamos a ver un problema de choque de atributos con este ejemplo:
 ]]LALALALALA[[INK 4 /* COlor verde */]] LOLOLOLOLOLO[[ WAITKEY: END ]]
 ```
 
-Se puede ver que al cambiar el color a verde con el comando `INK`, debido a que el siguiente carácter a imprimir (un espacio), se queda entre medias de dos celdas de atributos, se pinta el carácter anterior de blanco:
+Se puede ver que al cambiar el color a verde con el comando `INK`, debido a que el siguiente carácter a imprimir (un espacio) se queda entre medias de dos celdas de atributos, se pinta el carácter anterior de blanco:
 
 ![Color Clash!](assets/tut015.png)
 
@@ -668,7 +668,7 @@ Será necesario por parte del autor realizar estos pequeños ajustes para mejora
 
 ## Imágenes
 
-Para darle más vistosidad a la aventura, es posible añadir imágenes en formato SCR, de pantalla de Spectrum. Estas imágenes serán comprimidas, creando archivos de tipo  `CSC` que serán incluidos en el programa final.
+Para darle más vistosidad a la aventura, es posible añadir imágenes en formato SCR, de pantalla de Spectrum. Estas imágenes serán comprimidas, creando ficheros de tipo `CSC` que serán incluidos en el programa final.
 
 El compilador busca y comprime automáticamente los ficheros SCR que haya en la carpeta `IMAGES` del proyecto, con lo que simplemente tendrás que depositar los ficheros allí.
 
@@ -709,9 +709,9 @@ Con esto tenemos la imagen cargada, pero para mostrarla, tenemos que usar el com
 
 Ya podemos mostrar imágenes, pero hay que aclarar antes algunas cosas. Lo primero que te puede llamar la atención es... ¿para qué sirve el 1 de DISPLAY? Como se indica en la referencia, el comando `DISPLAY` necesita un parámetro que indica si debe mostrar la imagen o no; si el valor es cero, no la muestra, y si es distinto de cero, sí. Esto puede parecer inútil, pero tiene sentido si se usa con variables, para hacer que se muestre la imagen de forma condicional de acuerdo con el valor de una variable.
 
-Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño para la versión de disco, ya que al separar la carga en una operación diferente, podemos controlar cuándo se hace ésta para, por ejemplo, hacer la carga cuando comience un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado. Además, tanto en cinta como en desico, se tiene que descomprimir la imagen en un "buffer", lo cual lleva un poco de tiempo que puede ocasionar una pausa apreciable.
+Otra cosa que te puede extrañar es ¿por qué los comandos de cargar la imagen y mostrarla están separados, en lugar de usar un único comando para hacer las dos cosas? Pues la respuesta es una decisión de diseño para la versión de disco, ya que al separar la carga en una operación diferente, podemos controlar cuándo se hace esta para, por ejemplo, hacer la carga cuando comience un capítulo, y mostrar luego la imagen en el momento más oportuno, ya que al cargar, se detendrá el motor y generará una pausa en la lectura en un momento no deseado. Además, tanto en cinta como en disco, se tiene que descomprimir la imagen en un "buffer", lo cual lleva un poco de tiempo que puede ocasionar una pausa apreciable.
 
-De momento, quédate que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que sólo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o en memoria, o al mostrar una imagen sin cargarla antes.
+De momento, quédate con que primero necesitas `PICTURE 3`, para cargar la imagen `003.CSC`, por ejemplo, y después `DISPLAY 1` para mostrarla. Hay que destacar que solo podemos cargar una imagen a la vez, con lo que si cargamos otra imagen, la que ya estuviese cargada se borrará, y una imagen cargada la podemos mostrar tantas veces como queramos. Y tendrás un bonito error si intentas cargar una imagen que no exista en el disco o en memoria, o mostrar una imagen sin cargarla antes.
 
 Al visualizar imágenes hay que tener en cuenta que siempre se sobrescribirá lo que ya hubiese en pantalla. El comportamiento por defecto es cargar imágenes a pantalla completa (192 líneas), pero podemos editar el número de líneas a cargar con el ajuste `image_lines`, en la sección `[options]` del `cyd_project.ini` del proyecto:
 
@@ -767,7 +767,7 @@ Y con esto ya está mejor:
 
 Aquí hemos usado una imagen al azar, más concretamente, la pantalla de carga de la *Aventura Original*. Pero si vamos a hacer este tipo de recortes con todas las imágenes, podemos cambiar el valor de `image_lines`, para que recorte las líneas que no queramos. Esto ahorrará espacio, y evitará que se sobrescriba la zona inferior de texto cuando carguemos una nueva imagen. Para la gestión de imágenes y teniendo en cuenta estas restricciones, es importante planificar de antemano cómo y cuándo las vamos a mostrar.
 
-Unas dudas que ten puede surgir: ¿y si quiero recortar el tamaño de sólo una imagen? ¿Y si quiero que cada imagen tenga un número de líneas diferente? Pues existe la posibilidad de definir el número de líneas para cada fichero específicamente. Imaginemos que queremos dejar 62 líneas para el fichero `000.SCR`, 40 líneas para el fichero `001.SCR`, y el resto a 192. Para ello habría que crear un fichero llamado `images.json` en la carpeta `IMAGES` con lo siguiente:
+Unas dudas que te pueden surgir: ¿y si quiero recortar el tamaño de solo una imagen? ¿Y si quiero que cada imagen tenga un número de líneas diferente? Pues existe la posibilidad de definir el número de líneas para cada fichero específicamente. Imaginemos que queremos dejar 62 líneas para el fichero `000.SCR`, 40 líneas para el fichero `001.SCR`, y el resto a 192. Para ello habría que crear un fichero llamado `images.json` en la carpeta `IMAGES` con lo siguiente:
 
 ```json
 [
@@ -784,9 +784,9 @@ Unas dudas que ten puede surgir: ¿y si quiero recortar el tamaño de sólo una 
 ]
 ```
 
-Cuando el compilador encuentre este fichero JSON, tomará la configuración de las imágenes indicadas en éste y para el resto de imágenes se tomará lo que hayamos indicado en `image_lines`. De tal manera, con una supuesta imagen `003.SCR` y si no hemos cambiado `image_lines`, entoces se usarán las 192 líneas, es decir, la imagen completa.
+Cuando el compilador encuentre este fichero JSON, tomará la configuración de las imágenes indicadas en este y para el resto de imágenes se tomará lo que hayamos indicado en `image_lines`. De tal manera, con una supuesta imagen `003.SCR` y si no hemos cambiado `image_lines`, entonces se usarán las 192 líneas, es decir, la imagen completa.
 
-Obviamente, con el campo `num_lines` indicamos el número de línea de cada fichero, pero te preguntarás ¿para qué sirve `force_mirror`? Pues lo que hará **CYD** es descartar la parte derecha de la imágen y cuando la descomprima en el buffer de pantalla, dibujará en su lugar la parte izquierda de la imagen, pero de forma simétrica, es decir espejada, lo cual puede suponer en ciertas situaciones un ahorro importante.
+Obviamente, con el campo `num_lines` indicamos el número de líneas de cada fichero, pero te preguntarás ¿para qué sirve `force_mirror`? Pues lo que hará **CYD** es descartar la parte derecha de la imagen y cuando la descomprima en el buffer de pantalla, dibujará en su lugar la parte izquierda de la imagen, pero de forma simétrica, es decir, espejada, lo cual puede suponer en ciertas situaciones un ahorro importante.
 
 ---
 
@@ -796,15 +796,15 @@ Para mejorar la ambientación de nuestra aventura, el motor permite emitir efect
 
 ![BeepFx](assets/tut020.png)
 
-En este tutorial no vamos a enseñar cómo se maneja la herramienta, pero vamos a tomar uno de los archivos de ejemplo que incluye el paquete. Desde el menú `File -> Open project`, abrimos el fichero `demo.spj`, donde hay una serie de efectos ya creados. Los podemos reproducir con la opción `Play Effect`:
+En este tutorial no vamos a enseñar cómo se maneja la herramienta, pero vamos a tomar uno de los ficheros de ejemplo que incluye el paquete. Desde el menú `File -> Open project`, abrimos el fichero `demo.spj`, donde hay una serie de efectos ya creados. Los podemos reproducir con la opción `Play Effect`:
 
 ![Ejemplo BeepFx](assets/tut021.png)
 
-Ahora vamos a exportarlo a un fichero con el que podamos usarlos con el motor. Para ello vamos al menú `File -> Compile`, donde nos saldrá esta ventana:
+Ahora vamos a exportarlos a un fichero con el que podamos usarlos con el motor. Para ello vamos al menú `File -> Compile`, donde nos saldrá esta ventana:
 
 ![Exportar desde BeepFx](assets/tut022.png)
 
-Ahora viene lo importante, **tenemos que dejar siempre marcadas la opción `Assembly` e `Include player code`**:
+Ahora viene lo importante, **tenemos que dejar siempre marcadas las opciones `Assembly` e `Include player code`**:
 
 ![Opciones para BeepFx](assets/tut023.png)
 
@@ -843,13 +843,13 @@ Una peculiaridad del comando SFX es que, al contrario que las imágenes, si no s
 
 ---
 
-## Versiones para los diferentes modelos de Zx Spectrum
+## Versiones para los diferentes modelos de ZX Spectrum
 
-Hasta este momento, sólo hemos desarrollado aventuras para el Zx Spectrum original de 48k, sin embargo también se permite usar los modelos de 128k en cinta o disco. El soporte de disco tiene la peculiaridad de que las imágenes y las melodías no se almacenan en memoria, si no que se cargarán de forma dinámica desde disco cuando se ejecuten los comandos `PICTURE` y `TRACK`.
+Hasta este momento, solo hemos desarrollado aventuras para el ZX Spectrum original de 48K, sin embargo también se permite usar los modelos de 128K en cinta o disco. El soporte de disco tiene la peculiaridad de que las imágenes y las melodías no se almacenan en memoria, sino que se cargarán de forma dinámica desde disco cuando se ejecuten los comandos `PICTURE` y `TRACK`.
 
-El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del interprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 Kb disponibles en los modelos de 128K y unos 24 Kb en los modelos de 40K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
+El espacio disponible variará dependiendo de la aventura y de los recursos extra a utilizar ya que si se obvian músicas y efectos de sonido, el tamaño del intérprete se reducirá, dejando más espacio para textos e imágenes. Como promedio, calcula que tendrás unos 96 KB disponibles en los modelos de 128K y unos 24 KB en los modelos de 48K. Por este motivo, la versión de 48K no incluye soporte para melodías AY.
 
-Para cambiar el modelo, simplemente tienes que cambiar el ajuste `target` del `cyd_project.ini` del proyecto por los valores `48k` o `128k` si quieres generar los TAPs para los modelos correspondientes (también existen `plus3` y `esxdos`, que vemos a continuación, y los experimentales `mld` y `mld128`). Por ejemplo, si queremos crear una versión de nuestro tutorial para Spectrum 128k, con la imagen `000.scr` de la carpeta `IMAGES` como pantalla de carga:
+Para cambiar el modelo, simplemente tienes que cambiar el ajuste `target` del `cyd_project.ini` del proyecto por los valores `48k` o `128k` si quieres generar los TAPs para los modelos correspondientes (también existen `plus3` y `esxdos`, que vemos a continuación, y los experimentales `mld` y `mld128`). Por ejemplo, si queremos crear una versión de nuestro tutorial para Spectrum 128K, con la imagen `000.scr` de la carpeta `IMAGES` como pantalla de carga:
 
 ```ini
 [project]
@@ -879,23 +879,23 @@ Con el modelo `esxdos`, para interfaces divMMC/divIDE con tarjeta SD, el resulta
 
 **CYD** también permite tocar música usando el chip AY, usando módulos creados con Vortex Tracker, en formato `PT3`. La música AY no está disponible para los modelos de 48K, así que necesitaremos cambiar el ajuste `target` en `cyd_project.ini`, tal y como se describe en el capítulo anterior.
 
-El funcionamiento es intencionadamente similar al de las imágenes. Los nombres de los ficheros de los módulos tienen que ser números de 3 dígitos con la extensión `.PT3`, de tal manera que sean `000.PT3`, `001.PT3` y así sucesivamente, e incluirse en el disco. Para facilitar la tarea, el compilador lo hará por nosotros con todos los ficheros que cumplan ésta nomenclatura y se encuentren dentro de la carpeta `TRACKS` del proyecto.
+El funcionamiento es intencionadamente similar al de las imágenes. Los nombres de los ficheros de los módulos tienen que ser números de 3 dígitos con la extensión `.PT3`, de tal manera que sean `000.PT3`, `001.PT3` y así sucesivamente, e incluirse en el disco. Para facilitar la tarea, el compilador lo hará por nosotros con todos los ficheros que cumplan esta nomenclatura y se encuentren dentro de la carpeta `TRACKS` del proyecto.
 
-Los comandos que disponemos también son similares a los comandos de manejo de imágenes. Con el comando `TRACK`, cargamos desde disco en memoria un módulo de música, de tal manera que con `TRACK 0`, cargaríamos el módulo `000.PT3`, con `TRACK 1` cargaríamos `001.PT3`, etc.
+Los comandos de los que disponemos también son similares a los comandos de manejo de imágenes. Con el comando `TRACK`, cargamos desde disco en memoria un módulo de música, de tal manera que con `TRACK 0`, cargaríamos el módulo `000.PT3`, con `TRACK 1` cargaríamos `001.PT3`, etc.
 
 Una vez cargado el módulo, pasaríamos a reproducirlo con el comando `PLAY 1` cuando necesitemos hacerlo. El parámetro del comando `PLAY` es un número que, si es cero, para la música (si se estuviese ya reproduciendo), y si es distinto de cero, la reproduce desde el comienzo (si estuviese ya parada).
 
-Por último, con el comando `LOOP` indicamos si queremos que el módulo se reproduzca sólo una vez o queremos que se reproduzca indefinidamente. Si el valor de su parámetro es cero, sólo lo hará una vez, y si es distinto de cero, comenzará a reproducirse de nuevo cuando acabe.
+Por último, con el comando `LOOP` indicamos si queremos que el módulo se reproduzca solo una vez o queremos que se reproduzca indefinidamente. Si el valor de su parámetro es cero, solo lo hará una vez, y si es distinto de cero, comenzará a reproducirse de nuevo cuando acabe.
 
-Un detalle a tener en cuenta es que el efecto del comando `LOOP` es propio del reproductor incorporado y sólo es válido cuando el módulo pueda acabar. El formato `.PT3` tiene comandos de repetición, haciendo que el módulo se reproduzca sin fin por sí mismo, con lo que es conveniente reproducir el mismo con un reproductor externo para ver si esto es así.
+Un detalle a tener en cuenta es que el efecto del comando `LOOP` es propio del reproductor incorporado y solo es válido cuando el módulo pueda acabar. El formato `.PT3` tiene comandos de repetición, haciendo que el módulo se reproduzca sin fin por sí mismo, con lo que es conveniente reproducir el mismo con un reproductor externo para ver si esto es así.
 
 ---
 
 ## Variables
 
-Con lo que ya sabemos, ya podríamos hacer una aventura por opciones relativamente simple, tipo "Elige tu Propia Aventura", pero podemos ir más lejos...
+Con lo que ya sabemos, ya podríamos hacer una aventura por opciones relativamente simple, tipo "Elige tu propia aventura", pero podemos ir más lejos...
 
-El motor dispone de 256 variables ó banderas de un byte, es decir, 256 almacenes donde podemos almacenar valores del 0 al 255. Cada una de estas variables es identificada a su vez por un número del 0 al 255. Vamos a verlo con un ejemplo:
+El motor dispone de 256 variables o banderas de un byte, es decir, 256 almacenes donde podemos almacenar valores del 0 al 255. Cada una de estas variables es identificada a su vez por un número del 0 al 255. Vamos a verlo con un ejemplo:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -912,7 +912,7 @@ Este es el resultado:
 
 ![Variables](assets/tut024.png)
 
-Lo primero que vemos nuevo es esto `SET 1 TO 5`, con esto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
+Lo primero que vemos nuevo es esto: `SET 1 TO 5`; con esto le estamos indicando al motor que guarde el valor 5 dentro de la variable número 1. Y como consecuencia, con `PRINT @1` le estamos indicando que muestre el valor de la variable 1 en pantalla.
 
 Una cosa que habrás notado es que `PRINT` pone una arroba delante del número de variable. La arroba es el indicador de variable. Para explicarlo mejor, quítale la arroba de tal manera que quede esto:
 
@@ -954,7 +954,7 @@ De nuevo, volvemos a tener 5 gamusinos:
 
 ![Variables3](assets/tut026.png)
 
-Con `SET 1 TO 5` almacenamos 5 en la variable num. 1. Luego con `SET 0 TO @1`, lo que hacemos es almacenar en la variable número 0 el valor que contiene la variable número 1 y finalmente, con `PRINT @0`, mostramos el contenido de la variable número 0.
+Con `SET 1 TO 5` almacenamos 5 en la variable número 1. Luego con `SET 0 TO @1`, lo que hacemos es almacenar en la variable número 0 el valor que contiene la variable número 1 y finalmente, con `PRINT @0`, mostramos el contenido de la variable número 0.
 
 Ahora vamos a ver un ejemplo más práctico de las variables, que pondrá a prueba nuestros conocimientos adquiridos en este tutorial:
 
@@ -1073,7 +1073,7 @@ Necesitas 10 gamusinos para poder salir...
    #Final]]¡Gracias por jugar![[WAITKEY : END]]
 ```
 
-Esto está mucho mejor, con `DECLARE 0 AS NumGamusinos` lo que le estamos indicando al compilador que, a partir de este momento, la variable 0 se llamará NumGamusinos, y podremos usar ese nombre en su lugar. Con esto podemos dar un nombre significativo a los flags. Ten en cuenta además lo siguiente:
+Esto está mucho mejor, con `DECLARE 0 AS NumGamusinos` lo que le estamos indicando al compilador es que, a partir de este momento, la variable 0 se llamará NumGamusinos, y podremos usar ese nombre en su lugar. Con esto podemos dar un nombre significativo a los flags. Ten en cuenta además lo siguiente:
 
 - Podemos seguir refiriéndonos a la variable por su número.
 - No podemos declarar una variable y una etiqueta con el mismo nombre.
@@ -1084,7 +1084,7 @@ Esto está mucho mejor, con `DECLARE 0 AS NumGamusinos` lo que le estamos indica
 
 ## Subrutinas
 
-Las subrutinas son un tipo de salto especial, que guarda en un almacén la posición desde la cual se llamó, y que se puede recuperar posteriormente, pudiendo continuar desde el mismo punto en el que se entró. Éste es un concepto de la programación clásico de "subrutinas" o "subprogramas", para realizar tareas repetitivas y que seguramente suene a los que hayan programado algo en Basic.
+Las subrutinas son un tipo de salto especial, que guarda en un almacén la posición desde la cual se llamó, y que se puede recuperar posteriormente, pudiendo continuar desde el mismo punto en el que se entró. Este es un concepto de la programación clásico de "subrutinas" o "subprogramas", para realizar tareas repetitivas y que seguramente suene a los que hayan programado algo en BASIC.
 
 Como siempre, vamos a verlo con un ejemplo simple para entenderlo:
 
@@ -1120,7 +1120,7 @@ Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
    #ImprimirGamusinos : PRINT @NumGamusinos]] gamusinos[[RETURN]]
 ```
 
-El ejemplo de los Gamusinos otra vez... Pero esta vez hacemos la impresión del número de Gamusinos dos veces, cuando elegimos una opción y al final del todo.
+El ejemplo de los gamusinos otra vez... Pero esta vez hacemos la impresión del número de gamusinos dos veces, cuando elegimos una opción y al final del todo.
 
 ![Subrutinas](assets/tut029.png)
 
@@ -1132,11 +1132,11 @@ Para ello hacemos una subrutina que realice esta función:
 
 Declaramos una etiqueta llamada `ImprimirGamusinos` que sirve de punto de salto. Luego tenemos la impresión del número de gamusinos, y luego el comando `RETURN`. La llamada la realizamos con `GOSUB ImprimirGamusinos` en los dos puntos donde queremos que se ejecute.
 
-Como ya he indicado, `GOSUB ImprimirGamusinos`, lo que hace es hacer un salto a la etiqueta `ImprimirGamusinos`, pero con la salvedad que se guarda en la *pila* el punto de la llamada a la subrutina. Toda subrutina debe tener un punto de retorno, es decir, un punto de finalización con el que se indica al motor que debe volver al punto donde lo habíamos dejado, y eso lo hace el comando `RETURN`, que recupera de la pila el último punto de retorno y salta a esa posición.
+Como ya he indicado, `GOSUB ImprimirGamusinos`, lo que hace es hacer un salto a la etiqueta `ImprimirGamusinos`, pero con la salvedad de que se guarda en la *pila* el punto de la llamada a la subrutina. Toda subrutina debe tener un punto de retorno, es decir, un punto de finalización con el que se indica al motor que debe volver al punto donde lo habíamos dejado, y eso lo hace el comando `RETURN`, que recupera de la pila el último punto de retorno y salta a esa posición.
 
-Una cosa que hay que fijarse es que la subrutina está al final, después de `END`. Esto es así para que no se ejecute sin que la llamemos explícitamente. Ten en cuenta que el intérprete no diferencia una subrutina de código "normal", y si llega a ese punto la ejecutará y hará un `RETURN` inválido al final. Por ello, recomiendo para evitar estas situaciones, situarlas al final después de un `END`, o usar un `GOTO` delante para saltarla en el caso de que accidentalmente llegue a ella.
+Una cosa en la que hay que fijarse es que la subrutina está al final, después de `END`. Esto es así para que no se ejecute sin que la llamemos explícitamente. Ten en cuenta que el intérprete no diferencia una subrutina de código "normal", y si llega a ese punto la ejecutará y hará un `RETURN` inválido al final. Por ello, para evitar estas situaciones, recomiendo situarlas al final después de un `END`, o usar un `GOTO` delante para saltarla en el caso de que accidentalmente llegue a ella.
 
-Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pueden anidarse, es decir, se puede llamar a una subrutina dentro de otra. Se almacenarán en la pila las direcciones de retorno en orden inverso, pero **CUIDADO, la pila tiene un límite**. Esto quiere decir tienes un límite de anidamiento. Y como ya expliqué en el párrafo anterior, si se hace un `RETURN` sin un `GOSUB` previo, tendrás como mínimo un error, y como máximo, comportamiento erróneo.
+Y ahora, como ya es costumbre, las aclaraciones y excepciones. Las subrutinas pueden anidarse, es decir, se puede llamar a una subrutina dentro de otra. Se almacenarán en la pila las direcciones de retorno en orden inverso, pero **CUIDADO, la pila tiene un límite**. Esto quiere decir que tienes un límite de anidamiento. Y como ya expliqué en el párrafo anterior, si se hace un `RETURN` sin un `GOSUB` previo, tendrás como mínimo un error, y como máximo, comportamiento erróneo.
 
 Para ayudarte con esto, el compilador sigue el flujo del programa y te avisa (`WARNING [CODEGEN]`, con la línea) si se puede llegar a un `RETURN` sin ningún `GOSUB` pendiente, por ejemplo porque se entra en la subrutina con un `GOTO` o cayendo desde el código de encima, y también si una subrutina puede terminar sin `RETURN`, saliendo con un `GOTO` al resto del programa. Esto último es especialmente traicionero: cada vez queda un nivel ocupado en la pila y, al cabo de unos cientos, el juego se cuelga. Si quieres que el propio juego lo compruebe mientras se ejecuta, compila con la opción `--debug-stack` (en el compilador gráfico, "Comprobar la pila de GOSUB al ejecutar").
 
@@ -1177,7 +1177,7 @@ Al final te quedas con [[GOSUB ImprimirGamusinos]].[[
 
 ## Ejecución condicional
 
-El el siguiente ejemplo vamos a usar la estructura `IF ... THEN ... ENDIF` para ilustrar su funcionamiento:
+En el siguiente ejemplo vamos a usar la estructura `IF ... THEN ... ENDIF` para ilustrar su funcionamiento:
 Copia lo siguiente en `tutorial.cyd`:
 
 ```cyd
@@ -1221,9 +1221,9 @@ Curioso... ahora no podemos salir...
 
 ...¡hasta que tengamos 10 gamusinos! ¿Qué sucede?
 
-La respuesta es el `IF @NumGamusinos = 10 THEN ... ENDIF`, si se cumple la condición de que tengamos 10 gamusinos, se ejecuta lo que haya entre el `THEN` y el `ENDIF`, y en caso contrario lo saltará.
+La respuesta es el `IF @NumGamusinos = 10 THEN ... ENDIF`: si se cumple la condición de que tengamos 10 gamusinos, se ejecuta lo que haya entre el `THEN` y el `ENDIF`, y en caso contrario lo saltará.
 
-Fíjate que no sólo se salta el comando de opción para salir; también se salta el texto posterior y, por tanto, tampoco lo muestra.
+Fíjate en que no solo se salta el comando de opción para salir; también se salta el texto posterior y, por tanto, tampoco lo muestra.
 
 Ahora voy a cambiar a `IF @NumGamusinos = 10 THEN ... ELSE ... ENDIF`. Lo que hacemos es añadir otro bloque de código, que se ejecuta si *NO* se cumple la condición. En este caso vamos a añadir otro IF que nos diga lo que tenemos que hacer:
 
@@ -1276,7 +1276,7 @@ Esto nos permite, junto con `GOTO` y `GOSUB`, controlar el **flujo del programa*
 
 ## Bucles
 
-Para hacer que ciertas partes del código se repita mientras se cumpla una condición tenemos `WHILE (cond) ... WEND`:
+Para hacer que ciertas partes del código se repitan mientras se cumpla una condición tenemos `WHILE (cond) ... WEND`:
 
 ```
 [[ /* Pone colores de pantalla y la borra */
@@ -1297,7 +1297,7 @@ Para hacer que ciertas partes del código se repita mientras se cumpla una condi
 Hecho[[WAITKEY]]
 ```
 
-En este ejemplo, inicio la variable *cnt* a 1, y al empezar el bucle, comprueba la condición de que la variable sea menor que 11, mientras se cumpla, se ejecuta lo que hay hasta `WEND`. Cada vez que se ejecuta el bucle, imprimimos el valor de la variable, ponemos un espacio con `TAB 1` e incrementamos su valor en 1. Cuando llegue a 11, deja de ejecutarse y continúa con lo que haya después del `WEND`.
+En este ejemplo, inicio la variable *cnt* a 1, y al empezar el bucle, comprueba la condición de que la variable sea menor que 11; mientras se cumpla, se ejecuta lo que hay hasta `WEND`. Cada vez que se ejecuta el bucle, imprimimos el valor de la variable, ponemos un espacio con `TAB 1` e incrementamos su valor en 1. Cuando llegue a 11, deja de ejecutarse y continúa con lo que haya después del `WEND`.
 
 Y ya cuenta del uno al 10:
 
@@ -1350,27 +1350,27 @@ Con la adición del bucle, podemos implementar casi cualquier cosa con el lengua
 
 ## Compresión de textos y abreviaturas
 
-Para ahorrar espacio en disco, el compilador realiza una compresión de los textos, buscando las sub-cadenas más comunes en el mismo y sustituyéndolas por "tokens" o abreviaturas.
+Para ahorrar espacio en disco, el compilador realiza una compresión de los textos, buscando las subcadenas más comunes en ellos y sustituyéndolas por "tokens" o abreviaturas.
 
-Al compilar la aventura, el compilador buscará las abreviaturas si no encuentra un fichero de nombre `tokens.json` en la carpeta del proyecto, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra este fichero, utilizará las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas de nuevo, simplemente con borrar el fichero `tokens.json` antes de volver a compilar la aventura.
+Al compilar la aventura, el compilador buscará las abreviaturas si no encuentra un fichero de nombre `tokens.json` en la carpeta del proyecto, y guardará las abreviaturas encontradas en un fichero con dicho nombre. Por el contrario, si encuentra este fichero, utilizará las abreviaturas contenidas en él. Para que vuelva a buscar abreviaturas, basta con borrar el fichero `tokens.json` antes de volver a compilar la aventura.
 
-El proceso de búsqueda de abreviaturas puede ser muy costoso conforme se incrementa la cantidad de texto en la aventura. Mi consejo es escribir el guion de la aventura *antes* de ponernos a programar y ponerlo todo en un fichero de texto que le pasaremos al compilador, para que nos genere un fichero de abreviaturas adecuado. Una vez lo tengamos, ya podemos ir añadiendo comandos a dicho texto para ir dando forma a la aventura.  Una vez que ya la tengas *casi* finalizada, puedes volver a generar abreviaturas para ver si se puede rascar algo más de espacio.
+El proceso de búsqueda de abreviaturas puede ser muy costoso conforme se incrementa la cantidad de texto en la aventura. Mi consejo es escribir el guion de la aventura *antes* de ponernos a programar y ponerlo todo en un fichero de texto que le pasaremos al compilador, para que nos genere un fichero de abreviaturas adecuado. Una vez lo tengamos, ya podemos ir añadiendo comandos a dicho texto para ir dando forma a la aventura. Una vez que ya la tengas *casi* finalizada, puedes volver a generar abreviaturas para ver si se puede rascar algo más de espacio.
 
 ---
 
-## Organización del Código con INCLUDE
+## Organización del código con INCLUDE
 
-A medida que tu aventura crece, gestionar todo el código en un solo archivo puede volverse complicado. La directiva `INCLUDE` te permite dividir tu aventura en múltiples archivos, facilitando la organización y el mantenimiento de tu proyecto.
+A medida que tu aventura crece, gestionar todo el código en un solo fichero puede volverse complicado. La directiva `INCLUDE` te permite dividir tu aventura en múltiples ficheros, facilitando la organización y el mantenimiento de tu proyecto.
 
-### Uso Básico
+### Uso básico
 
-La directiva `INCLUDE` permite insertar el contenido de un archivo CYD dentro de otro durante la compilación:
+La directiva `INCLUDE` permite insertar el contenido de un fichero CYD dentro de otro durante la compilación:
 
 ```cyd
 INCLUDE "archivo.cyd"
 ```
 
-Por ejemplo, si tienes un archivo llamado `variables.cyd` con todas tus declaraciones de variables:
+Por ejemplo, si tienes un fichero llamado `variables.cyd` con todas tus declaraciones de variables:
 
 **variables.cyd:**
 ```cyd
@@ -1382,7 +1382,7 @@ DECLARE 3 AS TieneLlave
 ]]
 ```
 
-Puedes incluirlo en tu archivo principal:
+Puedes incluirlo en tu fichero principal:
 
 **principal.cyd:**
 ```cyd
@@ -1395,7 +1395,7 @@ Te encuentras en un oscuro calabozo...
 
 Al compilar, el preprocesador insertará automáticamente el contenido de `variables.cyd` donde aparece la directiva `INCLUDE`.
 
-### Organización de un Proyecto Grande
+### Organización de un proyecto grande
 
 Esta es una estructura recomendada para la carpeta del proyecto de una aventura más grande:
 
@@ -1464,9 +1464,9 @@ SET OroJugador TO 0
 ]]
 ```
 
-### Ejemplo Práctico: Subrutinas Comunes
+### Ejemplo práctico: subrutinas comunes
 
-Digamos que muestras frecuentemente el estado del jugador. En lugar de repetir el código, crea un archivo de subrutinas:
+Digamos que muestras frecuentemente el estado del jugador. En lugar de repetir el código, crea un fichero de subrutinas:
 
 **lib/comunes.cyd:**
 ```cyd
@@ -1490,7 +1490,7 @@ GOTO Inicio
 ]]
 ```
 
-Recuerda que `PRINT` sólo imprime números (el valor de una expresión); los textos se escriben tal cual, fuera de `[[ ]]`. `JuegoTerminado` no vuelve con `RETURN`, sino que salta a `Inicio` para empezar de nuevo, así que se llama con `GOTO` en lugar de con `GOSUB`.
+Recuerda que `PRINT` solo imprime números (el valor de una expresión); los textos se escriben tal cual, fuera de `[[ ]]`. `JuegoTerminado` no vuelve con `RETURN`, sino que salta a `Inicio` para empezar de nuevo, así que se llama con `GOTO` en lugar de con `GOSUB`.
 
 Luego úsalo en tus capítulos:
 
@@ -1521,33 +1521,33 @@ GOTO Capitulo2
 ]]
 ```
 
-Como en el resto del tutorial, en `SET` la variable de destino va sin `@` (`SET OroJugador TO ...`), y el `@` sólo se pone para leer su valor (`@OroJugador + 50`).
+Como en el resto del tutorial, en `SET` la variable de destino va sin `@` (`SET OroJugador TO ...`), y el `@` solo se pone para leer su valor (`@OroJugador + 50`).
 
-### Características Importantes
+### Características importantes
 
 - **No distingue mayúsculas:** `INCLUDE`, `include` e `Include` funcionan igual
 - **Comillas:** Se admiten tanto `"archivo.cyd"` como `'archivo.cyd'`
-- **Rutas relativas:** Una ruta se busca junto al archivo que contiene el `INCLUDE` y, si no está ahí, desde la carpeta raíz del proyecto (la del guion principal). Así, `capitulos/capitulo1.cyd` también podría escribir `INCLUDE "config/variables.cyd"`
+- **Rutas relativas:** Una ruta se busca junto al fichero que contiene el `INCLUDE` y, si no está ahí, desde la carpeta raíz del proyecto (la del fichero principal). Así, `capitulos/capitulo1.cyd` también podría escribir `INCLUDE "config/variables.cyd"`
 - **Librerías:** `INCLUDE LIB "strings.cyd"` incluye una de las librerías que vienen con CYD, esté donde esté tu aventura (ver la siguiente sección)
-- **Inclusiones anidadas:** Los archivos pueden incluir otros archivos (hasta 20 niveles de profundidad)
-- **Comentarios en CYD:** Utiliza `/* */` para comentarios (`/* Cargar utilidades */`), pero en su propia línea: detrás del nombre del archivo sólo puede ir el `]]` que cierra el bloque de código, y cualquier otra cosa dará un error de sintaxis. Por lo mismo, sólo puede haber un `INCLUDE` por línea.
+- **Inclusiones anidadas:** Los ficheros pueden incluir otros ficheros (hasta 20 niveles de profundidad)
+- **Comentarios en CYD:** Utiliza `/* */` para comentarios (`/* Cargar utilidades */`), pero en su propia línea: detrás del nombre del fichero solo puede ir el `]]` que cierra el bloque de código, y cualquier otra cosa dará un error de sintaxis. Por lo mismo, solo puede haber un `INCLUDE` por línea.
 - **Detección de errores:** Las inclusiones circulares (A incluye B, B incluye A) se detectan automáticamente
 
 ### Beneficios
 
-1. **Organización:** Mantén el código relacionado junto (todas las variables en un lugar, cada capítulo en su propio archivo)
+1. **Organización:** Mantén el código relacionado junto (todas las variables en un lugar, cada capítulo en su propio fichero)
 2. **Reutilización:** Comparte subrutinas comunes entre múltiples aventuras
-3. **Mantenibilidad:** Encuentra y corrige errores más fácilmente en archivos más pequeños y enfocados
-4. **Colaboración:** Varias personas pueden trabajar en diferentes archivos
+3. **Mantenibilidad:** Encuentra y corrige errores más fácilmente en ficheros más pequeños y enfocados
+4. **Colaboración:** Varias personas pueden trabajar en diferentes ficheros
 5. **Pruebas:** Prueba capítulos o componentes individuales por separado
 
-### Consejos para Usar INCLUDE
+### Consejos para usar INCLUDE
 
-1. **Empieza simple:** Comienza con un solo archivo, luego divide en módulos a medida que la aventura crece
+1. **Empieza simple:** Comienza con un solo fichero, luego divide en módulos a medida que la aventura crece
 2. **Agrupación lógica:** Agrupa funciones, variables o secciones de la historia relacionadas
-3. **Nombres consistentes:** Usa nombres de archivo claros y descriptivos como `capitulo1.cyd` o `funciones_combate.cyd`
+3. **Nombres consistentes:** Usa nombres de fichero claros y descriptivos como `capitulo1.cyd` o `funciones_combate.cyd`
 4. **Estructura de directorios:** Usa subdirectorios (`capitulos/`, `lib/`, `config/`) para mantener las cosas organizadas
-5. **Documenta dependencias:** Añade comentarios explicando qué proporciona cada archivo incluido
+5. **Documenta dependencias:** Añade comentarios explicando qué proporciona cada fichero incluido
 
 ---
 
@@ -1630,9 +1630,9 @@ Puedes ver este ejemplo completo en `examples/strings_library`.
 
 ## Flujo de trabajo
 
-A partir de este momento ya deberías tener suficientes conocimientos para poder abordar tu propia aventura. A partir de aquí no te puedo dar consejos para escribir tu aventura, eso ya es trabajo de tu imaginación. Sin embargo, voy a recomendarte un flujo de trabajo que basado en la experiencia de desarrollar la aventura *Los Anillos de Saturno*, que presenté al concurso de Aventuras 2023 de Radastán.
+A partir de este momento ya deberías tener suficientes conocimientos para poder abordar tu propia aventura. A partir de aquí no te puedo dar consejos para escribir tu aventura, eso ya es trabajo de tu imaginación. Sin embargo, voy a recomendarte un flujo de trabajo basado en la experiencia de desarrollar la aventura *Los Anillos de Saturno*, que presenté al concurso de Aventuras 2023 de Radastán.
 
-### Alternativa Compilador GUI
+### Alternativa: compilador GUI
 
 En lugar de ejecutar los guiones `make_adv` y editar a mano `cyd_project.ini`, puedes usar la herramienta **make_adventure_gui**, que proporciona una interfaz gráfica para compilar tus aventuras.
 
@@ -1648,17 +1648,17 @@ make_adventure_gui.cmd
 ./make_adventure_gui.sh
 ```
 
-La GUI trabaja con proyectos: en su marco **Proyecto**, el botón **Nuevo…** crea uno con una pequeña aventura de partida, **Abrir…** abre la carpeta de uno existente (como nuestra carpeta `tutorial` o cualquiera de los ejemplos), y **Recientes** muestra los últimos; al arrancar, la GUI vuelve a abrir el último proyecto. Te permite configurar todas las opciones de compilación (objetivo, rutas, líneas de imagen, configuración de abreviaturas, y más) sin tocar ningún guion, y las guarda en el `cyd_project.ini` del proyecto. Una vez configurada, puedes compilar tu aventura con un solo clic del botón **Compilar**. La GUI mostrará mensajes de compilación detallados y abrirá automáticamente el archivo compilado en tu emulador elegido si está configurado.
+La GUI trabaja con proyectos: en su marco **Proyecto**, el botón **Nuevo…** crea uno con una pequeña aventura de partida, **Abrir…** abre la carpeta de uno existente (como nuestra carpeta `tutorial` o cualquiera de los ejemplos), y **Recientes** muestra los últimos; al arrancar, la GUI vuelve a abrir el último proyecto. Te permite configurar todas las opciones de compilación (objetivo, rutas, líneas de imagen, configuración de abreviaturas, y más) sin tocar ningún guion, y las guarda en el `cyd_project.ini` del proyecto. Una vez configurada, puedes compilar tu aventura con un solo clic del botón **Compilar**. La GUI mostrará mensajes de compilación detallados y abrirá automáticamente el fichero compilado en tu emulador elegido si está configurado.
 
-Este enfoque elimina la necesidad de entender scripts de lotes o shell, haciendo que el proceso de compilación sea más accesible para usuarios que prefieren interfaces gráficas.
+Este enfoque elimina la necesidad de entender guiones de lotes o de shell, haciendo que el proceso de compilación sea más accesible para usuarios que prefieren interfaces gráficas.
 
-Mi primera recomendación es escribir **antes** el grueso de tu aventura, como ya habrás leído en el capítulo anterior. Con eso tendrás una lista de abreviaturas válida para empezar a trabajar, ya que el proceso de búsqueda de abreviaturas es **muy costoso**. Para que te hagas una idea, comprimir *Los anillos de Saturno* completo (Un libro de unas 150 páginas) tarda hasta tres cuartos de hora. Además, nuestro flujo de trabajo va a consistir esencialmente en escribir, compilar y probar una y otra vez, así que nos interesa que este proceso sea lo más rápido posible.
+Mi primera recomendación es escribir **antes** el grueso de tu aventura, como ya habrás leído en el capítulo de compresión de textos. Con eso tendrás una lista de abreviaturas válida para empezar a trabajar, ya que el proceso de búsqueda de abreviaturas es **muy costoso**. Para que te hagas una idea, comprimir *Los Anillos de Saturno* completo (un libro de unas 150 páginas) tarda hasta tres cuartos de hora. Además, nuestro flujo de trabajo va a consistir esencialmente en escribir, compilar y probar una y otra vez, así que nos interesa que este proceso sea lo más rápido posible.
 
 Puedes escribir tu aventura con tu editor de texto favorito, pero siempre **en texto plano**, ya que es lo que entiende el compilador.
 
 Un tema importante al trabajar con el editor es la codificación de los textos. Un fichero dentro del disco es una colección de bits ordenados con un nombre, el ordenador no "sabe" qué hacer con esos bits; son los programas quienes interpretan esos bits.
 
-Un fichero de texto es un fichero cuyos bits representan caracteres. La forma de interpretar esos caracteres se le llama **codificación**. La codificación más famosa empleada desde comienzos de la Informática es **ASCII**, cuyo estándar soporta 128 caracteres, pensada para el idioma inglés y con ampliaciones a 256 para caracteres internacionales y especiales. Hoy en día, ASCII se ha quedado pequeño, y la codificación empleada de forma estándar por todos los editores de texto actuales por defecto es **UTF-8**.
+Un fichero de texto es un fichero cuyos bits representan caracteres. A la forma de interpretar esos caracteres se le llama **codificación**. La codificación más famosa empleada desde comienzos de la Informática es **ASCII**, cuyo estándar soporta 128 caracteres, pensada para el idioma inglés y con ampliaciones a 256 para caracteres internacionales y especiales. Hoy en día, ASCII se ha quedado pequeño, y la codificación empleada de forma estándar por todos los editores de texto actuales por defecto es **UTF-8**.
 
 Todos los editores actuales soportan múltiples codificaciones, con lo que tendrás que investigar el funcionamiento de tu editor para seleccionar la codificación correcta.
 
@@ -1666,7 +1666,7 @@ El compilador de **CYD** soporta textos en formato UTF-8, pero tienes que tener 
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
-Ésos son los caracteres de que dispones y UTF-8 dispone de *millones* de distintas grafías, y no estoy exagerando, con lo la mayor parte de ellos darán error con el compilador. En el manual detallo los únicos caracteres que se traducirán desde UTF-8 a la codificación empleada por el motor:
+Esos son los caracteres de que dispones y UTF-8 dispone de *millones* de distintas grafías, y no estoy exagerando, con lo que la mayor parte de ellas darán error con el compilador. En el manual detallo los únicos caracteres que se traducirán desde UTF-8 a la codificación empleada por el motor:
 
 | Carácter | Posición |
 | -------- | -------- |
@@ -1685,30 +1685,30 @@ El compilador de **CYD** soporta textos en formato UTF-8, pero tienes que tener 
 | 'ü'      | 28       |
 | 'Ü'      | 29       |
 
-Como puedes comprobar no están, por ejemplo, las vocales mayúsculas acentuadas. El compilador transformará de forma automática las mayúsculas acentuadas por las mayúsculas sin acento.
+Como puedes comprobar no están, por ejemplo, las vocales mayúsculas acentuadas. El compilador sustituirá de forma automática las mayúsculas acentuadas por las mayúsculas sin acento.
 
 Una vez escrita una buena parte de tu aventura, y obtenido un fichero de abreviaturas, podemos empezar a programarla.
 
 Mi recomendación es emplear la táctica de "divide y vencerás", una técnica que consiste en dividir un problema a resolver en subproblemas más pequeños que iremos solventando poco a poco. En nuestro contexto, significa que habría que dividir la aventura en secciones que iremos programando una a una. Seguramente ya hayas realizado de forma instintiva este paso al escribir tu relato, dividiéndolo en capítulos.
 
-Con esta subdivisión, ahora trabajaremos con dos ficheros fuente, un *fichero global* con el texto de la aventura "completa", y otro que será el que pasemos con el compilador con la sección que vayamos a programar, que llamaremos *fichero de trabajo*. El proceso consiste en los siguientes pasos:
+Con esta subdivisión, ahora trabajaremos con dos ficheros fuente, un *fichero global* con el texto de la aventura "completa", y otro que será el que pasemos al compilador con la sección que vayamos a programar, que llamaremos *fichero de trabajo*. El proceso consiste en los siguientes pasos:
 
    1. Copiar una de las secciones no completadas del fichero global al fichero de trabajo.
    2. Añadir los comandos al texto del fichero de trabajo y formatearlo si es preciso.
    3. Compilar el fichero de trabajo.
    4. Ejecutar la imagen resultante en un emulador y probar.
    5. Si no estamos satisfechos, modificar el fichero y volver al paso 3.
-   6. Cuando tengamos la sección completa, copiamos la sección completada en el fichero de trabajo y la sustituimos en el fichero global.
+   6. Cuando tengamos la sección completa, copiar la sección completada en el fichero de trabajo y sustituirla en el fichero global.
    7. Si nos quedan secciones por completar, volver al paso 1.
    8. Pasar la totalidad del fichero global al de trabajo.
 
-Sin embargo, una vez completada la aventura, seguramente tendrás que corregir cosas, compilar y probar de nuevo. Y, dependiendo de la extensión de la aventura, llegar a la parte relevante puede ser un "inferno". Te voy a sugerir varias técnicas para evitar esto.
+Sin embargo, una vez completada la aventura, seguramente tendrás que corregir cosas, compilar y probar de nuevo. Y, dependiendo de la extensión de la aventura, llegar a la parte relevante puede ser un "infierno". Te voy a sugerir varias técnicas para evitar esto.
 
-Una táctica que podemos emplear es etiquetar con `LABEL` el comienzo de todas y cada una de las secciones (esto lo haríamos en el proceso anterior). Después, simplemente ponemos un `GOTO` a la etiqueta de la sección que queramos probar al principio de la aventura. Al ejecutarse ésta, saltaría directamente a la sección relevante, con lo que nos ahorramos un tiempo precioso. ¡Recuerda luego quitar el `GOTO` inicial!
+Una táctica que podemos emplear es etiquetar con `LABEL` el comienzo de todas y cada una de las secciones (esto lo haríamos en el proceso anterior). Después, simplemente ponemos un `GOTO` a la etiqueta de la sección que queramos probar al principio de la aventura. Al ejecutarse esta, saltaría directamente a la sección relevante, con lo que nos ahorramos un tiempo precioso. ¡Recuerda luego quitar el `GOTO` inicial!
 
 Otra técnica que he empleado es la de anular las pausas. Para ello me ayudo de la posibilidad del compilador de poder usar comentarios dentro de las secciones de código. Mediante nuestro editor de texto, podemos reemplazar todas las apariciones del comando `WAITKEY`, por ejemplo, con el texto `/*WAITKEY*/`. Al compilar de nuevo, al estar esos comandos comentados no se ejecutarán y se mostrará todo sin parar. Cuando queramos deshacer el cambio, hacemos el proceso contrario, reemplazamos `/*WAITKEY*/` por `WAITKEY`. Para acelerar este proceso más, podemos incluso introducir los comandos comentados en la fase anterior.
 
-Por último, casi todos emuladores modernos ofrecen la posibilidad de acelerar la velocidad de ejecución. Podemos aprovechar esta ventaja para mostrar el texto más rápido de lo normal.
+Por último, casi todos los emuladores modernos ofrecen la posibilidad de acelerar la velocidad de ejecución. Podemos aprovechar esta ventaja para mostrar el texto más rápido de lo normal.
 
 Espero que estas técnicas te ayuden a crear tu aventura de la manera más cómoda posible. Programar es un proceso iterativo de escribir, compilar, ejecutar y probar, y puede resultar monótono, pero también muy satisfactorio cuando obtenemos el resultado deseado.
 
@@ -1720,12 +1720,12 @@ Los menús de opciones permiten también desplazamiento *lateral* y el comando `
 Antes hay que destacar que todo lo explicado anteriormente en el tutorial sigue siendo aplicable, pero se ha convertido en un caso particular que detallaremos.
 Sin entrar en muchos detalles técnicos del motor, vamos a explicar cómo funciona ahora el sistema de menús.
 
-El sistema de menús está basado en una lista de opciones. Cada vez de declaramos una opción, se guarda en la lista la posición de la pantalla (ajustada a coordenadas 8x8) y la dirección del salto correspondiente, de tal manera que las opciones se van guardando en el mismo órden en el que las declaramos.
+El sistema de menús está basado en una lista de opciones. Cada vez que declaramos una opción, se guarda en la lista la posición de la pantalla (ajustada a coordenadas 8x8) y la dirección del salto correspondiente, de tal manera que las opciones se van guardando en el mismo orden en el que las declaramos.
 Cuando se borra la pantalla o se escoge una opción del menú, la lista se borra.
 
-Al activar el menú con `CHOOSE`, se pone un puntero que corresponderá a la opción seleccionada en la primera posición de lista, y la opción correspondiente de la lista muestra el icono de selección en la posición de pantalla almacenada. Cuando nos desplazamos en el menú con las teclas, movemos ese puntero a lo largo de la lista, y a cada paso, se mueve el puntero en pantalla a la posición correspondiente.
+Al activar el menú con `CHOOSE`, se pone un puntero que corresponderá a la opción seleccionada en la primera posición de la lista, y la opción correspondiente de la lista muestra el icono de selección en la posición de pantalla almacenada. Cuando nos desplazamos en el menú con las teclas, movemos ese puntero a lo largo de la lista, y a cada paso, se mueve el puntero en pantalla a la posición correspondiente.
 
-En las versiones anteriores, sólo se permitía moverse una posición hacia adelante en la lista con la tecla *A* y una posición hacia atrás con la tecla *Q*. Debido a esta disposición de teclas, se esperaba que los menús fuesen verticales.
+En las versiones anteriores, solo se permitía moverse una posición hacia adelante en la lista con la tecla *A* y una posición hacia atrás con la tecla *Q*. Debido a esta disposición de teclas, se esperaba que los menús fuesen verticales.
 
 Ahora se permite usar las teclas *O* y *P* para realizar desplazamientos *"horizontales"*. En realidad **CYD** no tiene concepto de horizontalidad y verticalidad, simplemente recorre la lista de cierta manera de acuerdo a las teclas pulsadas. Gracias al comando `MENUCONFIG x,y` podemos configurar este comportamiento. El comando admite dos parámetros que significan lo siguiente:
 
@@ -1739,9 +1739,9 @@ Es decir, si el número de opción seleccionado en determinado momento es `N`, e
 - Cuando pulsamos **Q**, `N` pasa a ser `N - Y`.
 - Cuando pulsamos **A**, `N` pasa a ser `N + Y`.
 
-Con esto podemos hacer diferentes tipos de desplazamientos, pero es nuestra responsabilidad colocar las opciones en el órden y posición en pantalla adecuados para que sea coherente con la pulsación de las teclas.
+Con esto podemos hacer diferentes tipos de desplazamientos, pero es nuestra responsabilidad colocar las opciones en el orden y posición en pantalla adecuados para que sea coherente con la pulsación de las teclas.
 
-Vamos a verlo, como siempre con el siguiente ejemplo:
+Vamos a verlo, como siempre, con el siguiente ejemplo:
 
 ```
 [[
@@ -1782,7 +1782,7 @@ De acuerdo a lo que hemos explicado, al usar `MENUCONFIG 1,2`, entonces cuando p
 
 El comportamiento por defecto, y que simula el comportamiento *vertical* de las versiones anteriores, se hace con `MENUCONFIG 0,1`. Esto es, cuando pulsamos **O** y **P**, la opción seleccionada se decrementa e incrementa en 0, es decir, **no hace nada**, no se mueve. Y al pulsar **Q** y **A**, la opción seleccionada se decrementa e incrementa en 1, con lo que tendremos un menú estrictamente vertical.
 
-De esta manera, si con `MENUCONFIG 0,1` tendremos un menú vertical en una columna, con `MENUCONFIG 1,0` tendremos un menñu horizontal en una fila. Con `MENUCONFIG 1,3` tendremos un menú a tres columnas, etc. Pero recuerda que `MENUCONFIG` no indica la disposición de las opciones, eso lo definimos nosotros al declararlas, sino el comportamiento de los botones.
+De esta manera, si con `MENUCONFIG 0,1` tendremos un menú vertical en una columna, con `MENUCONFIG 1,0` tendremos un menú horizontal en una fila. Con `MENUCONFIG 1,3` tendremos un menú a tres columnas, etc. Pero recuerda que `MENUCONFIG` no indica la disposición de las opciones, eso lo definimos nosotros al declararlas, sino el comportamiento de los botones.
 
 En este caso, es mejor que pruebes el ejemplo en vivo y experimentes por tu cuenta. Ten en cuenta que el puntero nunca superará los límites por debajo de cero, ni por encima del número de opciones de la lista. Por tanto, deberías introducir valores *razonables* o el menú no funcionará bien.
 
@@ -1790,13 +1790,13 @@ En este caso, es mejor que pruebes el ejemplo en vivo y experimentes por tu cuen
 
 ## Copia de fragmentos de imagen a pantalla
 
-Si has seguido el tutorial en órden, ya sabrás que con el comando `PICTURE` cargamos una imagen en el buffer de pantalla, y con `DISPLAY` la mostramos, es decir, se copia desde es buffer a pantalla, pero siempre a pantalla completa. Pero también se permite copiar un trozo de la imagen cargada en el buffer a cierta posición definida de la pantalla mediante el comando `BLIT`.
+Si has seguido el tutorial en orden, ya sabrás que con el comando `PICTURE` cargamos una imagen en el buffer de pantalla, y con `DISPLAY` la mostramos, es decir, se copia desde ese buffer a pantalla, pero siempre a pantalla completa. Pero también se permite copiar un trozo de la imagen cargada en el buffer a cierta posición definida de la pantalla mediante el comando `BLIT`.
 
 Pero primero, vamos a crear la siguiente imagen SCR con algún editor gráfico para Spectrum:
 
 ![Ejemplo](assets/tut042.png)
 
-Y la dejamos en la carpeta `IMAGES` del proyecto. Puedes observar que hemos dibujado en el primer bloque de 16x16 pixels, o lo que es lo mismo, 2x2 caracteres.
+Y la dejamos en la carpeta `IMAGES` del proyecto. Puedes observar que hemos dibujado en el primer bloque de 16x16 píxeles, o lo que es lo mismo, 2x2 caracteres.
 
 Ahora, vamos a usar el siguiente ejemplo:
 
@@ -1825,28 +1825,28 @@ Ahora, vamos a usar el siguiente ejemplo:
 
 Este ejemplo lo que hace básicamente es borrar la pantalla y cargar la imagen 0 en el buffer de pantalla (la que hemos creado antes), y luego recorremos las filas de 0 a 24 y las columnas de 0 a 32, saltando de dos en dos caracteres. Si has seguido este tutorial, no te costará entender el funcionamiento.
 
-El componente clave es el comando `BLIT 0, 0, 2, 2 AT @col, @row`. Lo que le estamos indicando al motor es "coge el rectángulo del buffer con origen (0,0) y tamaño 2x2 caracteres y lo copie en pantalla en la posición definida por las variables col y row". Como estamos haciendo un recorrido por toda la pantalla mediante dos bucles anidados, el resultado es el siguiente:
+El componente clave es el comando `BLIT 0, 0, 2, 2 AT @col, @row`. Lo que le estamos indicando al motor es "coge el rectángulo del buffer con origen (0,0) y tamaño 2x2 caracteres y cópialo en pantalla en la posición definida por las variables col y row". Como estamos haciendo un recorrido por toda la pantalla mediante dos bucles anidados, el resultado es el siguiente:
 
 ![BLIT](assets/tut043.png)
 
-En general, con `BLIT x_orig, y_orig, anchura, altura AT x_dest, y_dest`, lo que hacemos es copiar desde la imagen cargada en el buffer un trozo de la misma definido por los 4 primeros parámetros, y lo copiamos en pantalla a partir de los dos últimos. Esto nos da muchas posibilidades para construir la imagen en pantalla mediante "tiles", crear animaciones, cortinillas, etc.
+En general, con `BLIT x_orig, y_orig, anchura, altura AT x_dest, y_dest`, lo que hacemos es copiar desde la imagen cargada en el buffer un trozo de la misma definido por los 4 primeros parámetros y pegarlo en pantalla a partir de los dos últimos. Esto nos da muchas posibilidades para construir la imagen en pantalla mediante "tiles", crear animaciones, cortinillas, etc.
 
 Como últimos apuntes, destacar tres cosas:
 
-- Todos los parámetros admiten variables o expresiones, no sólo los dos últimos como en este ejemplo: también se puede calcular el rectángulo a recortar.
+- Todos los parámetros admiten variables o expresiones, no solo los dos últimos como en este ejemplo: también se puede calcular el rectángulo a recortar.
 - En todos los parámetros, la unidad es el carácter de 8x8 píxeles.
-- La implementación es lenta debido a su genericidad, con lo que si estás tentado de usarlos como "sprites", los resultados serán decepcionantes debido al parpadeo. Para eso está la librería de sprites, que veremos en la sección [Sprites con máscara](#sprites-con-máscara).
+- La implementación es lenta debido a su genericidad, con lo que si estás tentado de usarlo como "sprites", los resultados serán decepcionantes debido al parpadeo. Para eso está la librería de sprites, que veremos en la sección [Sprites con máscara](#sprites-con-máscara).
 
-### Modo Colon Estricto (Aplicación de Sintaxis)
+### Modo estricto de dos puntos (aplicación de sintaxis)
 
-A partir de la versión 1.2.x, el compilador aplica el **Modo Colon Estricto de forma predeterminada**. Esto significa que cuando escribes múltiples sentencias en la misma línea, **deben** estar separadas por dos puntos (`:`).
+A partir de la versión 1.2.x, el compilador aplica el **modo estricto de dos puntos de forma predeterminada**. Esto significa que cuando escribes múltiples sentencias en la misma línea, **deben** estar separadas por dos puntos (`:`).
 
-**Sintaxis Correcta:**
+**Sintaxis correcta:**
 ```cyd
 [[ SET 0 TO 10 : SET 1 TO 20 : PRINT @0 + @1 ]]
 ```
 
-**Sintaxis Incorrecta (fallará):**
+**Sintaxis incorrecta (fallará):**
 ```cyd
 [[ SET 0 TO 10 SET 1 TO 20 PRINT @0 + @1 ]]
 ```
@@ -1863,8 +1863,8 @@ PRINT @0 + @1
 
 **Puntos clave:**
 - Los saltos de línea separan automáticamente las sentencias, haciendo innecesarios los dos puntos cuando se usan nuevas líneas
-- Si prefieres el comportamiento antiguo (sin modo colon estricto), puedes usar la bandera `--no-strict-colons` con el compilador
-- El Modo Colon Estricto mejora la legibilidad del código y evita la concatenación accidental de sentencias
+- Si prefieres el comportamiento antiguo (sin modo estricto de dos puntos), puedes usar la opción `--no-strict-colons` con el compilador
+- El modo estricto de dos puntos mejora la legibilidad del código y evita la concatenación accidental de sentencias
 - El proceso de compilación aplica esta regla de forma consistente en todos tus ficheros de aventura
 
 ---
@@ -1931,7 +1931,7 @@ La librería ocupa algo más de 1 KB, pero solo si la usas: si no llamas a ningu
 
 Primero aviso que este es un capítulo bastante avanzado donde se introducen conceptos de programación algo elevados si no has programado nunca. Si no lo entiendes, te lo puedes saltar sin problemas.
 
-Hay una serie de comandos que permiten la lectura de caracteres desde el teclado y el borrado en pantalla, además de que, junto con la indirección, nos permite almacenar cadenas de texto en las variables y usar éstas como arrays. Sin embargo, **CUIDADO**, sólo tenemos 256 variables disponibles... Eso quiere decir que no podemos almacenar cadenas de texto demasiado largas, pero nos puede servir para almacenar una pequeña, como el nombre de nuestro protagonista o crear una línea de comandos sencilla.
+Hay una serie de comandos que permiten la lectura de caracteres desde el teclado y el borrado en pantalla, además de que, junto con la indirección, nos permiten almacenar cadenas de texto en las variables y usar estas como arrays. Sin embargo, **CUIDADO**, solo tenemos 256 variables disponibles... Eso quiere decir que no podemos almacenar cadenas de texto demasiado largas, pero nos puede servir para almacenar una pequeña, como el nombre de nuestro protagonista o crear una línea de comandos sencilla.
 
 Vamos a verlo con el siguiente ejemplo:
 
@@ -2010,7 +2010,7 @@ Bienvenido [[
          ENDIF
       ELSE
          /*
-         Si el carácter es mayor que 32 y menor que 128 (caractéres ASCII imprimibles)
+         Si el carácter es mayor que 32 y menor que 128 (caracteres ASCII imprimibles)
          y no estamos al final del array...
          */
          IF @chr >= 32 AND @chr < 128 AND @ptr < @@ptr THEN
@@ -2030,7 +2030,7 @@ Como siempre, si lo probamos:
 
 ![INPUT](assets/tut044.png)
 
-Nos aparece una "línea de comandos" donde podemos teclear; con el **ENTER** validamos, y con **DELETE** podemos borrar el último carácter que hayamos tecleado. Notarás, si juegas con el programa, que si superamos los 16 caractéres, no nos deja meter más, y sólo nos permite borrar el último carácter o darle a **ENTER**. Si hacemos ésto último:
+Nos aparece una "línea de comandos" donde podemos teclear; con el **ENTER** validamos, y con **DELETE** podemos borrar el último carácter que hayamos tecleado. Notarás, si juegas con el programa, que si superamos los 16 caracteres, no nos deja meter más, y solo nos permite borrar el último carácter o darle a **ENTER**. Si hacemos esto último:
 
 ![OUTPUT](assets/tut045.png)
 
@@ -2055,7 +2055,7 @@ WEND
 ]]
 ```
 
-En la primera línea inicializamos el puntero a 0 con  con `SET 8 TO 0`, con lo que tendríamos esta situación:
+En la primera línea inicializamos el puntero a 0 con `SET 8 TO 0`, con lo que tendríamos esta situación:
 
 ```text
        0 1 2 3 4 5 6 7 8
@@ -2117,7 +2117,7 @@ Este proceso se ejecuta hasta que deja de cumplirse la condición del bucle, con
       +-+-+-+-+-+-+-+-+-+-
 ```
 
-Hasta ahora he usado la denominación numérica de las variables. Pero, ¿cómo lo haríamos con declaraciones nombres de variables?:
+Hasta ahora he usado la denominación numérica de las variables. Pero ¿cómo lo haríamos con declaraciones de nombres de variables?
 
 ```cyd
 [[
@@ -2147,7 +2147,7 @@ WEND
 ]]
 ```
 
-Notarás que en su lugar, estamos usando los nombres de las variables con dos arrobas `@@`. Como ya sabrás, cuando dentro de una expresión nos encontramos una arroba, eso indica que vamos a acceder al contenido de la variable correspondiente. Pues las dos arrobas indican que vamos a usar en la expresión **el número de la variable**. De tal manera que en el ejemplo anterior `@@array` será 0 y `@@ptr` será 8. En cambio, si hiciésemos lo siguiente, `@@array` sería 8 y `@@ptr` sería 16:
+Notarás que, en su lugar, estamos usando los nombres de las variables con dos arrobas `@@`. Como ya sabrás, cuando dentro de una expresión nos encontramos una arroba, eso indica que vamos a acceder al contenido de la variable correspondiente. Pues las dos arrobas indican que vamos a usar en la expresión **el número de la variable**. De tal manera que en el ejemplo anterior `@@array` será 0 y `@@ptr` será 8. En cambio, si hiciésemos lo siguiente, `@@array` sería 8 y `@@ptr` sería 16:
 
 ```cyd
 [[
@@ -2162,7 +2162,7 @@ WEND
 ]]
 ```
 
-Además, nos sirve para acceder a elementos individuales del array. Por ejempo, para imprimir el valor de la cuarta posición del array, tal que si *array* es la variable cero:
+Además, nos sirve para acceder a elementos individuales del array. Por ejemplo, para imprimir el valor de la cuarta posición del array, tal que si *array* es la variable cero:
 
 ```text
        0 1 2 3 4 5 6 7
@@ -2186,11 +2186,11 @@ El valor que se devuelve cuando se pulsa una tecla corresponde (normalmente) con
 
 En el ejemplo inicial, comprobamos si el valor de la tecla devuelta es 13 (ENTER) para validar y 12 (DELETE) para borrar. Si es un valor entre 32 y 127, entonces es un carácter que podemos imprimir.
 
-### Borrar carácteres y hacer saltos de línea (BACKSPACE y NEWLINE)
+### Borrar caracteres y hacer saltos de línea (BACKSPACE y NEWLINE)
 
 Para implementar una línea de comandos, se precisa borrar en caso de equivocación. Para ello se ha añadido el comando `BACKSPACE`, que desplaza el cursor una posición hacia atrás y borra el contenido de la nueva posición. Si está en el lado izquierdo del borde definido, saltará una línea hacia atrás y se pondrá al final de la línea anterior (si puede).
 
-Hay que tener en cuenta que el tamaño usado en la operación es el del carácter número 32 (el espacio). Esto es importante si se usan caracteres de tamaños diferentes al del espacio, el comando no los borrará bien, ya que **CYD** no tiene "memoria" de lo que ya hay impreso.
+Hay que tener en cuenta que el tamaño usado en la operación es el del carácter número 32 (el espacio). Esto es importante si se usan caracteres de tamaños diferentes al del espacio: el comando no los borrará bien, ya que **CYD** no tiene "memoria" de lo que ya hay impreso.
 
 También se introduce el comando `NEWLINE`, que imprime un salto de línea sin necesidad de pasar del modo "comando" al modo "texto".
 
@@ -2200,7 +2200,7 @@ Tanto `NEWLINE` como `BACKSPACE` permiten un parámetro opcional para indicar el
 
 ## Usar el juego de caracteres alternativo
 
-CYD incorpora por defecto dos juegos de caracteres para los textos, el utilizado por defecto (que tiene tiene 6 píxeles de ancho) y otro alternativo que ocupa 4 píxeles de ancho. Para cambiar de uno a otro, se usa el comando `CHARSET` de la siguiente forma:
+CYD incorpora por defecto dos juegos de caracteres para los textos, el utilizado por defecto (que tiene 6 píxeles de ancho) y otro alternativo que ocupa 4 píxeles de ancho. Para cambiar de uno a otro, se usa el comando `CHARSET` de la siguiente forma:
 
 ```cyd
 [[CHARSET 0]]Juego de caracteres 6x8
@@ -2220,7 +2220,7 @@ El juego de caracteres por defecto (`CHARSET 0`) son los caracteres desde el cer
 
 ## Ventanas
 
-Las ventanas son hasta 8 diferentes áreas de texto independientes que podemos definir en la pantalla. En cada una podemos definir los márgenes de forma diferente, y cada una tiene su propia posición del cursor y atributos. En cada momento, sólo podemos tener una ventana "activa", es decir, una ventana sobre la cual escribir y configurar. Se cambia de una a otra usando el comando `WINDOW`. La ventana activa por defecto es la cero.
+Las ventanas son hasta 8 diferentes áreas de texto independientes que podemos definir en la pantalla. En cada una podemos definir los márgenes de forma diferente, y cada una tiene su propia posición del cursor y atributos. En cada momento, solo podemos tener una ventana "activa", es decir, una ventana sobre la cual escribir y configurar. Se cambia de una a otra usando el comando `WINDOW`. La ventana activa por defecto es la cero.
 
 Como siempre, un ejemplo es más elocuente:
 
@@ -2271,7 +2271,7 @@ Como siempre, un ejemplo es más elocuente:
 
 En el ejemplo se usan 4 ventanas, de la 0 a la 3. Primero empezamos con la ventana cero, que por defecto está seleccionada y le definimos la posición, el tamaño y el color de la tinta. Luego cambiamos a la ventana 1 y hacemos lo mismo, y así con el resto. Finalmente vamos cambiando de ventanas para poner texto en cada una.
 
-Y éste es el resultado:
+Y este es el resultado:
 
 ![WINDOW](assets/tut047.png)
 
@@ -2283,7 +2283,7 @@ Por último destacar que estas ventanas no son equivalentes a las ventanas de un
 
 ## Arrays o secuencias
 
-Los llamados "arrays" son secuencias de números a las que se pueden acceder mediante un índice. Mediante el comando `DIM` podemos declarar un "array", de tal manera que con `DIM nombre(tamaño)` declaramos un array de nombre `nombre` y tamaño `tamaño`. El tamaño de un array no puede ser mayor de 256 ni ser cero. Accedemos a cada uno de los elementos del array con la nomenclatura `nombre(pos)`, donde `pos` es el número de posición del elemento a acceder dentro del array, empezando desde cero.
+Los llamados "arrays" son secuencias de números a las que se puede acceder mediante un índice. Mediante el comando `DIM` podemos declarar un "array", de tal manera que con `DIM nombre(tamaño)` declaramos un array de nombre `nombre` y tamaño `tamaño`. El tamaño de un array no puede ser mayor de 256 ni ser cero. Accedemos a cada uno de los elementos del array con la nomenclatura `nombre(pos)`, donde `pos` es el número de posición del elemento a acceder dentro del array, empezando desde cero.
 
 Vamos a ver un ejemplo:
 
@@ -2325,7 +2325,7 @@ Pero **¡cuidado!**, los arrays empiezan a contar desde cero hasta el tamaño qu
 
 ![ARRAY2](assets/tut049.png)
 
-Para evitar estar situaciones, dispones de la funcion `LASTPOS(nombre_array)` que devuelve la última posición permitida para el array dado para poder comprobar antes de asignar :
+Para evitar estas situaciones, dispones de la función `LASTPOS(nombre_array)` que devuelve la última posición permitida para el array dado para poder comprobar antes de asignar:
 
 ```cyd
 [[
@@ -2365,7 +2365,7 @@ De hecho, podemos ahorrarnos indicar el tamaño ya que lo calculará a partir de
 
 Ten en cuenta que el array tendrá en este caso el tamaño del número de elementos que hayamos indicado **y no más**.
 
-Los arrays no se pueden re-dimensionar y sólo admiten valores entre 0 y 255, de la misma manera que las variables. El tamaño máximo es 256 y el mínimo 1.
+Los arrays no se pueden redimensionar y solo admiten valores entre 0 y 255, de la misma manera que las variables. El tamaño máximo es 256 y el mínimo 1.
 
 Vamos a ver un último ejemplo para afianzar conceptos:
 
@@ -2389,7 +2389,7 @@ En el ejemplo, usamos la variable `c` para recorrer el array de precios hasta su
 
 ![ARRAY4](assets/tut051.png)
 
-Por último, indicar que otra limitación que tienen los arrays no se pueden grabar en cinta o disco directamente, a menos que sus contenidos se vuelquen en variables previamente.
+Por último, indicar que otra limitación que tienen los arrays es que no se pueden grabar en cinta o disco directamente, a menos que sus contenidos se vuelquen en variables previamente.
 
 ---
 
@@ -2443,7 +2443,7 @@ Para recorrer todo el flujo sin pasarnos usamos la función `DATAEND()`, que dev
 ]]
 ```
 
-Un detalle útil: si seguimos leyendo con `READ` más allá del final, el flujo **se rebobina solo** al principio (una "cinta sin fin"), así que nunca leemos basura. Usa `DATAEND()` cuando quieras detectarte en el final.
+Un detalle útil: si seguimos leyendo con `READ` más allá del final, el flujo **se rebobina solo** al principio (una "cinta sin fin"), así que nunca leemos basura. Usa `DATAEND()` cuando quieras detectar el final.
 
 ---
 
@@ -2538,9 +2538,9 @@ Y se combinan: `DATA 255 REPEAT 4, 1..3, 'A'`.
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
-Están organizados en la imagen en forma de cuadrícula, empezando desde arriba a la izquierda, y yendo de izquierda a derecha y arriba y abajo.
+Están organizados en la imagen en forma de cuadrícula, empezando desde arriba a la izquierda, y yendo de izquierda a derecha y de arriba abajo.
 
-Se pueden ver tanto los caracteres 6x8 del modo normal y los caracteres 4x8 del modo alternativo, además de los caracteres usados en el icono animado de espera y selección:
+Se pueden ver tanto los caracteres 6x8 del modo normal como los caracteres 4x8 del modo alternativo, además de los caracteres usados en el icono animado de espera y selección:
 
 ![Caracteres especiales](assets/special_characters.png)
 
@@ -2550,18 +2550,18 @@ Los caracteres desde el 127 hasta el 143 (ambos incluidos y empezando a contar d
 - Los caracteres del 128 al 135 forman el ciclo de animación de una opción seleccionada en un menú. (En verde en la captura anterior)
 - Los caracteres del 136 al 143 forman el ciclo de animación del indicador de espera. (En azul en la captura anterior)
 
-Una vez teniendo esto claro, lo que muchos de vosotros querréis es cambiar los iconos animados para darles un toque personal.
+Una vez que tenemos esto claro, lo que seguramente querrás es cambiar los iconos animados para darles un toque personal.
 Para esta tarea vamos a necesitar **ZxPaintbrush**, una herramienta aparte que no se incluye con CYD. También necesitaremos la fuente por defecto que se encuentra en el fichero `assets\default_charset.chr`.
 
-Copiaremos el fichero a la carpeta de nuestro proyecto, lo renombramos como `charset.chr` y lo abriremos con ZxPaintbrush y con lo que tendremos esto:
+Copiaremos el fichero a la carpeta de nuestro proyecto, lo renombraremos como `charset.chr` y lo abriremos con ZxPaintbrush, con lo que tendremos esto:
 
 ![charset1](assets/tut052.png)
 
-Vamos a editar el ciclo de animación de espera de tecla (los marcados en azúl en la segunda captura). Voy a poner un reloj, disculpad mis pésimas dotes artísticas:
+Vamos a editar el ciclo de animación de espera de tecla (los marcados en azul en la segunda captura). Voy a poner un reloj, disculpa mis pésimas dotes artísticas:
 
 ![charset2](assets/tut053.png)
 
-Ahora necesitamos convertirlos a un formato que pueda digerir el compilador. Para ello hacemos uso de la herramienta cyd_char_conv, que se encuentra en la carpeta `dist` de CYD (`dist\cyd_chr_conv.cmd`). Esta herramienta es por línea de comandos, con lo que nos tocará abrir una ventana de *Símbolo de Sistema* en la carpeta del proyecto. Si CYD está en la carpeta `CYD` junto a ella, como al principio de este tutorial, y ejecutamos este comando `..\CYD\dist\cyd_chr_conv.cmd --help`, podemos ver las opciones.
+Ahora necesitamos convertirlos a un formato que pueda digerir el compilador. Para ello hacemos uso de la herramienta cyd_chr_conv, que se encuentra en la carpeta `dist` de CYD (`dist\cyd_chr_conv.cmd`). Esta herramienta es por línea de comandos, con lo que nos tocará abrir una ventana de *Símbolo del sistema* en la carpeta del proyecto. Si CYD está en la carpeta `CYD` junto a ella, como al principio de este tutorial, y ejecutamos este comando `..\CYD\dist\cyd_chr_conv.cmd --help`, podemos ver las opciones.
 
 ![charset3](assets/tut054.png)
 
@@ -2577,7 +2577,7 @@ Con esto, ya tenemos el fichero `charset.json` que le tendríamos que pasar al c
 
 ![charset4](assets/tut055.png)
 
-Para indicarle al compilador que vamos a usar el nuevo juego de caracteres, se lo tenemos que indicar con el parámetro `-c`. Afortunadamente, no tenemos que hacer nada: al compilar el proyecto, si hay un fichero llamado `charset.json` en su carpeta, se usa automáticamente. Si prefieres darle otro nombre o guardarlo en otro sitio, pon su ruta en el ajuste `charset` de la sección `[paths]` de `cyd_project.ini`:
+Para que el compilador use el nuevo juego de caracteres no tenemos que hacer nada: al compilar el proyecto, si hay un fichero llamado `charset.json` en su carpeta, se usa automáticamente. Si prefieres darle otro nombre o guardarlo en otro sitio, pon su ruta en el ajuste `charset` de la sección `[paths]` de `cyd_project.ini`:
 
 ```ini
 [paths]
@@ -2588,7 +2588,7 @@ Compilando de nuevo el proyecto y lanzando el fichero de cinta resultante con un
 
 ![charset4](assets/tut056.png)
 
-De esta forma, podemos cambiar el resto de iconos animados, las fuentes en general o incluso hacer caracteres gráficos especiales, tipo "UDG", y mostrándolos con el comando `CHAR`.
+De esta forma, podemos cambiar el resto de iconos animados, las fuentes en general o incluso hacer caracteres gráficos especiales, tipo "UDG", y mostrarlos con el comando `CHAR`.
 
 ---
 
@@ -2596,7 +2596,7 @@ De esta forma, podemos cambiar el resto de iconos animados, las fuentes en gener
 
 Para tareas que la máquina virtual no sabe hacer por sí sola —leer o escribir un puerto del hardware, tocar una dirección de memoria cualquiera, o un cálculo que necesite ir muy rápido— puedes escribir una pequeña rutina en **ensamblador Z80** y llamarla desde tu guion.
 
-> **Avanzado, bajo tu responsabilidad.** Esto ejecuta tu propio código nativo sin red de seguridad: un error en la rutina puede colgar la máquina, igual que el código de BeepFX o WyzTracker en el que ya confías. Si no te manejas con el ensamblador Z80, no necesitas esta función.
+> **Avanzado, bajo tu responsabilidad.** Esto ejecuta tu propio código nativo sin red de seguridad: un error en la rutina puede colgar la máquina, igual que el código de BeepFx o WyzTracker en el que ya confías. Si no te manejas con el ensamblador Z80, no necesitas esta función.
 
 Intervienen dos palabras clave:
 
@@ -2625,7 +2625,7 @@ Tú escribes **solo el cuerpo** de la rutina (sin `ORG` ni directivas); el compi
     ret
 ```
 
-Funciona en todos los targets (48K, 128K, +3, esxdos, mld y mld128). Tienes un ejemplo completo y ejecutable en `examples/import_demo`, y la referencia detallada del contrato (ABI) en el manual, sección **Rutinas nativas (IMPORT / CALL)**.
+Funciona en todos los objetivos (48K, 128K, +3, esxdos, mld y mld128). Tienes un ejemplo completo y ejecutable en `examples/import_demo`, y la referencia detallada del contrato (ABI) en el manual, sección **Rutinas nativas (IMPORT / CALL)**.
 
 ### Escribir el ensamblador en el propio guion (`ASM … ENDASM`)
 

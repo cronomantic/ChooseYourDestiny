@@ -2,21 +2,21 @@
 
 ![logo](assets/cydlogo_2_small.png)
 
-El programa es un compilador e intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y libro juegos, para el Spectrum 48, 128, +2 y +3.
+El programa es un compilador e intérprete para ejecutar historias de tipo "Escoge tu propia aventura" o aventuras por opciones y librojuegos, para el Spectrum 48, 128, +2 y +3.
 
-Consiste una máquina virtual que va interpretando comandos que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
+Consiste en una máquina virtual que va interpretando comandos que se encuentra durante el texto para realizar las distintas acciones interactivas y un compilador que se encarga de traducir la aventura desde un lenguaje similar a BASIC, con el que se escribe el guion de la aventura, a un fichero interpretable por el motor.
 
-Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFX de Shiru, melodías tipo PT3 creadas con Vortex Tracker o melodías creadas con WyzTracker 2.0.
+Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo disco, así como efectos de sonido basados en BeepFx de Shiru, melodías tipo PT3 creadas con Vortex Tracker o melodías creadas con WyzTracker 2.0.
 
 - [Manual de Choose Your Destiny](#manual-de-choose-your-destiny)
-  - [Requerimientos e Instalación](#requerimientos-e-instalación)
+  - [Requerimientos e instalación](#requerimientos-e-instalación)
     - [Instalación en Windows](#instalación-en-windows)
     - [Instalación en Linux, BSDs y compatibles](#instalación-en-linux-bsds-y-compatibles)
-  - [CYDC (Compilador)](#cydc-compilador)
+  - [CYDC (compilador)](#cydc-compilador)
   - [CYD Character Set Converter](#cyd-character-set-converter)
-  - [Sintaxis Básica](#sintaxis-básica)
-    - [Modo Colon Estricto (Enforced Colon Syntax)](#modo-colon-estricto-enforced-colon-syntax)
-    - [Directiva INCLUDE (Proyectos multi-archivo)](#directiva-include-proyectos-multi-archivo)
+  - [Sintaxis básica](#sintaxis-básica)
+    - [Modo estricto de dos puntos](#modo-estricto-de-dos-puntos)
+    - [Directiva INCLUDE (proyectos multifichero)](#directiva-include-proyectos-multifichero)
   - [Librerías incluidas](#librerías-incluidas)
     - [`math16_32.cyd` — aritmética de 16 y 32 bits](#math16_32cyd--aritmética-de-16-y-32-bits)
     - [`strings.cyd` — cadenas de texto](#stringscyd--cadenas-de-texto)
@@ -174,7 +174,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [Linux, BSDs](#linux-bsds)
     - [Migrar un juego de una versión anterior](#migrar-un-juego-de-una-versión-anterior)
   - [Ejemplos](#ejemplos)
-    - [Ejemplos Básicos](#ejemplos-básicos)
+    - [Ejemplos básicos](#ejemplos-básicos)
       - [`examples\test` - Introducción al motor](#examplestest---introducción-al-motor)
       - [`examples\multicolumn_menu` - Menús en múltiples columnas](#examplesmulticolumn_menu---menús-en-múltiples-columnas)
       - [`examples\guess_the_number` - Juego de adivinanzas](#examplesguess_the_number---juego-de-adivinanzas)
@@ -182,12 +182,12 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
       - [`examples\math_library` - Aritmética de 16/32 bits](#examplesmath_library---aritmética-de-1632-bits)
       - [`examples\strings_library` - Cadenas de texto](#examplesstrings_library---cadenas-de-texto)
       - [`examples\windows` - Ventanas múltiples](#exampleswindows---ventanas-múltiples)
-    - [Ejemplos de Nivel Intermedio](#ejemplos-de-nivel-intermedio)
-      - [`examples\ETPA_ejemplo` - Libro "Elige Tu Propia Aventura"](#examplesetpa_ejemplo---libro-elige-tu-propia-aventura)
-      - [`examples\include_demo` - Organización multi-archivo](#examplesinclude_demo---organización-multi-archivo)
+    - [Ejemplos de nivel intermedio](#ejemplos-de-nivel-intermedio)
+      - [`examples\ETPA_ejemplo` - Libro "Elige tu propia aventura"](#examplesetpa_ejemplo---libro-elige-tu-propia-aventura)
+      - [`examples\include_demo` - Organización multifichero](#examplesinclude_demo---organización-multifichero)
       - [`examples\import_demo` - Rutinas nativas (IMPORT / CALL)](#examplesimport_demo---rutinas-nativas-import--call)
       - [`examples\inline_asm` - Ensamblador inline (ASM / EXPORTS / USES / CYD\_CALL)](#examplesinline_asm---ensamblador-inline-asm--exports--uses--cyd_call)
-    - [Ejemplos Avanzados de Gráficos](#ejemplos-avanzados-de-gráficos)
+    - [Ejemplos avanzados de gráficos](#ejemplos-avanzados-de-gráficos)
       - [`examples\blit` - Introducción a BLIT](#examplesblit---introducción-a-blit)
       - [`examples\blit_island` - Gráficos avanzados](#examplesblit_island---gráficos-avanzados)
       - [`examples\sprites` - Sprites con máscara](#examplessprites---sprites-con-máscara)
@@ -195,7 +195,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
       - [`examples\Rocky_Horror_Show` - Animación de personajes](#examplesrocky_horror_show---animación-de-personajes)
       - [`examples\CYD_presents` - Efectos visuales complejos](#examplescyd_presents---efectos-visuales-complejos)
       - [`examples\Golden_Axe_select_character` - Selección dinámica con colores](#examplesgolden_axe_select_character---selección-dinámica-con-colores)
-    - [Ejemplos de Proyectos Completos](#ejemplos-de-proyectos-completos)
+    - [Ejemplos de proyectos completos](#ejemplos-de-proyectos-completos)
       - [`examples\SCUMM_16` - Interfaz tipo SCUMM/LucasArts](#examplesscumm_16---interfaz-tipo-scummlucasarts)
       - [`examples\Delerict` - Aventura completa con motor propio](#examplesdelerict---aventura-completa-con-motor-propio)
     - [Cómo usar los ejemplos](#cómo-usar-los-ejemplos)
@@ -206,12 +206,12 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
 
 ---
 
-## Requerimientos e Instalación
+## Requerimientos e instalación
 
 Estos son los requerimientos externos de la herramienta:
 
 - [Python 3.11 o superior](https://www.python.org/)
-- [SjAsmPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
+- [SjASMPlus 1.20.3 o superior](http://z00m128.github.io/sjasmplus/documentation.html)
 - Descompresor de ficheros ZIP
 
 Si se actualiza una versión más antigua, es recomendable NO sobrescribirla: renombra el directorio de la versión antigua y descomprime la nueva. No hace falta copiar tus juegos, porque cada uno es un [proyecto](#proyectos) en su propia carpeta. Si tu juego se hizo con la versión 1.6.6 o anterior, en la carpeta de CYD, consulta [Migrar un juego de una versión anterior](#migrar-un-juego-de-una-versión-anterior).
@@ -228,13 +228,13 @@ Para estos sistemas, los requerimientos son:
 
 - GNU/Linux / Unix / macOS / BSD con shell compatible con BASH.
 - Python 3.11 o superior
-- Todos los programas comunes del sistema (grep, cat, etc...).
-- Todos los programas requeridos para compilar programas C en el sistema (libc, libstdc++, g++, GNU make, etc...).
+- Todos los programas comunes del sistema (grep, cat, etc.).
+- Todos los programas requeridos para compilar programas C en el sistema (libc, libstdc++, g++, GNU make, etc.).
 - Autotools (autoconf, automake, aclocals...).
 - wget
 - git
 
-Estos requerimientos son necesarios para compilar `SjAsmPlus`. No existe distribución en binario de esta herramienta para sistemas compatibles UNIX, con lo que se requiere compilarla directamente.
+Estos requerimientos son necesarios para compilar `SjASMPlus`. No existe distribución en binario de esta herramienta para sistemas compatibles UNIX, con lo que se requiere compilarla directamente.
 
 Debido a la heterodoxa naturaleza de las diferentes distribuciones, me resulta imposible dar instrucciones detalladas para instalar los requerimientos en cada caso en particular, con lo que se requieren conocimientos por parte del usuario para ello.
 
@@ -263,7 +263,7 @@ chmod a+x make_adv.sh
 
 Y con esto ya podrías usar la herramienta en Linux.
 
-## CYDC (Compilador)
+## CYDC (compilador)
 
 Este programa es el compilador que traduce el texto de la aventura a un fichero TAP o DSK. Además de compilar la aventura en un fichero interpretable por el motor, realiza una búsqueda de las mejores abreviaturas para reducir el tamaño del texto.
 
@@ -305,24 +305,24 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 - **\-dce**: Elimina el bytecode que nunca puede alcanzarse (por ejemplo, rutinas de una librería que incluyes pero no llamas). La alcanzabilidad sigue tanto los saltos como la ejecución secuencial (fall-through), así que no se quita nada que pudiera ejecutarse. Especialmente útil con las librerías incluidas.
 - **\-code**: Muestra el bytecode generado.
 - **\-\-no-strict-colons**: Permite sintaxis antigua sin separadores `:` entre sentencias en una misma línea.
-- **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador que se informan antes de detenerse (por defecto 20).
+- **\-\-max-errors MAX_ERRORS**: Máximo de errores de parser/preprocesador de los que se informa antes de detenerse (por defecto 20).
 - **\-\-check**: Solo comprueba si el script tiene errores (de sintaxis, de símbolos y los del generador de código, como un `RESTORE` sin `DATA` detrás), sin ensamblarlo ni generar ficheros, así que no hacen falta `SJASMPLUS_PATH` ni `OUTPUT_PATH`. Es mucho más rápido que compilar, porque no busca abreviaturas. Termina con código 0 si no hay errores y 1 si los hay. No comprueba si la aventura cabe en memoria ni si existen las imágenes o la música.
-- **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del proyecto, y nunca para las carpetas de librerías (la `lib/` incluida y las de `--lib-path`), así que una librería no avisa de las rutinas que no llamas. Las constantes no se avisan, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
+- **\-\-no-warn-unused**: No avisa de las etiquetas, variables y arrays de datos declarados que no se usan nunca. Estos avisos (`WARNING [PARSER]`) no detienen la compilación. Solo se dan para los ficheros que están dentro de la carpeta del proyecto, y nunca para las carpetas de librerías (la `lib/` incluida y las de `--lib-path`), así que una librería no avisa de las rutinas que no llamas. De las constantes no se avisa, porque es normal no usarlas todas (por ejemplo, las de un `ENUM`).
 - **\-\-no-warn-gosub**: No avisa de los problemas con `GOSUB` y `RETURN` que el compilador encuentra al analizar el flujo del programa (ver [GOSUB ID](#gosub-id)): un `RETURN` al que se puede llegar sin ningún `GOSUB` pendiente y una subrutina que puede terminar sin `RETURN`, siguiendo por el código principal. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-no-warn-shared-vars**: No avisa de las variables que un fichero declara y otro fichero usa con otro nombre, por su número (`SET 205 TO ...`) o desde otra variable (`SET v TO {...}` pasándose de `v`). Es la forma de pisar sin darse cuenta las variables de una librería, como las 200..211 de `sprites.cyd`. Reutilizar una variable con varios nombres dentro de un mismo fichero no avisa, ni usarla por su nombre desde cualquier fichero. Estos avisos (`WARNING [CODEGEN]`) no detienen la compilación.
 - **\-\-debug-stack**: Para depurar. El intérprete comprueba la pila de `GOSUB` al ejecutarse: un `RETURN` sin `GOSUB` pendiente da el error de sistema 9, y un `GOSUB` que llenaría la pila, el 10, en lugar de colgar o reiniciar el Spectrum. Añade unos 30 bytes al intérprete y un poco de trabajo a cada `GOSUB` y `RETURN`, así que conviene quitarlo en la versión final.
-- **\-\-keep-temp**: Conserva los ficheros intermedios de la compilación (`cyd.asm`, `cyd.sym`, el listado con `-v`, y el `DISK` y el `.BIN` de +3) en la carpeta `cyd_tmp` de la carpeta de salida. Sin ella, en la carpeta de salida solo queda lo que entrega la compilación (el `.tap`, el `.DSK`, el `.MLD` o los ficheros de la SD de esxdos), y `cyd_tmp` se borra cuando la compilación termina bien; si falla, `cyd_tmp` se queda y el compilador dice dónde está.
+- **\-\-keep-temp**: Conserva los ficheros intermedios de la compilación (`cyd.asm`, `cyd.sym`, el listado con `-v`, y el `DISK` y el `.BIN` de +3) en la carpeta `cyd_tmp` de la carpeta de salida. Sin ella, en la carpeta de salida solo queda lo que entrega la compilación (el `.tap`, el `.DSK`, el `.MLD` o los ficheros de la SD de esxDOS), y `cyd_tmp` se borra cuando la compilación termina bien; si falla, `cyd_tmp` se queda y el compilador dice dónde está.
 - **\-\-debug-errors**: Para depurar. Cuando se produce un error de sistema, el mensaje dice también en qué instrucción, y el compilador escribe junto al juego un fichero `.map` que lo traduce a fichero y línea (ver [Códigos de error](#códigos-de-error)). Sin esta opción el intérprete no cambia; con ella, las instrucciones que no pueden fallar van igual de rápido, así que conviene quitarla solo por los bytes.
 - **\-pause**: Número de segundos de pausa después de finalizar el proceso de carga, se puede cancelar con cualquier pulsación de tecla.
 - **\-wyz**: Usar música de tipo WyzTracker, en lugar de Vortex Tracker.
 - **\-il NUM_IMAGE_LINES**: Número de líneas que se emplearán en los ficheros de imagen (por defecto, 192).
-- **\-720**: En caso de usar el formato Plus3, se usará una imagen de disco de 720 Kb en lugar del tamaño estándar de 180 Kb.
-- **\-autoboot**, **\-\-autoboot**: [esxdos] Generar también `AUTOBOOT.BAS` + `ESXDOS.CFG` para que el juego arranque directamente desde la tarjeta SD (ver la nota sobre ESXDOS más abajo).
+- **\-720**: En caso de usar el formato +3, se usará una imagen de disco de 720 KB en lugar del tamaño estándar de 180 KB.
+- **\-autoboot**, **\-\-autoboot**: [esxdos] Generar también `AUTOBOOT.BAS` + `ESXDOS.CFG` para que el juego arranque directamente desde la tarjeta SD (ver la nota sobre esxDOS más abajo).
 
 -**{48k,128k,plus3,mld,mld128,esxdos}**: Modelo de Spectrum a emplear:
   -- **48k**: Versión para cinta en formato TAP, no incluye el reproductor de PT3 ni WyzTracker y se carga todo de una vez. Depende del tamaño de la memoria disponible.
   -- **128k**: Versión para cinta en formato TAP, se carga todo de una vez en los bancos de memoria y depende del tamaño de la memoria disponible.
-  -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum+3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
+  -- **plus3**: Esta versión generará un fichero DSK para ejecutarlo en Spectrum +3. Los recursos se cargan dinámicamente según se necesiten y depende del tamaño en disco.
   -- **mld** (EXPERIMENTAL): Genera un fichero `.MLD` para cartucho **Dandanator Mini** en modo 48K. El texto, las imágenes y el bytecode se leen directamente desde los slots del cartucho (no usa bancos de RAM ni reproduce música), y aprovecha varios slots Dandanator (hasta ~256 KB de contenido). Usa el sistema de guardado del cartucho.
   -- **mld128** (EXPERIMENTAL): Genera un fichero `.MLD` para **Dandanator Mini** orientado a Spectrum 128K. Como el resto (texto/imágenes/bytecode) se lee desde los slots del cartucho, los bancos de RAM se reservan para lo que debe estar en RAM: la **música** (PT3/WyzTracker, que se reproduce desde RAM) y los **arrays `DIM`** (que deben ser escribibles; se reparten en bancos RAM dedicados que nunca colisionan con la música). Aprovecha muchos slots Dandanator (hasta ~480 KB de contenido). Limitación conocida: si la música, los arrays y el contenido fuerzan a usar todos los bancos de RAM, la compilación aborta con un error claro.
   -- **esxdos**: Versión para interfaces **divMMC/divIDE con tarjeta SD** (esxDOS), orientada a Spectrum 128K. Funciona como el `plus3` (recursos cargados dinámicamente por demanda desde ficheros), pero accediendo a la SD mediante la API de esxDOS (`RST $08`) en lugar del disco +3. A diferencia del resto de targets, **no produce un único fichero**, sino varios ficheros que hay que copiar a la SD (ver la nota más abajo). Incluye la opción `-autoboot`.
@@ -343,7 +343,7 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 >
 > El parámetro `-a` activa el autoarranque (lanza el juego sin pasar por el menú).
 > La ROM resultante se puede grabar en un Dandanator Mini real o cargar en un
-> emulador que lo soporte (p.ej. **EsPectrum**, o **ZEsarUX** con
+> emulador que lo soporte (p. ej. **EsPectrum**, o **ZEsarUX** con
 > `--enable-dandanator --dandanator-rom mi_juego.rom`). La ROM generada es byte a
 > byte idéntica a la de la herramienta oficial
 > [dandanator-mini](https://github.com/cronomantic/dandanator-mini).
@@ -353,14 +353,14 @@ cydc_cli.py [-h] [-l MIN_LENGTH] [-L MAX_LENGTH] [-s SUPERSET_LIMIT]
 > `mld2rom_gui.sh`), para crear la ROM con más opciones: nombre del juego, fuente
 > del menú, gráfico de fondo, los textos del menú, autoarranque y efecto de borde.
 
-> **Nota sobre ESXDOS (ficheros de salida y su ubicación en la SD).** A diferencia
+> **Nota sobre esxDOS (ficheros de salida y su ubicación en la SD).** A diferencia
 > del resto de targets, el target `esxdos` **no genera un único fichero**, sino un
 > conjunto de ficheros en `OUTPUT_PATH` que hay que copiar a la tarjeta SD:
 >
 > - **`NOMBRE.tap`** — cargador de arranque (un programa BASIC). Es lo que se lanza.
 > - **`NOMBRE.DAT`** — datos residentes del juego (intérprete + texto/bytecode + música
 >   WyzTracker si la hay). El cargador lo abre por su nombre.
-> - **`NNN.CSC`** — una por cada imagen (streaming); **`NNN.BIN`** — una por cada pista
+> - **`NNN.CSC`** — uno por cada imagen (streaming); **`NNN.BIN`** — uno por cada pista
 >   de música Vortex (PT3, streaming). Solo se generan si la aventura usa imágenes/música.
 >
 > Como el cargador y el motor abren estos ficheros **por nombre relativo al directorio
@@ -383,9 +383,9 @@ El compilador es un programa escrito en Python, por lo que se requiere tener el 
 
 También hay que indicar un directorio de destino para dejar los ficheros resultantes de la compilación.
 
-Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `scr`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de archivos deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.scr`, `001.scr`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-img` y -`trk` respectivamente.
+Opcionalmente, podemos indicar las rutas a directorios que contengan las imágenes comprimidas en formato `scr`, que se incluirán en la cinta o disco resultante. Lo mismo para los ficheros de tipo `PT3`. Ambos tipos de ficheros deben estar nombrados con números de 3 dígitos, del 0 al 255, de tal forma que sean `000.scr`, `001.scr`, `002.PT3`, y así. Se indicarán los directorios que contienen ambos ficheros con los parámetros `-img` y `-trk` respectivamente.
 
-Las imágenes serán comprimidas en un fichero de formato `CSC`. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que sólo almacena la mitad de la misma, pudiéndose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio. Más detalles de éste funcionamiento en la sección [Imágenes](#imágenes).
+Las imágenes serán comprimidas en un fichero de formato `CSC`. Las pantallas pueden ser completas, o se puede limitar el número de líneas horizontales para ahorrar memoria. Además detecta imágenes espejadas (simétricas) por el eje vertical, con lo que solo almacena la mitad de la misma, pudiéndose incluso forzar este comportamiento y descartar el lado derecho de la imagen para ahorrar espacio. Más detalles de este funcionamiento en la sección [Imágenes](#imágenes).
 
 Para la música, podemos usar módulos de Vortex Tracker (`PT3`), o música creada con WyzTracker v2.0 y superiores. El comportamiento está también descrito en sus secciones correspondientes: [Melodías Vortex Tracker](#melodías-vortex-tracker) y [Melodías WyzTracker](#melodías-wyztracker).
 
@@ -408,7 +408,7 @@ Los parámetros que soporta:
 - **\-h, --help**: Muestra la ayuda.
 - **\-v, --verbose**: Modo verboso.
 - **\-V, --version**: Versión del programa.
-- **charset.chr**: Huego de caracteres de entrada.
+- **charset.chr**: Juego de caracteres de entrada.
 - **charset.json**: Fichero con el juego de caracteres para el compilador.
 
 El ancho de los caracteres utilizado por defecto es 6 para el juego de caracteres inferior (del 0 al 126) y 4 para el superior (del 144 al 255), pero se pueden cambiar estos valores con los parámetros `-w` y `-W` respectivamente.
@@ -416,13 +416,13 @@ Indicar que los caracteres del 127 al 143 son especiales, ya que se usan para lo
 
 ---
 
-## Sintaxis Básica
+## Sintaxis básica
 
-Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto, se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentarán como tal por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
+Los comandos para el intérprete se delimitan dentro de dos pares de corchetes, abiertos y cerrados respectivamente. Todo texto que aparezca fuera de esto se considera "texto imprimible", incluidos los espacios y saltos de línea, y se presentará tal cual por el intérprete. Los comandos se separan entre sí con saltos de línea o dos puntos si están en la misma línea.
 
 Los comentarios dentro del código se delimitan con `/*` y `*/`, todo lo que haya en medio se considera un comentario.
 
-Este es un ejemplo resumido y auto explicativo de la sintaxis:
+Este es un ejemplo resumido y autoexplicativo de la sintaxis:
 
 ```cyd
 Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
@@ -437,7 +437,7 @@ Esto es texto [[ INK 6 ]] Esto es texto de nuevo pero amarillo
 El intérprete recorre el texto desde el principio, imprimiéndolo en pantalla si es "texto imprimible". Cuando una palabra completa no cabe en lo que queda de la línea, la imprime en la línea siguiente. Y si no cabe en lo que queda de pantalla, se genera una espera y petición al usuario de que pulse la tecla de confirmación para borrar la sección de texto y seguir imprimiendo (este último comportamiento es opcional).
 
 Cuando el intérprete detecta comandos, los ejecuta secuencialmente, a menos que encuentre saltos. Los comandos permiten introducir lógica programable dentro del texto para hacerlo dinámico y variado según ciertas condiciones. La más común y poderosa es la de solicitar escoger al jugador entre una serie de opciones (hasta un límite de 32 a la vez), y que puede elegir con las teclas `Q` y `A` o los cursores arriba y abajo (en horizontal, con `O` y `P` o los cursores izquierda y derecha, si se configura con [MENUCONFIG](#menuconfig-varexpression-varexpression-varexpression-varexpression)), y seleccionar con `SPACE`, `M` o `ENTER`. También soporta un joystick de tipo Kempston para desplazarse por el menú.
-De nuevo, éste es un ejemplo auto explicativo:
+De nuevo, este es un ejemplo autoexplicativo:
 
 ```cyd
 [[ /* Comandos que ponen colores de pantalla y la borra */
@@ -445,13 +445,13 @@ De nuevo, éste es un ejemplo auto explicativo:
    INK   7   /* Color de la tinta (blanco) */
    BORDER 0  /* Color del borde (negro) */
    CLEAR     /* Borrar el área de texto (pantalla completa) */
-   LABEL Localidad1]]Estás en la localidad 1. ¿Donde quieres ir?
+   LABEL Localidad1]]Estás en la localidad 1. ¿Dónde quieres ir?
 [[OPTION GOTO Localidad2]]Ir a la localidad 2
 [[OPTION GOTO Localidad3]]Ir a la localidad 3
 [[CHOOSE]]
 [[ LABEL Localidad2]]¡¡¡Lo lograste!!!
 [[ GOTO Final]]
-[[ LABEL Localidad3]]¡¡¡Estas muerto!!!
+[[ LABEL Localidad3]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ LABEL Final : WAITKEY: END ]]
 ```
@@ -459,12 +459,12 @@ De nuevo, éste es un ejemplo auto explicativo:
 El comando `OPTION GOTO etiqueta` generará un punto de selección en el lugar en donde se haya llegado al comando.
 Cuando llegue al comando `CHOOSE`, el intérprete permitirá elegir al usuario entre uno de los puntos de opción que haya acumulados en pantalla hasta el momento. Se permiten un máximo de 32.
 
-Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudo-comando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
-En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final` e ignorando todo lo que haya entre medias.
+Al escoger una opción, el intérprete saltará a la sección del texto donde se encuentre la etiqueta correspondiente indicada en la opción. Las etiquetas se declaran con el pseudocomando `LABEL identificador` dentro del código, y cuando se indica un salto a la misma, el intérprete comenzará a procesar a partir del punto en donde hemos declarado la etiqueta.
+En el caso del ejemplo, si elegimos la opción 1, el intérprete saltará al punto indicado en `LABEL Localidad2`, con lo que imprimirá el texto _"¡¡¡Lo lograste!!!"_, y después pasa a `GOTO Final` que hará un salto incondicional a donde está definido `LABEL Final`, ignorando todo lo que haya entre medias.
 
-Los identificadores de las etiquetas sólo soportan caracteres alfanuméricos (cifras y letras) y el subrayado (`_`), deben empezar con una letra o un subrayado (no con una cifra) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
+Los identificadores de las etiquetas solo soportan caracteres alfanuméricos (cifras y letras) y el subrayado (`_`), deben empezar con una letra o un subrayado (no con una cifra) y son sensibles al caso (se distinguen mayúsculas y minúsculas), es decir, `LABEL Etiqueta` no es lo mismo que `LABEL etiqueta`. Los comandos, por el contrario, no son sensibles al caso, pero por claridad, es recomendable ponerlos en mayúsculas.
 
-También se permite una versión acortada de las etiquetas precediendo el caracter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
+También se permite una versión acortada de las etiquetas precediendo el carácter `#` al identificador de la etiqueta, de tal manera que `#MiEtiqueta` es lo mismo que `LABEL MiEtiqueta`. Con esto, podríamos reescribir el anterior código así:
 
 ```cyd
 [[ /* Comandos que ponen colores de pantalla y la borra */
@@ -472,24 +472,24 @@ También se permite una versión acortada de las etiquetas precediendo el caract
    INK   7   /* Color de la tinta (blanco) */
    BORDER 0  /* Color del borde (negro) */
    CLEAR     /* Borrar el área de texto (pantalla completa) */
-   LABEL Localidad1]]Estás en la localidad 1. ¿Donde quieres ir?
+   LABEL Localidad1]]Estás en la localidad 1. ¿Dónde quieres ir?
 [[OPTION GOTO Localidad2]]Ir a la localidad 2
 [[OPTION GOTO Localidad3]]Ir a la localidad 3
 [[CHOOSE]]
 [[ #Localidad2 ]]¡¡¡Lo lograste!!!
 [[ GOTO Final ]]
-[[ #Localidad3 ]]¡¡¡Estas muerto!!!
+[[ #Localidad3 ]]¡¡¡Estás muerto!!!
 [[ GOTO Final]]
 [[ #Final : WAITKEY: END ]]
 ```
 
 Los comandos disponibles están descritos en su [sección](#listado-de-comandos) correspondiente.
 
-### Modo Colon Estricto (Enforced Colon Syntax)
+### Modo estricto de dos puntos
 
-A partir de la versión 1.2.x, el compilador aplica **Modo Colon Estricto por defecto**. Esto significa que cuando hay múltiples declaraciones de código en la misma línea dentro de bloques `[[ ]]`, **deben** estar separadas por dos puntos (`:`)
+A partir de la versión 1.2.x, el compilador aplica **el modo estricto de dos puntos por defecto**. Esto significa que cuando hay múltiples declaraciones de código en la misma línea dentro de bloques `[[ ]]`, **deben** estar separadas por dos puntos (`:`)
 
-**Sintaxis correcta** (Modo Colon Estricto habilitado - POR DEFECTO):
+**Sintaxis correcta** (modo estricto de dos puntos habilitado - POR DEFECTO):
 ```cyd
 [[ PRINT 42 : INK 5 : GOTO Label1 ]]
 [[ LABEL Label1 : DECLARE 0 AS mivar : SET mivar TO 10 : WAITKEY : END ]]
@@ -510,9 +510,9 @@ cydc_cli.py --no-strict-colons 48k entrada.cyd sjasmplus salida
 - Los dos puntos son opcionales con el parámetro `--no-strict-colons` para compatibilidad retroactiva
 - Este cambio mejora la legibilidad del código y previene ambigüedades en el análisis
 
-### Directiva INCLUDE (Proyectos multi-archivo)
+### Directiva INCLUDE (proyectos multifichero)
 
-El compilador permite dividir aventuras grandes en varios archivos fuente usando `INCLUDE`.
+El compilador permite dividir aventuras grandes en varios ficheros fuente usando `INCLUDE`.
 
 **Sintaxis:**
 ```cyd
@@ -522,13 +522,13 @@ El compilador permite dividir aventuras grandes en varios archivos fuente usando
 **Reglas y comportamiento:**
 - `INCLUDE` se procesa en tiempo de compilación por el preprocesador.
 - La directiva debe estar dentro de bloques de código `[[ ]]`.
-- `INCLUDE "ruta"` busca el archivo, por este orden: junto al archivo que contiene la directiva; en la carpeta raíz del proyecto (la del guion principal, o la indicada con `--project-root`); y en las carpetas indicadas con `-I`. Así, un archivo de cualquier subcarpeta puede escribir `INCLUDE "comun/vars.cyd"` desde la raíz.
-- `INCLUDE LIB "ruta"` incluye una **librería**: solo busca en las carpetas de librerías, primero las indicadas con `--lib-path` y después la `lib/` incluida. Un archivo tuyo que se llame igual que una librería nunca la sustituye.
+- `INCLUDE "ruta"` busca el fichero, por este orden: junto al fichero que contiene la directiva; en la carpeta raíz del proyecto (la del guion principal, o la indicada con `--project-root`); y en las carpetas indicadas con `-I`. Así, un fichero de cualquier subcarpeta puede escribir `INCLUDE "comun/vars.cyd"` desde la raíz.
+- `INCLUDE LIB "ruta"` incluye una **librería**: solo busca en las carpetas de librerías, primero las indicadas con `--lib-path` y después la `lib/` incluida. Un fichero tuyo que se llame igual que una librería nunca la sustituye.
 - Una ruta absoluta se usa tal cual.
 - Se admiten inclusiones anidadas hasta 20 niveles.
-- La misma librería incluida dos veces con `INCLUDE LIB` (por ejemplo, por tu programa y por otra librería) solo se incluye la primera vez. Cualquier otro archivo incluido dos veces es un error, que indica dónde se incluyó antes.
+- La misma librería incluida dos veces con `INCLUDE LIB` (por ejemplo, por tu programa y por otra librería) solo se incluye la primera vez. Cualquier otro fichero incluido dos veces es un error, que indica dónde se incluyó antes.
 - Las inclusiones circulares se detectan y se reportan como error.
-- Un archivo incluido puede incluir otros archivos.
+- Un fichero incluido puede incluir otros ficheros.
 
 ---
 
@@ -538,7 +538,7 @@ El proyecto trae en el directorio `lib/` un conjunto de **librerías escritas en
 propio lenguaje CYD**, con el núcleo en ensamblador Z80 nativo (bloques `ASM`, ver
 [Rutinas nativas](#rutinas-nativas-import--call)); no modifican la máquina virtual ni añaden dependencias.
 Son colecciones de subrutinas que se incorporan a tu programa con `INCLUDE LIB` y se
-invocan con `GOSUB`. Cada librería se **auto-salta** sus rutinas (un `GOTO`
+invocan con `GOSUB`. Cada librería se **autosalta** sus rutinas (un `GOTO`
 interno al principio), así que puedes incluirla al comienzo de tu guion sin que el
 flujo de ejecución caiga dentro de las subrutinas: solo se ejecutan cuando las
 llamas con `GOSUB`.
@@ -567,7 +567,7 @@ avisa (ver `--no-warn-shared-vars`):
 
 Da enteros anchos **sin signo** (16 bits: 0..65.535; 32 bits: 0..4.294.967.295)
 con multiplicación y división, que con las variables de 8 bits de CYD no eran
-viables por desbordar. Los operandos se cargan en unos «registros» (grupos de 2 ó
+viables por desbordar. Los operandos se cargan en unos «registros» (grupos de 2 o
 4 variables consecutivas, byte bajo primero): `A` = `mlA0..mlA3`,
 `B` = `mlB0..mlB3`, `C` = `mlC0..mlC3`. Las operaciones de 16 bits usan los 2
 bytes bajos de cada uno.
@@ -589,8 +589,8 @@ primero).
 | `print16` / `print32` | imprime `A` en decimal (destruye `A`, `B` y `C`) |
 
 Para dividir entre un valor de 16 bits, cárgalo en `B` con `mlB2 = mlB3 = 0` y usa
-`div32` (el cociente puede ser de 32 bits). El tier de 16 bits es ~2–4× más
-rápido; evita `mul`/`div` dentro de bucles muy apretados. Hay un ejemplo completo
+`div32` (el cociente puede ser de 32 bits). Las rutinas de 16 bits son ~2–4× más
+rápidas; evita `mul`/`div` dentro de bucles muy apretados. Hay un ejemplo completo
 en `examples/math_library`.
 
 **Ejemplo:** puntuación = enemigos × puntos + bonus = 1250 × 800 + 234567.
@@ -604,7 +604,7 @@ en `examples/math_library`.
     SET mlA0 TO {@mlC0, @mlC1, @mlC2, @mlC3}   /* A = C */
     SET mlB0 TO {71, 148, 3, 0}   /* B = 234567 */
     GOSUB add32                /* A = 1234567 */
-]]Puntuacion: [[ GOSUB print32 ]]
+]]Puntuación: [[ GOSUB print32 ]]
 ```
 
 ### `strings.cyd` — cadenas de texto
@@ -740,7 +740,7 @@ tu guion.
 
 > **Avanzado, bajo tu propia responsabilidad.** Esto ejecuta código nativo tuyo
 > sin ninguna red de seguridad: un fallo en la rutina puede colgar o bloquear la
-> máquina, igual que el código de BeepFX o WyzTracker en el que ya confías. Si no
+> máquina, igual que el código de BeepFx o WyzTracker en el que ya confías. Si no
 > te manejas con ensamblador Z80, no necesitas esta función.
 
 Intervienen dos palabras clave:
@@ -770,7 +770,7 @@ Intervienen dos palabras clave:
 Escribes **solo el cuerpo** de la rutina — sin `ORG`, sin directivas, sin
 `SAVEBIN`. El compilador la enmarca, la ensambla **de forma aislada** (así un error
 en tu fichero da un fallo limpio y atribuible a *tu* fichero, sin romper la
-compilación del motor) y la coloca en memoria por ti, re-ensamblándola en su
+compilación del motor) y la coloca en memoria por ti, reensamblándola en su
 dirección final para que las direcciones absolutas funcionen sin más.
 
 El contrato (ABI) es deliberadamente pequeño:
@@ -836,13 +836,13 @@ el `.cyd`** entre `ASM nombre` y `ENDASM`, y llamarlo igual con `CALL`:
 ```
 
 - El cuerpo se escribe **tal cual** (verbatim): comentarios `;`, etiquetas, números
-  `0x…`… todo se pasa a sjasmplus sin que CYD lo interprete. Puedes **sangrar el
+  `0x…`… todo se pasa a SjASMPlus sin que CYD lo interprete. Puedes **sangrar el
   bloque** como quieras para alinearlo con el `[[ ]]`: CYD lleva las líneas de
   etiqueta (y de `EQU`) a la columna 0 por ti; basta con que las instrucciones
   queden más sangradas que las etiquetas.
 - Vale la **misma ABI** que con `IMPORT` (entra con `DE = FLAGS`, termina en `RET`)
   y el mismo `CALL`. `ASM … ENDASM` no es más que un `IMPORT` con el cuerpo en
-  línea. Si sjasmplus da un error, CYD te lo remapea a la **línea de tu `.cyd`**.
+  línea. Si SjASMPlus da un error, CYD te lo remapea a la **línea de tu `.cyd`**.
 
 ### Bloques con varias entradas (`EXPORTS`)
 
@@ -896,7 +896,7 @@ CYD inyecta:
 | `ARR_<nombre>_BANK` | banco físico donde vive, o `$FF` si es residente |
 
 En 128K/+3 un array puede vivir en un **banco paginado** que tu rutina no puede
-mapear sin auto-expulsarse. Por eso el acceso va por **servicios residentes** que
+mapear sin autoexpulsarse. Por eso el acceso va por **servicios residentes** que
 hacen la paginación por ti (en 48K, o si el banco es `$FF`, son acceso directo). Todos
 preservan `BC`/`DE`/`HL`/`IX`/`IY` (salvo el resultado):
 
@@ -956,9 +956,9 @@ usa el trampolín residente `CYD_CALL` y declara a quién llamas con `USES`:
 ]]
 ```
 
-- `USES a, b, …` declara los callees; por cada uno CYD inyecta un índice
+- `USES a, b, …` declara las rutinas a las que llamas; por cada una CYD inyecta un índice
   `RT_<nombre>`.
-- `ld a, RT_<nombre> : call CYD_CALL` ejecuta ese callee. Entra con `DE = FLAGS`
+- `ld a, RT_<nombre> : call CYD_CALL` ejecuta esa rutina. Entra con `DE = FLAGS`
   (igual que un `CALL` del guion) y CYD hace la paginación por ti.
 
 ### Llamar a servicios del motor (`CYD_SYSCALL`)
@@ -1014,9 +1014,9 @@ bancos), la rutina se copia de la flash a RAM residente al arrancar —igual que
 
 ## Variables y expresiones numéricas
 
-Los valores numéricos constantes se puede expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
+Los valores numéricos constantes se pueden expresar en base 10 por defecto, en hexadecimal con el prefijo `0x` o en binario con el prefijo `0b`. Por ejemplo, `240` sería en decimal, `0xF0` en hexadecimal y `0b11110000` en binario.
 
-Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables, banderas o "variables" indistintamente a lo largo de este documento.
+Hay a disposición del programador 256 contenedores de un byte (de 0 a 255) para almacenar valores, realizar operaciones y comparaciones con ellos. Constituyen el estado del programa. A partir de este momento, pueden ser llamados variables o banderas indistintamente a lo largo de este documento.
 
 Para referirnos a una variable en una expresión numérica, el número debe estar precedido por el carácter `@`. Pero es posible dar un nombre significativo a las variables usando el comando `DECLARE` de la siguiente manera:
 
@@ -1036,15 +1036,15 @@ DECLARE 10 AS OtroNombre
 ]]
 ```
 
-Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar el variable 10. Ten en cuenta de a pesar de tener distinto nombre, son la misma variable.
+Así, tanto _UnNombre_ como _OtroNombre_ servirán para identificar la variable 10. Ten en cuenta que, a pesar de tener distinto nombre, son la misma variable.
 
-Para asignar valores a un variable, usamos el comando `SET varId TO varexpression`, de la siguiente manera:
+Para asignar valores a una variable, usamos el comando `SET varId TO varexpression`, de la siguiente manera:
 
 ```cyd
 [[
-  SET 0 TO 1                      /* Ponemos el variable cero a 1 */
-  SET variable TO 2               /* Ponemos el variable llamado variable a 2 */
-  SET variable2 TO @variable + 2  /* Ponemos el variable llamado variable2 al dos sumado al valor del variable llamado variable */
+  SET 0 TO 1                      /* Ponemos la variable cero a 1 */
+  SET variable TO 2               /* Ponemos la variable llamada variable a 2 */
+  SET variable2 TO @variable + 2  /* Ponemos la variable llamada variable2 al dos sumado al valor de la variable llamada variable */
   SET variable2 TO @variable2 - (@variable + 2)  /* Permite paréntesis */
 ]]
 
@@ -1054,16 +1054,16 @@ También tenemos ahora el siguiente sinónimo con `LET varId = varexpression`, d
 
 ```cyd
 [[
-  LET 0 = 1                      /* Ponemos el variable cero a 1 */
-  LET variable = 2               /* Ponemos el variable llamado variable a 2 */
-  LET variable2 = @variable + 2  /* Ponemos el variable llamado variable2 al dos sumado al valor del variable llamado variable */
+  LET 0 = 1                      /* Ponemos la variable cero a 1 */
+  LET variable = 2               /* Ponemos la variable llamada variable a 2 */
+  LET variable2 = @variable + 2  /* Ponemos la variable llamada variable2 al dos sumado al valor de la variable llamada variable */
   LET variable2 = @variable2 - (@variable + 2)  /* Permite paréntesis */
 ]]
 ```
 
-Como se puede ver, a un variable se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación **siempre deben estar precedidas del carácter `@`**.
+Como se puede ver, a una variable se le puede asignar el valor de una expresión matemática compuesta por números, funciones y variables. Como ya se ha indicado, las variables dentro de una expresión numérica, es decir, el lado derecho de una asignación, **siempre deben estar precedidas del carácter `@`**.
 
-Los operandos disponibles son:
+Los operadores disponibles son:
 
 - Suma: `SET variable TO @variable + 2`
 - Resta: `SET variable TO @variable - 2`
@@ -1080,9 +1080,9 @@ Además, `LET` soporta operadores de atajo para modificar una variable en el mis
 
 Estos también funcionan con indirección y arrays: `LET [variable] += 1` y `LET miArray(0) += 1`.
 
-El resultado de una expresión numérica no pueden ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasan ambos límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero, se quedará en cero.
+El resultado de una expresión numérica no puede ser mayor de 255 (1 byte) ni menor que cero (no se soportan números negativos). Si al realizar las operaciones se rebasa alguno de los límites, el resultado se ajustará al límite correspondiente, es decir, si una suma supera 255, se ajustará a 255 y una resta que dé un resultado inferior a cero se quedará en cero.
 
-Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits del variable.
+Una cosa a destacar es que los operadores binarios **no son los mismos que los operadores lógicos de las expresiones condicionales** descritos más abajo. Un **&** no es lo mismo que un **AND**. Los operadores binarios realizan las correspondientes operaciones sobre los bits de la variable.
 
 La mayor parte de los comandos aceptan expresiones numéricas en sus parámetros, por ejemplo:
 
@@ -1109,15 +1109,15 @@ Por último, hay una serie de comandos especiales llamados **funciones**. Estos 
 - **RANDOM(expression)**: Devuelve un número aleatorio entre 0 y el valor indicado en **expression**.
 - **RANDOM()** : Devuelve un número aleatorio entre 0 y 255. Es el equivalente a `RANDOM(255)`.
 - **RANDOM(expression,expression)**: Devuelve un número aleatorio entre el valor indicado en el primer parámetro y el segundo, ambos inclusive.
-- **INKEY()** Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada (sólo teclado).
-- **KEMPSTON()** Devuelve los botones pulsados en un joystick kempston conectado al Spectrum.
+- **INKEY()**: Se espera hasta que se pulse una tecla y devuelve el código de la tecla pulsada (solo teclado).
+- **KEMPSTON()**: Devuelve los botones pulsados en un joystick Kempston conectado al Spectrum.
 - **MIN(varexpression,varexpression)**: Acota el valor del primer parámetro al mínimo indicado por el segundo. Es decir, si el parámetro 1 es menor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **MAX(varexpression,varexpression)**: Acota el valor del primer parámetro al máximo indicado por el segundo. Es decir, si el parámetro 1 es mayor que el parámetro 2, se devuelve el parámetro 2, en otro caso se devuelve el 1.
 - **YPOS()**: Devuelve la fila actual en la que se encuentra el cursor en coordenadas 8x8.
 - **XPOS()**: Devuelve la columna actual en la que se encuentra el cursor en coordenadas 8x8 (Debido a la naturaleza de la fuente de ancho variable, el valor devuelto será la columna 8x8 donde esté actualmente el cursor).
 - **LASTPOS(ID)**: Devuelve el índice de la última posición del array dado.
 
-Así que, por ejemplo `SET variable_no TO RANDOM(6)`, asigna a la variable _variable_no_ un número aleatorio del 0 al 6. Y de la misma manera, podemos operar con ellos: `SET variable_no TO RANDOM(6) + @var + 1`
+Así que, por ejemplo, `SET variable_no TO RANDOM(6)` asigna a la variable _variable_no_ un número aleatorio del 0 al 6. Y de la misma manera, podemos operar con ellos: `SET variable_no TO RANDOM(6) + @var + 1`
 
 ---
 
@@ -1131,11 +1131,11 @@ Salta a la etiqueta _ID_.
 
 - **GOSUB ID**
 
-Salto de subrutina, hace un salto a la etiqueta _ID_, pero devuelve la ejecución a la siguiente instrucción al `GOSUB` en cuanto encuentre un comando `RETURN`.
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero devuelve la ejecución a la instrucción siguiente al `GOSUB` en cuanto encuentre un comando `RETURN`.
 
 - **RETURN**
 
-Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`
+Retorna al punto posterior a la llamada de la subrutina, ver `GOSUB`
 
 - **IF condexpression THEN ... ENDIF**
 
@@ -1148,19 +1148,19 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 - **IF condexpression THEN ... ELSEIF condexpression THEN [... ELSEIF condexpression THEN] ... ELSE ... ENDIF**
 
 Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
-verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso se imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 - **WHILE (condexpression) ... WEND**
 
-Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+Se repiten el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
 - **DO ... UNTIL (condexpression)**
 
-Se repiten repetidamente el texto y los comandos que haya desde `DO` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
+Se repiten el texto y los comandos que haya desde `DO` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
 
 - **FOR variable = inicio TO fin [STEP paso] ... NEXT [variable]**
 
-Bucle contado: repite el texto y los comandos hasta `NEXT` recorriendo _variable_ desde _inicio_ hasta _fin_. El `STEP` (paso) es **opcional** y por defecto vale `1`; puede ser negativo (`STEP -2`) para contar hacia atrás. El paso debe ser una **constante** (no una variable ni una constante `CONST`), porque el compilador necesita conocer la dirección del bucle. La variable del contador va **pelada** (como en `SET`/`LET`); dentro del cuerpo se lee su valor con `@variable`. El `NEXT` puede llevar opcionalmente el nombre de la variable (`NEXT i`), que debe coincidir. Los límites _inicio_ y _fin_ pueden ser expresiones (incluso variables); _fin_ se re-evalúa en cada iteración. Si al empezar el contador ya ha pasado el límite, el bucle se ejecuta **cero veces** (semántica BASIC). Ejemplo:
+Bucle contado: repite el texto y los comandos hasta `NEXT` recorriendo _variable_ desde _inicio_ hasta _fin_. El `STEP` (paso) es **opcional** y por defecto vale `1`; puede ser negativo (`STEP -2`) para contar hacia atrás. El paso debe ser una **constante** (no una variable ni una constante `CONST`), porque el compilador necesita conocer la dirección del bucle. La variable del contador va **pelada** (como en `SET`/`LET`); dentro del cuerpo se lee su valor con `@variable`. El `NEXT` puede llevar opcionalmente el nombre de la variable (`NEXT i`), que debe coincidir. Los límites _inicio_ y _fin_ pueden ser expresiones (incluso variables); _fin_ se reevalúa en cada iteración. Si al empezar el contador ya ha pasado el límite, el bucle se ejecuta **cero veces** (semántica BASIC). Ejemplo:
 
 ```cyd
 [[
@@ -1176,7 +1176,7 @@ NEXT
 
 El contador es un **byte** (0..255). El bucle está protegido internamente contra el desbordamiento del byte, de modo que `FOR i = 0 TO 255` y `FOR i = 10 TO 0 STEP -1` funcionan correctamente (no entran en bucle infinito). Ten en cuenta, eso sí, que los límites deben caber en un byte.
 
-Como se puede ver, muchos de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
+Como se puede ver, muchas de estas funciones se ejecutan dependiendo de si se cumple una condición. Por ejemplo:
 
 ```cyd
 [[IF @var = 0 THEN GOTO salto ENDIF]]
@@ -1189,7 +1189,7 @@ Una condición es siempre una comparación entre dos expresiones numéricas:
 - Igual que: `IF @variable = 0 THEN GOTO salto ENDIF`
 - Mayor que: `IF @variable > 0 THEN GOTO salto ENDIF`
 - Menor que: `IF @variable2 < @variable THEN GOTO salto ENDIF`
-- Distinto que: `IF @variable <> 0 THEN GOTO salto ENDIF`
+- Distinto de: `IF @variable <> 0 THEN GOTO salto ENDIF`
 - Menor o igual que: `IF @variable <= 0 THEN GOTO salto ENDIF`
 - Mayor o igual que: `IF @variable >= 0 THEN GOTO salto ENDIF`
 
@@ -1199,7 +1199,7 @@ Además, las condiciones se pueden combinar formando expresiones condicionales m
 [[IF (@variable = 0 AND @variable2 = 1) AND NOT @variable3 = 1 THEN GOTO salto ENDIF]]
 ```
 
-- Cond1 **AND** Cond2: Cierto si se cumple tanto como Cond1 como Cond2.
+- Cond1 **AND** Cond2: Cierto si se cumple tanto Cond1 como Cond2.
 - Cond1 **OR** Cond2: Cierto si se cumple Cond1 o Cond2.
 - **NOT** Cond1: Cierto si la condición Cond1 es falsa.
 
@@ -1213,16 +1213,16 @@ Además, para aquellos que tengan nociones avanzadas de programación, las condi
 
 Las asignaciones y expresiones numéricas ya las hemos visto en [su sección](#variables-y-expresiones-numéricas), pero vamos a explicar más detalladamente su funcionamiento con la indirección, lo cual merece una sección aparte.
 
-La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir al variable o variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
+La indirección se realiza poniendo entre corchetes simples una expresión numérica, por ejemplo `[@var+1]`. Lo que estamos queriendo decir es que **nos vamos a referir a la variable con el número calculado por la expresión numérica encerrada entre corchetes**. Vamos a verlo con ejemplos:
 
-- `SET var to [2+2]`: indica que vamos a asignar a _var_ el contenido del variable 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
+- `SET var to [2+2]`: indica que vamos a asignar a _var_ el contenido de la variable 2+2, es decir 4. Esto es equivalente a `SET var TO @4`, pero nos permite ir afianzando el concepto.
 - `SET var TO [@indice]`: aquí es donde se muestra realmente la utilidad, ya que estamos indicando que guardamos en _var_ el contenido de la variable cuyo número corresponde con el contenido de la variable _indice_. Es decir, podemos cambiar de forma dinámica la variable a la cual hacemos la asignación.
-- `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en _var_ el contenido de la variable corresponda con el contenido de _indice_ mas dos.
-- `SET [var] TO 0`: La indirección también puede usarse en el lado izquierdo, y en este caso, no se soportan expresiones numéricas, sólo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable _var_.
+- `SET var TO [@indice+2]`: la indirección soporta cualquier expresión numérica, esto significa que guardamos en _var_ el contenido de la variable que corresponda con el contenido de _indice_ más dos.
+- `SET [var] TO 0`: La indirección también puede usarse en el lado izquierdo, y en este caso, no se soportan expresiones numéricas, solo el número o el identificador de la variable si se ha declarado. Esto significa "asigna cero a la variable cuyo índice corresponda con el contenido de la variable _var_".
 - `INK [@var]`: La indirección también es soportada por aquellos comandos que admitan expresiones numéricas.
 - `SET [@@var] TO 0`: Por completitud, ya que operamos con punteros, usando `@@` tenemos la operación complementaria a la indirección, es decir, devuelve el número de índice de una variable dada, con lo que en el ejemplo, la operación sería equivalente a `SET var TO 0`.
 
-Si usamos los indicadores numéricos con las variables (p.ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos:
+Si usamos los indicadores numéricos con las variables (p. ej. `@0`) no resulta muy útil. Su verdadera utilidad reside en usarlo con los identificadores de variables, tal que si tenemos:
 
 ```cyd
 [[
@@ -1232,7 +1232,7 @@ DECLARE 20 AS var : DECLARE 10 AS index: SET index TO @@var : SET [index] TO 0
 
 Vemos que esto nos permite inicializar variables que vayamos a usar para indirección con el identificador de otra variable.
 
-La indirección constituye una herramienta poderosa que nos permite implementar arrays en los variables, pero ¡ojo, que sólo tenemos 256! Además, no hay que confundirlos con los arrays descritos en la siguiente sección, que son de una naturaleza diferente.
+La indirección constituye una herramienta poderosa que nos permite implementar arrays en las variables, pero ¡ojo, que solo tenemos 256! Además, no hay que confundirlos con los arrays descritos en la siguiente sección, que son de una naturaleza diferente.
 
 Por último, podemos realizar asignaciones múltiples mediante la siguiente construcción:
 
@@ -1277,7 +1277,7 @@ El nombre de la constante no puede coincidir con el de otra variable, etiqueta o
 
 ## Arrays o "secuencias"
 
-En la sección anterior hemos descrito el uso de la indirección para usar las variables como un array, pero `CYD` también dispone de una forma alternativa de crear arrays de datos mediante el comando `DIM`, de tal mnanera que con `DIM nombre(tamaño)` declaramos un array de nombre `nombre` y tamaño `tamaño`. El tamaño de un array no puede ser mayor de 256 ni ser cero. Accedemos a cada uno de los elementos del array con la nomenclatura `nombre(pos)`, donde `pos` es el número de posición del elemento a acceder dentro del array, empezando desde cero. Vamos a verlo con ejemplos:
+En la sección anterior hemos descrito el uso de la indirección para usar las variables como un array, pero `CYD` también dispone de una forma alternativa de crear arrays de datos mediante el comando `DIM`, de tal manera que con `DIM nombre(tamaño)` declaramos un array de nombre `nombre` y tamaño `tamaño`. El tamaño de un array no puede ser mayor de 256 ni ser cero. Accedemos a cada uno de los elementos del array con la nomenclatura `nombre(pos)`, donde `pos` es el número de posición del elemento a acceder dentro del array, empezando desde cero. Vamos a verlo con ejemplos:
 
 ```cyd
 [[
@@ -1287,7 +1287,7 @@ En la sección anterior hemos descrito el uso de la indirección para usar las v
 ]]
 ```
 
-Si intentamos acceder a una posición fuera del rango, el motor fallará y dará un error. Para saber cual es la última posición accessible del array, tenemos la función `LASTPOS`:
+Si intentamos acceder a una posición fuera del rango, el motor fallará y dará un error. Para saber cuál es la última posición accesible del array, tenemos la función `LASTPOS`:
 
 ```cyd
 [[
@@ -1323,7 +1323,7 @@ Por último, y como conveniencia, podemos dejar vacío el número de posiciones 
 ]]
 ```
 
-Este tipo arrays tienen una serie de limitaciones que hay que tener en cuenta a la hora de usarlos. La más evidente es que no pueden tener más de 256 elementos y son unidimensionales y no se pueden redimensionar.
+Este tipo de arrays tiene una serie de limitaciones que hay que tener en cuenta a la hora de usarlos. La más evidente es que no pueden tener más de 256 elementos y son unidimensionales y no se pueden redimensionar.
 
 Otra limitación es que no se pueden salvar ni recuperar los datos de estos arrays mediante `SAVE` y `LOAD` directamente. La única opción es mover los datos del array desde o hacia las variables y realizar las operaciones de grabar o recuperar en las mismas.
 
@@ -1405,7 +1405,7 @@ Se pueden usar en tres sitios: en `DATA`, en la inicialización de un `DIM` y en
 
 Los arrays quedan **byte a byte** (_byte-plano_): no hay acceso "ancho" a un array, eres tú quien recompone el valor leyendo los bytes que necesites (con `math16_32` si vas a operar).
 
-En `LET`/`SET`, el ancho lo marca **siempre el keyword** (`WORD`/`DWORD`) o la cadena; los bytes se escriben en la variable de destino y las siguientes consecutivas. Aquí **no hay autodetección** (el número de variables ocupadas debe conocerse al compilar, así que un `LET v = 1000` sin marcador seguiría siendo de 1 byte y daría error por no caber):
+En `LET`/`SET`, el ancho lo marca **siempre la palabra clave** (`WORD`/`DWORD`) o la cadena; los bytes se escriben en la variable de destino y las siguientes consecutivas. Aquí **no hay autodetección** (el número de variables ocupadas debe conocerse al compilar, así que un `LET v = 1000` sin marcador seguiría siendo de 1 byte y daría error por no caber):
 
 ```cyd
 [[
@@ -1439,20 +1439,20 @@ Antes de describir los comandos, vamos a hablar resumidamente de la leyenda util
 - **ID** es un identificador y es una cadena de cifras, letras o subrayado que empieza por una letra o un subrayado. No se admiten letras acentuadas ni la ñ.
 - **expression** es una expresión numérica sin variables. Es un número en decimal o hexadecimal, pero también se admiten operaciones aritméticas simples que serán calculadas en tiempo de compilación.
 - **varexpression**, expresión numérica tal y como es descrita en su [sección](#variables-y-expresiones-numéricas) correspondiente. Puede contener variables con `@` e indirecciones.
-- **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consisten en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
+- **condexpression**, expresión condicional tal y como es descrita en su [sección](#control-de-flujo-y-expresiones-condicionales) correspondiente. Consiste en una comparación o varias comparaciones con operaciones lógicas entre las mismas.
 - **varID**, identificador de variable, puede ser una _expression_ si usamos su índice numérico o un _ID_ si lo hemos declarado así con `DECLARE`.
 
 ---
 
-Este es listado completo de comandos:
+Este es el listado completo de comandos:
 
 ### INCLUDE "ruta/al/archivo.cyd"
 
-Directiva de compilación que inserta otro archivo `.cyd` en el punto actual. Debe usarse dentro de bloques `[[ ]]`. Se resuelve antes del parseo, admite inclusiones anidadas y previene referencias circulares.
+Directiva de compilación que inserta otro fichero `.cyd` en el punto actual. Debe usarse dentro de bloques `[[ ]]`. Se resuelve antes del parseo, admite inclusiones anidadas y previene referencias circulares.
 
 ### LABEL ID
 
-Declara la etiqueta labelId en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
+Declara la etiqueta _ID_ en este punto. Todos los saltos con referencia a esta etiqueta dirigirán la ejecución a este punto.
 
 ### #ID
 
@@ -1460,7 +1460,7 @@ Versión resumida para declarar la etiqueta _ID_, de tal manera que `#LabelId` e
 
 ### DECLARE expression AS ID
 
-Declara el identificador _ID_ como un símbolo que representa al variable _expression_ en su lugar.
+Declara el identificador _ID_ como un símbolo que representa a la variable _expression_ en su lugar.
 
 ### CONST ID = expression
 
@@ -1504,20 +1504,20 @@ Salta a la etiqueta _ID_.
 
 ### GOSUB ID
 
-Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando cuanto encuentra un comando `RETURN`.
+Salto de subrutina, hace un salto a la etiqueta _ID_, pero vuelve al siguiente comando en cuanto encuentra un comando `RETURN`.
 
 El intérprete guarda la dirección de vuelta en una pila con sitio para unos 250 `GOSUB` anidados, y no la comprueba. Por eso:
 
 - Una subrutina debe terminar siempre con `RETURN`. Si sale con `GOTO` (por ejemplo, volviendo a la localidad), su dirección de vuelta se queda en la pila; al repetirlo unos cientos de veces, la pila invade la memoria de las variables y el juego se cuelga o se reinicia.
 - A una subrutina solo se debe llegar con `GOSUB`, `OPTION GOSUB` o los `THEN GOSUB` de `CHOOSE`. Si se entra con `GOTO`, o cayendo desde el código que tiene encima (por ejemplo, al incluir un fichero de subrutinas al principio sin un `GOTO` que las salte), su `RETURN` no tiene adónde volver.
 
-También avisa de un `GOSUB` a una etiqueta que nunca llega a un `RETURN`, como un `CHOOSE IF WAIT ... THEN GOSUB` a un lugar normal del juego: ahí hace falta `GOTO`. Cada aviso sale aunque haya otro error de este tipo en el guion, así que no hace falta corregir uno para ver el siguiente.
-
 El compilador analiza el flujo del programa y avisa de los dos casos (`WARNING [CODEGEN]`) con la línea donde ocurren; se desactiva con `--no-warn-gosub`. Para comprobarlo también al ejecutar, compila con `--debug-stack` (ver [Códigos de error](#códigos-de-error)).
+
+También avisa de un `GOSUB` a una etiqueta que nunca llega a un `RETURN`, como un `CHOOSE IF WAIT ... THEN GOSUB` a un lugar normal del juego: ahí hace falta `GOTO`. Cada aviso sale aunque haya otro error de este tipo en el guion, así que no hace falta corregir uno para ver el siguiente.
 
 ### RETURN
 
-Retorna al punto posterior de la llamada de la subrutina, ver `GOSUB`. Si no hay ningún `GOSUB` pendiente, el resultado es imprevisible.
+Retorna al punto posterior a la llamada de la subrutina, ver `GOSUB`. Si no hay ningún `GOSUB` pendiente, el resultado es imprevisible.
 
 ### IF condexpression THEN ... ENDIF
 
@@ -1530,23 +1530,23 @@ Si la expresión condicional _condexpression_ resulta cierta, se imprime el text
 ### IF condexpression1 THEN ... ELSEIF condexpression2 THEN ... ELSE ... ENDIF
 
 Si la expresión condicional _condexpression1_ resulta cierta, se imprime el texto y se ejecutan los comandos que haya desde `THEN` hasta `ELSE`. En caso contrario, se
-verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
+verifica si la expresión condicional _condexpression2_ se cumple, en cuyo caso se imprime el texto y se ejecutan los comandos que haya desde `ELSEIF` hasta el `ELSE` u otro `ELSEIF`. Se pueden encadenar varios `ELSEIF` hasta que se llegue a una última cláusula `ELSE`, que se ejecuta si ninguna de las condiciones anteriores se ha cumplido.
 
 ### WHILE (condexpression) ... WEND
 
-Se repiten repetidamente el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
+Se repiten el texto y los comandos que haya hasta el `WEND` mientras la condición _condexpression_ evalúe a cierto. La evaluación se realiza al principio de cada iteración.
 
 ### DO ... UNTIL (condexpression)
 
-Se repiten repetidamente el texto y los comandos que haya desde `DO` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
+Se repiten el texto y los comandos que haya desde `DO` hasta el `UNTIL` mientras la condición _condexpression_ evalúe a falso. La evaluación se realiza al final de cada iteración.
 
 ### SELECT varexpression ... CASE valor[,valor...] ... [CASE ELSE ...] ENDSELECT
 
-Selección múltiple: evalúa _varexpression_ y ejecuta la rama del `CASE` cuyo valor coincida (`CASE 1, 2, 3` = varios valores para la misma rama). `CASE ELSE` (opcional) es la rama por defecto. **Sin _fall-through_**: al acabar una rama, salta al final (semántica BASIC). El sujeto se re-evalúa en cada comparación (como el límite del `FOR`), así que conviene que sea una variable o una expresión sin efectos secundarios. Ver [control de flujo](#control-de-flujo-y-expresiones-condicionales).
+Selección múltiple: evalúa _varexpression_ y ejecuta la rama del `CASE` cuyo valor coincida (`CASE 1, 2, 3` = varios valores para la misma rama). `CASE ELSE` (opcional) es la rama por defecto. **Sin _fall-through_**: al acabar una rama, salta al final (semántica BASIC). El sujeto se reevalúa en cada comparación (como el límite del `FOR`), así que conviene que sea una variable o una expresión sin efectos secundarios. Ver [control de flujo](#control-de-flujo-y-expresiones-condicionales).
 
 ### ENUM [nombre] { A, B=valor, C, ... }
 
-Declara constantes secuenciales (como varios `CONST`): auto-incremento desde 0, o desde el último valor explícito (estilo C). `ENUM { NORTE, SUR, ESTE }` → 0, 1, 2. Los nombres son **constantes globales**; el _nombre_ opcional es solo agrupación/legibilidad. Los valores explícitos deben ser literales numéricos.
+Declara constantes secuenciales (como varios `CONST`): autoincremento desde 0, o desde el último valor explícito (estilo C). `ENUM { NORTE, SUR, ESTE }` → 0, 1, 2. Los nombres son **constantes globales**; el _nombre_ opcional es solo agrupación/legibilidad. Los valores explícitos deben ser literales numéricos.
 
 ### SWAP varID, varID
 
@@ -1634,11 +1634,11 @@ Espera la pulsación de la tecla de aceptación para continuar, presentando un i
 
 ### OPTION GOTO ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo, y en el mismo orden en el que se declararon los puntos de opción. Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, salta a la etiqueta _ID_. Si se borra la pantalla, el punto de opción se elimina y solo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo, y en el mismo orden en el que se declararon los puntos de opción. Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
 
 ### OPTION GOSUB ID
 
-Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y sólo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo, y en el mismo orden en el que se declararon los puntos de opción.Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
+Crea un punto de opción que el usuario puede seleccionar (ver `CHOOSE`). Si confirma esta opción, hace un salto de subrutina a la etiqueta _ID_, volviendo después del `CHOOSE` cuando encuentra un `RETURN`. Si se borra la pantalla, el punto de opción se elimina y solo se permiten 32 como máximo en una pantalla. Los puntos de opción se van acumulando en orden de declaración en una lista que será recorrida de acuerdo a la pulsación de las teclas de manejo, y en el mismo orden en el que se declararon los puntos de opción. Si resulta la opción seleccionada en el menú, el valor devuelto por `OPTIONVAL()` es su posición dentro de la lista de opciones del menú.
 
 ### OPTION VALUE(varexpression) GOTO ID
 
@@ -1652,14 +1652,14 @@ Funciona igual que `OPTION GOSUB ID`, pero le asignamos un valor específico que
 
 Detiene la ejecución y permite al jugador seleccionar una de las opciones que haya en este momento en pantalla. Realizará el salto a la etiqueta indicada en la opción correspondiente.
 La selección se realiza con las teclas **O** y **P** para "desplazamiento horizontal" y **Q** y **A** para desplazamiento vertical. También se pueden usar las direcciones correspondientes del joystick Kempston y las teclas del cursor.
-Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, sólo tiene configurado un desplazamiento vertical con las teclas **Q** y **A** ó **arriba** y **abajo** en el joystick Kempston o teclas de cursor. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
+Cuando se pulsan las teclas, un puntero se desplaza sobre la lista de opciones realizando incrementos o decrementos de acuerdo a la configuración actual del mismo (ver [MENUCONFIG](#menuconfig-varexpression-varexpression)). Por defecto, solo tiene configurado un desplazamiento vertical con las teclas **Q** y **A** o **arriba** y **abajo** en el joystick Kempston o teclas de cursor. Es responsabilidad del usuario colocar los puntos de opción en pantalla de una forma coherente al movimiento del menú configurado.
 
 Recuerda que si se borra la pantalla antes de este comando, perderás las opciones y dará un error de sistema.
 
 ### CHOOSE IF WAIT expression THEN GOTO ID
 
-Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un timeout, que si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.
-El timeout tiene como máximo 65535 (16 bits).
+Funciona exactamente igual que `CHOOSE`, pero con la salvedad de que se declara un tiempo límite; si se agota sin seleccionar ninguna opción, salta a la etiqueta _ID_.
+El tiempo límite tiene como máximo 65535 (16 bits).
 
 ### CHOOSE IF WAIT expression THEN GOSUB ID
 
@@ -1679,7 +1679,7 @@ _Función_ que devuelve el número de opciones del menú actualmente activo. Si 
 
 ### OPTIONVAL()
 
-_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, sólo se actualiza cuando una opción es elegida y se sale del menú.
+_Función_ que devuelve el valor asignado a la opción seleccionada y aceptada en el menú, solo se actualiza cuando una opción es elegida y se sale del menú.
 
 ### CLEAROPTIONS
 
@@ -1703,15 +1703,15 @@ Si se omite el cuarto parámetro, `MENUCONFIG x,y,d` equivale a `MENUCONFIG x,y,
 
 ### MENUCONFIG varexpression, varexpression
 
-Si se omiten el tercer parámetro y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
+Si se omiten el tercer y cuarto parámetros, `MENUCONFIG x,y` equivale a `MENUCONFIG x,y,0,1`.
 
 ### CHAR varexpression
 
-Imprime el carácter indicando con su número correspondiente.
+Imprime el carácter indicado con su número correspondiente.
 
 ### REPCHAR expression, expression
 
-Imprime el carácter indicado en el primer parámetro tantas veces como número se indique en el segundo parámetro. Ambos valores tienen un tamaño de 1 byte, es decir, val del 0 al 255. Además, si el número de veces es cero, el carácter se repetirá 256 veces en lugar de ninguna.
+Imprime el carácter indicado en el primer parámetro tantas veces como número se indique en el segundo parámetro. Ambos valores tienen un tamaño de 1 byte, es decir, van del 0 al 255. Además, si el número de veces es cero, el carácter se repetirá 256 veces en lugar de ninguna.
 
 ### TAB expression
 
@@ -1723,7 +1723,7 @@ Imprime el valor numérico indicado.
 
 ### PAGEPAUSE expression
 
-Controla si al rellenar por completo el área de texto actual, debe solicitar continuar al jugador, presentando un icono animado de espera (parámetro \<> 0) ó hace un desplazamiento hacia arriba del texto y sigue imprimiendo (parámetro = 0).
+Controla si al rellenar por completo el área de texto actual, debe solicitar continuar al jugador, presentando un icono animado de espera (parámetro \<> 0) o hace un desplazamiento hacia arriba del texto y sigue imprimiendo (parámetro = 0).
 
 ### INK varexpression
 
@@ -1755,8 +1755,8 @@ Equivalente a `NEWLINE 1`.
 
 ### BACKSPACE expression
 
-Retrasa el cursor de impresión tantas posiciones como las indicadas en el parámetro (0 es 256), eliminado el carácter en la nueva posición y sustituyéndolo por un espacio. El tamaño de carácter que se usará es el del espacio (número 32).
-Hay que tener en cuenta que si se usan carácteres de distintos tamaños al del espacio, esta operación no funcionará bien.
+Retrasa el cursor de impresión tantas posiciones como las indicadas en el parámetro (0 es 256), eliminando el carácter en la nueva posición y sustituyéndolo por un espacio. El tamaño de carácter que se usará es el del espacio (número 32).
+Hay que tener en cuenta que si se usan caracteres de distintos tamaños al del espacio, esta operación no funcionará bien.
 
 ### BACKSPACE
 
@@ -1783,7 +1783,7 @@ Se muestran tantas líneas como se hayan definido en la imagen correspondiente y
 Copia una parte de la imagen cargada en el buffer a la pantalla.
 Definimos con los parámetros un rectángulo dentro del buffer que se copiará en la pantalla a partir de la posición indicada.
 
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Columna origen del rectángulo a copiar desde el buffer.
 - Fila origen del rectángulo a copiar desde el buffer.
@@ -1808,23 +1808,23 @@ Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 0,
 
 ### MARGINS expression, expression, expression, expression
 
-Define el área de pantalla donde se escribirá el texto. Los parámetros, por órden, son:
+Define el área de pantalla donde se escribirá el texto. Los parámetros, por orden, son:
 
 - Columna inicial.
 - Fila inicial.
-- Ancho (en carácteres).
-- Alto (en carácteres).
+- Ancho (en caracteres).
+- Alto (en caracteres).
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
 ### FADEOUT expression, expression, expression, expression
 
-Hace un fundido en negro en el área de pantalla definida por los parámetros que, por órden, son:
+Hace un fundido en negro en el área de pantalla definida por los parámetros que, por orden, son:
 
 - Columna inicial.
 - Fila inicial.
-- Ancho (en carácteres).
-- Alto (en carácteres).
+- Ancho (en caracteres).
+- Alto (en caracteres).
 
 Los tamaños y posiciones siempre se definen como si fuesen caracteres 8x8.
 
@@ -1841,7 +1841,7 @@ Las posiciones se asumen en tamaño de carácter 8x8.
 ### FILLATTR varexpression, varexpression, varexpression, varexpression, varexpression
 
 Rellenamos en pantalla un rectángulo con un valor de atributos determinado. Los píxeles no se alteran.
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Columna origen del rectángulo a rellenar.
 - Fila origen del rectángulo a rellenar.
@@ -1852,7 +1852,7 @@ Los parámetros, por órden, son:
 ### PUTATTR varexpression, varexpression AT varexpression, varexpression
 
 Ponemos los atributos de un carácter 8x8 en pantalla con unos valores determinados. Los píxeles no se alteran.
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 - Máscara a aplicar sobre los atributos ya existentes en pantalla. Si el bit es cero, conservamos el de la pantalla, y si es uno usamos el nuevo valor.
@@ -1867,7 +1867,7 @@ Equivalente a `PUTATTR varexpression, 0xFF AT varexpression, varexpression`
 
 _Función_ que devuelve el valor de atributo de un carácter 8x8 en pantalla, en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta).
 
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Columna del carácter 8x8.
 - Fila del carácter 8x8.
@@ -1876,18 +1876,18 @@ Los parámetros, por órden, son:
 
 _Función_ que devuelve el valor de atributos en formato de pantalla de Spectrum, es decir, un byte con bits en formato FBPPPIII (F = Flash, B = Brillo, P = Papel, I = Tinta), utilizado en los comandos `PUTATTR` y `FILLATTR`.
 
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Color de tinta (0 a 7).
 - Color de fondo (0 a 7).
-- Uso de brillo (0 ó 1).
-- Uso de parpadeo (0 ó 1).
+- Uso de brillo (0 o 1).
+- Uso de parpadeo (0 o 1).
 
 ### ATTRMASK (expression COMMA expression COMMA expression COMMA expression)
 
 _Función_ que devuelve un valor de máscara, utilizado en los comandos `PUTATTR` y `FILLATTR`.
 
-Los parámetros, por órden, son:
+Los parámetros, por orden, son:
 
 - Máscara de tinta. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
 - Máscara de fondo. Si el valor es cero, conservamos el valor de la pantalla, y si es uno usamos el nuevo valor.
@@ -1908,7 +1908,7 @@ _Función_ que devuelve un número aleatorio entre el valor indicado en el prime
 
 ### INKEY(expression)
 
-_Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero, se espera hasta que se pulse una tecla. Si es distinto de cero, devuelve el código de la tecla pulsada en ese momento, y cero si no hay ninguna tecla pulsada. **Sólo responde a las pulsaciones del teclado, no del joystick**
+_Función_ que devuelve el código de la tecla pulsada. Si el parámetro es cero, se espera hasta que se pulse una tecla. Si es distinto de cero, devuelve el código de la tecla pulsada en ese momento, y cero si no hay ninguna tecla pulsada. **Solo responde a las pulsaciones del teclado, no del joystick**
 
 ### INKEY()
 
@@ -1916,7 +1916,7 @@ _Función_ que espera hasta que se pulse una tecla y devuelve el código de la t
 
 ### KEMPSTON()
 
-_Función_ que devuelve las teclas pulsadas en un joystick kempston conectado. Los bits siguientes estarán a uno si el botón correspondiente está pulsado:
+_Función_ que devuelve los botones pulsados en un joystick Kempston conectado. Los bits siguientes estarán a uno si el botón correspondiente está pulsado:
 
 - Bit 0 = Derecha.
 - Bit 1 = Izquierda.
@@ -1942,12 +1942,12 @@ _Función_ que devuelve la columna actual en la que se encuentra el cursor en co
 
 ### WINDOW expression
 
-Se cambia a la "ventana" indicada por el parámetro y se soporta hasta 8 ventanas (desde 0 a 7). Por defecto, la ventana inicial es la 0.
-Las "ventanas" de CYD son un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales. Esto permite tener diferentes áreas de texto independientes en pantalla simultáneamente sin tener que estar cambiando márgenes y la posición del cursor continuamente para pasar de un área a otra. Ten en cuenta que si se solapan ventanas el contenido de una ventana no se conserva si se sobreescribe con en otra ventana.
+Se cambia a la "ventana" indicada por el parámetro y se soportan hasta 8 ventanas (desde 0 a 7). Por defecto, la ventana inicial es la 0.
+Las "ventanas" de CYD son un área de pantalla definida por su posición de origen, su ancho, su alto, la posición del cursor y los atributos actuales. Esto permite tener diferentes áreas de texto independientes en pantalla simultáneamente sin tener que estar cambiando márgenes y la posición del cursor continuamente para pasar de un área a otra. Ten en cuenta que si se solapan ventanas el contenido de una ventana no se conserva si se sobrescribe con otra ventana.
 
 ### CHARSET expression
 
-Cambia el juego de carácteres empleado al imprimir textos. Con el parámetro a cero, se usa el juego inferior (caracteres del 0 al 127), y con un valor distinto de cero, se usa el juego superior (caracteres del 128 al 255). Recuerda que los caracteres del 0 al 32 y del 127 al 143 no son imprimibles. Esta instrucción no afecta a REPCHAR y CHAR.
+Cambia el juego de caracteres empleado al imprimir textos. Con el parámetro a cero, se usa el juego inferior (caracteres del 0 al 127), y con un valor distinto de cero, se usa el juego superior (caracteres del 128 al 255). Recuerda que los caracteres del 0 al 32 y del 127 al 143 no son imprimibles. Esta instrucción no afecta a REPCHAR y CHAR.
 
 ### RANDOMIZE expression
 
@@ -1959,7 +1959,7 @@ Esto es equivalente a hacer `RANDOMIZE 0`, con lo que el generador de números a
 
 ### TRACK varexpression
 
-Carga en memoria el fichero de Vortex Tracker como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3` (o `003.mus` en caso de usar WyzTracker). Si existiese una pista cargada previamente, la sobrescribirá.
+Carga en memoria el fichero de Vortex Tracker indicado como parámetro. Por ejemplo, si se indica 3, cargará la pista de música del fichero `003.PT3` (o `003.mus` en caso de usar WyzTracker). Si existiese una pista cargada previamente, la sobrescribirá.
 
 ### PLAY varexpression
 
@@ -1996,11 +1996,11 @@ Es el equivalente a `RAMLOAD 0, 0`, es decir, copia todas las variables desde el
 
 ### SAVE varexpression, varId, expression
 
-Salva una serie de variables en cinta o disco.  El primer parámetro indica el número de fichero a guardar, el segundo parámetro es la variable inicial del rango de variables que se guardará el fichero, y el tercero en número de variables a guardar en ese rango (si es cero, se considera como 256).
-Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
+Salva una serie de variables en cinta o disco.  El primer parámetro indica el número de fichero a guardar, el segundo parámetro es la variable inicial del rango de variables que se guardarán en el fichero, y el tercero el número de variables a guardar en ese rango (si es cero, se considera como 256).
+Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminada, ya que se usará para almacenar el fichero de forma temporal.
 
-- En el caso del disco, se guardará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P.ej. el fichero a cargar con 16 sería el `016.SAV`. Si el fichero ya existiese, se sobreescribirá.
-- En el caso de la cinta, se guardará en ésta. El sistema empezará inmediatamente a guardar, con lo que el autor es el responsable de indicar al usuario que se va a grabar y que tiene que poner la unidad de casette (o equivalente) a grabar. El proceso puede interrumpirse con la tecla **BREAK**.
+- En el caso del disco, se guardará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P. ej. el fichero a cargar con 16 sería el `016.SAV`. Si el fichero ya existiese, se sobrescribirá.
+- En el caso de la cinta, se guardará en esta. El sistema empezará inmediatamente a guardar, con lo que el autor es el responsable de indicar al usuario que se va a grabar y que tiene que poner la unidad de casete (o equivalente) a grabar. El proceso puede interrumpirse con la tecla **BREAK**.
 
 El resultado de la operación se puede consultar con la función `SAVERESULT()`.
 
@@ -2014,10 +2014,10 @@ Es el equivalente a `SAVE varexpression, 0, 0`, es decir, guarda todas las varia
 
 ### LOAD varexpression
 
-Carga una serie de variables desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminado, ya que se usará para almacenar el fichero de forma temporal.
+Carga una serie de variables desde cinta o disco. El parámetro indica el número de fichero a cargar, y se cargará el rango de variables que se haya indicado al salvar el fichero. Cualquier cosa que haya en el almacén temporal que se haya cargado con `RAMSAVE` será eliminada, ya que se usará para almacenar el fichero de forma temporal.
 
-- En el caso del disco, se cargará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P.ej. el fichero a cargar con 16 sería el `016.SAV`.
-- En el caso de la cinta, se cargará el primer bloque sin cabecera que encuentre, con lo que es necesario que el usuario avance la cinta a la posición correcta. El sistema empezará inmediatamente a cargar, con lo que el autor es el responsable de indicar al usuario que se va a cargar y que tiene que poner la unidad de casette (o equivalente) a reproducir. El proceso puede interrumpirse con la tecla **BREAK**.
+- En el caso del disco, se cargará el fichero con el número indicado de tres dígitos y extensión `.SAV`. P. ej. el fichero a cargar con 16 sería el `016.SAV`.
+- En el caso de la cinta, se cargará el primer bloque sin cabecera que encuentre, con lo que es necesario que el usuario avance la cinta a la posición correcta. El sistema empezará inmediatamente a cargar, con lo que el autor es el responsable de indicar al usuario que se va a cargar y que tiene que poner la unidad de casete (o equivalente) a reproducir. El proceso puede interrumpirse con la tecla **BREAK**.
 
 El resultado de la carga se puede consultar con la función `SAVERESULT()`.
 
@@ -2035,11 +2035,11 @@ Con cualquier otro valor, el resultado está indefinido.
 
 ### ISDISK()
 
-_Función_ que devuelve 1 si el target carga sus recursos (imágenes, música, partidas) desde un sistema de ficheros —es decir, disco Plus3 o tarjeta SD de ESXDOS— y 0 en caso contrario (cinta o cartucho Dandanator, donde los recursos residen en memoria). Es útil para que la aventura sepa si los medios se cargan bajo demanda.
+_Función_ que devuelve 1 si el target carga sus recursos (imágenes, música, partidas) desde un sistema de ficheros —es decir, disco +3 o tarjeta SD de esxDOS— y 0 en caso contrario (cinta o cartucho Dandanator, donde los recursos residen en memoria). Es útil para que la aventura sepa si los medios se cargan bajo demanda.
 
 ### LASTPOS(ID)
 
-_Función_ que devuelve la última posición accessible del array dado. A todos los efectos, el tamaño del array menos 1.
+_Función_ que devuelve la última posición accesible del array dado. A todos los efectos, el tamaño del array menos 1.
 
 ---
 
@@ -2049,7 +2049,7 @@ El motor soporta un máximo de 256 imágenes, aparte de lo que quepa en el disco
 
 Para mostrar imágenes, el compilador comprime los ficheros en formato SCR de la pantalla de Spectrum en ficheros comprimidos con extensión `csc`. El proceso de compresión puede ser largo, así que el compilador guarda las imágenes comprimidas en la carpeta `cyd_cache` de la carpeta de salida, y solo vuelve a comprimir una imagen cuando cambia su fichero `scr` o cuando hay que comprimirla de otra forma (otro número de líneas u otro ajuste de simetría). El directorio de imágenes solo se lee: un fichero `csc` que pongas ahí sin su `scr` se usa como imagen ya comprimida.
 
-Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con el compilador para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta ésta para reducir aún mas el tamaño, aunque podemos forzar este comportamiento con cualquier imagen. Para ello hay que crear un fichero llamado `images.json` dentro del directorio de imágenes.
+Se puede configurar el número de líneas horizontales de la imagen a mostrar usando el parámetro correspondiente con el compilador para reducir aún más el tamaño. Además, si detecta que la mitad derecha de la misma está espejada con la izquierda, descarta la derecha para reducir aún más el tamaño, aunque podemos forzar este comportamiento con cualquier imagen. Para ello hay que crear un fichero llamado `images.json` dentro del directorio de imágenes.
 
 La estructura del fichero `images.json` es la siguiente:
 
@@ -2070,17 +2070,17 @@ La estructura del fichero `images.json` es la siguiente:
 
 Es un listado de registros con los siguientes campos:
 
-- `id` : Es el número de imágen correspondiente a esta entrada. En el ejemplo, `"id":0` corresponde a la imagen `000.scr` e `"id":1` corresponde a la imagen `001.scr`.
+- `id` : Es el número de imagen correspondiente a esta entrada. En el ejemplo, `"id":0` corresponde a la imagen `000.scr` e `"id":1` corresponde a la imagen `001.scr`.
 - `num_lines` : Indica el número de líneas a incluir en el fichero comprimido. El mínimo es 1 y el máximo (pantalla completa) es 192.
-- `force_mirror`: Con valor `true`, forzamos a que la imagen se considere simétrica. Esto hará que se descarte la mitad derecha de la imagen y que cuando se descomprima em memoria, se dibuje en su lugar la mitad izquierda reflejada. En otro caso, este campo debe tener el valor `false`.
+- `force_mirror`: Con valor `true`, forzamos a que la imagen se considere simétrica. Esto hará que se descarte la mitad derecha de la imagen y que cuando se descomprima en memoria, se dibuje en su lugar la mitad izquierda reflejada. En otro caso, este campo debe tener el valor `false`.
 
-Debemos indicar en el JSON tantos registros como imágenes queramos definir el comportamiento. Con aquellas imágenes que no estén definidas en el fichero `images.json`, se tratarán con el comportamiento normal, el cual es usar el número de líneas definidas con el parámetro `-il` o 192 por defecto, y usar el espejado sólo en aquellas imágenes detectadas como simétricas.
+Debemos indicar en el JSON tantos registros como imágenes de las que queramos definir el comportamiento. Aquellas imágenes que no estén definidas en el fichero `images.json` se tratarán con el comportamiento normal, el cual es usar el número de líneas definidas con el parámetro `-il` o 192 por defecto, y usar el espejado solo en aquellas imágenes detectadas como simétricas.
 
-Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un 'buffer' la imagen número n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el 'buffer'. Cualquier operación con una imagen requiere su carga previa en dicho 'buffer'. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera para la carga desde el disco , además de cierto tiempo para realizar la descompresión de la imagen tanto en cinta como en disco. Por eso es recomendable realizar este comando en un momento adecuado, por ejemplo hacerlo al iniciar un capítulo. Si intentamos cargar una imagen que no exista, recibiremos un error 1, y si se intenta cargar una imagen cuyo fichero no existe en disco, se generará el error de disco 23.
+Hay dos comandos necesarios para mostrar una imagen, el comando `PICTURE n` cargará en un buffer la imagen número n. Es decir, si hacemos `PICTURE 1`, cargará el fichero `001.CSC` en el buffer. Cualquier operación con una imagen requiere su carga previa en dicho buffer. Esto es útil para controlar cuándo se debe cargar la imagen, ya que supondrá espera para la carga desde el disco, además de cierto tiempo para realizar la descompresión de la imagen tanto en cinta como en disco. Por eso es recomendable realizar este comando en un momento adecuado, por ejemplo hacerlo al iniciar un capítulo. Si intentamos cargar una imagen que no exista, recibiremos un error 1, y si se intenta cargar una imagen cuyo fichero no existe en disco, se generará el error de disco 23.
 
 Para mostrar una imagen cargada en el buffer, usamos `DISPLAY n`, donde n tiene que ser distinto de cero para ejecutarse. La imagen que se mostrará será la última cargada en el buffer (si existe). La imagen comienza a pintarse desde la esquina superior izquierda de la pantalla y se dibujan tantas líneas como las indicadas al comprimir el fichero y se sobrescribe todo lo que hubiese en pantalla hasta el momento.
 
-También existe un método alternativo para mostrar imágenes, que es el comando `BLIT`, el cual nos permite copiar un fragmento en lugar de una imagen completa en pantalla, además de poder indicar su posición en la misma. El formato del comando es `BLIT xo, yo, ancho, alto AT xd, yd`, y tienes más detalles sobre ella en su [sección](#blit-varexpression-varexpression-varexpression-varexpression-at-varexpression-varexpression) correspondiente. `BLIT` es más versátil que `DISPLAY`, pero también es más lento, y también requiere que haya una imagen cargada en el 'buffer' de imagen con `PICTURE` previamente y sobreescribirá cualquier cosa que hubiese en pantalla en la posición donde se dibuje.
+También existe un método alternativo para mostrar imágenes, que es el comando `BLIT`, el cual nos permite copiar un fragmento en lugar de una imagen completa en pantalla, además de poder indicar su posición en la misma. El formato del comando es `BLIT xo, yo, ancho, alto AT xd, yd`, y tienes más detalles sobre él en su [sección](#blit-varexpression-varexpression-varexpression-varexpression-at-varexpression-varexpression) correspondiente. `BLIT` es más versátil que `DISPLAY`, pero también es más lento, y también requiere que haya una imagen cargada en el buffer de imagen con `PICTURE` previamente y sobrescribirá cualquier cosa que hubiese en pantalla en la posición donde se dibuje.
 
 ---
 
@@ -2096,7 +2096,7 @@ No está contemplado llamar a un número de efecto que no exista en el fichero i
 
 ## Melodías Vortex Tracker
 
-El motor `CYD` permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará la pista del fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar son 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 Kilobytes para cinta y 8 Kilobytes en caso de usar Plus3.
+El motor `CYD` permite reproducir módulos de música creados con Vortex Tracker en formato `PT3`. Su funcionamiento replica el mecanismo de carga de imágenes, es decir, los módulos deben nombrarse con tres dígitos que representan el número de pista que el intérprete cargará con el comando `TRACK`. Por ejemplo, si el intérprete encuentra el comando `TRACK 3`, entonces buscará la pista del fichero `003.PT3` y cargará en memoria el módulo para su reproducción. Y de la misma manera, el máximo número de módulos que se pueden cargar es 256 (de 0 a 255) y no se permite que el módulo sea de más de 16 KB para cinta y 8 KB en caso de usar +3.
 
 Una vez cargado un módulo, se podrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
 
@@ -2110,12 +2110,12 @@ Cuando se llegue al final del módulo, la reproducción se detendrá automática
 
 Una vez cargado un módulo, se podrá reproducir con el comando `PLAY`. Como se indica en la referencia de comandos, si el parámetro es distinto de cero, se reproducirá el módulo; y si es igual a cero, se detendrá la reproducción.
 
-A diferencia de con los módulos de Vortex Tracker, no se soporta el comando `LOOP` de forma completa, ya que son los propios módulos los que definen si éstos se reproducirán en bucle o no.
+A diferencia de los módulos de Vortex Tracker, no se soporta el comando `LOOP` de forma completa, ya que son los propios módulos los que definen si estos se reproducirán en bucle o no.
 
 Debido a las peculiaridades del formato de WyzTracker, hay que tener en cuenta una serie de consideraciones que afectarán al uso del motor con este reproductor de música:
 
 - Todos los módulos deben compartir los mismos instrumentos. El fichero de instrumentos se debe llamar `instruments.asm` y debe depositarse junto a los ficheros de módulos en el directorio `TRACKS`.
-- *Se reservará la totalidad del banco 1_ de la memoria del Spectrum, en el cual se almacenará el código del reproductor, los instrumentos y las melodías. Esto supone que se dispondrán de 16 Kb menos para la versión de cinta, y 8 Kb menos para la versión de Plus3.
+- _Se reservará la totalidad del banco 1_ de la memoria del Spectrum, en el cual se almacenará el código del reproductor, los instrumentos y las melodías. Esto supone que se dispondrá de 16 KB menos para la versión de cinta, y 8 KB menos para la versión de +3.
 - Las diferentes melodías serán comprimidas para ahorrar espacio y cada vez que se cargue una de ellas, será descomprimida en el espacio restante del banco 1. El compilador generará un error si alguna de las melodías incluidas no cabe en ese espacio restante.
 - No se soportan efectos de sonido.
 
@@ -2125,11 +2125,11 @@ Debido a las peculiaridades del formato de WyzTracker, hay que tener en cuenta u
 
 Lo primero es generar un guion de la aventura mediante cualquier editor de textos empleando la sintaxis arriba descrita. Es MUY recomendable hacer el guion de la misma antes de ponerse a programar la lógica ya que conviene tener el texto perfilado antes para tener una compresión adecuada (más detalles más adelante).
 
-Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caractéres por encima de 128 no se imprimirán bien y sólo se admiten los caracteres propios del castellano, indicados en la sección [Juego de Caracteres](#juego-de-caracteres), que serán convertidos a los códigos allí indicados.
+Es importante que la codificación del fichero sea UTF-8, pero hay que tener en cuenta que caracteres por encima de 128 no se imprimirán bien y solo se admiten los caracteres propios del castellano, indicados en la sección [Juego de caracteres](#juego-de-caracteres), que serán convertidos a los códigos allí indicados.
 
-Una vez tenemos la aventura, usamos el compilador `CYDC` para generar un fichero DSK o TAP. EL compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
+Una vez tenemos la aventura, usamos el compilador `CYDC` para generar un fichero DSK o TAP. El compilador busca las mejores abreviaturas para comprimir el texto lo máximo posible. El proceso puede ser muy largo dependiendo del tamaño de la aventura. Por eso es importante tener la aventura perfilada antes, para realizar este proceso al principio. La compilación la realizaremos con el parámetro `-T` de tal manera que con `-T abreviaturas.json`, por ejemplo, exportaremos las abreviaturas encontradas al fichero _abreviaturas.json_.
 
-A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, éste no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.
+A partir de este momento, si ejecutamos el compilador con el parámetro `-t abreviaturas.json`, este no realizará la búsqueda de abreviaturas y usará las que ya habíamos encontrado antes, con lo que la compilación será casi instantánea.
 Cuando ya consideremos que la aventura está terminada, podremos volver a realizar una nueva búsqueda de abreviaturas para intentar conseguir algo más de compresión.
 
 Para añadir efectos de sonido, imágenes y melodías, consulta las secciones correspondientes.
@@ -2149,7 +2149,7 @@ Un proyecto tiene:
 - `charset.json` con el juego de caracteres, si quieres uno distinto del de por defecto (ver [CYD Character Set Converter](#cyd-character-set-converter)).
 - `cyd_project.ini`, opcional, con la configuración del proyecto.
 
-Los ficheros compilados van a la carpeta `OUTPUT/` del proyecto: el `.tap`, el `.DSK`, el `.MLD` o los ficheros de la tarjeta SD con esxdos (y el `.map` con `--debug-errors`). El compilador hace sus ficheros intermedios en `OUTPUT/cyd_tmp/` y los borra cuando la compilación termina bien (ver `--keep-temp`), y guarda las imágenes comprimidas en `OUTPUT/cyd_cache/`, así que solo vuelve a comprimir una imagen cuando cambia. Puedes borrar `OUTPUT/` cuando quieras.
+Los ficheros compilados van a la carpeta `OUTPUT/` del proyecto: el `.tap`, el `.DSK`, el `.MLD` o los ficheros de la tarjeta SD con esxDOS (y el `.map` con `--debug-errors`). El compilador hace sus ficheros intermedios en `OUTPUT/cyd_tmp/` y los borra cuando la compilación termina bien (ver `--keep-temp`), y guarda las imágenes comprimidas en `OUTPUT/cyd_cache/`, así que solo vuelve a comprimir una imagen cuando cambia. Puedes borrar `OUTPUT/` cuando quieras.
 
 Para crear un proyecto nuevo con un juego corto del que partir, usa el botón **Nuevo…** de la GUI o:
 
@@ -2255,7 +2255,7 @@ Opciones principales:
 - `-T`, `-t`, `-C`, `-c`: exportan o importan las abreviaturas o el juego de caracteres de otros ficheros, en lugar de los `tokens.json` y `charset.json` del proyecto.
 - `-il`, `-l`, `-L`, `-s`, `-S`, `-trim`, `-dce`, `-code`, `--no-strict-colons`, `--max-errors`, `--token-format`, `--no-warn-unused`, `--no-warn-gosub`, `--no-warn-shared-vars`, `--debug-stack`, `--debug-errors`, `--keep-temp`, `-pause`, `-720`, `-autoboot`, `-wyz`, `-v`: las opciones del [compilador](#cydc-compilador).
 
-Lo que se da en la línea de órdenes manda sobre el `cyd_project.ini` del proyecto, y este sobre los valores por defecto.
+Lo que se da en la línea de comandos manda sobre el `cyd_project.ini` del proyecto, y este sobre los valores por defecto.
 
 En Windows se ejecuta con el Python que viene con CYD, por ejemplo:
 
@@ -2320,7 +2320,7 @@ SET BACKUP_MAX_FILES=0
 - La variable `RUN_EMULATOR` indica si queremos que se ejecute el programa compilado bajo un emulador con los siguientes valores posibles:
   -- none: Si no queremos que haga esto.
   -- internal: Ejecuta el fichero compilado bajo ZEsarUX (ver `ZESARUX_PATH`). El +3 arranca como un +3 con ROM 4.1, y esxdos como un 128K con divMMC y la carpeta de salida del proyecto como tarjeta SD.
-  -- default: Si la extensión del fichero está asociada bajo Windows con otro emulador, lo ejecutará con éste.
+  -- default: Si la extensión del fichero está asociada bajo Windows con otro emulador, lo ejecutará con este.
 - La variable `ZESARUX_PATH` es la ruta de `zesarux.exe` para `internal`. Si se deja vacía, se busca en `.\tools\zesarux\`, después en la carpeta `.\tools\ZEsarUX*\` de versión más alta (por ejemplo `.\tools\ZEsarUX_windows-13.0\`) y por último en el `PATH`.
 - La variable `BACKUP_CYD` con el valor `yes` hace una copia de seguridad del guion principal en la carpeta `BACKUP` del proyecto tras cada compilación. Cada copia añade al nombre la fecha en que se creó. Vacía, se usa el ajuste `backup` del proyecto.
 - La variable `BACKUP_MAX_FILES` limita cuántas copias se guardan de cada juego (`0` significa sin límite).
@@ -2338,7 +2338,7 @@ Para aquellos que prefieren una interfaz gráfica en lugar de editar scripts o l
 - 30 opciones configurables incluyendo objetivos de compilación, rutas, formato de las abreviaturas, avisos de símbolos sin usar y de problemas con `GOSUB`/`RETURN`, comprobación de la pila de `GOSUB` al ejecutar (`--debug-stack`) y acciones posteriores a la compilación
 - Botón **Comprobar**, que busca errores en el guion sin ensamblarlo (`--check`), en un segundo y sin necesidad de SjASMPlus
 - La configuración del proyecto se guarda en su `cyd_project.ini` (solo lo que no es un valor por defecto, conservando tus comentarios), y la de la GUI (SjASMPlus, emulador, apariencia, proyectos recientes) en `cyd_gui_settings.ini`, en la carpeta de CYD. La configuración de versiones anteriores (`cyd_gui_settings.json`) se pasa ahí la primera vez; sus opciones del juego se aplican al primer proyecto creado con **Nuevo…**
-- Soporte completo de internacionalización (Inglés y Español) con cambio de idioma en tiempo real mediante lista desplegable
+- Soporte completo de internacionalización (inglés y español) con cambio de idioma en tiempo real mediante lista desplegable
 - Visualización en tiempo real del resultado de la compilación, con los errores en rojo, los avisos en naranja y un resumen al final. Un doble clic sobre un `fichero.cyd:12` del registro abre el fichero en esa línea
 - Botón **Ejecutar**, que abre en el emulador el último juego compilado sin volver a compilarlo, y botón **Abrir carpeta**, que abre la carpeta de salida. El emulador interno es ZEsarUX: la GUI lo busca en `tools/zesarux/`, en la carpeta `tools/ZEsarUX-<versión>/` más reciente (donde lo deja `tools/build_emu_tools.sh` en Linux) o en el `PATH`
 - Campo **Error del juego**: con un juego compilado con «Mostrar dónde ocurren los errores de sistema» (`--debug-errors`), pega el mensaje de `SYSTEM ERROR` y te dice en qué línea del guion ocurrió (ver [Códigos de error](#códigos-de-error))
@@ -2357,11 +2357,11 @@ make_adventure_gui.cmd
 ./make_adventure_gui.sh
 ```
 
-**Selección de Idioma:**
+**Selección de idioma:**
 
-La GUI admite idiomas Español e Inglés con detección automática de tu configuración regional. Puedes cambiar el idioma en cualquier momento usando la lista desplegable **Idioma** en la cabecera - todo el texto de la interfaz se actualizará inmediatamente. La preferencia de idioma se guarda y se restaura de forma automática.
+La GUI admite idiomas español e inglés con detección automática de tu configuración regional. Puedes cambiar el idioma en cualquier momento usando la lista desplegable **Idioma** en la cabecera - todo el texto de la interfaz se actualizará inmediatamente. La preferencia de idioma se guarda y se restaura de forma automática.
 
-También puedes pre-establecer el idioma con la variable de entorno `CYD_LANG` antes de lanzar la GUI:
+También puedes preestablecer el idioma con la variable de entorno `CYD_LANG` antes de lanzar la GUI:
 
 ```batch
 REM Windows
@@ -2375,17 +2375,17 @@ export CYD_LANG=es
 ./make_adventure_gui.sh
 ```
 
-**Opciones Configurables:**
+**Opciones configurables:**
 
 | Categoría | Opciones |
 |-----------|----------|
 | **Proyecto** | Carpeta (Nuevo…, Abrir…, Recientes), Fichero principal, Nombre del juego, Objetivo (48k/128k/plus3/mld/mld128/esxdos) |
 | **Rutas** | Las del proyecto (relativas a su carpeta): carpeta de salida, imágenes, pistas, archivo SFX, pantalla de carga, archivo de tokens, juego de caracteres, carpetas de INCLUDE / INCLUDE LIB / IMPORT. Las de este ordenador: ejecutable de SjASMPlus |
-| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Dividir textos entre bancos, Trimizar código intérprete, Mostrar bytecode, Conservar los ficheros intermedios, Compatibilidad de modo colon, Pausa tras carga, Soporte WyzTracker, Disco 720KB |
+| **Compilador** | Líneas de visualización de imagen, Límites de abreviaturas de texto, Límite de superconjunto, Modo detallado, Dividir textos entre bancos, Quitar el código del intérprete que no se usa, Mostrar bytecode, Conservar los ficheros intermedios, Permitir instrucciones sin dos puntos, Pausa tras carga, Soporte WyzTracker, Disco 720KB |
 | **Post-Compilación** | Ejecutar emulador después de compilar, Copia de seguridad del guion principal |
 | **Apariencia** | Tamaño de fuente, Familia/tamaño/colores de fuente de registro |
 
-Todos los archivos compilados se colocan en la carpeta de salida del proyecto, y la GUI mostrará mensajes de compilación detallados para depuración si es necesario.
+Todos los ficheros compilados se colocan en la carpeta de salida del proyecto, y la GUI mostrará mensajes de compilación detallados para depuración si es necesario.
 
 ### Linux, BSDs
 
@@ -2441,7 +2441,7 @@ Hasta la versión 1.6.6, los juegos se hacían en la propia carpeta de CYD: su g
 
 1. Crea la carpeta del proyecto, fuera de la de CYD: con `make_adventure.py --new CARPETA`, con el botón **Nuevo…** de la GUI, o simplemente una carpeta nueva. (Si usas `--new` o **Nuevo…**, borra el juego corto que crea.)
 2. Copia en ella el guion del juego y los ficheros que incluye, `IMAGES/`, `TRACKS/`, `SFX.ASM`, `tokens.json`, `charset.json` y la pantalla de carga (`IMAGES/LOAD.scr` por defecto).
-3. Las librerías se incluyen ahora con [`INCLUDE LIB`](#directiva-include-proyectos-multi-archivo): cambia `INCLUDE "lib/strings.cyd"` (o `INCLUDE "../../lib/strings.cyd"`) por `INCLUDE LIB "strings.cyd"`. El compilador lo sugiere cuando no encuentra la ruta antigua.
+3. Las librerías se incluyen ahora con [`INCLUDE LIB`](#directiva-include-proyectos-multifichero): cambia `INCLUDE "lib/strings.cyd"` (o `INCLUDE "../../lib/strings.cyd"`) por `INCLUDE LIB "strings.cyd"`. El compilador lo sugiere cuando no encuentra la ruta antigua.
 4. Pasa lo que tenía el script `make_adv` al [`cyd_project.ini`](#cyd_projectini) del proyecto: `GAME` a `name` (o `main`, el nombre del guion), `TARGET` a `target`, `IMGLINES` a `image_lines`, `LOAD_SCR` a `load_scr`, y cada opción de `CYDC_EXTRA_PARAMS` a su clave de `[options]`.
 5. La configuración de la GUI se pasa sola la primera vez que se abre.
 6. Los ficheros compilados están ahora en la carpeta `OUTPUT/` del proyecto.
@@ -2452,7 +2452,7 @@ Después compílalo con `make_adv.cmd CARPETA` (o arrastrando la carpeta sobre `
 
 Dispones de una serie de ejemplos para comprobar las capacidades del motor y aprender de ellos. Cada ejemplo está diseñado para ilustrar características específicas del lenguaje CYD, desde conceptos básicos hasta técnicas avanzadas.
 
-### Ejemplos Básicos
+### Ejemplos básicos
 
 #### `examples\test` - Introducción al motor
 **Nivel:** Principiante | **Requiere:** ZX Spectrum 128K
@@ -2524,12 +2524,12 @@ Ilustra el sistema de ventanas para dividir la pantalla en diferentes áreas:
 - **Navegación entre ventanas:** Demuestra cómo cambiar entre ventanas para imprimir texto en diferentes áreas.
 - **Casos de uso:** Útil para crear interfaces tipo SCUMM, separar descripción de acciones, mostrar estadísticas permanentes, etc.
 
-### Ejemplos de Nivel Intermedio
+### Ejemplos de nivel intermedio
 
-#### `examples\ETPA_ejemplo` - Libro "Elige Tu Propia Aventura"
+#### `examples\ETPA_ejemplo` - Libro "Elige tu propia aventura"
 **Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
 
-Implementación completa de los primeros párrafos de un libro "Elige Tu Propia Aventura" (ETPA):
+Implementación completa de los primeros párrafos de un libro "Elige tu propia aventura" (ETPA):
 - **Narrativa ramificada:** Demuestra cómo crear una historia con múltiples caminos y finales usando `OPTION` y `GOTO`.
 - **Variables de configuración:** Usa variables para controlar modos de visualización (solo texto vs. con imágenes, posición de imágenes).
 - **Sistema de color:** Diferencia entre texto narrativo y opciones usando diferentes colores de tinta.
@@ -2539,11 +2539,11 @@ Implementación completa de los primeros párrafos de un libro "Elige Tu Propia 
 
 Este ejemplo es ideal para crear aventuras conversacionales o librojuegos interactivos.
 
-#### `examples\include_demo` - Organización multi-archivo
+#### `examples\include_demo` - Organización multifichero
 **Nivel:** Intermedio
 
 Demuestra el uso del sistema `INCLUDE` para organizar proyectos grandes:
-- **Separación de código:** El archivo principal `main.cyd` incluye otros archivos con `INCLUDE "archivo.cyd"`.
+- **Separación de código:** El fichero principal `main.cyd` incluye otros ficheros con `INCLUDE "archivo.cyd"`.
 - **Organización modular:**
   - `variables.cyd`: Declaraciones de variables
   - `common.cyd`: Subrutinas compartidas
@@ -2552,7 +2552,7 @@ Demuestra el uso del sistema `INCLUDE` para organizar proyectos grandes:
 - **Mantenibilidad:** Facilita el trabajo en equipo y la organización de proyectos complejos.
 - **Reutilización:** Las subrutinas comunes pueden compartirse entre múltiples capítulos.
 
-Consulta el archivo `examples\include_demo\README.md` para más detalles.
+Consulta el fichero `examples\include_demo\README.md` para más detalles.
 
 #### `examples\import_demo` - Rutinas nativas (IMPORT / CALL)
 **Nivel:** Avanzado
@@ -2562,7 +2562,7 @@ Muestra cómo llamar a una rutina Z80 desde un guion con `IMPORT` / `CALL`:
 - **ABI:** la rutina entra con `DE = FLAGS` e intercambia datos a través de variables.
 - **Avanzado, bajo tu responsabilidad:** consulta la sección "Rutinas nativas (IMPORT / CALL)".
 
-Consulta el archivo `examples\import_demo\README.md` para más detalles.
+Consulta el fichero `examples\import_demo\README.md` para más detalles.
 
 #### `examples\inline_asm` - Ensamblador inline (ASM / EXPORTS / USES / CYD_CALL)
 
@@ -2576,16 +2576,16 @@ combina en una pequeña "librería":
 - **`USES` / `CYD_CALL`:** una rutina llama a otras de otro bloque (y otro banco) por el trampolín residente.
 - **Código muerto:** las rutinas que nadie alcanza se descartan solas.
 
-Consulta el archivo `examples\inline_asm\README.md` para más detalles.
+Consulta el fichero `examples\inline_asm\README.md` para más detalles.
 
-### Ejemplos Avanzados de Gráficos
+### Ejemplos avanzados de gráficos
 
 #### `examples\blit` - Introducción a BLIT
 **Nivel:** Intermedio | **Requiere:** Imágenes en `IMAGES`
 
 Introducción al comando `BLIT` para copiar sprites y gráficos:
 - **Copia básica de gráficos:** Usa `BLIT x, y, width, height AT col, row` para copiar secciones de una imagen.
-- **Loop de renderizado:** Combina `BLIT` con bucles `WHILE` para rellenar la pantalla con un patrón.
+- **Bucle de dibujado:** Combina `BLIT` con bucles `WHILE` para rellenar la pantalla con un patrón.
 - **Concepto fundamental:** Base para entender animaciones y gráficos más complejos.
 
 #### `examples\blit_island` - Gráficos avanzados
@@ -2617,8 +2617,8 @@ El mismo escenario con la librería `lib/sprites_px.cyd`:
 **Nivel:** Avanzado
 
 Implementa una pantalla de presentación animada:
-- **Animación frame-by-frame:** Usa `BLIT` para crear animaciones cambiando los fotogramas.
-- **Timing preciso:** Combina `WAIT` con `BLIT` para controlar la velocidad de animación.
+- **Animación fotograma a fotograma:** Usa `BLIT` para crear animaciones cambiando los fotogramas.
+- **Temporización precisa:** Combina `WAIT` con `BLIT` para controlar la velocidad de animación.
 - **Sprites grandes:** Manejo de personajes de mayor tamaño en pantalla.
 
 #### `examples\CYD_presents` - Efectos visuales complejos
@@ -2638,13 +2638,13 @@ Recrea una pantalla de selección de personajes tipo Golden Axe:
 - **Detección de cambio de opción:** Usa `CHOOSE IF CHANGED THEN GOSUB` para ejecutar código cuando el jugador mueve el cursor.
 - **Efectos de color dinámicos:** Usa `FILLATTR` para cambiar los atributos de color de áreas de la pantalla en tiempo real.
 - **Resaltado de selección:** Ilumina el personaje seleccionado con un efecto de parpadeo usando bucles.
-- **Efectos de fade out:** Implementa un efecto de desvanecimiento dividiendo la pantalla en 4 secciones con `FADEOUT`.
+- **Efectos de fundido:** Implementa un efecto de desvanecimiento dividiendo la pantalla en 4 secciones con `FADEOUT`.
 - **Información contextual:** Muestra texto descriptivo que cambia según el personaje seleccionado.
 - **Funciones auxiliares:** `OPTIONSEL()` devuelve el índice de la opción actualmente seleccionada.
 
 Este ejemplo es perfecto para crear menús de selección visualmente atractivos e interactivos.
 
-### Ejemplos de Proyectos Completos
+### Ejemplos de proyectos completos
 
 #### `examples\SCUMM_16` - Interfaz tipo SCUMM/LucasArts
 **Nivel:** Avanzado
@@ -2655,7 +2655,7 @@ Implementación completa de una interfaz de aventura gráfica tipo SCUMM (como M
 - **Sistema de dos niveles:** Primer nivel para seleccionar verbo, segundo nivel para seleccionar objeto/dirección.
 - **Visualización de sprites:** Usa `BLIT` para copiar la imagen de localidad y los verbos.
 - **Gestión de objetos:** Imprime una lista de objetos visibles en la localidad.
-- **Charset personalizado:** Carga un juego de caracteres de 4x8 para texto más compacto usando `CHARSET 1`.
+- **Juego de caracteres personalizado:** Carga un juego de caracteres de 4x8 para texto más compacto usando `CHARSET 1`.
 - **Retroalimentación visual:** Cambia el color del verbo seleccionado con `FILLATTR`.
 - **Organización modular:** Usa subrutinas para imprimir objetos, direcciones y gestionar la selección.
 
@@ -2670,7 +2670,7 @@ Esqueleto de una aventura espacial completa con todos los sistemas necesarios:
   - Máscara de bits para flags de objetos usando constantes binarias (`0b00000001`)
   - Gestión de localización de objetos (llevado, puesto, en el suelo, etc.)
 - **Sistema de localidades:**
-  - Descripciones de localizaciones
+  - Descripciones de localidades
   - Salidas en 8 direcciones (N, S, E, W, Arriba, Abajo, Entrar, Salir)
   - Flags de localidad (puertas abiertas/cerradas, etc.)
 - **Sistema de comandos:**
@@ -2678,7 +2678,7 @@ Esqueleto de una aventura espacial completa con todos los sistemas necesarios:
   - Parser de acciones con objeto directo
   - Validación de acciones según propiedades de objetos
 - **Uso extensivo de constantes:** Define constantes con `CONST` para hacer el código más legible.
-- **Arquitectura escalable:** Diseñado para añadir fácilmente nuevos objetos, localidades y comandos.
+- **Arquitectura escalable:** Diseñada para añadir fácilmente nuevos objetos, localidades y comandos.
 - **1428 líneas de código:** Demuestra cómo estructurar proyectos grandes.
 
 Este es el ejemplo más complejo y sirve como base para crear aventuras de texto tradicionales o híbridas (texto + gráficos). Estudiar este código es una clase magistral en programación estructurada con CYD.
@@ -2686,7 +2686,7 @@ Este es el ejemplo más complejo y sirve como base para crear aventuras de texto
 ### Cómo usar los ejemplos
 
 **Para probarlos sin compilar:**
-Cada directorio incluye un archivo `.tap` precompilado que puedes cargar directamente en tu emulador de ZX Spectrum favorito.
+Cada directorio incluye un fichero `.tap` precompilado que puedes cargar directamente en tu emulador de ZX Spectrum favorito.
 
 **Para compilarlos tú mismo:**
 Cada ejemplo es un [proyecto](#proyectos): su `cyd_project.ini` indica su guion principal y su target. Compílalo donde está, sin copiar nada:
@@ -2714,11 +2714,11 @@ Se recomienda estudiar los ejemplos en este orden para una curva de aprendizaje 
 
 ## Juego de caracteres
 
-El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho de 1 a 8 píxeles. El juego de caracteres por defecto incluido tiene un tamaño 6x8, junto con un juego alternativo de tamaño 4x8 a partir del carácter 144. Éste es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
+El motor soporta un juego de 256 caracteres, con 8 píxeles de altura y tamaño variable de ancho de 1 a 8 píxeles. El juego de caracteres por defecto incluido tiene un tamaño 6x8, junto con un juego alternativo de tamaño 4x8 a partir del carácter 144. Este es el juego de caracteres por defecto, ordenados de izquierda a derecha y de arriba a abajo:
 
 ![Juego de caracteres por defecto](assets/default_charset.png)
 
-Los carácteres corresponden con el ASCII estándar, excepto los carácteres propios del castellano, que corresponden a las siguientes posiciones para los dos juegos de caracteres:
+Los caracteres corresponden con el ASCII estándar, excepto los caracteres propios del castellano, que corresponden a las siguientes posiciones para los dos juegos de caracteres:
 
 | Carácter | Posición 6x8 | Posición 4x8 |
 | -------- | ------------ | ------------ |
@@ -2758,8 +2758,8 @@ Este es el formato de importación/exportación del juego de caracteres:
 Es un JSON con un array de registros de tres campos:
 
 - _Id_: número del carácter de 0 a 255, que no se puede repetir.
-- _Character_: un array de 8 números que corresponde con el valor de los bytes del caracter y, por tanto, no puede haber valores mayores de 255. Cada byte corresponde con los pixels de cada línea del carácter.
-- _Width_: un array con el ancho en pixels del carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
+- _Character_: un array de 8 números que corresponde con el valor de los bytes del carácter y, por tanto, no puede haber valores mayores de 255. Cada byte corresponde con los píxeles de cada línea del carácter.
+- _Width_: el ancho en píxeles del carácter (los valores no pueden ser menores que 1 ni mayores que 8). Dado que el tamaño de cada línea del carácter del campo anterior es 8, los píxeles que sobren por la derecha serán descartados.
 
 Para facilitar la tarea de creación de un juego de caracteres alternativo, se ha incluido la herramienta [CYD Character Set Converter](#cyd-character-set-converter) o cyd_chr_conv. Esta herramienta permite convertir fuentes en formato `.chr`, `.ch8`, `.ch6` y `.ch4` creadas con ZxPaintbrush en el formato JSON anteriormente mencionado. Además, en el directorio `assets` de la distribución podrás encontrar el fichero `default_charset.chr` con la fuente por defecto para que puedas editarla y personalizarla con dicho programa.
 
@@ -2778,7 +2778,7 @@ Los errores de motor son, como su nombre indica, los errores propios del motor c
 - System Error 5: No hay un módulo de música cargado para reproducir.
 - System Error 6: Código de instrucción inválido.
 - System Error 7: Acceso a posición del array fuera del rango.
-- System Error 8: Opción perdida. Al hacer scroll, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
+- System Error 8: Opción perdida. Al desplazarse el texto, las opciones declaradas se desplazan hacia arriba, si una de ellas sale por el límite superior de los márgenes, se genera este error.
 - System Error 9: `RETURN` sin ningún `GOSUB` pendiente. Solo se comprueba al compilar con `--debug-stack`.
 - System Error 10: Demasiados `GOSUB` anidados: se ha llenado la pila de llamadas, normalmente porque una subrutina sale con `GOTO` en lugar de `RETURN` y se repite. Solo se comprueba al compilar con `--debug-stack`.
 
@@ -2797,7 +2797,7 @@ Sin `--debug-errors` el intérprete no cambia. Con ella, cada instrucción que p
 
 Los errores de disco son los errores que pudiesen ocasionarse cuando el motor del juego accede al disco o a la tarjeta de almacenamiento. Se muestran en pantalla como `DISK ERROR No:` seguido del código, y detienen la ejecución del juego (a diferencia de los errores recuperables de `SAVE`/`LOAD`, que se consultan con `SAVERESULT()`).
 
-En el target **Plus3** corresponden con los errores de +3DOS:
+En el target **plus3** corresponden con los errores de +3DOS:
 
 - Disk Error 0: Drive not ready
 - Disk Error 1: Disk is write protected
@@ -2827,9 +2827,9 @@ En el target **Plus3** corresponden con los errores de +3DOS:
 - Disk Error 35: Disk not bootable (boot sector is not acceptable to DOS BOOT)
 - Disk Error 36: Drive in use (trying to re-map or remove a drive with files open)
 
-La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado de incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
+La aparición de estos errores ocurre cuando se accede al disco, al buscar más trozos de texto, imágenes, etc. Si aparece el error 23 (File not found), suele ser que se haya olvidado incluir algún fichero necesario en el disco. Otros errores ya suponen algún error de la unidad de disco o del propio disco.
 
-En el target **ESXDOS** (interfaces divMMC/divIDE con tarjeta SD) corresponden con los códigos de error de esxDOS:
+En el target **esxdos** (interfaces divMMC/divIDE con tarjeta SD) corresponden con los códigos de error de esxDOS:
 
 - Disk Error 1: O.K. (sin error)
 - Disk Error 2: Nonsense in esxDOS (operación sin sentido)
@@ -2863,7 +2863,7 @@ En el target **ESXDOS** (interfaces divMMC/divIDE con tarjeta SD) corresponden c
 - Disk Error 30: Unknown filesystem (sistema de ficheros desconocido)
 - Disk Error 31: Device is busy (dispositivo ocupado)
 
-En el caso de ESXDOS, el error más habitual es el 5 (No such file or directory), que suele indicar que se ha olvidado de copiar en la tarjeta SD algún fichero necesario (la imagen `.CSC`, la música `.BIN`, la partida `.SAV` o el propio fichero de datos `.DAT` del juego).
+En el caso de esxDOS, el error más habitual es el 5 (No such file or directory), que suele indicar que se ha olvidado copiar en la tarjeta SD algún fichero necesario (la imagen `.CSC`, la música `.BIN`, la partida `.SAV` o el propio fichero de datos `.DAT` del juego).
 
 ---
 
@@ -2873,16 +2873,16 @@ En el caso de ESXDOS, el error más habitual es el 5 (No such file or directory)
 - Einar Saukas por el compresor [ZX0](https://github.com/einar-saukas/ZX0) y ZX7.
 - Mokona por su versión del [compresor ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0.git).
 - Sylvain Glaize por la versión del descompresor [ZX0 para Python](https://gitea.zaclys.com/Mokona/pyZX0).
-- DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://https://github.com/daad-adventure-writer/DRT)
+- DjMorgul por el buscador de abreviaturas, adaptado de [Daad Reborn Tokenizer](https://github.com/daad-adventure-writer/DRT)
 - Shiru por [BeepFx](http://shiru.untergrund.net).
 - Seasip por mkp3fs de [Taptools](http://www.seasip.info/ZX/unix.html).
 - [Sergey.V.Bulba](http://bulba.untergrund.net) por el reproductor de Vortex Tracker.
 - Augusto Ruiz por el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer).
-- Al equipo responsable del ensamblador [sjasmplus](https://github.com/z00m128/sjasmplus).
+- Al equipo responsable del ensamblador [SjASMPlus](https://github.com/z00m128/sjasmplus).
 - [Tranqui69](https://mastodon.social/@tranqui69) por el logotipo y su apoyo.
 - XimoKom, Javier Fopiani y Fran Kapilla por su inestimable ayuda en las pruebas del motor.
 - Pablo Martínez Merino por la ayuda con el testeo en Linux y ejemplos.
-- Sergio ThePoPe por meterme el gusanillo del Plus3.
+- Sergio ThePoPe por meterme el gusanillo del +3.
 - [El_Mesías](https://twitter.com/El__Mesias__), [Arnau Jess](https://twitter.com/arnauballe) y [Javi Ortiz](https://twitter.com/tbrazil_speccy) por la difusión.
 - Al Club de Aventuras AD [CAAD](https://caad.club) por el apoyo.
 - A todos los miembros del [grupo de Telegram de `Choose your Destiny`](https://t.me/+aUfKiqBUc2FiNDhk).
@@ -2911,13 +2911,13 @@ Por la presente se concede permiso, libre de cargos, a cualquier persona que obt
 - EL SOFTWARE SE PROPORCIONA "COMO ESTÁ", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR E INCUMPLIMIENTO. EN NINGÚN CASO LOS AUTORES O PROPIETARIOS DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑOS U OTRAS RESPONSABILIDADES, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O CUALQUIER OTRO MOTIVO, DERIVADAS DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O SU USO U OTRO TIPO DE ACCIONES EN EL SOFTWARE.
 ```
 
-- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0), está sometido a licencia [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
+- [PyZX0](https://gitea.zaclys.com/Mokona/pyZX0) está sometido a licencia [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/pyZX0/LICENSE).
 
 - El [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) está bajo licencia [MIT](https://github.com/AugustoRuiz/WYZPlayer/blob/main/LICENSE)
 
-- [PLY](https://github.com/dabeaz/ply) y el [reproductor de WyzTracker](https://github.com/AugustoRuiz/WYZPlayer) no tienen licencias específicas, se asume una licencia similar a BSD o MIT.
+- [PLY](https://github.com/dabeaz/ply) está sometido a licencia [BSD-3](https://github.com/cronomantic/ChooseYourDestiny/blob/main/src/cydc/cydc/ply/yacc.py).
 
 - [BeepFx](http://shiru.untergrund.net) está bajo licencia [WTFPL v.2](https://wtfpl2.com).
 
-En términos sencillos, significa que si usas este motor para hacer un juego, siempre tienes que indicar en la pantalla de carga o dentro del propio juego que se ha realizado con `CYD` o usar alguno de los logotipos de proyecto (incluidos en el directorio `assets`). También debes hacerlo en la web de descarga si distribuyes el juego online, y en la caja o recipiente del medio si lo distribuyes de forma física. Aparte de la anterior condición, el juego realizado **SIEMPRE** será de tu propiedad y autoría; puedes venderlo o distribuirlo sin necesitad de publicar el código fuente ni recursos artísticos.
+En términos sencillos, significa que si usas este motor para hacer un juego, siempre tienes que indicar en la pantalla de carga o dentro del propio juego que se ha realizado con `CYD` o usar alguno de los logotipos de proyecto (incluidos en el directorio `assets`). También debes hacerlo en la web de descarga si distribuyes el juego online, y en la caja o recipiente del medio si lo distribuyes de forma física. Aparte de la anterior condición, el juego realizado **SIEMPRE** será de tu propiedad y autoría; puedes venderlo o distribuirlo sin necesidad de publicar el código fuente ni recursos artísticos.
 Sin embargo, la herramienta está bajo licencia AGPL, lo que significa que si la modificas o haces una versión propia, tienes obligación de publicar el código e indicar que está basado en este proyecto.

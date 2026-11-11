@@ -30,7 +30,7 @@ tape of every example with the current compiler, reading each one's
 
 | Example | What it demonstrates |
 |---------|----------------------|
-| [`test`](test/) | Introduction to the engine: text, colours, options and jumps. The starting point. |
+| [`test`](test/) | Introduction to the engine: text, colors, options and jumps. The starting point. |
 | [`multicolumn_menu`](multicolumn_menu/) | Laying out option menus across multiple columns. |
 | [`guess_the_number`](guess_the_number/) | A complete "guess the number" game: `RANDOM`, a 6-column menu and game logic. |
 | [`input_test`](input_test/) | Keyboard input with `INKEY()` and character arrays via `[@ptr]` indirection (`inputStr`/`printStr`). |
@@ -45,7 +45,7 @@ tape of every example with the current compiler, reading each one's
 | Example | What it demonstrates |
 |---------|----------------------|
 | [`ETPA_ejemplo`](ETPA_ejemplo/) | A "choose your own adventure" gamebook structure with branching sections. |
-| [`include_demo`](include_demo/) | Organising a large project across multiple files with the `INCLUDE` directive. |
+| [`include_demo`](include_demo/) | Organizing a large project across multiple files with the `INCLUDE` directive. |
 
 ## Advanced graphics
 
@@ -55,7 +55,7 @@ tape of every example with the current compiler, reading each one's
 | [`blit_island`](blit_island/) | Advanced `BLIT` graphics work. |
 | [`Rocky_Horror_Show`](Rocky_Horror_Show/) | Character animation. |
 | [`CYD_presents`](CYD_presents/) | Complex visual effects. |
-| [`Golden_Axe_select_character`](Golden_Axe_select_character/) | Dynamic character selection with colour effects. |
+| [`Golden_Axe_select_character`](Golden_Axe_select_character/) | Dynamic character selection with color effects. |
 
 ## Complete projects
 
