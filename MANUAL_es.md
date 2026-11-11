@@ -2152,6 +2152,17 @@ Para invocar un efecto, usamos el comando `SFX n`, siendo n el número del efect
 
 No está contemplado llamar a un número de efecto que no exista en el fichero incluido, así que es responsabilidad del autor tener cuidado de esta circunstancia, ya que el comportamiento en ese caso es impredecible.
 
+Los efectos van dentro del intérprete, y el intérprete tiene que caber en 32 KB en 48K y en 16 KB en el resto de targets (de `$8000` a `$BFFF`, porque los bancos se paginan en `$C000`). Un banco de efectos grande puede no caber en 128K aunque quepa en 48K, como le pasa al ejemplo `CYD_presents`. Si el intérprete no cabe, el compilador dice cuánto ocupan los efectos, el reproductor de música, las abreviaturas, el juego de caracteres y el resto, para saber qué recortar:
+
+```
+ERROR: El intérprete ocupa 22272 bytes y en 128k tiene que caber en 16384 (16 KB):
+  Efectos de sonido (-sfx): 12410 bytes
+  Abreviaturas del texto  :    28 bytes
+  Juego de caracteres     :  2304 bytes
+  Resto del intérprete    :  7530 bytes
+  Con -trim se quita el código de los comandos que el juego no usa.
+```
+
 ---
 
 ## Melodías Vortex Tracker

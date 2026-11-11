@@ -474,11 +474,13 @@ def get_asm_plus3(
     t = get_asm_template("dzx0_turbo")
     includes += t.substitute(d)
     if has_tracks:
+        includes += "CYD_SIZE_MUSIC:\n"
         t = get_asm_template("music_manager")
         includes += t.substitute(d)
         if not use_wyz_tracker:
             t = get_asm_template("VTII10bG")
             includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_END:\n"
     t = get_asm_template("screen_manager")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
@@ -486,8 +488,10 @@ def get_asm_plus3(
     t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
+        includes += "CYD_SIZE_MUSIC_VARS:\n"
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_VARS_END:\n"
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM128\n"
@@ -577,11 +581,13 @@ def get_asm_128(
     t = get_asm_template("savegame_tape")
     includes += t.substitute(d)
     if has_tracks:
+        includes += "CYD_SIZE_MUSIC:\n"
         t = get_asm_template("music_manager_tape")
         includes += t.substitute(d)
         if not use_wyz_tracker:
             t = get_asm_template("VTII10bG")
             includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_END:\n"
     t = get_asm_template("screen_manager_tape")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
@@ -589,8 +595,10 @@ def get_asm_128(
     t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
+        includes += "CYD_SIZE_MUSIC_VARS:\n"
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_VARS_END:\n"
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
@@ -687,11 +695,13 @@ def get_asm_esxdos(
         # F2b: Vortex (PT3) music STREAMS from SD (music_manager_esxdos, RST $08) to
         # $C000 in the staging bank 6. WyzTracker stays resident in its own bank 1
         # (WYZ_CALL only). Replaces the F1/F2a resident music_manager_tape.
+        includes += "CYD_SIZE_MUSIC:\n"
         t = get_asm_template("music_manager_esxdos")
         includes += t.substitute(d)
         if not use_wyz_tracker:
             t = get_asm_template("VTII10bG")
             includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_END:\n"
     # F2: images STREAM from SD (screen_manager_esxdos) into PIC_BUFFER, decompressed
     # to the resident SCREEN_BUFFER. Replaces the F1 resident screen_manager_tape.
     t = get_asm_template("screen_manager_esxdos")
@@ -701,8 +711,10 @@ def get_asm_esxdos(
     t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
+        includes += "CYD_SIZE_MUSIC_VARS:\n"
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_VARS_END:\n"
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
@@ -938,11 +950,13 @@ def get_asm_mld128(
     t = get_asm_template("savegame_mld")
     includes += t.substitute(d)
     if has_tracks:
+        includes += "CYD_SIZE_MUSIC:\n"
         t = get_asm_template("music_manager_tape")
         includes += t.substitute(d)
         if not use_wyz_tracker:
             t = get_asm_template("VTII10bG")
             includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_END:\n"
     t = get_asm_template("screen_manager_tape")
     includes += t.substitute(d)
     t = get_asm_template("text_manager")
@@ -950,8 +964,10 @@ def get_asm_mld128(
     t = interpreter_template()
     includes += t.substitute(d)
     if has_tracks and not use_wyz_tracker:
+        includes += "CYD_SIZE_MUSIC_VARS:\n"
         t = get_asm_template("VTII10bG_vars")
         includes += t.substitute(d)
+        includes += "CYD_SIZE_MUSIC_VARS_END:\n"
     includes += sfx_asm
 
     asm = "    DEVICE ZXSPECTRUM48\n\n"
@@ -1268,6 +1284,40 @@ def get_asm_mld_size(
         raise ValueError("Size pattern not found")
     size = int(size[m.start() : m.end()])
     return size
+
+
+def interpreter_size_parts(sym_path):
+    """Bytes of the interpreter's optional parts, read from the symbols of the
+    size assembly (get_asm_*_size): {"sfx", "music", "tokens", "charset"}. A part
+    the game does not have counts 0; None if the symbols cannot be read.
+
+    The sound effects go from BEEPFX to SYS_ERROR (they are the last include);
+    the music player is bracketed by the CYD_SIZE_MUSIC* labels the get_asm_*
+    builders add; the abbreviations and the character set (glyphs and widths)
+    are TOKENS..CHARSET_S..INDEX in every cyd_*.asm template."""
+    try:
+        with open(sym_path, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+    syms = {}
+    for line in lines:
+        m = re.match(r"(\S+): EQU 0x([0-9A-Fa-f]+)", line)
+        if m:
+            syms[m.group(1)] = int(m.group(2), 16)
+
+    def span(start, end):
+        if start in syms and end in syms and syms[end] >= syms[start]:
+            return syms[end] - syms[start]
+        return 0
+
+    return {
+        "sfx": span("BEEPFX", "SYS_ERROR") if syms.get("BEEPFX_AVAILABLE") == 1 else 0,
+        "music": span("CYD_SIZE_MUSIC", "CYD_SIZE_MUSIC_END")
+        + span("CYD_SIZE_MUSIC_VARS", "CYD_SIZE_MUSIC_VARS_END"),
+        "tokens": span("TOKENS", "CHARSET_S"),
+        "charset": span("CHARSET_S", "INDEX"),
+    }
 
 
 def build_abi_inc(sym_path):

@@ -2152,6 +2152,17 @@ To invoke an effect, we use the command `SFX n`, where n is the number of the ef
 
 Calling an effect number that does not exist in the included file is not handled, so it is the author's responsibility to take care of this, since the behavior in that case is unpredictable.
 
+The effects go inside the interpreter, and the interpreter must fit in 32 KB on 48K and in 16 KB on the other targets (from `$8000` to `$BFFF`, as the banks are paged in at `$C000`). A large bank of effects may not fit on 128K even if it fits on 48K, as happens to the `CYD_presents` example. If the interpreter does not fit, the compiler says how much the effects, the music player, the abbreviations, the character set and the rest take, so you know what to cut:
+
+```
+ERROR: The interpreter takes 22272 bytes and on 128k it must fit in 16384 (16 KB):
+  Sound effects (-sfx)   : 12410 bytes
+  Text abbreviations     :    28 bytes
+  Character set          :  2304 bytes
+  Rest of the interpreter:  7530 bytes
+  With -trim, the code of the commands the game does not use is left out.
+```
+
 ---
 
 ## Vortex Tracker music

@@ -212,6 +212,42 @@ def collect_deliverables(work_path, output_path):
             os.replace(os.path.join(work_path, name), os.path.join(output_path, name))
 
 
+def interpreter_too_big_message(model, size, limit, trimmed, parts):
+    """The error for an interpreter that does not fit in its target, with what
+    takes the room: the optional parts (sound effects, music player, text
+    abbreviations, character set) and the rest, so the message tells a bank of
+    effects that is too big from an interpreter that has grown too much."""
+    _ = gettext.gettext
+    lines = [_(
+        "ERROR: The interpreter takes {size} bytes and on {model} it must fit "
+        "in {limit} ({kb} KB):"
+    ).format(size=size, model=model, limit=limit, kb=limit // 1024)]
+    if parts is None:
+        return "\n".join(lines)
+    labels = (
+        ("sfx", _("Sound effects (-sfx)")),
+        ("music", _("Music player")),
+        ("tokens", _("Text abbreviations")),
+        ("charset", _("Character set")),
+    )
+    rest = size - sum(parts.values())
+    shown = [(label, parts[key]) for key, label in labels if parts[key]]
+    shown.append((_("Rest of the interpreter"), rest))
+    width = max(len(label) for label, _n in shown)
+    for label, n in shown:
+        lines.append("  " + _("{label}: {n} bytes").format(
+            label=label.ljust(width), n=str(n).rjust(5)))
+    if rest > limit:
+        lines.append("  " + _(
+            "The rest of the interpreter alone does not fit on {model}."
+        ).format(model=model))
+    if not trimmed:
+        lines.append("  " + _(
+            "With -trim, the code of the commands the game does not use is left out."
+        ))
+    return "\n".join(lines)
+
+
 def main():
     """Main function"""
 
@@ -1167,10 +1203,13 @@ def main():
     if verbose:
         print(f"Interpreter size: {asm_size}")
 
-    if model == "48k" and (asm_size > 32 * 1024):
-        sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
-    elif model != "48k" and asm_size > 16 * 1024:
-        sys.exit(_("ERROR: Interpreter too big!") + f" {asm_size} bytes.")
+    # On 48k the interpreter has $8000-$FFFF; elsewhere $8000-$BFFF, as the
+    # banks are paged in at $C000.
+    size_limit = 32 * 1024 if model == "48k" else 16 * 1024
+    if asm_size > size_limit:
+        sys.exit(interpreter_too_big_message(
+            model, asm_size, size_limit, args.trim_interpreter,
+            interpreter_size_parts(os.path.join(args.output_path, "cyd.sym"))))
 
     ######################################################################
 

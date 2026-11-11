@@ -374,9 +374,6 @@ msgid "ERROR: Error assembling interpreter."
 msgstr "ERROR: Error al ensamblar el intérprete."
 
 #: src/cydc/cydc/cydc.py:703 src/cydc/cydc/cydc.py:705
-msgid "ERROR: Interpreter too big!"
-msgstr "ERROR: ¡El intérprete es demasiado grande!"
-
 #: src/cydc/cydc/cydc.py:710
 msgid "Memory organization for disk version..."
 msgstr "Organización de memoria para la versión en disco..."
@@ -1721,3 +1718,30 @@ msgstr "ERROR: La acción de MENUKEY tiene que estar entre 0 y 4."
 
 msgid "ERROR: MENUJOY type must be between 0 and 3."
 msgstr "ERROR: El tipo de MENUJOY tiene que estar entre 0 y 3."
+
+msgid "ERROR: The interpreter takes {size} bytes and on {model} it must fit in {limit} ({kb} KB):"
+msgstr "ERROR: El intérprete ocupa {size} bytes y en {model} tiene que caber en {limit} ({kb} KB):"
+
+msgid "Sound effects (-sfx)"
+msgstr "Efectos de sonido (-sfx)"
+
+msgid "Music player"
+msgstr "Reproductor de música"
+
+msgid "Text abbreviations"
+msgstr "Abreviaturas del texto"
+
+msgid "Character set"
+msgstr "Juego de caracteres"
+
+msgid "Rest of the interpreter"
+msgstr "Resto del intérprete"
+
+msgid "{label}: {n} bytes"
+msgstr "{label}: {n} bytes"
+
+msgid "The rest of the interpreter alone does not fit on {model}."
+msgstr "El resto del intérprete, por sí solo, ya no cabe en {model}."
+
+msgid "With -trim, the code of the commands the game does not use is left out."
+msgstr "Con -trim se quita el código de los comandos que el juego no usa."
