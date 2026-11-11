@@ -62,7 +62,7 @@ tape of every example with the current compiler, reading each one's
 | Example | What it demonstrates |
 |---------|----------------------|
 | [`SCUMM_16`](SCUMM_16/) | A SCUMM/LucasArts-style point-and-click interface. |
-| [`Delerict`](Delerict/) | A full adventure built on its own engine on top of CYD. |
+| [`Delerict`](Delerict/) | A small but complete space adventure in Spanish, with location pictures, puzzles, save/load and an escape against the clock, on its own engine — see its [README](Delerict/README.md). |
 
 ## Native code (Z80)
 

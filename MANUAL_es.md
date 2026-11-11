@@ -2662,26 +2662,17 @@ Implementación completa de una interfaz de aventura gráfica tipo SCUMM (como M
 Este ejemplo es una plantilla excelente para crear aventuras gráficas de tipo point-and-click.
 
 #### `examples\Delerict` - Aventura completa con motor propio
-**Nivel:** Avanzado-Experto | **Requiere:** Imágenes en `IMAGES`
+**Nivel:** Avanzado-Experto | **Requiere:** Imágenes en `IMAGES` | **Target:** 128K
 
-Esqueleto de una aventura espacial completa con todos los sistemas necesarios:
-- **Sistema completo de objetos:**
-  - Propiedades de objetos (se puede llevar, llevar puesto, abrir, encender, etc.)
-  - Máscara de bits para flags de objetos usando constantes binarias (`0b00000001`)
-  - Gestión de localización de objetos (llevado, puesto, en el suelo, etc.)
-- **Sistema de localidades:**
-  - Descripciones de localidades
-  - Salidas en 8 direcciones (N, S, E, W, Arriba, Abajo, Entrar, Salir)
-  - Flags de localidad (puertas abiertas/cerradas, etc.)
-- **Sistema de comandos:**
-  - 10 verbos implementados (Examinar, Usar, Coger, Dejar, Ponerse, Quitarse, Encender, Apagar, Abrir, Cerrar)
-  - Parser de acciones con objeto directo
-  - Validación de acciones según propiedades de objetos
-- **Uso extensivo de constantes:** Define constantes con `CONST` para hacer el código más legible.
-- **Arquitectura escalable:** Diseñada para añadir fácilmente nuevos objetos, localidades y comandos.
-- **1428 líneas de código:** Demuestra cómo estructurar proyectos grandes.
+Una aventura espacial pequeña pero completa, con principio, final y diez localidades ilustradas. Eres el único superviviente de la tripulación de la "Carl Sagan": tienes que entrar en un pecio alienígena, recuperar el artefacto que guarda y volver a tu cápsula antes de que la criatura que lo custodia te alcance. Muestra cómo construir un motor de aventuras completo sobre CYD:
+- **Interfaz por menús:** verbos en una rejilla de 3×3 (`MENUCONFIG`) con tres páginas (acciones, más acciones y opciones) y un menú de movimiento con ocho direcciones (N, S, E, O, Subir, Bajar, Entrar, Salir). El objeto se elige en un selector con iconos copiados con `BLIT`.
+- **Sistema de objetos:** atributos en máscaras de bits (`0b00000001`) que indican qué verbos admite cada objeto, y localización de cada objeto en una variable (en una localidad, llevado, puesto o fuera del juego).
+- **Gráficos de localidades:** una imagen por localidad y variantes que reflejan el estado (puerta forzada, galería a oscuras, consola encendida...), dibujadas con `PICTURE` y `BLIT`.
+- **Puzles y estado:** salidas que dependen de lo que has hecho, textos dinámicos, contadores de turnos (radiación, la criatura, la huida final) y varios finales: la huida con el artefacto, la muerte y abandonar la misión.
+- **Grabar y cargar:** guarda la partida en memoria con `RAMSAVE` y la recupera con `RAMLOAD`; también permite reiniciar.
+- **Gráficos generados:** las imágenes se generan con `make_images.py`, un guion de Python puro que dibuja con perspectiva y tramado respetando los atributos del Spectrum.
 
-Este es el ejemplo más complejo y sirve como base para crear aventuras de texto tradicionales o híbridas (texto + gráficos). Estudiar este código es una clase magistral en programación estructurada con CYD.
+Es el ejemplo más complejo y sirve de base para aventuras de texto tradicionales o híbridas (texto y gráficos). El fichero `README.md` del ejemplo describe su estructura y contiene la solución.
 
 ### Cómo usar los ejemplos
 
@@ -2708,7 +2699,7 @@ Se recomienda estudiar los ejemplos en este orden para una curva de aprendizaje 
 8. `blit` → `blit_island` → `Rocky_Horror_Show` → `CYD_presents` → Gráficos progresivamente más complejos
 9. `Golden_Axe_select_character` → Efectos visuales dinámicos
 10. `SCUMM_16` → Interfaz tipo LucasArts
-11. `Delerict` → Plantilla para un motor de aventuras
+11. `Delerict` → Una aventura completa con su propio motor
 
 ---
 

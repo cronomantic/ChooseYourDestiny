@@ -1,10 +1,39 @@
 [[
+/*
+    DELERICT
 
-    /* Constantes */
+    Una aventura corta con interfaz de verbos e iconos, sobre un motor propio
+    escrito en CYD: localidades con salidas, objetos que se cogen, se dejan o se
+    visten, menús de comandos y un selector de objetos con su icono.
+
+    La cápsula de atraque está acoplada a un pecio alienígena. Hay que ponerse
+    el traje, salir por la esclusa, abrirse paso por el pecio, recuperar el
+    artefacto y volver a la Carl Sagan desde la consola de mando.
+
+    Pantalla:
+        fila 0          barra de estado (ventana 2): el nombre de la localidad
+        filas 1-9       el dibujo de la localidad (imágenes 011-030, BLIT)
+        filas 10-19     el texto (ventana 1)
+        filas 20-23     el marco (imagen 001), los comandos (ventana 3), el
+                        icono del objeto (imagen 002) y su nombre (ventana 4)
+*/
+
+    /* Objetos */
     CONST SpaceSuitIdObj = 0
     CONST MultitoolIdObj = 1
     CONST GunIdObj = 2
     CONST HatchShipIdObj = 3
+    CONST CabinetIdObj = 4
+    CONST AirlockControlsIdObj = 5
+    CONST CabinConsoleIdObj = 6
+    CONST AlienDoorIdObj = 7
+    CONST CreatureIdObj = 8
+    CONST PowerCellIdObj = 9
+    CONST AlienConsoleIdObj = 10
+    CONST ArtifactIdObj = 11
+    CONST NumObjects = 12
+
+    CONST NoObject = 0xFF
 
     CONST ObjCanBeCarriedMask   = 0b00000001
     CONST ObjCanBeWearMask      = 0b00000010
@@ -13,40 +42,53 @@
     CONST ObjCanBeTurnedOnMask  = 0b00010000
     CONST ObjIsAContainerMask   = 0b00100000
 
-
     /*
         La localización 0 es el "cajón desastre" o localización vacía, para hacer desaparecer objetos
         La localización 255 es cuando se tiene un objeto.
         La localización 254 es cuando se lleva puesto.
     */
-    
     CONST NoLoc = 0
     CONST WearLoc = 254
     CONST CarriedLoc = 255
 
+    /* La cápsula */
     CONST ShipCabinLoc = 1
     CONST ShipMainAreaLoc = 2
     CONST ShipAirlockLoc = 3
     CONST ShipHoldLoc = 4
     CONST ShipEngineRoomLoc = 5
+    /* El pecio */
+    CONST WreckCorridorLoc = 6
+    CONST WreckGalleryLoc = 7
+    CONST WreckNurseryLoc = 8
+    CONST WreckControlLoc = 9
+    CONST WreckSanctuaryLoc = 10
 
+    /* Bits de flagA */
+    CONST ShipHatchOpenFlag     = 0b00000001
+    CONST ShipCabinetOpenFlag   = 0b00000010
+    CONST OuterDoorOpenFlag     = 0b00000100
+    CONST LampOnFlag            = 0b00001000
+    CONST AlienDoorOpenFlag     = 0b00010000
+    CONST ConsolePoweredFlag    = 0b00100000
+    CONST UndockAskedFlag       = 0b01000000
+    CONST ChaseFlag             = 0b10000000  /* La criatura te persigue */
 
-    CONST ShipHatchOpenFlag = 0b00000001
-    CONST ShipCabinetOpenFlag = 0b00000010
+    /* Estado de la partida */
+    CONST Playing = 0
+    CONST Dead = 1
+    CONST Won = 2
+    CONST Failed = 3
+    CONST Restart = 4
 
+    /* Turnos que se aguantan en la sala de máquinas sin traje y junto a la criatura */
+    CONST RadiationWarning = 3
+    CONST RadiationDeath = 5
+    CONST CreatureWarning = 2
+    CONST CreatureDeath = 4
 
-/*
-        0 - Examinar
-        1 - Usar
-        2 - Coger
-        3 - Dejar
-        4 - Ponerse
-        5 - Quitarse
-        6 - Encender
-        7 - Apagar
-        8 - Abrir
-        9 - Cerrar
-*/
+    /* La huida: turnos desde que coges el artefacto (el camino más corto son 8) */
+    CONST ChaseDeath = 12
 
     CONST CommandExamine = 0
     CONST CommandUse = 1
@@ -59,24 +101,27 @@
     CONST CommandOpen = 8
     CONST CommandClose = 9
 
-    
+
     /* Área de variables */
 
+    /* 0..127: localización de cada objeto */
     DECLARE 0 AS locObjs           /* Objeto inicial del listado */
-    /* Localización objetos */
-    DECLARE 0 AS locObjSpaceSuit
-    DECLARE 1 AS locObjMultitool
     DECLARE 2 AS locObjGun
     DECLARE 3 AS locHatchShip
+    DECLARE 8 AS locObjCreature
+    DECLARE 9 AS locObjPowerCell
+    DECLARE 11 AS locObjArtifact
+    DECLARE 0 AS locObjSpaceSuit
 
-
-    DECLARE 128 AS loc   /* Localización actual */
-    DECLARE 129 AS flagA /* Flags 1
-
-        Bit 0 -> Escotilla abierta
-        Bit 1 -> Armario abierto
-
-    */
+    /* 128..140: estado de la partida (lo que se guarda con "Grabar") */
+    DECLARE 128 AS loc            /* Localización actual */
+    DECLARE 129 AS flagA          /* Ver los bits de flagA */
+    DECLARE 130 AS gameState      /* Playing, Dead, Won, Failed o Restart */
+    DECLARE 131 AS radiationTurns /* Turnos seguidos en la sala de máquinas sin traje */
+    DECLARE 132 AS creatureTurns  /* Turnos seguidos junto a la criatura */
+    DECLARE 133 AS chaseTurns     /* Turnos desde que empezó la persecución */
+    CONST SavedVars = 141         /* Variables 0..140 */
+    DECLARE 141 AS gameSaved      /* Hay una partida guardada en memoria (no se guarda) */
 
     /* Variables temporales */
     DECLARE 248 AS tmp0
@@ -88,7 +133,6 @@
     DECLARE 254 AS tmp6
     DECLARE 255 AS tmp7
 
-    
     /* Salidas de la localización actual */
     DECLARE 240 AS currLocationNorth
     DECLARE 241 AS currLocationSouth
@@ -104,78 +148,49 @@
     DECLARE 238 AS colorSelOptionCommand
     DECLARE 237 AS activeCommandMenu
     DECLARE 236 AS prevSelOptionObject
+    DECLARE 235 AS selectedCommand  /* Uno de los Command* */
+    DECLARE 234 AS selectedObject   /* Id objeto actualmente seleccionado */
+    DECLARE 233 AS listObjectLen    /* Número de objetos en la lista */
+    DECLARE 232 AS listObjectPos    /* Posición de la selección en la lista */
 
-    DECLARE 235 AS selectedCommand /*
-        0 - Examinar
-        1 - Usar
-        2 - Coger
-        3 - Dejar
-        4 - Ponerse
-        5 - Quitarse
-        6 - Encender
-        7 - Apagar
-        8 - Encender
-        9 - Apagar
-    */
-    DECLARE 234 AS selectedObject /* Id objeto actualmente seleccionado */
-
-    DECLARE 233 AS listObjectLen /* Número de objetos en la lista */
-
-    DECLARE 232 AS listObjectPos /* Position of the selection on the list */
-
-    /* Establecer localizaciones iniciales */
-    DIM objectDefaultLocations(128) = { 
-        2,  /* Traje espacial */
-        5,  /* Multiherramienta */
-        0,  /* Pistola */
-        2,  /* Esclusa */
-        0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
+    /* Localizaciones iniciales */
+    DIM objectDefaultLocations(NumObjects) = {
+        ShipMainAreaLoc,    /* Traje espacial */
+        ShipEngineRoomLoc,  /* Multiherramienta */
+        NoLoc,              /* Pistola: está dentro del armario */
+        ShipMainAreaLoc,    /* Escotilla */
+        ShipHoldLoc,        /* Armario */
+        ShipAirlockLoc,     /* Controles de la esclusa */
+        ShipCabinLoc,       /* Consola de mando */
+        WreckCorridorLoc,   /* Puerta sellada */
+        WreckNurseryLoc,    /* Criatura */
+        WreckNurseryLoc,    /* Célula de energía */
+        WreckControlLoc,    /* Consola alienígena */
+        WreckSanctuaryLoc   /* Artefacto */
     }
 
-    DIM objectAttr(128) = {
-        ObjCanBeCarriedMask | ObjCanBeWearMask | ObjCanBeListedMask,  /* Traje espacial */
+    DIM objectAttr(NumObjects) = {
+        ObjCanBeCarriedMask | ObjCanBeWearMask | ObjCanBeListedMask | ObjCanBeTurnedOnMask,  /* Traje espacial */
         ObjCanBeCarriedMask | ObjCanBeListedMask,  /* Multiherramienta */
         ObjCanBeCarriedMask | ObjCanBeListedMask,  /* Pistola */
-        ObjCanBeOpenedMask,  /* Esclusa */
-        0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
+        ObjCanBeOpenedMask,                        /* Escotilla */
+        ObjCanBeOpenedMask | ObjIsAContainerMask,  /* Armario */
+        0,                                         /* Controles de la esclusa */
+        0,                                         /* Consola de mando */
+        ObjCanBeOpenedMask,                        /* Puerta sellada */
+        0,                                         /* Criatura */
+        ObjCanBeCarriedMask | ObjCanBeListedMask,  /* Célula de energía */
+        0,                                         /* Consola alienígena */
+        ObjCanBeCarriedMask | ObjCanBeListedMask   /* Artefacto */
     }
 
     /* Lista objetos interacción */
-    DIM objectsListMenu(256)
+    DIM objectsListMenu(NumObjects)
 
 
-#Setup   
+/* Inicialización de la pantalla */
     PAGEPAUSE 1
+    LET gameSaved = 0
 
     /* Pantalla completa */
     WINDOW 0
@@ -186,6 +201,7 @@
     WINDOW 2
     MARGINS 0,0,32,1
     PAPER 5
+    INK 0
     CLEAR
 
     /* Ventana de texto */
@@ -205,28 +221,47 @@
     PAPER 0
     CLEAR
 
-    GOSUB ClearObjectList
-
 #Start
-    SET flagA TO 0
-    SET loc TO 1
-    SET activeCommandMenu TO 0
+    LET flagA = 0
+    LET loc = ShipCabinLoc
+    LET gameState = Playing
+    LET radiationTurns = 0
+    LET creatureTurns = 0
+    LET chaseTurns = 0
+    LET activeCommandMenu = 0
 
     LET tmp0 = 0
     LET tmp1 = @@locObjs
-    /*LASTPOS(objectDefaultLocations)*/
-    WHILE (@tmp0 <= LASTPOS(objectDefaultLocations))
+    WHILE (@tmp0 < NumObjects)
         LET [tmp1] = objectDefaultLocations(@tmp0)
         LET tmp0 = @tmp0 + 1
         LET tmp1 = @tmp1 + 1
     WEND
 
     GOSUB DrawMarquee
-
+    GOSUB DrawLocationPicture
+    GOSUB DrawStatusBar
+    WINDOW 1
+    CHARSET 0
+    CLEAR
+    INK 6
+]]DELERICT
+[[
+    INK 7
+]]Tras meses de viaje, la "Carl Sagan" ha alcanzado el pecio alienígena. De la tripulación de exploración solo quedas tú: los demás no despertaron de la hibernación.
+Tu misión: entrar en el pecio, recuperar lo que tenga de valor y volver con vida a la nave.
+[[
+    WAITKEY
 
 #MainLoop
+    IF @gameState <> Playing THEN
+        GOTO EndGame
+    ENDIF
+
     GOSUB PreActionsLocation
     GOSUB GenerateCurrLocationExits
+    GOSUB DrawLocationPicture
+    GOSUB DrawStatusBar
 
     WINDOW 1
     CHARSET 0
@@ -235,23 +270,46 @@
     GOSUB ShowObjectsCurrentLocation
 
     /* Activar menú */
-    SET tmp0 TO 0
+    LET tmp0 = 0
     GOSUB EnableCommandMenu
 
     GOTO MainLoop
 
 
 /*
+    Fin de la partida: muerte, final, final fallido o reinicio.
+    Se llega con GOTO desde el bucle principal, sin ningún GOSUB pendiente.
+*/
+#EndGame
+    IF @gameState <> Restart THEN
+        WINDOW 1
+        CHARSET 0
+        NEWLINE
+        IF @gameState = Dead THEN
+            INK 2
+            ]]*** HAS MUERTO ***[[
+        ELSE
+            INK 6
+            ]]*** FIN ***[[
+        ENDIF
+        INK 7
+        NEWLINE
+        ]]Pulsa una tecla para empezar de nuevo.[[
+        WAITKEY
+    ENDIF
+    GOTO Start
 
+
+/*
     Uses: tmp0
 */
 #DrawMarquee
     PICTURE 1
     BLIT 0, 20, 32, 4 AT 0, 20
 
-#ClearMenu
+    /* ClearMenu */
     /* Con esto dibujamos el menú sin activarlo */
-    SET tmp0 TO 1
+    LET tmp0 = 1
     GOSUB EnableCommandMenu
 
 #ClearObjectMenu
@@ -263,6 +321,49 @@
     FILLATTR 29, 21, 2, 2, ATTRVAL(2,0,1,0)
     WINDOW 4
     CLEAR
+    RETURN
+
+/*
+    El dibujo de la localidad: la imagen 10+loc, o 20+loc si algo ha cambiado allí.
+    Uses: tmp1
+*/
+#DrawLocationPicture
+    LET tmp1 = @loc + 10
+    IF @loc = WreckCorridorLoc AND (@flagA & AlienDoorOpenFlag) <> 0 THEN
+        LET tmp1 = @loc + 20
+    ELSEIF @loc = WreckGalleryLoc AND (@flagA & LampOnFlag) = 0 THEN
+        LET tmp1 = @loc + 20
+    ELSEIF @loc = WreckNurseryLoc AND @locObjCreature <> WreckNurseryLoc THEN
+        LET tmp1 = @loc + 20
+    ELSEIF @loc = WreckControlLoc AND (@flagA & ConsolePoweredFlag) <> 0 THEN
+        LET tmp1 = @loc + 20
+    ELSEIF @loc = WreckSanctuaryLoc AND @locObjArtifact <> WreckSanctuaryLoc THEN
+        LET tmp1 = @loc + 20
+    ENDIF
+    PICTURE @tmp1
+    BLIT 0, 1, 32, 9 AT 0, 1
+    RETURN
+
+#DrawStatusBar
+    WINDOW 2
+    CHARSET 0
+    CLEAR
+    IF @loc < WreckCorridorLoc THEN
+        ]] Cápsula: [[
+    ELSE
+        ]] Pecio: [[
+    ENDIF
+    IF @loc = ShipCabinLoc THEN ]]cabina de mandos[[
+    ELSEIF @loc = ShipMainAreaLoc THEN ]]habitáculo[[
+    ELSEIF @loc = ShipAirlockLoc THEN ]]esclusa[[
+    ELSEIF @loc = ShipHoldLoc THEN ]]bodega[[
+    ELSEIF @loc = ShipEngineRoomLoc THEN ]]sala de máquinas[[
+    ELSEIF @loc = WreckCorridorLoc THEN ]]pasillo de acceso[[
+    ELSEIF @loc = WreckGalleryLoc THEN ]]galería[[
+    ELSEIF @loc = WreckNurseryLoc THEN ]]criadero[[
+    ELSEIF @loc = WreckControlLoc THEN ]]sala de control[[
+    ELSEIF @loc = WreckSanctuaryLoc THEN ]]santuario[[
+    ENDIF
     RETURN
 
 /*
@@ -278,27 +379,47 @@
     LET currLocationEnter = 0
     LET currLocationExit = 0
     IF @loc = ShipCabinLoc  THEN
-        /* Cabina */
         LET currLocationSouth = ShipMainAreaLoc
     ELSEIF @loc = ShipMainAreaLoc THEN
-        /* Sala de estar */
-        LET currLocationNorth = ShipCabinLoc 
+        LET currLocationNorth = ShipCabinLoc
         LET currLocationSouth = ShipAirlockLoc
-        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
             LET currLocationDown = ShipHoldLoc
         ENDIF
     ELSEIF @loc = ShipAirlockLoc THEN
-        /* Esclusa */
-        LET currLocationNorth = ShipMainAreaLoc
+        /* La puerta interior y la compuerta exterior nunca están abiertas a la vez */
+        IF (@flagA & OuterDoorOpenFlag) <> 0 THEN
+            LET currLocationExit = WreckCorridorLoc
+        ELSE
+            LET currLocationNorth = ShipMainAreaLoc
+        ENDIF
     ELSEIF @loc = ShipHoldLoc THEN
-        /* Bodega */
         LET currLocationSouth = ShipEngineRoomLoc
-        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+        IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
             LET currLocationUp = ShipMainAreaLoc
         ENDIF
     ELSEIF @loc = ShipEngineRoomLoc THEN
-        /* Sala de máquinas */
         LET currLocationNorth = ShipHoldLoc
+    ELSEIF @loc = WreckCorridorLoc THEN
+        LET currLocationEnter = ShipAirlockLoc
+        IF (@flagA & AlienDoorOpenFlag) <> 0 THEN
+            LET currLocationNorth = WreckGalleryLoc
+        ENDIF
+    ELSEIF @loc = WreckGalleryLoc THEN
+        LET currLocationSouth = WreckCorridorLoc
+        IF (@flagA & LampOnFlag) <> 0 THEN
+            LET currLocationNorth = WreckControlLoc
+            LET currLocationEast = WreckNurseryLoc
+        ENDIF
+    ELSEIF @loc = WreckNurseryLoc THEN
+        LET currLocationWest = WreckGalleryLoc
+    ELSEIF @loc = WreckControlLoc THEN
+        LET currLocationSouth = WreckGalleryLoc
+        IF (@flagA & ConsolePoweredFlag) <> 0 THEN
+            LET currLocationNorth = WreckSanctuaryLoc
+        ENDIF
+    ELSEIF @loc = WreckSanctuaryLoc THEN
+        LET currLocationSouth = WreckControlLoc
     ENDIF
     RETURN
 
@@ -314,6 +435,16 @@
         GOTO DescLoc4
     ELSEIF @loc = ShipEngineRoomLoc THEN
         GOTO DescLoc5
+    ELSEIF @loc = WreckCorridorLoc THEN
+        GOTO DescLoc6
+    ELSEIF @loc = WreckGalleryLoc THEN
+        GOTO DescLoc7
+    ELSEIF @loc = WreckNurseryLoc THEN
+        GOTO DescLoc8
+    ELSEIF @loc = WreckControlLoc THEN
+        GOTO DescLoc9
+    ELSEIF @loc = WreckSanctuaryLoc THEN
+        GOTO DescLoc10
     ENDIF
     GOTO DescLoc0
 
@@ -324,46 +455,46 @@
 #ListInventory
     CHARSET 0
     WINDOW 1
-    SET tmp4 TO 1
+    LET tmp4 = 1
     /* Objetos que llevas */
-    SET tmp5 TO @@locObjs
-    SET tmp6 TO 0
-    WHILE (@tmp5 < (@@locObjs + 128))
+    LET tmp5 = @@locObjs
+    LET tmp6 = 0
+    WHILE (@tmp5 < (@@locObjs + NumObjects))
         IF [@tmp5] = CarriedLoc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
             IF @tmp6 = 0 THEN
                 ]]Llevas encima [[
             ELSE
                 ]], [[
             ENDIF
-            SET tmp3 TO @tmp5 - @@locObjs
+            LET tmp3 = @tmp5 - @@locObjs
             GOSUB PrintObject
-            SET tmp6 TO @tmp6 + 1
+            LET tmp6 = @tmp6 + 1
         ENDIF
-        SET tmp5 TO @tmp5 + 1
+        LET tmp5 = @tmp5 + 1
     WEND
-    IF @tmp6 <> 0 THEN 
+    IF @tmp6 <> 0 THEN
         ]].[[
     ELSE
         ]]No llevas nada.[[
     ENDIF
     NEWLINE
     /* Objetos puestos */
-    SET tmp5 TO @@locObjs
-    SET tmp6 TO 0
-    WHILE (@tmp5 < (@@locObjs + 128))
+    LET tmp5 = @@locObjs
+    LET tmp6 = 0
+    WHILE (@tmp5 < (@@locObjs + NumObjects))
         IF [@tmp5] = WearLoc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
             IF @tmp6 = 0 THEN
                 ]]Tienes puesto [[
             ELSE
                 ]], [[
             ENDIF
-            SET tmp3 TO @tmp5 - @@locObjs
+            LET tmp3 = @tmp5 - @@locObjs
             GOSUB PrintObject
-            SET tmp6 TO @tmp6 + 1
+            LET tmp6 = @tmp6 + 1
         ENDIF
-        SET tmp5 TO @tmp5 + 1
+        LET tmp5 = @tmp5 + 1
     WEND
-    IF @tmp6 <> 0 THEN 
+    IF @tmp6 <> 0 THEN
         ]].[[
     ELSE
         ]]No tienes nada puesto.[[
@@ -371,33 +502,30 @@
     WAITKEY
     NEWLINE
     GOTO EnableCommandMenu
-    
+
 
 /*
     Muestra los objetos en la localidad actual
-    Parámetros:
-        - tmp4: Si es distinto de cero se imprime con determinante.
-
     Usa tmp3, tmp4, tmp5, tmp6
 */
 #ShowObjectsCurrentLocation
-    SET tmp4 TO 1
-    SET tmp5 TO @@locObjs
-    SET tmp6 TO 0
-    WHILE (@tmp5 < (@@locObjs + 128))
+    LET tmp4 = 1
+    LET tmp5 = @@locObjs
+    LET tmp6 = 0
+    WHILE (@tmp5 < (@@locObjs + NumObjects))
         IF [@tmp5] = @loc AND ((objectAttr(@tmp5) & ObjCanBeListedMask) <> 0) THEN
             IF @tmp6 = 0 THEN
                 ]]Aquí hay [[
             ELSE
                 ]], [[
             ENDIF
-            SET tmp3 TO @tmp5 - @@locObjs
+            LET tmp3 = @tmp5 - @@locObjs
             GOSUB PrintObject
-            SET tmp6 TO @tmp6 + 1
+            LET tmp6 = @tmp6 + 1
         ENDIF
-        SET tmp5 TO @tmp5 + 1
+        LET tmp5 = @tmp5 + 1
     WEND
-    IF @tmp6 <> 0 THEN 
+    IF @tmp6 <> 0 THEN
         ]].[[
         NEWLINE
     ENDIF
@@ -407,9 +535,8 @@
     Imprime un objeto
     Parámetros:
         - tmp3: Índice del objeto a mostrar.
-        - tmp4: Si es distinto de cero se imprime con determinante.
-
-    Usa tmp4, tmp3
+        - tmp4: 0 el nombre corto (para la ventana de selección), 1 con artículo
+                indeterminado, 2 con artículo determinado.
 */
 #PrintObject
     IF @tmp4 = 0 THEN
@@ -417,65 +544,56 @@
         ELSEIF @tmp3 = MultitoolIdObj THEN ]]Multiherramienta[[
         ELSEIF @tmp3 = GunIdObj THEN ]]Pistola[[
         ELSEIF @tmp3 = HatchShipIdObj THEN ]]Escotilla[[
+        ELSEIF @tmp3 = CabinetIdObj THEN ]]Armario[[
+        ELSEIF @tmp3 = AirlockControlsIdObj THEN ]]Controles[[
+        ELSEIF @tmp3 = CabinConsoleIdObj THEN ]]Consola[[
+        ELSEIF @tmp3 = AlienDoorIdObj THEN ]]Puerta[[
+        ELSEIF @tmp3 = CreatureIdObj THEN ]]Criatura[[
+        ELSEIF @tmp3 = PowerCellIdObj THEN ]]Célula[[
+        ELSEIF @tmp3 = AlienConsoleIdObj THEN ]]Consola alien[[
+        ELSEIF @tmp3 = ArtifactIdObj THEN ]]Artefacto[[
         ENDIF
+        RETURN
+    ENDIF
+    /* Artículo: masculinos (traje, armario, artefacto), plural (controles) y femeninos */
+    IF @tmp3 = SpaceSuitIdObj OR @tmp3 = CabinetIdObj OR @tmp3 = ArtifactIdObj THEN
+        IF @tmp4 = 1 THEN ]]un [[ ELSE ]]el [[ ENDIF
+    ELSEIF @tmp3 = AirlockControlsIdObj THEN
+        IF @tmp4 = 1 THEN ]]unos [[ ELSE ]]los [[ ENDIF
     ELSE
-        IF @tmp4 = 1 THEN
-            IF @tmp3 = SpaceSuitIdObj THEN ]]un [[
-            ELSEIF @tmp3 = MultitoolIdObj THEN ]]una [[
-            ELSEIF @tmp3 = GunIdObj THEN ]]una [[
-            ELSEIF @tmp3 = HatchShipIdObj THEN ]]una [[
-            ENDIF
-        ELSEIF @tmp4 = 2 THEN
-            IF @tmp3 = SpaceSuitIdObj THEN ]]el [[
-            ELSEIF @tmp3 = MultitoolIdObj THEN ]]la [[
-            ELSEIF @tmp3 = GunIdObj THEN ]]la [[
-            ELSEIF @tmp3 = HatchShipIdObj THEN ]]la [[
-            ENDIF
-        ENDIF
-        IF @tmp3 = SpaceSuitIdObj THEN ]]traje espacial[[
-        ELSEIF @tmp3 = MultitoolIdObj THEN ]]multiherramienta[[
-        ELSEIF @tmp3 = GunIdObj THEN ]]pistola[[
-        ELSEIF @tmp3 = HatchShipIdObj THEN ]]escotilla[[
-        ENDIF
+        IF @tmp4 = 1 THEN ]]una [[ ELSE ]]la [[ ENDIF
+    ENDIF
+    IF @tmp3 = SpaceSuitIdObj THEN ]]traje espacial[[
+    ELSEIF @tmp3 = MultitoolIdObj THEN ]]multiherramienta[[
+    ELSEIF @tmp3 = GunIdObj THEN ]]pistola[[
+    ELSEIF @tmp3 = HatchShipIdObj THEN ]]escotilla[[
+    ELSEIF @tmp3 = CabinetIdObj THEN ]]armario[[
+    ELSEIF @tmp3 = AirlockControlsIdObj THEN ]]controles de la esclusa[[
+    ELSEIF @tmp3 = CabinConsoleIdObj THEN ]]consola de mando[[
+    ELSEIF @tmp3 = AlienDoorIdObj THEN ]]puerta sellada[[
+    ELSEIF @tmp3 = CreatureIdObj THEN ]]criatura[[
+    ELSEIF @tmp3 = PowerCellIdObj THEN ]]célula de energía[[
+    ELSEIF @tmp3 = AlienConsoleIdObj THEN ]]consola alienígena[[
+    ELSEIF @tmp3 = ArtifactIdObj THEN ]]artefacto[[
     ENDIF
     RETURN
 
 
 /*
-    parameters: tmp7 = Location
-    returns: tmp5 = numObjects
-
-    Uses: tmp6, tmp5, tmp7
-
-*/
-#CountObjectsInLocation
-    LET tmp5 = 0
-    LET tmp6 = @@locObjs
-    WHILE (@tmp6 < (@@locObjs + 128))
-        IF ([@tmp6] = @tmp7 AND ((objectAttr(@tmp6) & ObjCanBeListedMask) <> 0)) THEN
-            LET tmp5 = @tmp5 + 1
-        ENDIF
-        LET tmp6 = @tmp6 + 1
-    WEND
-    RETURN
-
-/* 
     Uses tmp7
 */
 #ClearObjectList
     LET tmp7 = 0
-    WHILE ()
+    WHILE (@tmp7 < NumObjects)
         LET objectsListMenu(@tmp7) = 0
-        IF @tmp7 = 255 THEN
-            LET listObjectLen = 0
-            RETURN
-        ENDIF
         LET tmp7 = @tmp7 + 1
     WEND
+    LET listObjectLen = 0
+    RETURN
 
 /*
-    Paramenter: tmp3 = id of object to show.
-    Uses : tmp3
+    El icono del objeto seleccionado (imagen 002): en la fila 0 los de la cápsula,
+    en la fila 3 los nuevos.
 */
 #ShowObjectIcon
     PICTURE 2
@@ -487,273 +605,124 @@
         BLIT 6, 0, 3, 3 AT 16, 21
     ELSEIF @selectedObject = HatchShipIdObj THEN
         BLIT 12, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = CabinetIdObj THEN
+        BLIT 15, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = AirlockControlsIdObj THEN
+        BLIT 18, 0, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = CabinConsoleIdObj THEN
+        BLIT 0, 3, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = AlienDoorIdObj THEN
+        BLIT 3, 3, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = CreatureIdObj THEN
+        BLIT 6, 3, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = PowerCellIdObj THEN
+        BLIT 9, 3, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = AlienConsoleIdObj THEN
+        BLIT 12, 3, 3, 3 AT 16, 21
+    ELSEIF @selectedObject = ArtifactIdObj THEN
+        BLIT 15, 3, 3, 3 AT 16, 21
     ELSE
         BLIT 0, 0, 3, 3 AT 16, 21
     ENDIF
     RETURN
 
+/*
+    Añade a objectsListMenu los objetos de la localidad (tmp2 = 1) y los que
+    llevas o tienes puestos (tmp2 = 2), que tengan el atributo tmp1 (0 = todos).
+    Uses tmp6, tmp7 (contador de la lista)
+*/
+#AddObjectsToList
+    LET tmp6 = 0
+    WHILE (@tmp6 < NumObjects)
+        LET tmp5 = 0
+        IF @tmp2 = 1 THEN
+            IF [@tmp6 + @@locObjs] = @loc THEN
+                LET tmp5 = 1
+            ENDIF
+        ELSEIF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) THEN
+            LET tmp5 = 1
+        ENDIF
+        IF @tmp5 <> 0 AND (@tmp1 = 0 OR (objectAttr(@tmp6) & @tmp1) <> 0) THEN
+            LET objectsListMenu(@tmp7) = @tmp6
+            LET tmp7 = @tmp7 + 1
+        ENDIF
+        LET tmp6 = @tmp6 + 1
+    WEND
+    RETURN
+
+/*
+    Selector de objetos para el comando selectedCommand. Devuelve selectedObject
+    (NoObject si se cancela o no hay nada que elegir).
+*/
 #EnableObjectMenu
-    IF @selectedCommand = CommandExamine THEN /* Examinar */
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes examinar nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
-    ELSEIF @selectedCommand = CommandUse THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes usar nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
-    ELSEIF @selectedCommand = CommandOpen THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes abrir nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
-    ELSEIF @selectedCommand = CommandClose THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeOpenedMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes cerrar nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
+    GOSUB ClearObjectList
+    LET tmp7 = 0
+    IF @selectedCommand = CommandExamine OR @selectedCommand = CommandUse THEN
+        LET tmp1 = 0
+        LET tmp2 = 1 : GOSUB AddObjectsToList
+        LET tmp2 = 2 : GOSUB AddObjectsToList
+    ELSEIF @selectedCommand = CommandOpen OR @selectedCommand = CommandClose THEN
+        LET tmp1 = ObjCanBeOpenedMask
+        LET tmp2 = 1 : GOSUB AddObjectsToList
+        LET tmp2 = 2 : GOSUB AddObjectsToList
+    ELSEIF @selectedCommand = CommandTurnOn OR @selectedCommand = CommandTurnOff THEN
+        LET tmp1 = ObjCanBeTurnedOnMask
+        LET tmp2 = 1 : GOSUB AddObjectsToList
+        LET tmp2 = 2 : GOSUB AddObjectsToList
     ELSEIF @selectedCommand = CommandTake THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeCarriedMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes coger nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
+        LET tmp1 = ObjCanBeCarriedMask
+        LET tmp2 = 1 : GOSUB AddObjectsToList
     ELSEIF @selectedCommand = CommandDrop THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = CarriedLoc AND ((objectAttr(@tmp6) & ObjCanBeCarriedMask) <> 0) THEN
+        /* Solo lo que llevas en la mano, no lo que tienes puesto */
+        LET tmp6 = 0
+        WHILE (@tmp6 < NumObjects)
+            IF [@tmp6 + @@locObjs] = CarriedLoc THEN
                 LET objectsListMenu(@tmp7) = @tmp6
                 LET tmp7 = @tmp7 + 1
             ENDIF
             LET tmp6 = @tmp6 + 1
         WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes dejar nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
     ELSEIF @selectedCommand = CommandWear THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = CarriedLoc AND ((objectAttr(@tmp6) & ObjCanBeWearMask) <> 0) THEN
+        LET tmp6 = 0
+        WHILE (@tmp6 < NumObjects)
+            IF [@tmp6 + @@locObjs] = CarriedLoc AND (objectAttr(@tmp6) & ObjCanBeWearMask) <> 0 THEN
                 LET objectsListMenu(@tmp7) = @tmp6
                 LET tmp7 = @tmp7 + 1
             ENDIF
             LET tmp6 = @tmp6 + 1
         WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes ponerte nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
     ELSEIF @selectedCommand = CommandTakeOff THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = WearLoc AND ((objectAttr(@tmp6) & ObjCanBeWearMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes quitarte nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
-    ELSEIF @selectedCommand = CommandTurnOn THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
         LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
+        WHILE (@tmp6 < NumObjects)
+            IF [@tmp6 + @@locObjs] = WearLoc THEN
                 LET objectsListMenu(@tmp7) = @tmp6
                 LET tmp7 = @tmp7 + 1
             ENDIF
             LET tmp6 = @tmp6 + 1
         WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes encender nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
+    ENDIF
+
+    IF @tmp7 = 0 THEN
+        WINDOW 1
+        CHARSET 0
+        ]]No puedes [[
+        IF @selectedCommand = CommandExamine THEN ]]examinar[[
+        ELSEIF @selectedCommand = CommandUse THEN ]]usar[[
+        ELSEIF @selectedCommand = CommandTake THEN ]]coger[[
+        ELSEIF @selectedCommand = CommandDrop THEN ]]dejar[[
+        ELSEIF @selectedCommand = CommandWear THEN ]]ponerte[[
+        ELSEIF @selectedCommand = CommandTakeOff THEN ]]quitarte[[
+        ELSEIF @selectedCommand = CommandTurnOn THEN ]]encender[[
+        ELSEIF @selectedCommand = CommandTurnOff THEN ]]apagar[[
+        ELSEIF @selectedCommand = CommandOpen THEN ]]abrir[[
+        ELSE ]]cerrar[[
         ENDIF
-    ELSEIF @selectedCommand = CommandTurnOff THEN
-        GOSUB ClearObjectList
-        LET tmp7 = 0        /* Obj list counter */
-        LET tmp6 = 0        /* obj location counter */
-        WHILE (@tmp6 < 128)
-            IF [@tmp6 + @@locObjs] = @loc AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        LET tmp6 = 0
-        WHILE (@tmp6 < 128)
-            IF ([@tmp6 + @@locObjs] = WearLoc) OR ([@tmp6 + @@locObjs] = CarriedLoc) AND ((objectAttr(@tmp6) & ObjCanBeTurnedOnMask) <> 0) THEN
-                LET objectsListMenu(@tmp7) = @tmp6
-                LET tmp7 = @tmp7 + 1
-            ENDIF
-            LET tmp6 = @tmp6 + 1
-        WEND
-        IF @tmp7 = 0 THEN
-            WINDOW 1
-            CHARSET 0
-        ]]No puedes apagar nada.[[
-            WAITKEY
-            NEWLINE
-            RETURN
-        ELSE
-            LET listObjectLen = @tmp7
-        ENDIF
-    ELSE
+        ]] nada.[[
+        WAITKEY
+        NEWLINE
         RETURN
     ENDIF
+    LET listObjectLen = @tmp7
 
     LET listObjectPos = 0
     LET selectedObject = objectsListMenu(@listObjectPos)
@@ -792,13 +761,11 @@
         FILLATTR 26, 21, 2, 2, ATTRVAL(4,1,1,0)
     ELSEIF @prevSelOptionObject = 3 THEN
         FILLATTR 29, 21, 2, 2, ATTRVAL(2,1,1,0)
-    ELSE
-        GOTO ClearObjectMenu
     ENDIF
     RETURN
 
 #SelNextObject
-    IF (@listObjectPos = 255) OR ((@listObjectPos + 1) = @listObjectLen) THEN
+    IF (@listObjectPos + 1) >= @listObjectLen THEN
         LET listObjectPos = 0
     ELSE
         LET listObjectPos = @listObjectPos + 1
@@ -819,33 +786,20 @@
 
 #SelObjSelect
     GOTO ClearObjectMenu
-    RETURN
 
 #SelObjCancel
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOTO ClearObjectMenu
-    RETURN
 
 #DrawSelectedObject
     WINDOW 4
     CLEAR
+    CHARSET 0
     LET tmp4 = 0
     LET tmp3 = @selectedObject
     GOSUB PrintObject
-    IF @selectedObject = SpaceSuitIdObj THEN
-        
-    ELSEIF @selectedObject = MultitoolIdObj THEN
-        
-    ELSEIF @selectedObject = GunIdObj THEN
-        
-    ELSEIF @selectedObject = HatchShipIdObj THEN
-        
-    ELSE /* 0xFF */
-        GOTO ClearObjectMenu
-    ENDIF
-
     GOTO ShowObjectIcon
-  
+
 
 
 /*******************************************************/
@@ -853,10 +807,21 @@
     Parámetros:
         activeCommandMenu: Indica el menú actualmente activo
         tmp0: Si es distinto de cero, no activa los menús, solo imprime el texto.
-    
-    Usa tmp0, 
+
+    Cada vez que se activa el menú pasa un turno (TickTurn). Si el turno acaba
+    la partida, se vuelve al bucle principal.
+
+    Usa tmp0,
 */
 #EnableCommandMenu
+    IF @tmp0 = 0 THEN
+        GOSUB TickTurn
+        IF @gameState <> Playing THEN
+            RETURN
+        ENDIF
+        /* Una acción puede haber abierto o cerrado un paso */
+        GOSUB GenerateCurrLocationExits
+    ENDIF
     IF @activeCommandMenu = 0 THEN
         GOTO CommandMenu1
     ELSEIF @activeCommandMenu = 1 THEN
@@ -926,7 +891,7 @@
     OPTION GOTO UseObject
 ]]Usar[[
     AT 5, 1
-    OPTION GOTO CommandMenu1
+    OPTION GOTO OptionMenu
 ]]  -<>-[[
     AT 10, 1
     OPTION GOTO TakeOffObject
@@ -938,8 +903,8 @@
     OPTION GOTO ExamineObject
 ]]Examinar[[
     AT 10, 2
-    OPTION GOTO OptionMenu
-]]Opciones[[
+    OPTION GOTO DescribeLocation
+]]Mirar[[
     IF @tmp0 = 0 THEN
         CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
     ENDIF
@@ -994,31 +959,31 @@
     LET prevSelOptionCommand = 4
     LET activeCommandMenu = 3
     AT 0, 0
-    OPTION GOTO DoCommandMenu
-]] [[
+    OPTION GOTO SaveGame
+]]Grabar[[
     AT 5, 0
-    OPTION GOTO DoCommandMenu
+    OPTION GOTO DoNothing
 ]] [[
     AT 10, 0
-    OPTION GOTO DoCommandMenu
-]] [[
+    OPTION GOTO LoadGame
+]]Cargar[[
     AT 0, 1
-    OPTION GOTO DoCommandMenu
+    OPTION GOTO DoNothing
 ]] [[
     AT 5, 1
-    OPTION GOTO CommandMenu2
+    OPTION GOTO CommandMenu1
 ]]  -<>-[[
     AT 10, 1
-    OPTION GOTO DoCommandMenu
+    OPTION GOTO DoNothing
 ]] [[
     AT 0, 2
-    OPTION GOTO DoCommandMenu
-]] [[
+    OPTION GOTO RestartGame
+]]Reiniciar[[
     AT 5, 2
-    OPTION GOTO DoCommandMenu
+    OPTION GOTO DoNothing
 ]] [[
     AT 10, 2
-    OPTION GOTO DoCommandMenu
+    OPTION GOTO DoNothing
 ]] [[
     IF @tmp0 = 0 THEN
         CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
@@ -1033,6 +998,8 @@
         LET colorSelOptionCommand = ATTRVAL(7,2,0,0)
     ELSEIF @activeCommandMenu = 2 THEN
         LET colorSelOptionCommand = ATTRVAL(7,4,0,0)
+    ELSEIF @activeCommandMenu = 3 THEN
+        LET colorSelOptionCommand = ATTRVAL(7,3,0,0)
     ELSE
         LET colorSelOptionCommand = ATTRVAL(7,1,0,0)
     ENDIF
@@ -1059,10 +1026,98 @@
     ENDIF
     RETURN
 
+/*
+    Un turno: la radiación de la sala de máquinas (sin traje) y la criatura del
+    criadero. Imprime los avisos y, si toca, la muerte (gameState = Dead).
+    No toca tmp0.
+*/
+#TickTurn
+    IF @loc = ShipEngineRoomLoc AND @locObjSpaceSuit <> WearLoc THEN
+        LET radiationTurns = @radiationTurns + 1
+        IF @radiationTurns >= RadiationDeath THEN
+            WINDOW 1
+            CHARSET 0
+            ]]Las náuseas te doblan y la vista se te nubla. La radiación ha sido demasiado para tu cuerpo.[[
+            WAITKEY
+            LET gameState = Dead
+        ELSEIF @radiationTurns = RadiationWarning THEN
+            WINDOW 1
+            CHARSET 0
+            ]]Empiezas a sentir náuseas. No deberías seguir aquí sin protección.[[
+            NEWLINE
+        ENDIF
+    ELSE
+        LET radiationTurns = 0
+    ENDIF
+    IF @loc = WreckNurseryLoc AND @locObjCreature = WreckNurseryLoc THEN
+        LET creatureTurns = @creatureTurns + 1
+        IF @creatureTurns >= CreatureDeath THEN
+            WINDOW 1
+            CHARSET 0
+            ]]La criatura salta sobre ti y atraviesa el traje con sus garras.[[
+            WAITKEY
+            LET gameState = Dead
+        ELSEIF @creatureTurns = CreatureWarning THEN
+            WINDOW 1
+            CHARSET 0
+            ]]La criatura chasquea y se acerca, preparada para saltar.[[
+            NEWLINE
+        ENDIF
+    ELSE
+        LET creatureTurns = 0
+    ENDIF
+    IF (@flagA & ChaseFlag) <> 0 THEN
+        GOSUB TickChase
+    ENDIF
+    RETURN
+
+/*
+    La huida: la criatura se acerca cada turno. Dentro de la cápsula con la
+    compuerta cerrada solo se la oye golpear, pero acabará entrando.
+*/
+#TickChase
+    LET chaseTurns = @chaseTurns + 1
+    WINDOW 1
+    CHARSET 0
+    IF @chaseTurns >= ChaseDeath THEN
+        INK 2
+        IF @loc < WreckCorridorLoc AND (@flagA & OuterDoorOpenFlag) = 0 THEN
+            ]]La compuerta exterior cede con un chirrido. La criatura entra en la cápsula y te encuentra en un instante.[[
+        ELSE
+            ]]La criatura te alcanza. Lo último que oyes es el chasquido de sus garras contra el casco.[[
+        ENDIF
+        INK 7
+        WAITKEY
+        LET gameState = Dead
+        RETURN
+    ENDIF
+    IF @chaseTurns = 3 OR @chaseTurns = 6 OR @chaseTurns = 9 OR @chaseTurns = 11 THEN
+        INK 2
+        IF @loc < WreckCorridorLoc AND (@flagA & OuterDoorOpenFlag) = 0 THEN
+            IF @chaseTurns < 9 THEN
+                ]]Algo golpea la compuerta exterior de la esclusa.[[
+            ELSE
+                ]]Los golpes en la compuerta son cada vez más fuertes. ¡No aguantará mucho![[
+            ENDIF
+        ELSEIF @chaseTurns = 3 THEN
+            ]]Oyes chasquidos a tu espalda, en algún lugar del pecio.[[
+        ELSEIF @chaseTurns = 6 THEN
+            ]]Los chasquidos están cada vez más cerca.[[
+        ELSE
+            ]]¡Está justo detrás de ti![[
+        ENDIF
+        INK 7
+        NEWLINE
+    ENDIF
+    RETURN
+
 /******************************************************************************************************************************/
 /* Comandos */
 #DescribeLocation /* Hard return to redescribe the location */
     RETURN
+
+#DoNothing
+    GOTO EnableCommandMenu
 
 #GoNorth
     IF (@currLocationNorth = 0) THEN
@@ -1124,10 +1179,10 @@
 
 #ExamineObject
     LET selectedCommand = CommandExamine
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
     CHARSET 0
@@ -1140,18 +1195,34 @@
         GOSUB DescObj2
     ELSEIF @selectedObject = HatchShipIdObj THEN
         GOSUB DescObj3
+    ELSEIF @selectedObject = CabinetIdObj THEN
+        GOSUB DescObj4
+    ELSEIF @selectedObject = AirlockControlsIdObj THEN
+        GOSUB DescObj5
+    ELSEIF @selectedObject = CabinConsoleIdObj THEN
+        GOSUB DescObj6
+    ELSEIF @selectedObject = AlienDoorIdObj THEN
+        GOSUB DescObj7
+    ELSEIF @selectedObject = CreatureIdObj THEN
+        GOSUB DescObj8
+    ELSEIF @selectedObject = PowerCellIdObj THEN
+        GOSUB DescObj9
+    ELSEIF @selectedObject = AlienConsoleIdObj THEN
+        GOSUB DescObj10
+    ELSEIF @selectedObject = ArtifactIdObj THEN
+        GOSUB DescObj11
     ELSE
         GOSUB DescObj255
     ENDIF
-
+    WAITKEY
     GOTO EnableCommandMenu
 
 #OpenObject
     LET selectedCommand = CommandOpen
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
     CHARSET 0
@@ -1159,24 +1230,38 @@
     IF @selectedObject = HatchShipIdObj THEN
         IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
             ]]La escotilla ya está abierta.[[
-            WAITKEY
-            NEWLINE
         ELSE
             LET flagA = @flagA | ShipHatchOpenFlag
             ]]Abres la escotilla.[[
-            WAITKEY
-            NEWLINE
+        ENDIF
+    ELSEIF @selectedObject = CabinetIdObj THEN
+        IF (@flagA & ShipCabinetOpenFlag) <> 0 THEN
+            ]]El armario ya está abierto.[[
+        ELSE
+            LET flagA = @flagA | ShipCabinetOpenFlag
+            ]]Abres el armario.[[
+            IF @locObjGun = NoLoc THEN
+                LET locObjGun = ShipHoldLoc
+                ]] Entre repuestos y raciones hay una pistola.[[
+            ENDIF
+        ENDIF
+    ELSEIF @selectedObject = AlienDoorIdObj THEN
+        IF (@flagA & AlienDoorOpenFlag) <> 0 THEN
+            ]]La puerta ya está abierta.[[
+        ELSE
+            ]]Está sellada. No cede con las manos: necesitarás una herramienta para forzarla.[[
         ENDIF
     ENDIF
-
+    WAITKEY
+    NEWLINE
     GOTO EnableCommandMenu
 
 #CloseObject
-    LET selectedCommand = CommandOpen
-    LET selectedObject = 0xFF
+    LET selectedCommand = CommandClose
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
     CHARSET 0
@@ -1184,46 +1269,69 @@
     IF @selectedObject = HatchShipIdObj THEN
         IF (@flagA & ShipHatchOpenFlag) = 0 THEN
             ]]La escotilla ya está cerrada.[[
-            WAITKEY
-            NEWLINE
         ELSE
             LET flagA = @flagA & (!ShipHatchOpenFlag)
             ]]Cierras la escotilla.[[
-            WAITKEY
-            NEWLINE
+        ENDIF
+    ELSEIF @selectedObject = CabinetIdObj THEN
+        IF (@flagA & ShipCabinetOpenFlag) = 0 THEN
+            ]]El armario ya está cerrado.[[
+        ELSE
+            LET flagA = @flagA & (!ShipCabinetOpenFlag)
+            ]]Cierras el armario.[[
+        ENDIF
+    ELSEIF @selectedObject = AlienDoorIdObj THEN
+        IF (@flagA & AlienDoorOpenFlag) = 0 THEN
+            ]]Ya está cerrada, y bien cerrada.[[
+        ELSE
+            ]]Los pétalos de la puerta se han quedado atascados. No hay forma de cerrarla.[[
         ENDIF
     ENDIF
-
+    WAITKEY
+    NEWLINE
     GOTO EnableCommandMenu
 
 #TakeObject
     LET selectedCommand = CommandTake
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
+    ENDIF
+
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = PowerCellIdObj AND @locObjCreature = WreckNurseryLoc THEN
+        ]]Alargas la mano hacia la célula... y la criatura salta sobre ti antes de que la toques.[[
+        WAITKEY
+        LET gameState = Dead
         RETURN
     ENDIF
 
     LET tmp3 = @selectedObject + @@locObjs
     LET [tmp3] = CarriedLoc
-
-    CHARSET 0
-    WINDOW 1
     ]]Coges [[
     LET tmp4 = 2
     LET tmp3 = @selectedObject
     GOSUB PrintObject
     ]].[[
+    IF @selectedObject = ArtifactIdObj AND (@flagA & ChaseFlag) = 0 THEN
+        LET flagA = @flagA | ChaseFlag
+        LET chaseTurns = 0
+        ]] En cuanto lo tocas, el pecio entero se estremece y un chillido recorre los pasillos: la criatura ha vuelto, y viene a por ti. ¡Corre a la cápsula![[
+        WAITKEY
+        RETURN
+    ENDIF
     WAITKEY
     NEWLINE
     GOTO EnableCommandMenu
 
 #DropObject
     LET selectedCommand = CommandDrop
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
     LET tmp3 = @selectedObject + @@locObjs
@@ -1237,15 +1345,18 @@
     GOSUB PrintObject
     ]].[[
     WAITKEY
+    IF @selectedObject = ArtifactIdObj AND @loc = WreckSanctuaryLoc THEN
+        RETURN
+    ENDIF
     NEWLINE
     GOTO EnableCommandMenu
 
 #WearObject
     LET selectedCommand = CommandWear
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
     LET tmp3 = @selectedObject + @@locObjs
@@ -1257,24 +1368,33 @@
     LET tmp4 = 2
     LET tmp3 = @selectedObject
     GOSUB PrintObject
-    ]].[[
+    ]]. El casco se sella con un siseo.[[
     WAITKEY
     NEWLINE
     GOTO EnableCommandMenu
 
 #TakeOffObject
     LET selectedCommand = CommandTakeOff
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
+    ENDIF
+
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = SpaceSuitIdObj THEN
+        IF @loc >= WreckCorridorLoc OR (@loc = ShipAirlockLoc AND (@flagA & OuterDoorOpenFlag) <> 0) THEN
+            ]]Abres el casco. No hay aire que respirar.[[
+            WAITKEY
+            LET gameState = Dead
+            RETURN
+        ENDIF
+        LET flagA = @flagA & (!LampOnFlag)
     ENDIF
 
     LET tmp3 = @selectedObject + @@locObjs
     LET [tmp3] = CarriedLoc
-
-    CHARSET 0
-    WINDOW 1
     ]]Te quitas [[
     LET tmp4 = 2
     LET tmp3 = @selectedObject
@@ -1286,44 +1406,175 @@
 
 #TurnOnObject
     LET selectedCommand = CommandTurnOn
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = SpaceSuitIdObj THEN
+        IF @locObjSpaceSuit <> WearLoc THEN
+            ]]La linterna va en el casco: tendrás que ponerte el traje.[[
+        ELSEIF (@flagA & LampOnFlag) <> 0 THEN
+            ]]La linterna del casco ya está encendida.[[
+        ELSE
+            LET flagA = @flagA | LampOnFlag
+            ]]Enciendes la linterna del casco.[[
+            WAITKEY
+            RETURN
+        ENDIF
+    ENDIF
+    WAITKEY
+    NEWLINE
     GOTO EnableCommandMenu
 
 #TurnOffObject
     LET selectedCommand = CommandTurnOff
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
+    CHARSET 0
+    WINDOW 1
+    IF @selectedObject = SpaceSuitIdObj THEN
+        IF (@flagA & LampOnFlag) = 0 THEN
+            ]]La linterna ya está apagada.[[
+        ELSE
+            LET flagA = @flagA & (!LampOnFlag)
+            ]]Apagas la linterna del casco.[[
+            WAITKEY
+            RETURN
+        ENDIF
+    ENDIF
+    WAITKEY
+    NEWLINE
     GOTO EnableCommandMenu
 
 #UseObject
     LET selectedCommand = CommandUse
-    LET selectedObject = 0xFF
+    LET selectedObject = NoObject
     GOSUB EnableObjectMenu
-    IF @selectedObject = 0xFF THEN
-        RETURN
+    IF @selectedObject = NoObject THEN
+        GOTO EnableCommandMenu
     ENDIF
 
-    GOTO EnableCommandMenu
-
-#DoCommandMenu
     CHARSET 0
     WINDOW 1
+    IF @selectedObject = SpaceSuitIdObj THEN
+        ]]Para usarlo, tendrás que ponértelo.[[
+    ELSEIF @selectedObject = MultitoolIdObj THEN
+        IF @loc = WreckCorridorLoc AND (@flagA & AlienDoorOpenFlag) = 0 THEN
+            LET flagA = @flagA | AlienDoorOpenFlag
+            ]]Metes la multiherramienta entre los pétalos y haces palanca. Con un crujido metálico, la puerta se abre.[[
+            WAITKEY
+            RETURN
+        ENDIF
+        ]]Aquí no hay nada que reparar ni que forzar.[[
+    ELSEIF @selectedObject = GunIdObj THEN
+        IF @loc = WreckNurseryLoc AND @locObjCreature = WreckNurseryLoc THEN
+            LET locObjCreature = NoLoc
+            ]]Disparas. El balín rebota a un palmo de la criatura, que chilla y huye por un conducto del techo.[[
+            WAITKEY
+            RETURN
+        ENDIF
+        ]]Mejor no malgastar munición.[[
+    ELSEIF @selectedObject = AirlockControlsIdObj THEN
+        IF (@flagA & OuterDoorOpenFlag) <> 0 THEN
+            LET flagA = @flagA & (!OuterDoorOpenFlag)
+            ]]La compuerta exterior se cierra y la esclusa se llena de aire. La puerta interior se desbloquea.[[
+            WAITKEY
+            RETURN
+        ENDIF
+        IF @locObjSpaceSuit <> WearLoc THEN
+            ]]El aire escapa con un rugido en cuanto se abre la compuerta exterior. Sin traje, no tienes ninguna oportunidad.[[
+            WAITKEY
+            LET gameState = Dead
+            RETURN
+        ENDIF
+        LET flagA = @flagA | OuterDoorOpenFlag
+        ]]La esclusa se vacía de aire y la compuerta exterior se abre al pecio.[[
+        WAITKEY
+        RETURN
+    ELSEIF @selectedObject = CabinConsoleIdObj THEN
+        IF (@flagA & OuterDoorOpenFlag) <> 0 THEN
+            ]]"Compuerta exterior abierta. Imposible desacoplar."[[
+        ELSEIF @locObjArtifact = CarriedLoc THEN
+            LET gameState = Won
+            ]]Desacoplas la cápsula justo cuando algo choca contra la esclusa. El pecio se aleja mientras el artefacto zumba en el asiento de al lado. La "Carl Sagan" te recibe con las luces de atraque encendidas. Misión cumplida.[[
+            WAITKEY
+            RETURN
+        ELSEIF (@flagA & UndockAskedFlag) = 0 THEN
+            LET flagA = @flagA | UndockAskedFlag
+            ]]"¿Abandonar la misión sin muestras? Use de nuevo la consola para confirmar."[[
+        ELSE
+            LET gameState = Failed
+            ]]Desacoplas la cápsula y vuelves a la "Carl Sagan" con las manos vacías. Nadie volverá a acercarse al pecio.[[
+            WAITKEY
+            RETURN
+        ENDIF
+    ELSEIF @selectedObject = PowerCellIdObj THEN
+        IF @loc = WreckControlLoc THEN
+            LET locObjPowerCell = NoLoc
+            LET flagA = @flagA | ConsolePoweredFlag
+            ]]Encajas la célula en el hueco hexagonal. La consola despierta, la pantalla se llena de símbolos y, al NORTE, una puerta se abre.[[
+            WAITKEY
+            RETURN
+        ENDIF
+        ]]No hay dónde conectarla aquí.[[
+    ELSEIF @selectedObject = AlienConsoleIdObj THEN
+        IF (@flagA & ConsolePoweredFlag) <> 0 THEN
+            ]]Los símbolos bailan en la pantalla. No entiendes nada, pero la puerta del NORTE sigue abierta.[[
+        ELSE
+            ]]Está inerte. En el centro hay un hueco hexagonal vacío.[[
+        ENDIF
+    ELSEIF @selectedObject = ArtifactIdObj THEN
+        ]]No sabrías por dónde empezar. Mejor que lo estudien en la "Carl Sagan".[[
+    ELSEIF @selectedObject = CreatureIdObj THEN
+        ]]Ni se te ocurre acercarte.[[
+    ELSE
+        ]]Prueba a abrirlo o a cerrarlo.[[
+    ENDIF
     WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+/* Opciones: la partida se guarda en memoria, no en cinta ni disco */
+#SaveGame
+    RAMSAVE 0, SavedVars
+    LET gameSaved = 1
+    CHARSET 0
+    WINDOW 1
+    ]]Partida guardada en memoria.[[
+    WAITKEY
+    NEWLINE
+    GOTO EnableCommandMenu
+
+#LoadGame
+    CHARSET 0
+    WINDOW 1
+    IF @gameSaved = 0 THEN
+        ]]No hay ninguna partida guardada.[[
+        WAITKEY
+        NEWLINE
+        GOTO EnableCommandMenu
+    ENDIF
+    RAMLOAD 0, SavedVars
+    ]]Partida recuperada.[[
+    WAITKEY
+    RETURN
+
+#RestartGame
+    LET gameState = Restart
     RETURN
 
 
 /******************************************************************************************************************************/
 #PreActionsLocation
-    /* Mover la esclusa a las dos zonas de la nave donde está */
+    /* La escotilla está en las dos zonas de la nave que comunica */
     IF @loc = ShipMainAreaLoc OR @loc = ShipHoldLoc THEN
         LET locHatchShip = @loc
     ENDIF
@@ -1337,55 +1588,118 @@
     RETURN
 
 #DescLoc1
-]]Estás en la cabina de mandos de la cápsula de atraque, la cual has conseguido atracar a una de las esclusas del pecio alienígena.
-A través de la ventana principal divisas tu nave, la "Carl Sagan", suspendida en la eternidad...
-Se puede acceder al resto de la nave yendo al SUR.
+]]Estás en la cabina de mandos de la cápsula de atraque, acoplada a una esclusa del pecio alienígena. Por la ventana divisas tu nave, la "Carl Sagan", suspendida en la eternidad.
+Ante ti está la consola de mando. Al SUR queda el resto de la cápsula.
 [[
     RETURN
 
 #DescLoc2
-]]El habitáculo principal donde residiría la tripulación de exploración del pecio.
-Pequeños habitáculos personales llenan las paredes y el techo. Todos vacíos, excepto el tuyo...
-Un agrio recuerdo de la tripulación perdida por culpa de un sistema de hibernación poco probado...
-Puedes ir al NORTE para acceder a la cabina de mandos y a la cámara estanca al SUR. En el suelo hay una escotilla [[
-    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+]]El habitáculo de la tripulación. Las paredes están llenas de cápsulas de hibernación, todas vacías salvo la tuya: un agrio recuerdo de la tripulación perdida.
+Al NORTE está la cabina y al SUR la esclusa. En el suelo, una escotilla [[
+    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
         ]]abierta[[
     ELSE
         ]]cerrada[[
-    ENDIF 
-]] para bajar a la bodega.
+    ENDIF
+]] baja a la bodega.
 [[
     RETURN
 
 #DescLoc3
-]]La exclusa al exterior de la cápsula, y actualmente acoplada a una puerta de acceso de la nave alienígena.
-En la pared tienes los controles de la cámara estanca.
+]]La esclusa de la cápsula, acoplada a una puerta de acceso del pecio. En la pared están los controles de la esclusa.
 [[
+    IF (@flagA & OuterDoorOpenFlag) <> 0 THEN
+        ]]La compuerta exterior está abierta: puedes SALIR al pecio. La puerta interior se mantiene bloqueada.
+[[
+    ELSE
+        ]]La compuerta exterior está cerrada. Al NORTE está el habitáculo.
+[[
+    ENDIF
     RETURN
 
 #DescLoc4
-]]La "bodega" de la cápsula (tomando prestado el término marítimo).
-Básicamente es la zona de almacenaje donde se guardan los víveres, respuestos y todos los utensilios que se pudiesen necesitar.
-Al SUR está la "sala de máquinas". En la pared hay un armario [[
-    IF (@flagA & ShipCabinetOpenFlag) <> 0 THEN /* Armario abierta */
+]]La bodega de la cápsula, donde se guardan víveres, repuestos y utensilios. Al SUR está la sala de máquinas.
+En la pared hay un armario [[
+    IF (@flagA & ShipCabinetOpenFlag) <> 0 THEN
         ]]abierto[[
     ELSE
         ]]cerrado[[
-    ENDIF 
-]] y una escotilla [[
-    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN /* Escotilla abierta */
+    ENDIF
+]] y en el techo una escotilla [[
+    IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
         ]]abierta[[
     ELSE
         ]]cerrada[[
-    ENDIF 
-]] en el techo.
+    ENDIF
+]].
 [[
     RETURN
 
 #DescLoc5
-]]En esta sala se encuentra el reactor principal de la nave y los motores para realizar mantenimiento o reparaciones básicas.
-El zumbido de la maquinaria es constante y la radiación es alta, con lo que mejor no pasar demasiado tiempo aquí...
-Al NORTE tienes el acceso a la bodega.
+]]La sala de máquinas, con el reactor y los motores de la cápsula. El zumbido es constante y la radiación, alta: mejor no entretenerse aquí sin protección.
+Al NORTE está la bodega.
+[[
+    RETURN
+
+#DescLoc6
+]]Un pasillo de paredes acanaladas, como las costillas de un animal enorme. Una luz verdosa y débil lo baña todo.
+[[
+    IF (@flagA & AlienDoorOpenFlag) <> 0 THEN
+        ]]Al fondo, la puerta circular forzada deja paso al NORTE.[[
+    ELSE
+        ]]Al fondo, una puerta circular sellada te cierra el paso.[[
+    ENDIF
+]] Puedes ENTRAR de nuevo en la cápsula.
+[[
+    RETURN
+
+#DescLoc7
+    IF (@flagA & LampOnFlag) = 0 THEN
+        ]]Oscuridad total. La luz verdosa del pasillo apenas llega hasta aquí: sin luz, solo puedes volver al SUR.
+[[
+        RETURN
+    ENDIF
+]]Una galería abovedada de proporciones imposibles. Al NORTE se abre un arco y al ESTE una abertura de la que sale un brillo rosáceo.
+El pasillo de acceso queda al SUR.
+[[
+    RETURN
+
+#DescLoc8
+]]Una cámara llena de cápsulas orgánicas que laten con un brillo verde.
+[[
+    IF @locObjPowerCell = WreckNurseryLoc THEN
+        ]]En un pedestal descansa una célula de energía hexagonal.
+[[
+    ENDIF
+    IF @locObjCreature = WreckNurseryLoc THEN
+        ]]Entre las cápsulas, algo se mueve: una criatura te observa con sus ojos rojos.
+[[
+    ENDIF
+]]La galería queda al OESTE.
+[[
+    RETURN
+
+#DescLoc9
+]]Una sala de control. Una consola curva mira a una gran pantalla [[
+    IF (@flagA & ConsolePoweredFlag) <> 0 THEN
+        ]]llena de símbolos en movimiento. Al NORTE se ha abierto una puerta.[[
+    ELSE
+        ]]apagada.[[
+    ENDIF
+]]
+La galería queda al SUR.
+[[
+    RETURN
+
+#DescLoc10
+]]Un santuario silencioso entre dos columnas. [[
+    IF @locObjArtifact = WreckSanctuaryLoc THEN
+        ]]Sobre un pedestal flota un artefacto cristalino que zumba suavemente.[[
+    ELSE
+        ]]El pedestal está vacío.[[
+    ENDIF
+]]
+La sala de control está al SUR.
 [[
     RETURN
 
@@ -1397,12 +1711,12 @@ Al NORTE tienes el acceso a la bodega.
     RETURN
 
 #DescObj0
-]]Un traje espacial. Indispensable para poder sobrevivir en el vacío del espacio o en entornos hostiles para la vida humana por un tiempo...
+]]Un traje espacial con su propio oxígeno y una linterna en el casco. Indispensable fuera de la cápsula, y también protege de la radiación.
 [[
     RETURN
 
 #DescObj1
-]]Una multiherramienta. Como su nombre indica, una herramienta multiusos para poder atornillar, taladrar, limar, etc. Una caja de herramientas en uno.
+]]Una multiherramienta: atornilla, taladra, lima y hace palanca. Una caja de herramientas en uno.
 [[
     RETURN
 
@@ -1412,17 +1726,73 @@ Al NORTE tienes el acceso a la bodega.
     RETURN
 
 #DescObj3
-]]La esclusa que permite el paso entre las dos cubiertas de la nave. [[
+]]La escotilla que comunica las dos cubiertas de la cápsula. [[
     IF (@flagA & ShipHatchOpenFlag) <> 0 THEN
-    ]]Está abierta, con lo que puedes acceder a la otra cubierta de la nave.
+    ]]Está abierta.
 [[
     ELSE
     ]]Está cerrada.
 [[
     ENDIF
-
     RETURN
 
+#DescObj4
+]]Un armario metálico para el material de la misión. [[
+    IF (@flagA & ShipCabinetOpenFlag) <> 0 THEN
+    ]]Está abierto.
+[[
+    ELSE
+    ]]Está cerrado.
+[[
+    ENDIF
+    RETURN
+
+#DescObj5
+]]Los controles de la esclusa: vacían la cámara y abren la compuerta exterior, o la cierran y vuelven a llenarla de aire.
+[[
+    RETURN
+
+#DescObj6
+]]La consola de mando. Desde aquí puedes desacoplar la cápsula y volver a la "Carl Sagan".
+[[
+    RETURN
+
+#DescObj7
+]]Una puerta circular hecha de pétalos metálicos. [[
+    IF (@flagA & AlienDoorOpenFlag) <> 0 THEN
+    ]]Está forzada y abierta.
+[[
+    ELSE
+    ]]Está sellada, pero entre los pétalos cabría una herramienta.
+[[
+    ENDIF
+    RETURN
+
+#DescObj8
+]]Algo entre un pulpo y una araña, del tamaño de un perro. Te observa sin parpadear y emite un chasquido. No parece amistosa.
+[[
+    RETURN
+
+#DescObj9
+]]Una célula de energía hexagonal, todavía cargada. Encajaría en algún hueco de la misma forma.
+[[
+    RETURN
+
+#DescObj10
+]]Una consola de formas curvas. [[
+    IF (@flagA & ConsolePoweredFlag) <> 0 THEN
+    ]]Está encendida.
+[[
+    ELSE
+    ]]Está inerte; en el centro tiene un hueco hexagonal vacío.
+[[
+    ENDIF
+    RETURN
+
+#DescObj11
+]]Un cristal que zumba suavemente y brilla con luz propia. Es lo que has venido a buscar.
+[[
+    RETURN
 
 /******************************************************************************************************************************/
 ]]
