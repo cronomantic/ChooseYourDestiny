@@ -1793,47 +1793,132 @@ In this case, it is better to try the example live and experiment on your own. K
 
 ## Menu keys and joystick
 
-Menus are used with **Q**, **A**, **O** and **P**, and you select with **SPACE**. Many Spectrum games let the player choose their keys and their joystick, and CYD allows it with two commands: `MENUKEY` changes a key and `MENUJOY` chooses a joystick.
+Menus are used with **Q**, **A**, **O** and **P**, and you select with **SPACE**. Many Spectrum games let the player choose their keys and their joystick, and CYD allows it with two commands: `MENUKEY` changes a key and `MENUJOY` chooses a joystick. The `examples/menu_keys` example is a short program that does both; here we look at it piece by piece.
 
-`MENUKEY` takes the action (0 up, 1 down, 2 left, 3 right, 4 select) and the key, which is the code `INKEY` returns. For a redefine screen, the easiest way is to ask the player for each key with `INKEY(0)`, which waits for one to be pressed:
+Before starting, it helps to know what always works, whatever is changed: the cursor keys, **ENTER** to select and the Kempston joystick. So even if the player sets up their keys badly, they can never be left unable to use the menu.
+
+### Redefining the keys
+
+`MENUKEY` takes the action and the key. The actions are 0 up, 1 down, 2 left, 3 right and 4 select, so the example names them with `CONST`:
 
 ```
 [[
-    DECLARE 250 AS tmp
-    CLEAR
-    ]]Press the key for UP: [[     LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
-    ]]Press the key for DOWN: [[   LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
-    ]]Press the key for SELECT: [[ LET tmp = INKEY(0) : MENUKEY 4, @tmp : CHAR @tmp : NEWLINE
-    WAITKEY
+    CONST Arriba = 0
+    CONST Abajo = 1
+    CONST Izquierda = 2
+    CONST Derecha = 3
+    CONST Seleccionar = 4
 ]]
 ```
 
-The variable `tmp` is only needed while the screen lasts: the keys are kept in the interpreter, not in the variables, so they take none.
-
-To the Spectrum, Sinclair and cursor joysticks are keys of the keyboard: the Sinclair on port 1 presses the keys 6 to 0, the one on port 2 the keys 1 to 5, and the cursor joystick the keys 5 to 8 and 0. As they use the same keys with different meanings, the player has to say which one they have, and that is what `MENUJOY` does:
+The key is the code `INKEY` returns. To ask the player for it, the easiest way is `INKEY(0)`, which waits for a key to be pressed. The example goes through the five actions with the variable `accion`, writes the name of each one and applies the key the player presses:
 
 ```
 [[
+#Redefinir
     CLEAR
-    ]]Which joystick do you have?
+    ]]Pulsa la tecla de cada acción.
+
 [[
-    OPTION GOTO NoJoy    ]] None or Kempston
+    LET accion = Arriba
+#SiguienteTecla
+    IF @accion = Arriba THEN
+        ]]Arriba: [[
+    ELSEIF @accion = Abajo THEN
+        ]]Abajo: [[
+    ELSEIF @accion = Izquierda THEN
+        ]]Izquierda: [[
+    ELSEIF @accion = Derecha THEN
+        ]]Derecha: [[
+    ELSE
+        ]]Seleccionar: [[
+    ENDIF
+#PideTecla
+    LET tecla = INKEY(0)
+    /* ENTER y las flechas (códigos menores que 32) ya funcionan siempre */
+    IF @tecla < 32 THEN
+        GOTO PideTecla
+    ENDIF
+    MENUKEY @accion, @tecla
+    IF @tecla = 32 THEN
+        ]]ESPACIO[[
+    ELSE
+        CHAR @tecla
+    ENDIF
+    NEWLINE
+    LET accion = @accion + 1
+    IF @accion <= Seleccionar THEN
+        GOTO SiguienteTecla
+    ENDIF
+    GOTO Hecho
+]]
+```
+
+Note three details:
+
+- Codes below 32 (ENTER, the cursor keys...) are refused, as they already have their job and always work.
+- `CHAR` writes the chosen key, except the space, which would not be seen and is written by its name.
+- The keys are not kept in variables: `MENUKEY` keeps them in the interpreter. The variables `tecla` and `accion` are only needed while the screen lasts, and the keys are not saved with the game either, so loading a game does not change the player's controls.
+
+This version does not stop the player from putting the same key in two actions (that key would then do both). The controls screen of `examples/Delerict` does check it: it keeps the keys in an array while it asks for them and refuses the repeated ones.
+
+To go back to the usual keys, just set them again:
+
+```
 [[
-    OPTION GOTO Sinclair ]] Sinclair
+#Originales
+    MENUKEY Arriba, 'q'
+    MENUKEY Abajo, 'a'
+    MENUKEY Izquierda, 'o'
+    MENUKEY Derecha, 'p'
+    MENUKEY Seleccionar, ' '
+]]
+```
+
+### Choosing the joystick
+
+To the Spectrum, Sinclair and cursor joysticks are keys of the keyboard: the Sinclair on port 1 presses the keys 6 to 0, the one on port 2 the keys 1 to 5, and the cursor joystick the keys 5 to 8 and 0. As they use the same keys with different meanings, the player has to say which one they have, and that is what `MENUJOY` does: 0 none, 1 Sinclair on port 1, 2 Sinclair on port 2 and 3 cursor.
+
+```
 [[
-    OPTION GOTO Cursor   ]] Cursor
+#Joystick
+    CLEAR
+    MENUCONFIG 0, 1
+    ]]¿Qué joystick tienes?
+
 [[
+    OPTION GOTO SinJoystick
+]] Ninguno o Kempston
+[[
+    OPTION GOTO Sinclair1
+]] Sinclair, puerto 1
+[[
+    OPTION GOTO Sinclair2
+]] Sinclair, puerto 2
+[[
+    OPTION GOTO Cursor
+]] De cursor[[
     CHOOSE
-#NoJoy
-    MENUJOY 0 : GOTO Start
-#Sinclair
-    MENUJOY 1 : GOTO Start
+#SinJoystick
+    MENUJOY 0
+    GOTO Hecho
+#Sinclair1
+    MENUJOY 1
+    GOTO Hecho
+#Sinclair2
+    MENUJOY 2
+    GOTO Hecho
 #Cursor
-    MENUJOY 3 : GOTO Start
+    MENUJOY 3
+    GOTO Hecho
 ]]
 ```
 
-The chosen joystick works at the same time as the keyboard, and the Kempston does not need to be chosen: it always works. The cursor keys and **ENTER** always work too, so even if the player sets up their keys badly, they can never be left unable to use the menu.
+The chosen joystick works at the same time as the keyboard keys, the usual ones or the redefined ones. The Kempston joystick does not need to be chosen: it is read separately and always works.
+
+### Trying it
+
+The example also has a 3×3 grid of numbers (`MENUCONFIG 1, 3`) to try the four directions and the select key, and it says which number was chosen with `OPTIONVAL()`. Build it, redefine the keys or choose a joystick, and try the grid with the new controls.
 
 ---
 

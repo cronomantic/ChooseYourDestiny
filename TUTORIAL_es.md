@@ -1791,47 +1791,132 @@ En este caso, es mejor que pruebes el ejemplo en vivo y experimentes por tu cuen
 
 ## Teclas y joystick de los menús
 
-Los menús se manejan con **Q**, **A**, **O** y **P**, y se selecciona con **ESPACIO**. Muchos juegos de Spectrum dejaban al jugador elegir sus teclas y su joystick, y CYD lo permite con dos comandos: `MENUKEY` cambia una tecla y `MENUJOY` elige un joystick.
+Los menús se manejan con **Q**, **A**, **O** y **P**, y se selecciona con **ESPACIO**. Muchos juegos de Spectrum dejaban al jugador elegir sus teclas y su joystick, y CYD lo permite con dos comandos: `MENUKEY` cambia una tecla y `MENUJOY` elige un joystick. El ejemplo `examples/menu_keys` es un programa corto que hace las dos cosas; aquí lo vemos por partes.
 
-`MENUKEY` recibe la acción (0 arriba, 1 abajo, 2 izquierda, 3 derecha, 4 seleccionar) y la tecla, que es el código que devuelve `INKEY`. Para una pantalla de redefinir, lo más cómodo es preguntarle cada tecla al jugador con `INKEY(0)`, que espera a que pulse una:
+Antes de empezar, conviene saber qué funciona siempre, se cambie lo que se cambie: las teclas de cursor, **ENTER** para seleccionar y el joystick Kempston. Así, aunque el jugador defina mal sus teclas, nunca se queda sin poder manejar el menú.
+
+### Redefinir las teclas
+
+`MENUKEY` recibe la acción y la tecla. Las acciones son 0 arriba, 1 abajo, 2 izquierda, 3 derecha y 4 seleccionar, así que el ejemplo les pone nombre con `CONST`:
 
 ```
 [[
-    DECLARE 250 AS tmp
-    CLEAR
-    ]]Pulsa la tecla para ARRIBA: [[      LET tmp = INKEY(0) : MENUKEY 0, @tmp : CHAR @tmp : NEWLINE
-    ]]Pulsa la tecla para ABAJO: [[       LET tmp = INKEY(0) : MENUKEY 1, @tmp : CHAR @tmp : NEWLINE
-    ]]Pulsa la tecla para SELECCIONAR: [[ LET tmp = INKEY(0) : MENUKEY 4, @tmp : CHAR @tmp : NEWLINE
-    WAITKEY
+    CONST Arriba = 0
+    CONST Abajo = 1
+    CONST Izquierda = 2
+    CONST Derecha = 3
+    CONST Seleccionar = 4
 ]]
 ```
 
-La variable `tmp` solo hace falta mientras dura la pantalla: las teclas se guardan en el intérprete, no en las variables, así que no ocupan ninguna.
-
-Los joysticks Sinclair y de cursor son, para el Spectrum, teclas del teclado: el Sinclair del puerto 1 pulsa las teclas del 6 al 0, el del puerto 2 las del 1 al 5, y el de cursor las del 5 al 8 y el 0. Como usan las mismas teclas con significados distintos, el jugador tiene que decir cuál tiene, y eso es lo que hace `MENUJOY`:
+La tecla es el código que devuelve `INKEY`. Para preguntársela al jugador lo más cómodo es `INKEY(0)`, que espera a que pulse una. El ejemplo recorre las cinco acciones con la variable `accion`, escribe el nombre de cada una y aplica la tecla que pulsa el jugador:
 
 ```
 [[
+#Redefinir
     CLEAR
+    ]]Pulsa la tecla de cada acción.
+
+[[
+    LET accion = Arriba
+#SiguienteTecla
+    IF @accion = Arriba THEN
+        ]]Arriba: [[
+    ELSEIF @accion = Abajo THEN
+        ]]Abajo: [[
+    ELSEIF @accion = Izquierda THEN
+        ]]Izquierda: [[
+    ELSEIF @accion = Derecha THEN
+        ]]Derecha: [[
+    ELSE
+        ]]Seleccionar: [[
+    ENDIF
+#PideTecla
+    LET tecla = INKEY(0)
+    /* ENTER y las flechas (códigos menores que 32) ya funcionan siempre */
+    IF @tecla < 32 THEN
+        GOTO PideTecla
+    ENDIF
+    MENUKEY @accion, @tecla
+    IF @tecla = 32 THEN
+        ]]ESPACIO[[
+    ELSE
+        CHAR @tecla
+    ENDIF
+    NEWLINE
+    LET accion = @accion + 1
+    IF @accion <= Seleccionar THEN
+        GOTO SiguienteTecla
+    ENDIF
+    GOTO Hecho
+]]
+```
+
+Fíjate en tres detalles:
+
+- Los códigos menores que 32 (ENTER, las flechas...) se rechazan, porque ya tienen su función y siempre funcionan.
+- `CHAR` escribe la tecla elegida, salvo el espacio, que no se vería y se escribe con su nombre.
+- Las teclas no se guardan en variables: `MENUKEY` las guarda en el intérprete. Las variables `tecla` y `accion` solo hacen falta mientras dura la pantalla, y tampoco se graban con la partida, así que cargar una partida no le cambia los controles al jugador.
+
+Esta versión no impide que el jugador ponga la misma tecla en dos acciones (entonces esa tecla haría las dos cosas). La pantalla de controles de `examples/Delerict` sí lo comprueba: guarda las teclas en un array mientras las pregunta y rechaza las repetidas.
+
+Para volver a las teclas de siempre basta con ponerlas otra vez:
+
+```
+[[
+#Originales
+    MENUKEY Arriba, 'q'
+    MENUKEY Abajo, 'a'
+    MENUKEY Izquierda, 'o'
+    MENUKEY Derecha, 'p'
+    MENUKEY Seleccionar, ' '
+]]
+```
+
+### Elegir el joystick
+
+Los joysticks Sinclair y de cursor son, para el Spectrum, teclas del teclado: el Sinclair del puerto 1 pulsa las teclas del 6 al 0, el del puerto 2 las del 1 al 5, y el de cursor las del 5 al 8 y el 0. Como usan las mismas teclas con significados distintos, el jugador tiene que decir cuál tiene, y eso es lo que hace `MENUJOY`: 0 ninguno, 1 Sinclair del puerto 1, 2 Sinclair del puerto 2 y 3 de cursor.
+
+```
+[[
+#Joystick
+    CLEAR
+    MENUCONFIG 0, 1
     ]]¿Qué joystick tienes?
+
 [[
-    OPTION GOTO SinJoy   ]] Ninguno o Kempston
+    OPTION GOTO SinJoystick
+]] Ninguno o Kempston
 [[
-    OPTION GOTO Sinclair ]] Sinclair
+    OPTION GOTO Sinclair1
+]] Sinclair, puerto 1
 [[
-    OPTION GOTO Cursor   ]] Cursor
+    OPTION GOTO Sinclair2
+]] Sinclair, puerto 2
 [[
+    OPTION GOTO Cursor
+]] De cursor[[
     CHOOSE
-#SinJoy
-    MENUJOY 0 : GOTO Principio
-#Sinclair
-    MENUJOY 1 : GOTO Principio
+#SinJoystick
+    MENUJOY 0
+    GOTO Hecho
+#Sinclair1
+    MENUJOY 1
+    GOTO Hecho
+#Sinclair2
+    MENUJOY 2
+    GOTO Hecho
 #Cursor
-    MENUJOY 3 : GOTO Principio
+    MENUJOY 3
+    GOTO Hecho
 ]]
 ```
 
-El joystick elegido funciona a la vez que el teclado, y el Kempston no hace falta elegirlo: funciona siempre. Las teclas de cursor y **ENTER** también funcionan siempre, así que, aunque el jugador defina mal sus teclas, nunca se queda sin poder manejar el menú.
+El joystick elegido funciona a la vez que las teclas del teclado, sean las de siempre o las redefinidas. El Kempston no hace falta elegirlo: se lee aparte y funciona siempre.
+
+### Probarlo
+
+El ejemplo tiene también una rejilla de 3×3 números (`MENUCONFIG 1, 3`) para probar las cuatro direcciones y la tecla de seleccionar, y dice qué número se ha elegido con `OPTIONVAL()`. Compílalo, redefine las teclas o elige un joystick, y prueba la rejilla con los controles nuevos.
 
 ---
 

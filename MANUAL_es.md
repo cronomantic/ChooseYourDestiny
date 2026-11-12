@@ -181,6 +181,7 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
       - [`examples\multicolumn_menu` - Menús en múltiples columnas](#examplesmulticolumn_menu---menús-en-múltiples-columnas)
       - [`examples\guess_the_number` - Juego de adivinanzas](#examplesguess_the_number---juego-de-adivinanzas)
       - [`examples\input_test` - Entrada de teclado y arrays](#examplesinput_test---entrada-de-teclado-y-arrays)
+      - [`examples\menu_keys` - Teclas y joystick de los menús](#examplesmenu_keys---teclas-y-joystick-de-los-menús)
       - [`examples\math_library` - Aritmética de 16/32 bits](#examplesmath_library---aritmética-de-1632-bits)
       - [`examples\strings_library` - Cadenas de texto](#examplesstrings_library---cadenas-de-texto)
       - [`examples\windows` - Ventanas múltiples](#exampleswindows---ventanas-múltiples)
@@ -2568,6 +2569,17 @@ Ejemplo técnico que muestra características avanzadas de manejo de datos:
 
 Este ejemplo es fundamental para entender cómo trabajar con datos más complejos y crear interfaces de entrada personalizadas.
 
+#### `examples\menu_keys` - Teclas y joystick de los menús
+**Nivel:** Básico
+
+Un programa corto que deja al jugador elegir sus controles:
+- **Redefinir las teclas:** pregunta la tecla de cada acción con `INKEY(0)` y la aplica con `MENUKEY`.
+- **Elegir el joystick:** Sinclair (puerto 1 o 2) o de cursor con `MENUJOY`; el Kempston funciona siempre.
+- **Volver a las teclas originales** con `MENUKEY`.
+- **Probar los controles** en una rejilla de 3×3 números (`MENUCONFIG 1, 3`) que dice cuál se ha elegido con `OPTIONVAL()`.
+
+El tutorial lo explica paso a paso, en el capítulo de las teclas y el joystick de los menús. La pantalla de controles de `examples\Delerict` es una versión más completa, que rechaza las teclas repetidas.
+
 #### `examples\math_library` - Aritmética de 16/32 bits
 **Nivel:** Intermedio
 
@@ -2741,6 +2753,7 @@ Una aventura espacial pequeña pero completa, con principio, final y diez locali
 - **Gráficos de localidades:** una imagen por localidad y variantes que reflejan el estado (puerta forzada, galería a oscuras, consola encendida...), dibujadas con `PICTURE` y `BLIT`.
 - **Puzles y estado:** salidas que dependen de lo que has hecho, textos dinámicos, contadores de turnos (radiación, la criatura, la huida final) y varios finales: la huida con el artefacto, la muerte y abandonar la misión.
 - **Grabar y cargar:** guarda la partida en memoria con `RAMSAVE` y la recupera con `RAMLOAD`; también permite reiniciar.
+- **Controles:** elige un joystick Sinclair o de cursor con `MENUJOY` y redefine las teclas de los menús con `MENUKEY`, preguntándolas con `INKEY(0)`.
 - **Gráficos generados:** las imágenes se generan con `make_images.py`, un guion de Python puro que dibuja con perspectiva y tramado respetando los atributos del Spectrum.
 
 Es el ejemplo más complejo y sirve de base para aventuras de texto tradicionales o híbridas (texto y gráficos). El fichero `README.md` del ejemplo describe su estructura y contiene la solución.
@@ -2761,7 +2774,7 @@ El fichero compilado queda en la carpeta `OUTPUT/` del ejemplo (y, la primera ve
 **Recomendación de estudio:**
 Se recomienda estudiar los ejemplos en este orden para una curva de aprendizaje gradual:
 1. `test` → Conceptos básicos
-2. `multicolumn_menu` → Menús
+2. `multicolumn_menu` → `menu_keys` → Menús
 3. `guess_the_number` → Lógica de juego
 4. `windows` → Interfaz dividida
 5. `input_test` → Entrada avanzada

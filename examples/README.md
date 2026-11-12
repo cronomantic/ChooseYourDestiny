@@ -34,6 +34,7 @@ tape of every example with the current compiler, reading each one's
 | [`multicolumn_menu`](multicolumn_menu/) | Laying out option menus across multiple columns. |
 | [`guess_the_number`](guess_the_number/) | A complete "guess the number" game: `RANDOM`, a 6-column menu and game logic. |
 | [`input_test`](input_test/) | Keyboard input with `INKEY()` and character arrays via `[@ptr]` indirection (`inputStr`/`printStr`). |
+| [`menu_keys`](menu_keys/) | Letting the player choose the controls: redefine the menu keys with `MENUKEY` (asking with `INKEY(0)`), choose a Sinclair or cursor joystick with `MENUJOY`, and try them on a 3×3 grid. Explained in the tutorial. |
 | [`math_library`](math_library/) | Using `lib/math16_32.cyd`: 16/32-bit arithmetic (`mul1632`, `add32`, `print32`) to compute a score. |
 | [`strings_library`](strings_library/) | Using `lib/strings.cyd`: read a name from the keyboard (`strInput`) and print it (`strPrint`, `strLen`). |
 | [`sprites`](sprites/) | Using `lib/sprites.cyd`: a walking character and a bouncing ball drawn with masks over a scene, moved by characters and by pixels, each saving its background in its own slot. |

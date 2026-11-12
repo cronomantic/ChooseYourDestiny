@@ -41,11 +41,15 @@ python examples/Delerict/make_images.py
 ## How to play
 
 Everything is done with menus. Move the cursor with `Q`, `A`, `O` and `P` and
-confirm with `Space` or `Enter`.
+confirm with `Space` or `Enter`. The cursor keys, `Enter` and a Kempston
+joystick always work too.
 
 - The command menu is a 3×3 grid. The center option (`-<>-`) switches between
   its three pages: actions, more actions (including the inventory) and options
-  (save, load and restart).
+  (save, load, restart and controls).
+- *Controles* chooses a Sinclair (port 1 or 2) or cursor joystick, which works
+  together with the keyboard, and redefines the five keys of the menus (up,
+  down, left, right, select), or puts the original ones back.
 - *Ir a...* opens the movement menu: north, south, east, west, up, down, enter
   and exit. Its center goes back to the commands.
 - After a verb, an object selector appears at the bottom, with two arrows, a
@@ -75,6 +79,11 @@ Each action takes a turn. Some places are dangerous if you stay too long.
   instead.
 - **Endings.** Deaths and endings set `gameState` and return to the main loop,
   which shows the ending and starts again, so no `GOSUB` is left pending.
+- **Controls.** `ControlsMenu` uses `MENUJOY` for the joystick and `MENUKEY`
+  for the keys. Redefining asks for each key with `INKEY(0)`, refuses a key
+  already chosen and the control codes (`Enter` and the cursor keys always
+  work), and applies the five keys at the end. The settings live in the
+  interpreter, so they take no variables and are not saved with the game.
 
 ## Walkthrough
 

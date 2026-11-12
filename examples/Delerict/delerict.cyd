@@ -187,6 +187,9 @@
     /* Lista objetos interacción */
     DIM objectsListMenu(NumObjects)
 
+    /* Teclas nuevas mientras se redefinen (Controles) */
+    DIM newMenuKeys(5)
+
 
 /* Inicialización de la pantalla */
     PAGEPAUSE 1
@@ -983,8 +986,8 @@ Tu misión: entrar en el pecio, recuperar lo que tenga de valor y volver con vid
     OPTION GOTO DoNothing
 ]] [[
     AT 10, 2
-    OPTION GOTO DoNothing
-]] [[
+    OPTION GOTO ControlsMenu
+]]Controles[[
     IF @tmp0 = 0 THEN
         CHOOSE IF CHANGED THEN GOSUB ChCommandMenu
     ENDIF
@@ -1569,6 +1572,121 @@ Tu misión: entrar en el pecio, recuperar lo que tenga de valor y volver con vid
 
 #RestartGame
     LET gameState = Restart
+    RETURN
+
+/*
+    Controles: el joystick que va por el teclado (MENUJOY) y las teclas de los
+    menús (MENUKEY). El Kempston, las flechas y ENTER funcionan siempre.
+    Usa tmp1, tmp2, tmp3 y newMenuKeys.
+*/
+#ControlsMenu
+    CLEAROPTIONS
+    CHARSET 0
+    WINDOW 1
+    CLEAR
+    MENUCONFIG 0, 1, 0, 1
+    ]]CONTROLES (el Kempston va siempre)
+[[
+    OPTION GOTO CtrlKeyboard
+]] Teclado o joystick Kempston
+[[
+    OPTION GOTO CtrlSinclair1
+]] Joystick Sinclair, puerto 1
+[[
+    OPTION GOTO CtrlSinclair2
+]] Joystick Sinclair, puerto 2
+[[
+    OPTION GOTO CtrlCursor
+]] Joystick de cursor
+[[
+    OPTION GOTO CtrlRedefine
+]] Redefinir las teclas
+[[
+    OPTION GOTO CtrlDefaultKeys
+]] Teclas originales (Q A O P ESPACIO)
+[[
+    OPTION GOTO CtrlBack
+]] Volver[[
+    CHOOSE
+
+#CtrlKeyboard
+    MENUJOY 0
+    GOTO CtrlDone
+#CtrlSinclair1
+    MENUJOY 1
+    GOTO CtrlDone
+#CtrlSinclair2
+    MENUJOY 2
+    GOTO CtrlDone
+#CtrlCursor
+    MENUJOY 3
+    GOTO CtrlDone
+#CtrlDefaultKeys
+    MENUKEY 0, 'q'
+    MENUKEY 1, 'a'
+    MENUKEY 2, 'o'
+    MENUKEY 3, 'p'
+    MENUKEY 4, ' '
+    GOTO CtrlDone
+
+#CtrlRedefine
+    CLEAROPTIONS
+    CLEAR
+    ]]Pulsa la tecla de cada acción.
+[[
+    LET tmp1 = 0
+#CtrlRedefNext
+    IF @tmp1 = 0 THEN
+        ]]Arriba: [[
+    ELSEIF @tmp1 = 1 THEN
+        ]]Abajo: [[
+    ELSEIF @tmp1 = 2 THEN
+        ]]Izquierda: [[
+    ELSEIF @tmp1 = 3 THEN
+        ]]Derecha: [[
+    ELSE
+        ]]Seleccionar: [[
+    ENDIF
+#CtrlRedefAsk
+    LET tmp2 = INKEY(0)
+    /* Ni ENTER ni las flechas (funcionan siempre), ni una tecla ya elegida */
+    IF @tmp2 < 32 THEN
+        GOTO CtrlRedefAsk
+    ENDIF
+    LET tmp3 = 0
+#CtrlRedefCheck
+    IF @tmp3 < @tmp1 THEN
+        IF newMenuKeys(@tmp3) = @tmp2 THEN
+            GOTO CtrlRedefAsk
+        ENDIF
+        LET tmp3 = @tmp3 + 1
+        GOTO CtrlRedefCheck
+    ENDIF
+    LET newMenuKeys(@tmp1) = @tmp2
+    IF @tmp2 = 32 THEN
+        ]]ESPACIO[[
+    ELSEIF @tmp2 >= 'a' AND @tmp2 <= 'z' THEN
+        CHAR @tmp2 - 32
+    ELSE
+        CHAR @tmp2
+    ENDIF
+    NEWLINE
+    LET tmp1 = @tmp1 + 1
+    IF @tmp1 < 5 THEN
+        GOTO CtrlRedefNext
+    ENDIF
+    MENUKEY 0, newMenuKeys(0)
+    MENUKEY 1, newMenuKeys(1)
+    MENUKEY 2, newMenuKeys(2)
+    MENUKEY 3, newMenuKeys(3)
+    MENUKEY 4, newMenuKeys(4)
+
+#CtrlDone
+    CLEAROPTIONS
+    ]]Controles cambiados.[[
+    WAITKEY
+#CtrlBack
+    CLEAROPTIONS
     RETURN
 
 

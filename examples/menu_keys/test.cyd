@@ -1,0 +1,167 @@
+[[
+/*
+    Teclas y joystick de los menús, con MENUKEY y MENUJOY.
+
+    El jugador puede probar los controles, elegir su joystick y redefinir las
+    cinco teclas de los menús (arriba, abajo, izquierda, derecha y seleccionar).
+    Las teclas de cursor, ENTER y el joystick Kempston funcionan siempre.
+
+    La configuración vive en el intérprete: no ocupa variables. Las variables
+    de abajo solo se usan mientras se redefinen las teclas.
+*/
+    DECLARE 0 AS tecla      /* La tecla que acaba de pulsar el jugador */
+    DECLARE 1 AS accion     /* La acción que se está redefiniendo (0 a 4) */
+
+    /* Las acciones de MENUKEY */
+    CONST Arriba = 0
+    CONST Abajo = 1
+    CONST Izquierda = 2
+    CONST Derecha = 3
+    CONST Seleccionar = 4
+
+    PAGEPAUSE 1
+    BORDER 0
+    PAPER 0
+    INK 7
+    BRIGHT 1
+    CLEAR
+
+#Menu
+    CLEAR
+    MENUCONFIG 0, 1
+    ]]TECLAS Y JOYSTICK
+Las flechas, ENTER y el Kempston funcionan siempre.
+
+[[
+    OPTION GOTO Probar
+]] Probar los controles
+[[
+    OPTION GOTO Joystick
+]] Elegir el joystick
+[[
+    OPTION GOTO Redefinir
+]] Redefinir las teclas
+[[
+    OPTION GOTO Originales
+]] Volver a las teclas originales[[
+    CHOOSE
+
+/* Una rejilla de 3x3 para probar las cuatro direcciones y seleccionar */
+#Probar
+    CLEAR
+    MENUCONFIG 1, 3
+    ]]Muévete por la rejilla y elige un número:
+
+[[
+    OPTION GOTO Elegido
+]] 1  [[
+    OPTION GOTO Elegido
+]] 2  [[
+    OPTION GOTO Elegido
+]] 3
+[[
+    OPTION GOTO Elegido
+]] 4  [[
+    OPTION GOTO Elegido
+]] 5  [[
+    OPTION GOTO Elegido
+]] 6
+[[
+    OPTION GOTO Elegido
+]] 7  [[
+    OPTION GOTO Elegido
+]] 8  [[
+    OPTION GOTO Elegido
+]] 9[[
+    CHOOSE
+#Elegido
+    ]]
+
+Has elegido el [[
+    PRINT OPTIONVAL() + 1
+    WAITKEY
+    GOTO Menu
+
+/* Los joysticks Sinclair y de cursor son teclas del teclado: hay que elegir uno */
+#Joystick
+    CLEAR
+    MENUCONFIG 0, 1
+    ]]¿Qué joystick tienes?
+
+[[
+    OPTION GOTO SinJoystick
+]] Ninguno o Kempston
+[[
+    OPTION GOTO Sinclair1
+]] Sinclair, puerto 1
+[[
+    OPTION GOTO Sinclair2
+]] Sinclair, puerto 2
+[[
+    OPTION GOTO Cursor
+]] De cursor[[
+    CHOOSE
+#SinJoystick
+    MENUJOY 0
+    GOTO Hecho
+#Sinclair1
+    MENUJOY 1
+    GOTO Hecho
+#Sinclair2
+    MENUJOY 2
+    GOTO Hecho
+#Cursor
+    MENUJOY 3
+    GOTO Hecho
+
+/* Pregunta cada tecla con INKEY(0), que espera a que se pulse una */
+#Redefinir
+    CLEAR
+    ]]Pulsa la tecla de cada acción.
+
+[[
+    LET accion = Arriba
+#SiguienteTecla
+    IF @accion = Arriba THEN
+        ]]Arriba: [[
+    ELSEIF @accion = Abajo THEN
+        ]]Abajo: [[
+    ELSEIF @accion = Izquierda THEN
+        ]]Izquierda: [[
+    ELSEIF @accion = Derecha THEN
+        ]]Derecha: [[
+    ELSE
+        ]]Seleccionar: [[
+    ENDIF
+#PideTecla
+    LET tecla = INKEY(0)
+    /* ENTER y las flechas (códigos menores que 32) ya funcionan siempre */
+    IF @tecla < 32 THEN
+        GOTO PideTecla
+    ENDIF
+    MENUKEY @accion, @tecla
+    IF @tecla = 32 THEN
+        ]]ESPACIO[[
+    ELSE
+        CHAR @tecla
+    ENDIF
+    NEWLINE
+    LET accion = @accion + 1
+    IF @accion <= Seleccionar THEN
+        GOTO SiguienteTecla
+    ENDIF
+    GOTO Hecho
+
+#Originales
+    MENUKEY Arriba, 'q'
+    MENUKEY Abajo, 'a'
+    MENUKEY Izquierda, 'o'
+    MENUKEY Derecha, 'p'
+    MENUKEY Seleccionar, ' '
+
+#Hecho
+    ]]
+Hecho.[[
+    WAITKEY
+    GOTO Menu
+]]
