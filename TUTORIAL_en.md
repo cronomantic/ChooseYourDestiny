@@ -468,7 +468,7 @@ Done[[WAITKEY]]
 Finally, let's talk about the `TYPERATE` command, which is a bit special compared to the rest of the wait commands. With this command we indicate the wait that occurs each time a character is printed. This wait is not adjusted to frames, but is a counter that depends on the speed of the processor (faster). The idea of this command is to write in a slower and more gradual way, for certain "dramatic" situations.
 
 ```
-[[TYPERATE 100]]This prints slowly
+[[TYPERATE 10000]]This prints slowly
 [[TYPERATE 0]]This prints normally[[WAITKEY]]
 ```
 

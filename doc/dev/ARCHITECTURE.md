@@ -9,7 +9,9 @@
 >
 > Para el diseño del port a CPC/Next y la capa gráfica, ver
 > [MULTITARGET_DESIGN.md](MULTITARGET_DESIGN.md). Este documento es el "cómo es
-> hoy"; aquel es el "cómo se extenderá".
+> hoy"; aquel es el "cómo se extenderá". La máquina virtual en detalle (bucle de
+> ejecución, pila, codificación del bytecode y tabla de opcodes) está en
+> [VM.md](VM.md).
 
 ---
 
@@ -171,7 +173,7 @@ Inyectados por `cyd.py`; consumidos con `IFDEF`/`IFNDEF` en el `.asm`.
 
 ### 5.1 Tabla de opcodes
 
-- Diccionario `opcodes` (nombre→byte, 0x00-0x7E) en
+- Diccionario `opcodes` (nombre→byte, 0x00-0x7F; los 128 ocupados) en
   [cydc_codegen.py:~30-155](../../src/cydc/cydc/cydc_codegen.py#L30). Opcodes de 1 byte +
   operandos. Variantes por modo de operando: **`_D`** (literal directo), **`_I`**
   (indirecto vía `FLAGS[]`), **`POP_*`** (operando desde la pila de enteros). Un
@@ -224,6 +226,8 @@ así que es el primero que **obliga a dar a parser+codegen conciencia de target*
 ---
 
 ## 7. Runtime / VM (resumen)
+
+> Detalle completo, con la tabla de opcodes, en [VM.md](VM.md).
 
 - **Intérprete** ([interpreter.asm](../../src/cydc/cydc/cyd/interpreter.asm), ~3.500
   líneas): fetch-decode-execute; jump table `OPCODES` indexada por opcode.

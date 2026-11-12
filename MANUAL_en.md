@@ -1867,7 +1867,9 @@ Same as `WAIT`, but with the exception that the player can abort the pause by pr
 
 ### TYPERATE expression
 
-Indicates the pause that must occur between the printing of each character. Minimum 0, maximum 65535.
+Indicates the pause that must occur between the printing of each character. Minimum 0, maximum 65535. It is a wait loop, not frame based: each unit is 31 clock cycles (about 9 µs), so the pause shows from a few thousand up; with `TYPERATE 10000` about 11 characters are printed per second.
+
+Before version 1.7.0, `TYPERATE` used the two bytes of the value the other way round: `TYPERATE 100` waited like today's `TYPERATE 25600`. To keep an old game at the same speed, multiply the value by 256.
 
 ### MARGINS expression, expression, expression, expression
 

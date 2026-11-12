@@ -465,7 +465,7 @@ Ya está[[WAITKEY]]
 Para terminar, hablar del comando `TYPERATE`, que es un poco especial comparado con el resto de los comandos de espera. Con este comando indicamos la espera que se produce cada vez que se imprime un carácter. Esta espera no está ajustada a los fotogramas, sino que es un contador que ya depende de la velocidad del procesador (más rápido). La idea de este comando es la de escribir de forma más pausada y paulatina, para ciertas situaciones "dramáticas".
 
 ```
-[[TYPERATE 100]]Esto imprime lento
+[[TYPERATE 10000]]Esto imprime lento
 [[TYPERATE 0]]Esto imprime normal[[WAITKEY]]
 ```
 

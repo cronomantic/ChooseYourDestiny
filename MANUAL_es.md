@@ -1865,7 +1865,9 @@ Igual que `WAIT`, pero con la salvedad de que el jugador puede abortar la pausa 
 
 ### TYPERATE expression
 
-Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 0, máximo 65535.
+Indica la pausa que debe haber entre la impresión de cada carácter. Mínimo 0, máximo 65535. Es un bucle de espera, no va por fotogramas: cada unidad son 31 ciclos de reloj (unos 9 µs), así que la pausa se nota a partir de unos miles; con `TYPERATE 10000` se imprimen unos 11 caracteres por segundo.
+
+Antes de la versión 1.7.0, `TYPERATE` usaba los dos bytes del valor al revés: `TYPERATE 100` esperaba como el `TYPERATE 25600` de ahora. Para que un juego antiguo vaya a la misma velocidad, multiplica el valor por 256.
 
 ### MARGINS expression, expression, expression, expression
 

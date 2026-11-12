@@ -92,6 +92,44 @@ class TestInterpreterRuntime(unittest.TestCase):
                     self.assertEqual(flags[k], int(expected(a, b)))
                 k += 1
 
+    def test_min_max_trimmed(self):
+        # With -trim, a program that used only MIN or only MAX did not build: the
+        # table entry of MIN was guarded by UNUSED_OP_MAX, and OP_MIN jumped to a
+        # label inside OP_MAX. MIN(a, b) is the greater one (a, at least b) and
+        # MAX(a, b) the smaller one (a, at most b), as the manual says.
+        uses = {
+            "MIN": ["SET 1 TO MIN(@200, @201)", "SET 2 TO MIN(@201, @200)"],
+            "MAX": ["SET 3 TO MAX(@200, @201)", "SET 4 TO MAX(@201, @200)"],
+        }
+        expected = {1: 9, 2: 9, 3: 7, 4: 7}
+        for used in (["MIN"], ["MAX"], ["MIN", "MAX"]):
+            for trim in ([], ["-trim"]):
+                with self.subTest(used=used, trim=bool(trim)):
+                    lines = ["SET 200 TO 7", "SET 201 TO 9"]
+                    for name in used:
+                        lines += uses[name]
+                    # An opcode after MIN/MAX in the table, to catch a shifted table.
+                    lines += ["SET 5 TO @200 << 1", "SET 0 TO 42", "LABEL spin", "GOTO spin"]
+                    flags = run_cyd_ex("[[ " + "\n".join(lines) + " ]]", model="48k",
+                                       n_bytes=6, extra_args=trim)
+                    self.assertEqual(flags[0], 42, "program did not finish")
+                    for k, value in expected.items():
+                        if any(f"SET {k} " in u for name in used for u in uses[name]):
+                            self.assertEqual(flags[k], value, f"FLAGS[{k}]")
+                    self.assertEqual(flags[5], 14, "SHIFT_L, after MIN/MAX in the table")
+
+    def test_typerate_value(self):
+        # TYPERATE n leaves n in PRT_INTERVAL (little-endian, like every other
+        # 16-bit operand). It used to read the bytes the other way round, so
+        # TYPERATE 1 waited 256 turns and TYPERATE 256 only one.
+        for n in (0, 1, 255, 256, 1000, 65535):
+            with self.subTest(n=n):
+                src = f"[[ TYPERATE {n}\nSET 0 TO 42\nLABEL spin\nGOTO spin ]]"
+                flags, (value,) = run_cyd_ex(src, model="48k", n_bytes=1,
+                                             reads=[("PRT_INTERVAL", 0, 2)])
+                self.assertEqual(flags[0], 42, "program did not finish")
+                self.assertEqual(value[0] | value[1] << 8, n)
+
     def test_menu_navigation(self):
         # (setup, menu, keys, option picked, CHOOSE IF CHANGED calls)
         cases = {
