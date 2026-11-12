@@ -3,6 +3,8 @@
 - The compiler runs with the GUI's language (its messages were in English with
   the GUI in Spanish) and unbuffered, and its output reaches the log line by
   line while it runs, not all at the end.
+- A progress bar the compiler redraws with a carriage return is redrawn in the log, not
+  added once per state.
 - The log tells errors and warnings apart, and "game.cyd:12" in it leads to
   the file.
 - Run finds the compiled game under the name the compiler gives it (cut to
@@ -87,6 +89,24 @@ class TestCompilerProcess(unittest.TestCase):
         self.assertEqual([line for _, line in seen], ["line 0", "line 1", "line 2", "oops"])
         # The first line comes long before the process ends.
         self.assertLess(seen[0][0], seen[-1][0] - 0.6)
+
+    # What the progress bar of the token search prints: each new state ends
+    # with "\r" so a terminal draws it over the last one, and a "\n" at the end.
+    BAR = ("import sys\nprint('start')\n"
+           "for p in (0, 50, 100):\n    sys.stderr.write(f'{p:3}% |bar|\\r'); sys.stderr.flush()\n"
+           "sys.stderr.write('\\n')\nprint('done')")
+
+    def test_a_redrawn_line_is_redrawn(self):
+        # It reached the log as one line per state of the bar.
+        lines, redraws = [], []
+        gui.stream_exec(sys.executable, ["-c", self.BAR], lines.append, on_redraw=redraws.append)
+        self.assertEqual(lines, ["start", "  0% |bar|", "done"])
+        self.assertEqual(redraws, [" 50% |bar|", "100% |bar|"])
+
+    def test_without_on_redraw_only_its_last_state(self):
+        lines = []
+        gui.stream_exec(sys.executable, ["-c", self.BAR], lines.append)
+        self.assertEqual(lines, ["start", "100% |bar|", "done"])
 
     def test_compiler_messages_follow_the_language(self):
         lines = []
@@ -307,6 +327,16 @@ class TestMainWindow(unittest.TestCase):
         self.assertIn("ERROR [PARSER]", log.get(*errors))
         self.assertIn("WARNING [CODEGEN]", log.get(*warnings))
         self.assertTrue(log.compare(errors[0], "<", end))
+
+    def test_log_replaces_a_redrawn_line(self):
+        self.app._log("Compiling")
+        self.app._log("  0% |bar|")
+        self.app._log(" 50% |bar|", replace=True)
+        self.app._log("100% |bar|", replace=True)
+        self.app._log("done")
+        self.root.update()
+        self.assertTrue(self.app.log.get("1.0", "end").endswith(
+            "Compiling\n100% |bar|\ndone\n\n"))
 
     def test_run_follows_the_compiled_game(self):
         with tempfile.TemporaryDirectory() as wd:

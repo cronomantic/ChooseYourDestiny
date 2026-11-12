@@ -42,6 +42,7 @@ import shutil
 import subprocess
 import threading
 import datetime
+import io
 
 # Hide console window on Windows after successful initialization
 def hide_console_window():
@@ -303,26 +304,56 @@ def _child_env(language=None):
     return env
 
 
-def stream_exec(exec_path, parameter_list, on_line, language=None, cwd=None):
+def stream_exec(exec_path, parameter_list, on_line, language=None, cwd=None,
+                on_redraw=None):
     """Run an external executable, passing each line it prints (stdout and
-    stderr) to on_line as it comes. Returns the exit code."""
+    stderr) to on_line as it comes. Returns the exit code.
+
+    A line the program redraws, ending it with a carriage return instead of a
+    newline (as the progress bar of the token search does), is passed to
+    on_line once, and then each new version of it to on_redraw, which must
+    replace the last line shown. Without on_redraw, only its last version is
+    passed to on_line, when it ends."""
     command_line = [os.path.abspath(exec_path)] + list(parameter_list)
     try:
         proc = subprocess.Popen(
             command_line,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
             env=_child_env(language),
             cwd=cwd,
         )
     except Exception as exc:
         raise OSError(str(exc)) from exc
     with proc:
-        for line in proc.stdout:
-            on_line(line.rstrip("\r\n"))
+        # newline="": a lone "\r" ends a piece of line too, but stays visible.
+        reader = io.TextIOWrapper(proc.stdout, encoding="utf-8", errors="replace", newline="")
+        drawn = None  # the line being redrawn, if any
+        for piece in reader:
+            text = piece.rstrip("\r\n")
+            redraw = piece.endswith("\r")  # not "\r\n"
+            if drawn is None:
+                if redraw:
+                    drawn = text
+                    if on_redraw:
+                        on_line(text)
+                else:
+                    on_line(text)
+            elif redraw:
+                if text:
+                    drawn = text
+                    if on_redraw:
+                        on_redraw(text)
+            else:  # the end of the redrawn line
+                if text:
+                    drawn = text
+                    if on_redraw:
+                        on_redraw(text)
+                if not on_redraw:
+                    on_line(drawn)
+                drawn = None
+        if drawn is not None and not on_redraw:
+            on_line(drawn)
     return proc.returncode
 
 
@@ -1773,12 +1804,15 @@ class MakeAdventureGUI:
 
     # ── Logging ────────────────────────────────────────────────────────────
 
-    def _log(self, text, tag=None):
+    def _log(self, text, tag=None, replace=False):
         """Thread‑safe log append. Each line that is an error or a warning is
-        coloured as one, unless tag says otherwise."""
+        coloured as one, unless tag says otherwise. With replace, text takes
+        the place of the last line (a progress bar redrawn)."""
 
         def _append():
             self.log.configure(state=tk.NORMAL)
+            if replace:
+                self.log.delete("end-2l linestart", "end-1c")
             for line in text.split("\n"):
                 self.log.insert(tk.END, line + "\n", tag or classify_log_line(line) or ())
             self.log.see(tk.END)
@@ -2013,6 +2047,7 @@ class MakeAdventureGUI:
             returncode = stream_exec(
                 python_path, cydc_params, on_line, language=self.current_language,
                 cwd=self.project.root if self.project else None,
+                on_redraw=lambda line: self._log(line, replace=True),
             )
             self._log(_("Errors: {errors}   Warnings: {warnings}").format(
                 errors=counts["error"], warnings=counts["warning"]), "summary")
