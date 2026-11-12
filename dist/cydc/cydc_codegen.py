@@ -1564,58 +1564,6 @@ class CydcCodegen(object):
                 result.append(msg)
         return result
 
-    def check_code_paramenters(self, code):
-        code_tmp = []
-        for t in code:
-            opcode = t[0]  # get opcode type
-            if opcode == "MARGINS" or opcode == "FADEOUT":
-                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
-                t = (opcode, col, row, width, height)
-            elif opcode == "AT":
-                col = t[1]
-                row = t[2]
-                if col >= 32:
-                    col = 31
-                if col < 0:
-                    col = 0
-                if row >= 24:
-                    row = 23
-                if row < 0:
-                    row = 0
-                t = (opcode, col, row)
-            elif opcode == "MENUCONFIG":
-                col = t[1]
-                row = t[2]
-                init = t[3]
-                show = t[4]
-                if col >= 32:
-                    col = 31
-                if col < 0:
-                    col = 0
-                if row >= 24:
-                    row = 23
-                if row < 0:
-                    row = 0
-                if init_d >= 32:
-                    init_d = 0
-                t = (opcode, col, row, init, show)
-            elif opcode == "BLIT":
-                col_d = t[5]
-                row_d = t[6]
-                if col_d >= 32:
-                    col_d = 31
-                if row_d < 0:
-                    row_d = 0
-                if col_d < 0:
-                    col_d = 0
-                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
-                t = (opcode, col, row, width, height, col_d, row_d)
-            elif opcode == "POP_BLIT":
-                (row, col, width, height) = self._fix_borders(t[1], t[2], t[3], t[4])
-                t = (opcode, col, row, width, height)
-            code_tmp.append(t)
-        return code_tmp
-
     def code_translate(self, code, slice_text=False):
         code_banks = []
         code_tmp = []
@@ -1804,33 +1752,6 @@ class CydcCodegen(object):
         ll = offset & 0xFF
         return [ll, lh, hl, idx]
 
-    def _fix_borders(self, row, col, width, height):
-        (row, height) = self._fix_rows(row, height)
-        (col, width) = self._fix_cols(col, width)
-        return (row, col, width, height)
-
-    def _fix_rows(self, row, height):
-        if row >= 24:
-            row = 23
-        if row < 0:
-            row = 0
-        if height <= 0:
-            height = 1
-        if (height + row) > 24:
-            height = 24 - row
-        return (row, height)
-
-    def _fix_cols(self, col, width):
-        if col >= 32:
-            col = 31
-        if col < 0:
-            col = 0
-        if width <= 0:
-            width = 1
-        if (width + col) > 32:
-            width = 32 - col
-        return (col, width)
-
     # Sentinel "bank" byte for an array relocated to the resident RAM pool
     # (MLD targets, where the array's own chunk lives in read-only Dandanator
     # flash). The array-access opcodes recognise it under IS_MLD_DAN and address
@@ -1895,7 +1816,6 @@ class CydcCodegen(object):
             for c in code:
                 print(c)
 
-        self.code = self.check_code_paramenters(self.code)
         (code, self.symbols) = self.code_translate(code, slice_text)
 
         # MLD only: arrays live inline in their bytecode chunk, which on Dandanator

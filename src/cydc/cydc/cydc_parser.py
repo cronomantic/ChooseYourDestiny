@@ -3351,33 +3351,6 @@ class CydcParser(object):
     def _is_valid_array(self, val):
         return isinstance(val, str)
 
-    # def _fix_borders(self, row, col, width, height):
-    #     (row, height) = self._fix_rows(row, height)
-    #     (col, width) = self._fix_cols(col, width)
-    #     return (row, col, width, height)
-
-    # def _fix_rows(self, row, height):
-    #     if row >= 24:
-    #         row = 23
-    #     if row < 0:
-    #         row = 0
-    #     if height <= 0:
-    #         height = 1
-    #     if (height + row) > 24:
-    #         height = 24 - row
-    #     return (row, height)
-
-    # def _fix_cols(self, col, width):
-    #     if col >= 32:
-    #         col = 31
-    #     if col < 0:
-    #         col = 0
-    #     if width <= 0:
-    #         width = 1
-    #     if (width + col) > 32:
-    #         width = 32 - col
-    #     return (col, width)
-
     # def _check_attr_values(self, ink, paper, bright, flash, lineno):
     #     error = False
     #     if ink < 0 or ink > 7:
