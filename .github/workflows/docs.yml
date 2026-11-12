@@ -38,16 +38,16 @@ jobs:
 
     steps:
       - name: Checkout (tooling)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout (documentation)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
           path: docs-source
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -58,7 +58,7 @@ jobs:
         run: python tools/build_site.py --source docs-source
 
       - name: Upload
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/site
 
@@ -73,4 +73,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

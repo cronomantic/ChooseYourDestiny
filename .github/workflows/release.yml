@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Pandoc and XeLaTeX
         run: |
@@ -43,7 +43,7 @@ jobs:
         run: bash make_pdf.sh
 
       - name: Upload PDF artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: documentation-pdf
           path: documentation/*/*.pdf
@@ -64,15 +64,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Download the PDFs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: documentation-pdf
           path: documentation
@@ -81,7 +81,7 @@ jobs:
         run: python make_dist.py --platform ${{ matrix.platform }}
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: package-${{ matrix.platform }}
           path: ChooseYourDestiny_*.zip
@@ -99,7 +99,7 @@ jobs:
       # Hand-written notes for this tag, if there are any (doc/release/vX.Y.Z.md):
       # they go first, and GitHub's list of changes after them.
       - name: Checkout (release notes)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: doc/release
 
@@ -110,12 +110,12 @@ jobs:
           if [ -f "$f" ]; then echo "body_path=$f" >> "$GITHUB_OUTPUT"; fi
 
       - name: Download all packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/**/*.zip
