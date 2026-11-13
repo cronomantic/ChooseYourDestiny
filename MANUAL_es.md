@@ -204,6 +204,8 @@ Además, también puede mostrar imágenes comprimidas y almacenadas en el mismo 
     - [Cómo usar los ejemplos](#cómo-usar-los-ejemplos)
   - [Juego de caracteres](#juego-de-caracteres)
   - [Códigos de error](#códigos-de-error)
+  - [Herramientas externas](#herramientas-externas)
+    - [ZX Story Flow](#zx-story-flow)
   - [Referencias y agradecimientos](#referencias-y-agradecimientos)
   - [Licencias](#licencias)
 
@@ -2941,6 +2943,20 @@ En el target **esxdos** (interfaces divMMC/divIDE con tarjeta SD) corresponden c
 - Disk Error 31: Device is busy (dispositivo ocupado)
 
 En el caso de esxDOS, el error más habitual es el 5 (No such file or directory), que suele indicar que se ha olvidado copiar en la tarjeta SD algún fichero necesario (la imagen `.CSC`, la música `.BIN`, la partida `.SAV` o el propio fichero de datos `.DAT` del juego).
+
+---
+
+## Herramientas externas
+
+Herramientas de otros autores que pueden ayudarte a crear aventuras con CYD. No forman parte de CYD: cada una tiene su autor, su licencia y su forma de uso.
+
+### ZX Story Flow
+
+Editor visual de aventuras por opciones que funciona en el navegador. Cada pantalla de la historia es un nodo y sus opciones se conectan, arrastrando con el ratón, con las pantallas a las que llevan, así que se ve de un vistazo el mapa entero de la aventura. Puede exportar la aventura como guion de CYD y, además, como un TAP en BASIC listo para jugar o como guion para el motor MuCho.
+
+- Autor: rtorralba (Juntelart en itch.io)
+- Para usarlo: [juntelart.itch.io/zx-story-flow](https://juntelart.itch.io/zx-story-flow)
+- Código fuente: [github.com/rtorralba/zx-story-flow](https://github.com/rtorralba/zx-story-flow)
 
 ---
 

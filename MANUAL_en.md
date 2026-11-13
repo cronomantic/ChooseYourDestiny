@@ -204,6 +204,8 @@ In addition, it can also display compressed images stored on the same disk, as w
     - [How to use the examples](#how-to-use-the-examples)
   - [Character set](#character-set)
   - [Error codes](#error-codes)
+  - [External tools](#external-tools)
+    - [ZX Story Flow](#zx-story-flow)
   - [Acknowledgements](#acknowledgements)
   - [Licenses](#licenses)
 
@@ -2941,6 +2943,20 @@ On the **esxDOS** target (divMMC/divIDE interfaces with an SD card) they corresp
 - Disk Error 31: Device is busy
 
 For esxDOS, the most common error is 5 (No such file or directory), which usually means you have forgotten to copy some required file onto the SD card (the `.CSC` image, the `.BIN` music, the `.SAV` save, or the game's own `.DAT` data file).
+
+---
+
+## External tools
+
+Tools by other authors that can help you make adventures with CYD. They are not part of CYD: each has its own author, license and way of use.
+
+### ZX Story Flow
+
+A visual editor for choice-based adventures that runs in the browser. Each screen of the story is a node, and you connect its options to the screens they lead to by dragging with the mouse, so you can see the whole map of the adventure at a glance. It can export the adventure as a CYD script, and also as a BASIC TAP ready to play or as a script for the MuCho engine.
+
+- Author: rtorralba (Juntelart on itch.io)
+- To use it: [juntelart.itch.io/zx-story-flow](https://juntelart.itch.io/zx-story-flow)
+- Source code: [github.com/rtorralba/zx-story-flow](https://github.com/rtorralba/zx-story-flow)
 
 ---
 
